@@ -263,7 +263,7 @@ def list_stacks_by_path(path, stacks=None, cache=None):
     return stacks
 
 # #2022
-def expand_to_packages(names):
+def expand_to_packages(names, env=None):
     """
     Expand names into a list of packages. Names can either be of packages or stacks.
 
@@ -280,13 +280,13 @@ def expand_to_packages(names):
     # do full package list first. This forces an entire tree
     # crawl. This is less efficient for a small list of names, but
     # much more efficient for many names.
-    package_list = roslib.packages.list_pkgs()
+    package_list = roslib.packages.list_pkgs(env=env)
     valid = []
     invalid = []
     for n in names:
         if not n in package_list:
             try:
-                valid.extend(roslib.stacks.packages_of(n))
+                valid.extend(roslib.stacks.packages_of(n, env=env))
             except roslib.stacks.InvalidROSStackException, e:
                 invalid.append(n)
         else:

@@ -255,19 +255,19 @@ def _get_pkg_subdir_by_dir(package_dir, subdir, required=True, env=None):
     try:
         if not package_dir:
             raise Exception("Cannot create a '%(subdir)s' directory in %(package_dir)s: package %(package) cannot be located"%locals())
-        dir = os.path.join(package_dir, subdir)
-        if required and os.path.isfile(dir):
+        d = os.path.join(package_dir, subdir)
+        if required and os.path.isfile(d):
             raise Exception("""Package '%(package)s' is improperly configured: 
-file %(dir)s is preventing the creation of a directory"""%locals())
-        elif required and not os.path.isdir(dir):
+file %(d)s is preventing the creation of a directory"""%locals())
+        elif required and not os.path.isdir(d):
             try:
-                os.makedirs(dir) #lazy create
+                os.makedirs(d) #lazy create
             except error:
                 raise Exception("""Package '%(package)s' is improperly configured: 
 Cannot create a '%(subdir)s' directory in %(package_dir)s.
 Please check permissions and try again.
 """%locals())
-        return dir
+        return d
     except Exception, e:
         if required:
             raise
@@ -312,18 +312,20 @@ def resource_file(package, subdir, resource_name):
         raise InvalidROSPkgException(package)
     return os.path.join(d, resource_name)
 
-def _update_rospack_cache():
+def _update_rospack_cache(env=None):
     """
     Internal routine to update global package directory cache
     
     @return: True if cache is valid
     @rtype: bool
     """
+    if env is None:
+        env = os.environ
     cache = _pkg_dir_cache
     if cache:
         return True
-    ros_root = os.environ[ROS_ROOT]
-    ros_package_path = os.environ.get(ROS_PACKAGE_PATH, '')
+    ros_root = env[ROS_ROOT]
+    ros_package_path = env.get(ROS_PACKAGE_PATH, '')
     return _read_rospack_cache(cache, ros_root, ros_package_path)
 
 def _invalidate_cache(cache):
@@ -369,7 +371,7 @@ def _read_rospack_cache(cache, ros_root, ros_package_path):
     except:
         pass
     
-def list_pkgs(pkg_dirs=None, cache=None):
+def list_pkgs(pkg_dirs=None, cache=None, env=None):
     """
     List packages in ROS_ROOT and ROS_PACKAGE_PATH.
 
@@ -391,7 +393,7 @@ def list_pkgs(pkg_dirs=None, cache=None):
     @rtype: [str]
     """
     if pkg_dirs is None:
-        pkg_dirs = get_package_paths(True)
+        pkg_dirs = get_package_paths(True, env=env)
         if cache is None:
             # if cache is not specified, we use global cache instead
 
@@ -404,17 +406,17 @@ def list_pkgs(pkg_dirs=None, cache=None):
             cache = _pkg_dir_cache
             if cache:
                 return cache.keys()
-            if _update_rospack_cache():
+            if _update_rospack_cache(env=env):
                 return cache.keys()
     else:
         import warnings
         warnings.warn("pkg_dirs argument is deprecated. Please use list_pkgs_by_path() instead", DeprecationWarning, stacklevel=2)
     packages = []
     for pkg_root in pkg_dirs:
-        list_pkgs_by_path(pkg_root, packages, cache=cache)
+        list_pkgs_by_path(pkg_root, packages, cache=cache, env=env)
     return packages
 
-def list_pkgs_by_path(path, packages=None, cache=None):
+def list_pkgs_by_path(path, packages=None, cache=None, env=None):
     """
     List ROS packages within the specified path.
 
@@ -434,9 +436,11 @@ def list_pkgs_by_path(path, packages=None, cache=None):
     """
     if packages is None:
         packages = []
+    if env is None:
+        env = os.environ
     # record settings for cache
-    ros_root = os.environ[ROS_ROOT]
-    ros_package_path = os.environ.get(ROS_PACKAGE_PATH, '')
+    ros_root = env[ROS_ROOT]
+    ros_package_path = env.get(ROS_PACKAGE_PATH, '')
 
     path = os.path.abspath(path)
     for d, dirs, files in os.walk(path, topdown=True):
@@ -486,8 +490,8 @@ def find_node(pkg, node_type, ros_root=None, ros_package_path=None):
         if os.path.isfile(tst):
             return tst
 
-    dir = get_pkg_dir(pkg, required=True, \
-                      ros_root=ros_root, ros_package_path=ros_package_path)
+    d = get_pkg_dir(pkg, required=True, \
+                    ros_root=ros_root, ros_package_path=ros_package_path)
     
     #UNIXONLY: (partial) slowly supporting Windows here
     if sys.platform in ['win32', 'cygwin']:
@@ -505,7 +509,7 @@ def find_node(pkg, node_type, ros_root=None, ros_package_path=None):
         #   specified extension manually
         node_type = node_type.lower()
         matches = [node_type, node_type+'.exe', node_type+'.bat']
-        for p, dirs, files in os.walk(dir):
+        for p, dirs, files in os.walk(d):
             # case insensitive
             files = [f.lower() for f in files]
             for m in matches:
@@ -521,7 +525,7 @@ def find_node(pkg, node_type, ros_root=None, ros_package_path=None):
                 dirs.remove('.git')
     else:
         #TODO: this could just execute find_resource with a filter_fn
-        for p, dirs, files in os.walk(dir):
+        for p, dirs, files in os.walk(d):
             if node_type in files:
                 test_path = os.path.join(p, node_type)
                 s = os.stat(test_path)
@@ -548,12 +552,12 @@ def find_resource(pkg, resource_name, filter_fn=None, ros_root=None, ros_package
     @rtype: [str]
     @raise roslib.packages.InvalidROSPkgException: If package does not exist 
     """
-    dir = get_pkg_dir(pkg, required=True, \
-                      ros_root=ros_root, ros_package_path=ros_package_path)
+    d = get_pkg_dir(pkg, required=True, \
+                    ros_root=ros_root, ros_package_path=ros_package_path)
     #UNIXONLY
     matches = []
     node_exe = None
-    for p, dirs, files in os.walk(dir):
+    for p, dirs, files in os.walk(d):
         if resource_name in files:
             test_path = os.path.join(p, resource_name)
             if filter_fn is not None:

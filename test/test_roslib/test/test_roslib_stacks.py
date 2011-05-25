@@ -223,6 +223,17 @@ class RoslibStacksTest(unittest.TestCase):
             else:
                 del os.environ[roslib.rosenv.ROS_PACKAGE_PATH] 
             
+    def test_expand_to_packages_unary(self):
+        # test unary
+        test_dir = os.path.join(roslib.packages.get_pkg_dir('test_roslib'), 'test', 'stack_tests_unary')
+
+        env = os.environ.copy()
+        env[roslib.rosenv.ROS_PACKAGE_PATH] = test_dir
+
+        from roslib.stacks import expand_to_packages      
+        self.assertEquals((['foo'], []), expand_to_packages(['foo'], env=env))
+        self.assertEquals((['foo', 'bar'], []), expand_to_packages(['foo', 'bar'], env=env))
+
     def test_expand_to_packages(self):
         from roslib.stacks import expand_to_packages
         try:
@@ -245,7 +256,7 @@ class RoslibStacksTest(unittest.TestCase):
         check = ['rosbuild', 'rospack', 'rosunit', 'test_roslib']
         for c in check:
             self.assert_(c in valid, "expected [%s] to be in ros expansion"%c)
-      
+
 if __name__ == '__main__':
     rosunit.unitrun('test_roslib', 'test_stacks', RoslibStacksTest, coverage_packages=['roslib.stacks'])
 

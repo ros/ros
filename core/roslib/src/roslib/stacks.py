@@ -90,6 +90,9 @@ def packages_of(stack, env=None):
     stack_dir = get_stack_dir(stack, env=env)
     if stack_dir is None:
         raise InvalidROSStackException("Cannot locate installation of stack %s. ROS_ROOT[%s] ROS_PACKAGE_PATH[%s]"%(stack, ros_root,ros_package_path))
+    # unary stack
+    if roslib.packages.is_pkg_dir(stack_dir):
+        return [stack]
     packages = []
     l = [os.path.join(stack_dir, d) for d in os.listdir(stack_dir)]
     # kwc: this really is just a 1-directory reimplementation of

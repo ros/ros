@@ -42,6 +42,15 @@ import rosunit
 
 class RoslibStacksTest(unittest.TestCase):
   
+    def test_packages_of_unary(self):
+        from roslib.stacks import packages_of
+        # test with synthetic stacks
+        test_dir = os.path.join(roslib.packages.get_pkg_dir('test_roslib'), 'test', 'stack_tests_unary')
+        env = os.environ.copy()
+        env['ROS_PACKAGE_PATH'] = test_dir
+        for s in ['foo', 'bar']:
+            self.assertEquals([s], packages_of(s, env=env))
+        
     def test_packages_of(self):
         from roslib.stacks import packages_of
         pkgs = packages_of('ros')
@@ -56,6 +65,13 @@ class RoslibStacksTest(unittest.TestCase):
             packages_of(None)
             self.fail("should have raised ValueError")
         except ValueError: pass
+
+        # test with env
+        test_dir = os.path.join(roslib.packages.get_pkg_dir('test_roslib'), 'test', 'stack_tests', 's1')
+        env = os.environ.copy()
+        env['ROS_PACKAGE_PATH'] = test_dir
+        self.assertEquals(set(['foo_pkg', 'foo_pkg_2']), set(packages_of('foo', env=env)))
+        
     
     def test_stack_of(self):
         import roslib.packages
@@ -79,6 +95,13 @@ class RoslibStacksTest(unittest.TestCase):
         l2 = [x for x in rosstackexec(['list']).split('\n') if x]
         l2 = [x.split()[0] for x in l2]
         self.assertEquals(set(l), set(l2), set(l) ^ set(l2))
+
+        # test with env
+        test_dir = os.path.join(roslib.packages.get_pkg_dir('test_roslib'), 'test', 'stack_tests', 's1')
+        env = os.environ.copy()
+        env['ROS_PACKAGE_PATH'] = test_dir
+        self.assertEquals(set(['ros', 'foo', 'bar']), set(list_stacks(env=env)))
+
 
     def test_list_stacks_by_path(self):
         from roslib.stacks import list_stacks_by_path

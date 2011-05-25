@@ -1152,9 +1152,7 @@ void ROSStack::crawl_for_stacks(bool force_crawl)
         continue;
       if (ent->d_name[0] == '.')
         continue; // ignore hidden dirs
-      else if (Stack::is_package(child_path))
-        continue; // ignore this guy, he's a leaf.
-      if (Stack::is_stack(child_path))
+      else if (Stack::is_stack(child_path))
       {
         add_stack(child_path);
         /*
@@ -1179,6 +1177,8 @@ void ROSStack::crawl_for_stacks(bool force_crawl)
           Stack::stacks.push_back(newp);
           */
       }
+      else if (Stack::is_package(child_path))
+        continue; // ignore this guy, he's a leaf.
       //check to make sure we're allowed to descend
       else if (!Stack::is_no_subdirs(child_path)) 
         q.push_front(CrawlQueueEntry(child_path));

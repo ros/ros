@@ -113,6 +113,32 @@ class RoslibStacksTest(unittest.TestCase):
         test_dir = os.path.join(roslib.packages.get_pkg_dir('test_roslib'), 'test', 'stack_tests2')
         self.assertEquals(set(['foo', 'bar']), set(list_stacks_by_path(test_dir)))
         
+    def test_list_stacks_by_path_unary(self):
+        from roslib.stacks import list_stacks_by_path
+        # test with synthetic stacks
+        test_dir = os.path.join(roslib.packages.get_pkg_dir('test_roslib'), 'test', 'stack_tests_unary')
+        self.assertEquals(set(['bar', 'foo', 'baz']), set(list_stacks_by_path(test_dir)))
+
+    def test_get_stack_dir_unary(self):
+        # now manipulate the environment to test precedence
+        # - save original RPP as we popen rosstack in other tests
+        d = roslib.packages.get_pkg_dir('test_roslib')
+        d = os.path.join(d, 'test', 'stack_tests_unary')
+        s1_d = os.path.join(d, 's1')
+        rpp = os.environ.get(roslib.rosenv.ROS_PACKAGE_PATH, None)
+        try:
+            paths = [d]
+            os.environ[roslib.rosenv.ROS_PACKAGE_PATH] = os.pathsep.join(paths)
+            self.assertEquals(os.path.join(s1_d, 'foo'), roslib.stacks.get_stack_dir('foo'))
+            self.assertEquals(os.path.join(s1_d, 'bar'), roslib.stacks.get_stack_dir('bar'))
+            self.assertEquals(os.path.join(s1_d, 'baz'), roslib.stacks.get_stack_dir('baz'))
+        finally:
+            #restore rpp
+            if rpp is not None:
+                os.environ[roslib.rosenv.ROS_PACKAGE_PATH] = rpp
+            else:
+                del os.environ[roslib.rosenv.ROS_PACKAGE_PATH] 
+        
     def test_get_stack_dir(self):
         import roslib.rosenv
         import roslib.packages

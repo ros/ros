@@ -70,20 +70,24 @@ def stack_of(pkg):
             return os.path.basename(dir)
         dir = os.path.dirname(dir)
         
-def packages_of(stack, env=os.environ):
+def packages_of(stack, env=None):
     """
+    @param env: override environment variables
+    @type  env: {str: str}
     @return: name of packages that are part of stack
     @rtype: [str]
     @raise InvalidROSStackException: if stack cannot be located
     @raise ValueError: if stack name is invalid
     """
     # record settings for error messages
+    if env is None:
+        env = os.environ
     ros_root = env[ROS_ROOT]
     ros_package_path = env.get(ROS_PACKAGE_PATH, '')
     
     if not stack:
         raise ValueError("stack name not specified")
-    stack_dir = get_stack_dir(stack)
+    stack_dir = get_stack_dir(stack, env=env)
     if stack_dir is None:
         raise InvalidROSStackException("Cannot locate installation of stack %s. ROS_ROOT[%s] ROS_PACKAGE_PATH[%s]"%(stack, ros_root,ros_package_path))
     packages = []
@@ -106,13 +110,15 @@ def packages_of(stack, env=os.environ):
                 l.extend([os.path.join(d, e) for e in os.listdir(d)])
     return packages
     
-def get_stack_dir(stack):
+def get_stack_dir(stack, env=None):
     """
     Get the directory of a ROS stack. This will initialize an internal
     cache and return cached results if possible.
     
     This routine is not thread-safe to os.environ changes.
     
+    @param env: override environment variables
+    @type  env: {str: str}
     @param stack: name of ROS stack to locate on disk
     @type  stack: str
     @return: directory of stack.
@@ -128,7 +134,8 @@ def get_stack_dir(stack):
     # environment this process was launched in.
     global _dir_cache_marker 
 
-    env = os.environ
+    if env is None:
+        env = os.environ
     if stack in _dir_cache:
         ros_root = env[ROS_ROOT]
         ros_package_path = env.get(ROS_PACKAGE_PATH, '')
@@ -146,7 +153,7 @@ def get_stack_dir(stack):
                     _dir_cache.clear()
         except KeyError:
             pass
-    _update_stack_cache() #update cache
+    _update_stack_cache(env=env) #update cache
     val = _dir_cache.get(stack, None)
     if val is None:
         raise InvalidROSStackException("Cannot location installation of stack %s. ROS_ROOT[%s] ROS_PACKAGE_PATH[%s]"%(stack, env[ROS_ROOT], env.get(ROS_PACKAGE_PATH, '')))
@@ -157,15 +164,18 @@ _dir_cache = {}
 # stores ROS_ROOT, ROS_PACKAGE_PATH of _dir_cache
 _dir_cache_marker = None
 
-def _update_stack_cache(force=False):
+def _update_stack_cache(force=False, env=None):
     """
     Update _dir_cache if environment has changed since last cache build.
     
+    @param env: override environment variables
+    @type  env: {str: str}
     @param force: force cache rebuild regardless of environment variables
     @type  force: bool
     """
-    global _dir_cache_marker 
-    env = os.environ
+    global _dir_cache_marker
+    if env is None:
+        env = os.environ
     ros_root = env[ROS_ROOT]
     ros_package_path = env.get(ROS_PACKAGE_PATH, '')
     
@@ -188,16 +198,18 @@ def _update_stack_cache(force=False):
         # each call accumulates in it.
         list_stacks_by_path(pkg_root, stacks, cache=_dir_cache)
     
-def list_stacks():
+def list_stacks(env=None):
     """
     Get list of all ROS stacks. This uses an internal cache.
 
     This routine is not thread-safe to os.environ changes.
 
+    @param env: override environment variables
+    @type  env: {str: str}
     @return: complete list of stacks names in ROS environment
     @rtype: [str]
     """
-    _update_stack_cache()
+    _update_stack_cache(env=env)
     return _dir_cache.keys()
 
 def list_stacks_by_path(path, stacks=None, cache=None):

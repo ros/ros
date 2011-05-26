@@ -193,4 +193,4 @@ class Timer(threading.Thread):
                 break
             last_duration = time.time() - start
             last_expected, last_real = current_expected, current_real
-            current_expected += self._duration
+            current_expected += self._period

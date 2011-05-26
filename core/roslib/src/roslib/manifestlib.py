@@ -51,7 +51,7 @@ REQUIRED = ['author', 'license']
 ALLOWXHTML = ['description']
 OPTIONAL = ['logo', 'url', 'brief', 'description', 'status',
             'notes', 'depend', 'rosdep', 'export', 'review',
-            'versioncontrol', 'platform', 'version']
+            'versioncontrol', 'platform', 'version', 'rosbuild2']
 VALID = REQUIRED + OPTIONAL
 
 class ManifestException(roslib.exceptions.ROSLibException): pass

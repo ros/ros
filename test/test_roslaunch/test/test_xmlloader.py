@@ -53,10 +53,13 @@ class RosLaunchMock(object):
         self.machines = []
         self.master = None
         self.config_errors = []        
+        self.roslaunch_files = []
     def set_master(self, m):
         self.master = m
     def add_machine(self, m, verbose=True):
         self.machines.append(m)
+    def add_roslaunch_file(self, f):
+        self.roslaunch_files.append(f)
     def add_node(self, n, core=False, verbose=True):
         if not core:
             self.nodes.append(n)
@@ -405,6 +408,12 @@ class TestXmlLoader(unittest.TestCase):
             self.assertEquals(v, p[0].value)
         node_types = [n.type for n in mock.nodes]
         
+    def test_roslaunch_files(self):
+        f = os.path.join(self.xml_dir, 'test-env.xml')
+        f2 = os.path.join(self.xml_dir, 'test-env-include.xml')
+        mock = self._load(f)
+        self.assertEquals(set([f, f2]), set(mock.roslaunch_files))
+
     def test_launch_prefix(self):
         nodes = self._load_valid_nodes(['test_launch_prefix'])
         self.assertEquals(1, len(nodes))

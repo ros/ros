@@ -1,0 +1,14 @@
+<stack>
+  <description brief="a brief description">Line 1
+Line 2
+  </description>
+  <author>The authors
+go here</author>
+  <license>Public Domain
+with other stuff</license>
+  <url>http://ros.org/stack/</url>
+  <version>1.2.3</version>
+  <logo>http://www.willowgarage.com/files/willowgarage/robot10.jpg</logo>
+  <depend stack="stackname" />
+  <depend stack="common"/>
+</stack>

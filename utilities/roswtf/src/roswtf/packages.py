@@ -246,8 +246,6 @@ def cmakelists_package_valid(ctx):
                     # CMakeLists
                 elif l.startswith("rosbuild_init()"):
                     found = True
-            if not found:
-                missing.append(pkg)
         finally:
             f.close()
     # rospack exists outside our build system

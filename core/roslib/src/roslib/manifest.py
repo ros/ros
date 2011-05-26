@@ -146,4 +146,7 @@ def parse(string, filename='string'):
     @return: Manifest instance
     @rtype: L{Manifest}
     """
-    return roslib.manifestlib.parse(Manifest(), string, filename)
+    v = roslib.manifestlib.parse(Manifest(), string, filename)
+    if v.version:
+        raise ManifestException("<version> tag is not valid in a package manifest.xml file")
+    return v

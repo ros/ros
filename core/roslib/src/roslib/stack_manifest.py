@@ -118,5 +118,6 @@ def parse(string, filename='string'):
     @rtype:  L{StackManifest}
     """
     s = roslib.manifestlib.parse(StackManifest(), string, filename)
+    s.version = roslib.manifestlib.check('version')(p, filename)
     #TODO: validate
     return s

@@ -256,6 +256,23 @@ class RoslibStacksTest(unittest.TestCase):
         check = ['rosbuild', 'rospack', 'rosunit', 'test_roslib']
         for c in check:
             self.assert_(c in valid, "expected [%s] to be in ros expansion"%c)
+            
+    def test_get_stack_version(self):
+        from roslib.stacks import get_stack_version
+
+        test_dir = os.path.join(roslib.packages.get_pkg_dir('test_roslib'), 'test', 'stack_tests', 's1')
+        env = os.environ.copy()
+        env[roslib.rosenv.ROS_PACKAGE_PATH] = test_dir
+
+        # REP 109: stack.xml has precedence over CMakeLists.txt, version is whitespace stripped
+        self.assertEquals('1.6.0-manifest', roslib.stacks.get_stack_version('foo', env=env))
+        # REP 109: test fallback to CMakeLists.txt version
+        self.assertEquals('1.5.0-cmake', roslib.stacks.get_stack_version('bar', env=env))
+
+        if 0:
+            test_dir = os.path.join(roslib.packages.get_pkg_dir('test_roslib'), 'test', 'stack_tests_unary')
+            env = os.environ.copy()
+            env[roslib.rosenv.ROS_PACKAGE_PATH] = test_dir
 
 if __name__ == '__main__':
     rosunit.unitrun('test_roslib', 'test_stacks', RoslibStacksTest, coverage_packages=['roslib.stacks'])

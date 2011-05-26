@@ -49,7 +49,9 @@ import roslib.exceptions
 # stack.xml and manifest.xml have the same internal tags right now
 REQUIRED = ['author', 'license']
 ALLOWXHTML = ['description']
-OPTIONAL = ['logo', 'url', 'brief', 'description', 'status', 'notes', 'depend', 'rosdep', 'export', 'review', 'versioncontrol', 'platform']
+OPTIONAL = ['logo', 'url', 'brief', 'description', 'status',
+            'notes', 'depend', 'rosdep', 'export', 'review',
+            'versioncontrol', 'platform', 'version']
 VALID = REQUIRED + OPTIONAL
 
 class ManifestException(roslib.exceptions.ROSLibException): pass
@@ -119,8 +121,7 @@ def check_depends(name):
         try:
             packages = [d['package'].value for d in depends]
         except KeyError:
-            print "KeyError:  key 'package' not found in depends =", depends
-            raise
+            raise ManifestException("Invalid manifest file: depends is missing 'package' attribute")
 
         return [Depend(p) for p in packages]
     return check
@@ -398,14 +399,15 @@ class _Manifest(object):
     __slots__ = ['description', 'brief', \
                  'author', 'license', 'license_url', 'url', \
                  'depends', 'rosdeps','platforms',\
-                 'logo', 'exports',\
+                 'logo', 'exports', 'version',\
                  'versioncontrol', 'status', 'notes',\
                  'unknown_tags',\
                  '_type']
     def __init__(self, _type='package'):
         self.description = self.brief = self.author = \
                            self.license = self.license_url = \
-                           self.url = self.logo = self.status = self.notes = ''
+                           self.url = self.logo = self.status = \
+                           self.version = self.notes = ''
         self.depends = []
         self.rosdeps = []
         self.exports = []
@@ -437,9 +439,11 @@ class _Manifest(object):
             license = '  <license url="%s">%s</license>'%(self.license_url, self.license)
         else:
             license = "  <license>%s</license>"%self.license
-        versioncontrol = url = logo = exports = ""
+        versioncontrol = url = logo = exports = version = ""
         if self.url:
             url     = "  <url>%s</url>"%self.url
+        if self.version:
+            version = "  <version>%s</version>"%self.version
         if self.logo:
             logo    = "  <logo>%s</logo>"%self.logo
         depends = '\n'.join(["  %s"%d.xml() for d in self.depends])
@@ -453,7 +457,9 @@ class _Manifest(object):
             review = '  <review status="%s" notes="%s" />'%(self.status, self.notes)
 
 
-        fields = filter(lambda x: x, [desc, author, license, review, url, logo, depends, rosdeps, platforms, exports, versioncontrol])
+        fields = filter(lambda x: x,
+                        [desc, author, license, review, url, logo, depends,
+                         rosdeps, platforms, exports, versioncontrol, version])
         return "<%s>\n"%self._type + "\n".join(fields) + "\n</%s>"%self._type
 
 def _get_text(nodes):
@@ -498,7 +504,7 @@ def parse(m, string, filename='string'):
     """
     try:
         d = dom.parseString(string)
-    except Exception, e:
+    except Exception as e:
         raise ManifestException("invalid XML: %s"%e)
     
     p = get_nodes_by_name(d, m._type)
@@ -549,6 +555,7 @@ def parse(m, string, filename='string'):
 
     m.author = check('author')(p, filename)
     m.url = check('url')(p, filename)
+    m.version = check('version')(p, filename)
     m.logo = check('logo')(p, filename)
 
     # do some validation on what we just parsed

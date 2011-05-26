@@ -189,13 +189,19 @@ class RoslibManifestlibTest(unittest.TestCase):
     self.assertEquals([], m.rosdeps)
     self.assertEquals([], m.exports)    
 
+  def _subtest_parse_stack_version(self, m):
+    self.assertEquals("1.2.3", m.version)
+
   def test_parse_example1_file(self):
     from roslib.manifestlib import parse_file, _Manifest
     p = os.path.join(roslib.packages.get_pkg_dir('test_roslib'), 'test', 'manifest_tests', 'example1.xml')
     self._subtest_parse_example1(parse_file(_Manifest(), p))
     
-    p = os.path.join(roslib.packages.get_pkg_dir('test_roslib'), 'test', 'manifest_tests', 'stack_example1.xml')    
+    p = os.path.join(roslib.packages.get_pkg_dir('test_roslib'), 'test', 'manifest_tests', 'stack_example1.xml')
     self._subtest_parse_stack_example1(parse_file(_Manifest('stack'), p))
+
+    p = os.path.join(roslib.packages.get_pkg_dir('test_roslib'), 'test', 'manifest_tests', 'stack_version.xml')
+    self._subtest_parse_stack_version(parse_file(_Manifest('stack'), p))
 
   def test_parse_example1_string(self):
     from roslib.manifestlib import parse, _Manifest

@@ -89,12 +89,12 @@ public:
   std::string manifest_path();
   VecStack descendants1();
   const VecStack &descendants(int depth=0);
-  TiXmlElement *manifest_root();
+  rospack_tinyxml::TiXmlElement *manifest_root();
 
 private:
   bool deps_calculated, direct_deps_calculated, descendants_calculated;
   VecStack _deps, _direct_deps, _descendants;
-  TiXmlDocument manifest;
+  rospack_tinyxml::TiXmlDocument manifest;
   bool manifest_loaded;
 
   Stack(const Stack &p) { } // just override the default public one

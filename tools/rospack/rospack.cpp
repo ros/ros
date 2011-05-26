@@ -229,8 +229,8 @@ string Package::flags(string lang, string attrib)
 string Package::rosdep()
 {
   string sd;
-  TiXmlElement *mroot = manifest_root();
-  for(TiXmlElement *sd_ele = mroot->FirstChildElement("rosdep");
+  rospack_tinyxml::TiXmlElement *mroot = manifest_root();
+  for(rospack_tinyxml::TiXmlElement *sd_ele = mroot->FirstChildElement("rosdep");
       sd_ele;
       sd_ele = sd_ele->NextSiblingElement("rosdep"))
   {
@@ -246,8 +246,8 @@ string Package::rosdep()
 string Package::versioncontrol()
 {
   string sd;
-  TiXmlElement *mroot = manifest_root();
-  for(TiXmlElement *sd_ele = mroot->FirstChildElement("versioncontrol");
+  rospack_tinyxml::TiXmlElement *mroot = manifest_root();
+  for(rospack_tinyxml::TiXmlElement *sd_ele = mroot->FirstChildElement("versioncontrol");
       sd_ele;
       sd_ele = sd_ele->NextSiblingElement("versioncontrol"))
   {
@@ -397,11 +397,11 @@ const vector<Package *> &Package::direct_deps(bool missing_package_as_warning)
 #ifdef VERBOSE_DEBUG
   fprintf(stderr, "calculating direct deps for package [%s]\n", name.c_str());
 #endif
-  TiXmlElement *mroot = manifest_root();
-  TiXmlNode *dep_node = 0;
+  rospack_tinyxml::TiXmlElement *mroot = manifest_root();
+  rospack_tinyxml::TiXmlNode *dep_node = 0;
   while ((dep_node = mroot->IterateChildren(string("depend"), dep_node)))
   {
-    TiXmlElement *dep_ele = dep_node->ToElement();
+    rospack_tinyxml::TiXmlElement *dep_ele = dep_node->ToElement();
     assert(dep_ele);
     const char *dep_pkgname = dep_ele->Attribute("package");
     if (!dep_pkgname)
@@ -497,14 +497,14 @@ string Package::cpp_message_flags(bool cflags, bool lflags)
 
 string Package::direct_flags(string lang, string attrib)
 {
-  TiXmlElement *mroot = manifest_root();
-  TiXmlElement *export_ele = mroot->FirstChildElement("export");
+  rospack_tinyxml::TiXmlElement *mroot = manifest_root();
+  rospack_tinyxml::TiXmlElement *export_ele = mroot->FirstChildElement("export");
   string str;
   if (export_ele)
   {
     bool os_match = false;
-    TiXmlElement *best_usage = NULL;
-    for (TiXmlElement *lang_ele = export_ele->FirstChildElement(lang);
+    rospack_tinyxml::TiXmlElement *best_usage = NULL;
+    for (rospack_tinyxml::TiXmlElement *lang_ele = export_ele->FirstChildElement(lang);
          lang_ele; lang_ele = lang_ele->NextSiblingElement(lang))
     {
       const char *os_str;
@@ -644,10 +644,10 @@ void Package::load_manifest()
   }
 }
 
-TiXmlElement *Package::manifest_root()
+rospack_tinyxml::TiXmlElement *Package::manifest_root()
 {
   load_manifest();
-  TiXmlElement *ele = manifest.RootElement();
+  rospack_tinyxml::TiXmlElement *ele = manifest.RootElement();
   if (!ele)
   {
     string errmsg = string("error parsing manifest file at [") + manifest_path().c_str() + string("]");
@@ -692,9 +692,19 @@ VecPkg Package::deleted_pkgs;
 //////////////////////////////////////////////////////////////////////////////
 
 
-ROSPack::ROSPack() : ros_root(NULL), opt_quiet(false),
-        cache_lock_failed(false), crawled(false), my_argc(0),
-        my_argv(NULL), opt_profile_length(0), total_num_pkgs(0),
+ROSPack::ROSPack() : 
+        ros_root(NULL), 
+        opt_deps_only(false), 
+        opt_profile_length(0), 
+        opt_profile_zombie_only(false),
+        opt_warn_on_missing_deps(true), 
+        opt_display_duplicate_pkgs(false),
+        opt_quiet(false), 
+        cache_lock_failed(false), 
+        crawled(false), 
+        my_argc(0),
+        my_argv(NULL), 
+        total_num_pkgs(0), 
         duplicate_packages_found(false)
 {
   g_rospack = this;
@@ -1547,8 +1557,21 @@ string ROSPack::getCachePath()
   }
   else
   {
-    // UNIXONLY
-    // Not cross-platform?
+#if defined(WIN32)
+	char* home_drive = getenv("HOMEDRIVE"); // getenv owns the memory, don't free these
+	char* home_path = getenv("HOMEPATH");
+    if ( home_drive && home_path ) {
+      std::string dotros = std::string(getenv("HOMEDRIVE")) + std::string(home_path) + std::string("\\.ros");
+      struct stat s; // maybe vista/win7 needs FindFirstFile??
+      if(stat(dotros.c_str(), &s))
+      {
+        if(mkdir(dotros.c_str(), 0700) != 0) {
+      	  std::cerr << "[rospack] WARNING: cannot create rospack cache directory" << std::endl;
+        }
+      }
+      cache_file_name = dotros + "\\rospack_cache";
+    }
+#else // UNIX
     ros_home = getenv("HOME");
     if (ros_home)
     {
@@ -1563,6 +1586,7 @@ string ROSPack::getCachePath()
       }
       cache_file_name = dotros + "rospack_cache";
     }
+#endif
   }
   return cache_file_name;
 }
@@ -1770,7 +1794,7 @@ void ROSPack::crawl_for_packages(bool force_crawl)
     // Try to avoid repeated allocation.
     path_components.reserve(MAX_DIRECTORY_DEPTH+1);
     // string_split() will clear() path_components for us
-    string_split(cqe.path, path_components, "/");
+    string_split(cqe.path, path_components, fs_delim);
     if(path_components.size() > MAX_DIRECTORY_DEPTH)
     {
       fprintf(stderr,"[rospack] Exceeded maximum directory depth of %d at %s.  There must be a self-referencing symlink somewhere.\n", MAX_DIRECTORY_DEPTH, cqe.path.c_str());
@@ -1827,10 +1851,12 @@ void ROSPack::crawl_for_packages(bool force_crawl)
 
     do
     {
-      if (!S_ISDIR(find_file_data.dwFileAttributes))
+      if (find_file_data.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY ) {
         continue; // Ignore non-directories
-      if (find_file_data.cFileName[0] == '.')
+      }
+      if (find_file_data.cFileName[0] == '.') {
         continue; // Ignore hidden directories
+      }
       string child_path = cqe.path + fs_delim + string(find_file_data.cFileName);
       if (Package::is_package(child_path))
       {
@@ -1925,25 +1951,26 @@ void ROSPack::crawl_for_packages(bool force_crawl)
     char full_dir[_MAX_DRIVE + _MAX_DIR];
     _makepath_s(full_dir, _MAX_DRIVE + _MAX_DIR, drive, dir, NULL, NULL);
     snprintf(tmp_cache_path, sizeof(tmp_cache_path), "%s\\.rospack_cache.XXXXXX", full_dir);
+#elif defined(__MINGW32__)
+    char* temp_name = tempnam(dirname(tmp_cache_dir),".rospack_cache.");
+    snprintf(tmp_cache_path, sizeof(tmp_cache_path), temp_name);
+    delete temp_name;
 #else
     snprintf(tmp_cache_path, sizeof(tmp_cache_path), "%s/.rospack_cache.XXXXXX", dirname(tmp_cache_dir));
 #endif
 #if defined(__MINGW32__)
-    // There is no equivalent of mkstemp or _mktemp_s on mingw, so we resort to a slightly less secure
-    // method. Could use mktemp, but as we're just redirecting to FILE anyway, tmpfile() works
-    // for us.
-    FILE *cache = tmpfile();
-    if ( cache == NULL ) {
-        fprintf(stderr,
-                "[rospack] Unable to generate temporary cache file name: %u",
-                errno);
+    // There is no equivalent of mkstemp or _mktemp_s on mingw, so we resort to a slightly problematic
+    // tempnam (above) and mktemp method. This has the miniscule chance of a race condition.
+    int fd = open(tmp_cache_path, O_RDWR | O_EXCL | _O_CREAT, 0644);
+    if (fd < 0)
+    {
+      fprintf(stderr, "[rospack] Unable to create temporary cache file %s: %u\n",
+              tmp_cache_path, errno);
     }
     else
     {
+      FILE *cache = fdopen(fd, "w");
 #elif defined(WIN32)
-    // This one is particularly nasty: on Windows, there is no equivalent of
-    // mkstemp, so we're stuck with the security risks of mktemp. Hopefully not a
-    // problem in our use cases.
     if (_mktemp_s(tmp_cache_path, PATH_MAX) != 0)
     {
       fprintf(stderr,

@@ -16,8 +16,8 @@ $(HG_DIR):
 	touch rospack_nosubdirs
 
 patched: $(HG_PATCH) Makefile
-	cd $(HG_DIR) && hg revert --all
 ifneq ($(strip $(HG_PATCH)),)
+	cd $(HG_DIR) && hg revert --all
 	$(foreach PATCH, $(HG_PATCH), patch -d $(HG_DIR) -p0 < $(PATCH) && echo patched)
 	touch rospack_nosubdirs
 	touch patched

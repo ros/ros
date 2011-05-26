@@ -4,12 +4,13 @@
 # 'rosconfig.cmake' and put it where it will be loaded from here.
 # The order of processing is the following, with later steps overriding
 # earlier ones:
+#  - read the beginning of the package's CMakeLists.txt (i.e., the 
+#    content before the invocation of rosbuild_init()), 
+#    which is how we get here
 #  - read this file
 #  - if present, read $(ROS_ROOT)/rosconfig.cmake
 #  - if present, read rosconfig.cmake from the current packages's top-level
 #      directory.
-#  - read the rest of the package's CMakeLists.txt (i.e., the content after
-#      the invocation of rospack(), which is how we get here
 
 # Unset variables, to force cmake to go looking for the rosconfig.cmake
 # again (as opposed to looking up the variables' values in the cache). This

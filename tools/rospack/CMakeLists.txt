@@ -1,3 +1,7 @@
+if(ROSBUILD)
+  include(rosbuild.cmake)
+  return()
+endif()
 # We can't use rosbuild/rosbuild.cmake here, because rosbuild.cmake
 # requires rospack, and we're in the process of building rospack.
 cmake_minimum_required(VERSION 2.4.6)

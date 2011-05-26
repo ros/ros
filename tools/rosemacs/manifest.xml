@@ -2,11 +2,12 @@
 <description brief="Emacs extension for ros">
 Ros tools for those who live in emacs.
 </description>
-  <author>Bhaskara Marthi</author>
-  <license>BSD</license>
-  <review status="experimental" notes=""/>
-  <platform os="ubuntu" version="9.04"/>
-  <platform os="ubuntu" version="9.10"/>
-  <platform os="ubuntu" version="10.04"/>
-  <platform os="macports" version="macports"/>
+<url>http://www.ros.org/wiki/rosemacs</url>
+<author>Bhaskara Marthi</author>
+<license>BSD</license>
+<review status="experimental" notes=""/>
+<platform os="ubuntu" version="9.04"/>
+<platform os="ubuntu" version="9.10"/>
+<platform os="ubuntu" version="10.04"/>
+<platform os="macports" version="macports"/>
 </package>

@@ -167,8 +167,8 @@ with other stuff</license>
   <rosdep name="python" />
   <rosdep name="bar" />
   <rosdep name="baz" />
-  <rosbuild2>
-     <depend thirdparty="See the rosbuild2 hack in manifestlib.py."/>
+  <rosbuild2> 
+    <depend thirdparty="thisshouldbeokay"/> 
   </rosbuild2>
 </package>"""
       

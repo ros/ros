@@ -16,8 +16,7 @@ python-yaml:
   fedora: PyYAML
   rhel: PyYAML
   centos: PyYAML
-  arch: |
-    if ! pacman -Q libyaml python-yaml; then yaourt -S libyaml python-yaml; fi
+  arch: python-yaml
   macports: py26-yaml
   gentoo: pyyaml
   cygwin: |
@@ -62,6 +61,7 @@ bzip2:
   freebsd: bzip2
 boost:
   ubuntu:
+    '11.04': libboost1.42-all-dev
     '10.10': libboost1.42-all-dev
     '10.04': libboost1.40-all-dev
     '9.10': libboost1.40-all-dev
@@ -222,6 +222,7 @@ automake:
   freebsd: automake14 automake111
 libtool:
   ubuntu: 
+    '11.04': libtool libltdl-dev
     '10.10': libtool libltdl-dev
     '10.04': libtool libltdl-dev
     '9.10': libtool libltdl-dev
@@ -242,13 +243,15 @@ pkg-config:
   opensuse: pkg-config 
   fedora: pkgconfig
   rhel: pkgconfig
-  arch: pkgconfig
+  arch: pkg-config
   macports: pkgconfig
   gentoo: dev-util/pkgconfig
   cygwin: pkg-config
   freebsd: pkg-config
 octave:
-  ubuntu: octave3.0-headers
+  ubuntu: 
+    '10.10': octave3.2-headers
+    '10.04': octave3.0-headers
   arch: octave
   macports: octave
   centos: octave-devel

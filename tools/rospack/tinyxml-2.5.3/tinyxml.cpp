@@ -31,6 +31,7 @@ distribution.
 
 #include "tinyxml.h"
 
+namespace rospack_tinyxml {
 
 bool TiXmlBase::condenseWhiteSpace = true;
 
@@ -1884,5 +1885,7 @@ bool TiXmlPrinter::Visit( const TiXmlUnknown& unknown )
 	buffer += ">";
 	DoLineBreak();
 	return true;
+}
+
 }
 

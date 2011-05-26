@@ -192,7 +192,7 @@ public:
   std::vector<std::pair<std::string, std::string> > plugins();
   VecPkg descendants1();
   const std::vector<Package *> &descendants(int depth=0);
-  TiXmlElement *manifest_root();
+  rospack_tinyxml::TiXmlElement *manifest_root();
   void accumulate_deps(AccList& acc_list, Package* to);
 
   /**
@@ -207,7 +207,7 @@ public:
 private:
   bool deps_calculated, direct_deps_calculated, descendants_calculated;
   std::vector<Package *> _deps, _direct_deps, _descendants;
-  TiXmlDocument manifest;
+  rospack_tinyxml::TiXmlDocument manifest;
   bool manifest_loaded;
 
   Package(const Package &p) { } // just override the default public one

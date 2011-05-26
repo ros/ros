@@ -98,6 +98,13 @@ class RoslibPackagesTest(unittest.TestCase):
     self.assertEquals(foo_p, cache['foo'][0])
     self.assertEquals(bar_p, cache['bar'][0])
     
+  def test_list_pkgs_unary(self):
+    d = roslib.packages.get_pkg_dir('test_roslib')
+    d = os.path.join(d, 'test', 'stack_tests_unary')
+    cache = {}
+    packages = roslib.packages.list_pkgs(pkg_dirs=[d], cache=cache)
+    self.assertEquals(set(['foo', 'bar']), set(packages))
+
   def test_find_node(self):
     import roslib.packages
     d = roslib.packages.get_pkg_dir('test_roslib')

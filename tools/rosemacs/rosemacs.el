@@ -103,6 +103,7 @@
 (require 'warnings)
 (require 'time-stamp)
 (require 'ansi-color)
+(require 'rosbag-view-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Parameters
@@ -115,6 +116,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
+(defvar ros-stacks nil "Vector of ros stacks")
+(defvar ros-stack-locations nil "Vector of directories containing the items in ros-stacks")
 (defvar ros-packages nil "Vector of ros packages")
 (defvar ros-package-locations nil "Vector of directories containing the items in ros-packages")
 (defvar ros-messages nil "Vector of ros messages")
@@ -143,6 +146,8 @@
 (defvar rosemacs/nodes nil "List of nodes")
 (defvar rosemacs/nodes-vec (vector) "Vector of nodes")
 
+(defvar roslaunch/history-list nil)
+
 (defvar ros-buffer-package nil "A buffer-local variable for caching the current buffer's ros package.")
 (make-variable-buffer-local 'ros-buffer-package)
 (with-current-buffer (get-buffer-create "*ros-topics*") (insert "Uninitialized (use the display-ros-topic-info command rather than just switching to this buffer)"))
@@ -150,6 +155,33 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Preloading
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun ros-load-stack-locations ()
+  "Reload locations of ros stacks by calling out to rosstack list"
+  (interactive)
+  (with-temp-buffer
+    (let ((l nil))
+      (message "Calling rosstack")
+      (call-process "rosstack" nil t nil "list")
+      (goto-char (point-min))
+      (message "Parsing rosstack output")
+      (let ((done nil))
+        ;; Loop over lines; each line contains a stack and directory
+        (while (not done)
+          (let ((p (point)))
+            ;; Search for string terminated by space
+            (setq done (not (re-search-forward "[[:space:]]" (point-max) t)))
+            (unless done
+              (let ((stack (buffer-substring p (1- (point)))))
+                (setq p (point))
+                ;; Search for following string terminated by newline
+                (re-search-forward "\n")
+                (let ((dir (buffer-substring p (1- (point)))))
+                  (push (cons stack dir) l)))))))
+      (let ((stack-alist (sort* (vconcat l) (lambda (pair1 pair2) (string< (car pair1) (car pair2))))))
+        (setq ros-stacks (map 'vector #'car stack-alist)
+              ros-stack-locations (map 'vector #'cdr stack-alist)))
+      (message "Done loading ROS stack info"))))
 
 (defun ros-load-package-locations ()
   "Reload locations of ros packages by calling out to rospack list"
@@ -245,6 +277,11 @@
 ;; Lookup
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun ros-stack-dir (stack)
+  (unless ros-stack-locations
+    (ros-load-stack-locations))
+  (rosemacs-lookup-vectors stack ros-stacks ros-stack-locations))
+
 (defun ros-package-dir (package)
   (unless ros-package-locations
     (ros-load-package-locations))
@@ -313,6 +350,17 @@
 ;; Completion
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun current-ros-word (&optional package)
+  "wraps (current-word) from simple.el to pick what is most likely a package, topic, message or action name"
+  (let* ((word (current-word nil nil)) ;; neither strict nor just the symbol
+        (index (search "/" word :from-end t)))
+    ;; E.G. navp_action/nav_actionFeedback -> nav_actionFeedback
+    (if index
+        (if package
+            (subseq word 0 index)
+            (subseq word (1+ index)))
+      word)))
+
 (setq topic-completor (dynamic-completion-table (lambda (str) (rosemacs-bsearch str ros-all-topics))))
 (setq node-completor (dynamic-completion-table (lambda (str) (rosemacs-bsearch str rosemacs/nodes-vec))))
 (setq ros-package-completor 
@@ -376,42 +424,109 @@
     (funcall ros-completion-function prompt ros-package-completor nil nil
              default-pkg)))
 
+(defun packs-and-stacks ()
+  "sorted list of stack and package names"
+  (unless ros-packages
+    (ros-load-package-locations))
+  (unless ros-stacks
+    (ros-load-stack-locations))
+  (sort (remove-duplicates
+         (append  (map 'list #'identity ros-packages)
+                  (map 'list #'identity ros-stacks))
+         :test 'equal)
+        'string<))
+
 ;; Ido completion
 (defun ros-ido-completing-read-pkg-file (prompt &optional default-pkg)
   (unless ros-packages
     (ros-load-package-locations))
+  (unless ros-stacks
+    (ros-load-stack-locations))
   (let ((old-ido-make-file-list (symbol-function 'ido-make-file-list-1))
-        (ros-packages-list (map 'list #'identity ros-packages)))
+        (ros-packages-list (map 'list #'identity ros-packages))
+        (ros-stacks-list (map 'list #'identity ros-stacks)))
     (flet ((pkg-expr->path (str)
                            (let ((pkg-name (second (split-string str "/"))))
                              (unless (= (length pkg-name) 0)
-                               (concat (ros-package-dir pkg-name)
-                                       (substring str (string-match "/" str 1)))))))
+                               (cond ((member pkg-name ros-packages-list)
+                                      (concat (ros-package-dir pkg-name)
+                                              (substring str (string-match "/" str 1))))
+                                     ((member pkg-name ros-stacks-list)
+                                      (concat (ros-stack-dir pkg-name)
+                                              (substring str (string-match "/" str 1))))
+                                     (t nil))))))
       (flet ((ido-make-file-list-1 (dir &optional merged)
                                    (let ((path (pkg-expr->path dir)))
                                      (if path
                                          (funcall old-ido-make-file-list path merged)
                                        (mapcar (lambda (pkg) (if merged 
                                                                  (cons (concat pkg "/") "/")
-                                                               (concat pkg "/"))) 
-                                               ros-packages-list)))))
+                                                               (concat pkg "/")))
+                                               (packs-and-stacks))))))
         (substring (ido-read-file-name prompt "/"
-                                       (when (member default-pkg ros-packages-list)
+                                       (when (member default-pkg (packs-and-stacks))
                                          default-pkg))
                    1)))))
+
+;; Unit tests for function, part of docu
+;; ELISP> (ros-uniquify-for-completion "test" '("hello" "test" "world" "test") '("p1" "p2" "p3" "p4"))
+;; ("test (p2)" ("test (p2)" "test (p4)" "hello" "world"))
+;; ELISP> (ros-uniquify-for-completion nil '("hello" "test" "world" "test") '("p1" "p2" "p3" "p4") )
+;; (nil ("hello" "test (p2)" "world" "test (p4)"))
+;; ELISP> (ros-uniquify-for-completion "test2" '("hello" "test" "world" "test") '("p1" "p2" "p3" "p4") )
+;; (nil ("hello" "test (p2)" "world" "test (p4)"))
+;; ELISP> (ros-uniquify-for-completion "world" '("hello" "test" "world" "test") '("p1" "p2" "p3" "p4") )
+;; ("world" ("hello" "test (p2)" "world" "test (p4)"))
+;; last test case for package, need not sort result list to make it first, ido does that anyway
+;; ELISP> (ros-uniquify-for-completion "test" '("hello" "test" "world" "test") '("p1" "p2" "p3" "p4") "p4")
+;; ("test (p4)" ("test (p2)" "test (p4)" "hello" "world"))
+(defun ros-uniquify-for-completion (default itemlist packagelist &optional package )
+  "default is e.g. a message, service or action, itemlist is a
+ list of candidate names (possible duplicates).  packagelist is a
+ list that for each item in itemlist names the package. Package
+ is optionally a guess of name of package of default. Returns a
+ list of uniquified default, uniquified itemlist, and
+ resorteditemlist to contain first all items matching
+ default. Prefers item with matching package when possible."
+  (let* ((uniquified-item-list (map 'list (lambda (m pkg)
+                                            (if (> (count m itemlist :test 'equal) 1)
+                                                (format "%s (%s)" m pkg)
+                                              m))
+                                    itemlist packagelist))
+         (hits (loop for item in itemlist
+                     for uniqueitem in uniquified-item-list
+                     when (string= item default)
+                     collect uniqueitem)))
+    (cond
+     ((null hits) (list nil uniquified-item-list))
+     ((= 1 (length hits))
+      (list default uniquified-item-list))
+     (t ;; more than one hit, try to match package if any
+      (let ((resultitem (car (member (format "%s (%s)" default package) hits))))
+        ;; move all matching to front
+        (loop for item in (reverse hits) do
+              (setf uniquified-item-list
+                    (cons item (remove item uniquified-item-list))))
+        (list
+         (if resultitem resultitem (car hits))
+         uniquified-item-list))))))
+
 
 (defun ros-completing-read-message (prompt &optional default)
   (unless ros-messages
     (cache-ros-message-locations))
   (let* ((ros-messages-list (map 'list 'identity ros-messages))
-         (result (funcall ros-completion-function prompt
-                          (map 'list (lambda (m pkg)
-                                       (if (> (count m ros-messages-list :test 'equal) 1)
-                                           (format "%s (%s)" m pkg)
-                                         m))
-                               ros-messages-list ros-message-packages)
-                          nil nil nil nil (when (member default ros-messages-list)
-                                            default)))
+        (unique-pair (ros-uniquify-for-completion default ros-messages-list ros-message-packages))
+        (uniquified-default (car unique-pair))
+        (uniquified-messages-list (cadr unique-pair))
+        (result (funcall ros-completion-function
+                         (concatenate 'string prompt
+                                       (if uniquified-default
+                                           (format " (default %s): " uniquified-default)
+                                         ": "))
+                          uniquified-messages-list
+                          nil nil nil nil
+                          uniquified-default))
          (ws-pos (position ?\s result))
          (message (substring result 0 ws-pos))
          (package (when ws-pos
@@ -425,14 +540,17 @@
   (unless ros-services
     (cache-ros-service-locations))
   (let* ((ros-services-list (map 'list 'identity ros-services))
-         (result (funcall ros-completion-function prompt
-                          (map 'list (lambda (m pkg)
-                                       (if (> (count m ros-services-list :test 'equal) 1)
-                                           (format "%s (%s)" m pkg)
-                                         m))
-                               ros-services-list ros-service-packages)
-                          nil nil nil nil (when (member default ros-services-list)
-                                            default)))
+         (unique-pair (ros-uniquify-for-completion default ros-services-list ros-service-packages))
+         (uniquified-default (car unique-pair))
+         (uniquified-services-list (cadr unique-pair))
+         (result (funcall ros-completion-function
+                          (concatenate 'string prompt
+                                       (if uniquified-default
+                                           (format " (default %s): " uniquified-default)
+                                         ": "))
+                          uniquified-services-list
+                          nil nil nil nil
+                          uniquified-default))
          (ws-pos (position ?\s result))
          (service (substring result 0 ws-pos))
          (package (when ws-pos
@@ -442,18 +560,25 @@
         (concatenate 'string package "/" service)
       service)))
 
-(defun ros-completing-read-action (prompt &optional default)
+(defun ros-completing-read-action (prompt &optional defaults)
+  "asks user for ROS action, allows multiple defaults e.g. MyGoal, MyGoalGoal"
   (unless ros-actions
     (cache-ros-action-locations))
   (let* ((ros-actions-list (map 'list 'identity ros-actions))
-         (result (funcall ros-completion-function prompt
-                          (map 'list (lambda (m pkg)
-                                       (if (> (count m ros-actions-list :test 'equal) 1)
-                                           (format "%s (%s)" m pkg)
-                                         m))
-                               ros-actions-list ros-action-packages)
-                          nil nil nil nil (when (member default ros-actions-list)
-                                            default)))
+         (default (if (atom defaults)
+                      defaults
+                      (loop for x in defaults when (member x ros-actions-list) return x)))
+         (unique-pair (ros-uniquify-for-completion default ros-actions-list ros-action-packages))
+         (uniquified-default (car unique-pair))
+         (uniquified-action-list (cadr unique-pair))
+         (result (funcall ros-completion-function
+                          (concatenate 'string prompt
+                                       (if uniquified-default
+                                           (format " (default %s): " uniquified-default)
+                                         ": "))
+                          uniquified-action-list
+                          nil nil nil nil
+                          uniquified-default))
          (ws-pos (position ?\s result))
          (action (substring result 0 ws-pos))
          (package (when ws-pos
@@ -464,7 +589,12 @@
       action)))
 
 (defun ros-completing-read-topic (prompt &optional default)
-  (funcall ros-completion-function prompt (map 'list #'identity ros-all-topics)
+  (funcall ros-completion-function
+           (concatenate 'string prompt
+                        (if (member default (map 'list 'identity ros-all-topics))
+                            (format " (default %s): " default)
+                          ": "))
+           (map 'list #'identity ros-all-topics)
            nil nil nil nil (when (member default (map 'list 'identity ros-all-topics))
                              default)))
 
@@ -477,7 +607,12 @@
   (interactive (list (ros-completing-read-pkg-file "Enter ros path: ") nil))
   (multiple-value-bind (package dir-prefix dir-suffix) (parse-ros-file-prefix package-name)
     (let* ((package-dir (ros-package-dir package))
-           (path (if dir-prefix (concat package-dir dir-prefix dir-suffix) package-dir)))
+           (stack-dir (ros-stack-dir package))
+           (path (if dir-prefix
+                     (cond
+                       (package-dir (concat package-dir dir-prefix dir-suffix))
+                       (stack-dir (concat stack-dir dir-prefix dir-suffix)))
+                     package-dir)))
       (if path
           (find-file path)
         (if dont-reload
@@ -505,10 +640,8 @@
 (defun find-ros-message (message)
   "Open definition of a ros message.  If used interactively, tab completion will work."
   (interactive (list (ros-completing-read-message
-                      (if (current-word t t)
-                          (format "Enter message name (default %s): " (current-word t t))
-                        "Enter message name: ")
-                      (current-word t t))))
+                      "Enter message name"
+                      (current-ros-word))))
   (let* ((p+m (split-string message "/"))
          (p (if (cdr p+m)
                 (car p+m)
@@ -524,10 +657,8 @@
 (defun find-ros-service (service)
   "Open definition of a ros service.  If used interactively, tab completion will work."
   (interactive (list (ros-completing-read-service
-                      (if (current-word t t)
-                          (format "Enter service name (default %s): " (current-word t t))
-                        "Enter service name: ")
-                      (current-word t t))))
+                      "Enter service name"
+                      (current-ros-word))))
   (let* ((p+m (split-string service "/"))
          (p (if (cdr p+m)
                 (car p+m)
@@ -540,13 +671,35 @@
         (error "Could not find directory corresponding to package %s" p))
       (find-file (concat dir "/srv/" m ".srv")))))
 
+(defun action-message-prefix (message-name)
+  "if message-name has an action suffix, returns prefix, else nil"
+  (loop for suffix in '("ActionGoal" "ActionFeedback" "ActionResult"
+                        "Goal" "Feedback" "Result" "Action"
+                        )
+         for x = (let ((index (search suffix message-name :from-end t)))
+                   (when (and index
+                              (= index (- (length message-name) (length suffix))))
+                     index))
+         when (integerp x) return (subseq message-name 0 x)))
+
+;; (defun action-message-to-action (message-name)
+;;   "removes a Goal, Result or Feedback Suffix"
+;;   (or
+;;    (has-action-message-suffix message-name)
+;;    message-name))
+
+
 (defun find-ros-action (action)
-  "Open definition of a ros action.  If used interactively, tab completion will work."
-  (interactive (list (ros-completing-read-action
-                      (if (current-word t t)
-                          (format "Enter action name (default %s): " (current-word t t))
-                        "Enter action name: ")
-                      (current-word t t))))
+  "Open definition of a ros action. If used interactively, tab completion will work."
+  (interactive (let* ((word (current-ros-word))
+                      (prefix (action-message-prefix word))
+                      ;; fallback if someone named message ...Goal, also add original word
+                      (words (if prefix
+                                 (list prefix word)
+                               word)))
+                 (list (ros-completing-read-action
+                        "Enter action name"
+                        words))))
   (let* ((p+m (split-string action "/"))
          (p (if (cdr p+m)
                 (car p+m)
@@ -579,20 +732,25 @@
 (defun view-ros-message (message)
   "Open definition of a ros message in view mode.  If used interactively, tab completion will work."
   (interactive (list (ros-completing-read-message
-                      (if (current-word t t)
-                          (format "Enter message name (default %s): " (current-word t t))
-                        "Enter message name: ")
-                      (current-word t t))))
+                      "Enter message name"
+                      (current-ros-word))))
   (let ((max-mini-window-height 0))
     (shell-command (format "rosmsg show %s" message))))
+
+(defun view-ros-action (message)
+  "Open definition of a ros action in view mode.  If used interactively, tab completion will work."
+  (interactive (list (ros-completing-read-action
+                      "Enter action name"
+                      (current-ros-word))))
+  (let ((max-mini-window-height 0))
+    (shell-command (format "rosmsg show %sGoal;echo '---';rosmsg show %sResult;echo '---';rosmsg show %sFeedback" message message message))))
+
 
 (defun view-ros-service (service)
   "Open definition of a ros service in view mode.  If used interactively, tab completion will work."
   (interactive (list (ros-completing-read-service
-                      (if (current-word t t)
-                          (format "Enter service name (default %s): " (current-word t t))
-                        "Enter service name: ")
-                      (current-word t t))))
+                      "Enter service name"
+                      (current-ros-word))))
   (let ((max-mini-window-height))
     (shell-command (format "rossrv show %s" service))))
 
@@ -792,9 +950,7 @@ parameter."
   "Create a new buffer in which rostopic echo is done on the given topic (read interactively, with tab-completion)"
   (interactive (list (let ((word (current-word)))
                        (ros-completing-read-topic
-                        (if word
-                            (format "Enter topic name (default %s): " word)
-                          "Enter topic name: ")
+                        "Enter topic name"
                         word))))
   (let* ((topic-full-name (if (string-match "^/" topic) topic (concat "/" topic)))
          (buffer-name (concat "*rostopic:" topic-full-name "*"))
@@ -806,9 +962,7 @@ parameter."
   "Print info about topic, using rostopic info"
   (interactive (list (let ((word (current-word)))
                        (ros-completing-read-topic
-                        (if word
-                            (format "Enter topic name (default %s): " word)
-                          "Enter topic name: ")
+                        "Enter topic name"
                         word))))
   (let* ((topic-full-name (if (string-match "^/" topic) topic (concat "/" topic)))
          (buffer-name (format "*rostopic-info:%s" topic))
@@ -1261,11 +1415,17 @@ q kills the buffer and process."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun ros-make (package-name)
-  (interactive (list (ros-completing-read-package "Enter package to make" nil ros-completion-function)))
+  "Do a rosmake in a *compilation* buffer.  Prompts for package.  With prefix arg, allows editing rosmake command before starting."
+  (interactive (list (ros-completing-read-package
+                      "Enter package to make"
+                      (get-buffer-ros-package)
+                      ros-completion-function)))
   (save-excursion
     (message "Compilation started")
-    (compile (format "rosmake %s" package-name) t)))
-
+    (let ((command (format "rosmake -v %s" package-name)))
+      (when current-prefix-arg
+        (setq command (read-from-minibuffer "Confirm: " command )))
+      (compile command t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; roslaunch
@@ -1275,10 +1435,14 @@ q kills the buffer and process."
 (make-variable-buffer-local 'ros-launch-path)
 (defvar ros-launch-filename nil "The file being launched")
 (make-variable-buffer-local 'ros-launch-filename)
+(defvar ros-launch-cmd nil "The roslaunch command.")
+(make-variable-buffer-local 'ros-launch-cmd)
+(defvar ros-launch-args nil "The arguments to roslaunch")
+(make-variable-buffer-local 'ros-launch-args)
 
-(defun ros-launch (package-name &optional other-window)
+(defun ros-launch (package-name &optional other-window edit-command)
   "Launch a ros launch file in a separate buffer.  See ros-launch-mode for details."
-  (interactive (list (ros-completing-read-pkg-file "Enter ros path: ")))
+  (interactive (list (ros-completing-read-pkg-file "Enter ros path: ") nil current-prefix-arg))
   (multiple-value-bind (package dir-prefix dir-suffix) (parse-ros-file-prefix package-name)
     (let* ((package-dir (ros-package-dir package))
            (path (if dir-prefix (concat package-dir dir-prefix dir-suffix) package-dir)))
@@ -1286,36 +1450,55 @@ q kills the buffer and process."
           (let ((name (format "roslaunch:%s/%s" package dir-suffix)))
             (if (rosemacs/contains-running-process name)
                 (warn "Roslaunch buffer %s already exists: not creating a new one." name)
-              (let ((buf (get-buffer-create name)))
-                (save-excursion
-                  (set-buffer buf)
-                  (comint-mode)
-                  (setq ros-launch-path path)
-                  (setq ros-launch-filename dir-suffix)
-                  (ros-launch-mode 1)
-                  (rosemacs/relaunch (current-buffer)))
-                
-                (if other-window (display-buffer buf) (switch-to-buffer buf))
-                buf)))
+              (let* ((default-roslaunch-command (format "roslaunch %s %s" package dir-suffix))
+                     (roslaunch-command
+                      (split-string
+                       (if edit-command
+                           (read-string "Enter roslaunch command: " default-roslaunch-command
+                                        'roslaunch/history-list default-roslaunch-command)
+                         default-roslaunch-command))))
+                (let ((buf (get-buffer-create name)))
+                  (save-excursion
+                    (set-buffer buf)
+                    (comint-mode)
+                    (setq ros-launch-cmd (first roslaunch-command)
+                          ros-launch-args (rest roslaunch-command))
+                    (message "cmd is %s and args are %s" ros-launch-cmd ros-launch-args)
+                    (setq ros-launch-path path)
+                    (setq ros-launch-filename dir-suffix)
+                    (ros-launch-mode 1)
+                    (rosemacs/relaunch (current-buffer)))
+                  (if other-window (display-buffer buf) (switch-to-buffer buf))
+                  buf))))
         (error "Did not find %s in the ros package list." package-name)))))
 
 (defun ros-launch-current ()
   (interactive)
   (let ((path (buffer-file-name)))
     (assert (and path (string-match ".*\\/\\([^\\/]*\.launch\\)" path)))
-    (let ((pkg (ros-package-for-path path))
-          (filename (match-string 1 path)))
+    (let* ((filename (match-string 1 path))
+           (pkg (ros-package-for-path path))
+           )
       (assert (and pkg filename))
       (let ((name (format "roslaunch:%s/%s" pkg filename)))
         (if (rosemacs/contains-running-process name)
             (switch-to-buffer (get-buffer name))
           (let ((buf (get-buffer-create name)))
-            (switch-to-buffer buf)
-            (comint-mode)
-            (setq ros-launch-path path
-                  ros-launch-filename filename)
-            (ros-launch-mode 1)
-            (rosemacs/relaunch (current-buffer))))))))
+            (let* ((default-roslaunch-command (format "roslaunch %s %s" pkg filename))
+                   (roslaunch-command
+                    (split-string
+                     (if current-prefix-arg
+                         (read-string "Enter roslaunch command: " default-roslaunch-command
+                                      'roslaunch/history-list default-roslaunch-command)
+                       default-roslaunch-command))))
+              (switch-to-buffer buf)
+              (comint-mode)
+              (setq ros-launch-path path
+                    ros-launch-filename filename
+                    ros-launch-cmd (first roslaunch-command)
+                    ros-launch-args (rest roslaunch-command))
+              (ros-launch-mode 1)
+              (rosemacs/relaunch (current-buffer)))))))))
 
 (defun rosemacs/open-launch-file ()
   (interactive)
@@ -1331,7 +1514,7 @@ q kills the buffer and process."
       (save-excursion
         (set-buffer buf)
         (erase-buffer)
-        (let ((proc (start-process (buffer-name buf) buf "roslaunch" ros-launch-path)))
+        (let ((proc (apply 'start-process (buffer-name buf) buf ros-launch-cmd ros-launch-args)))
           (set-process-filter proc 'comint-output-filter))
         (rosemacs/add-event (format "Ros launch of %s" ros-launch-path))))))
 
@@ -1390,9 +1573,10 @@ The page delimiter in this buffer matches the start, so you can use forward/back
 (defun rosemacs/add-event (str &optional display-in-minibuffer)
   (save-excursion
     (when display-in-minibuffer (message str))
-    (set-buffer ros-events-buffer)
-    (goto-char (point-max))
-    (princ (format "\n[%s] %s" (substring (current-time-string) 11 19) str) ros-events-buffer)))
+    (when (buffer-live-p ros-events-buffer)
+      (set-buffer ros-events-buffer)
+      (goto-char (point-max))
+      (princ (format "\n[%s] %s" (substring (current-time-string) 11 19) str) ros-events-buffer))))
 
 (defun rosemacs/display-event-buffer (&optional other-window)
   (interactive)
@@ -1426,13 +1610,15 @@ The page delimiter in this buffer matches the start, so you can use forward/back
 (define-key ros-keymap "\C-e" 'rosemacs/display-event-buffer)
 (define-key ros-keymap "\C-n" 'rosemacs/display-nodes)
 (define-key ros-keymap "c" 'ros-make)
+(define-key ros-keymap "a" 'view-ros-action)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Invoking the mode
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun set-rosemacs-shell-hooks ()
-  (add-hook 'comint-input-filter-functions 'ros-directory-tracker nil t)
+  (when ros-command-shell-directory-tracking
+    (add-hook 'comint-input-filter-functions 'ros-directory-tracker nil t))
   (add-hook 'comint-dynamic-complete-functions 'comint-dynamic-complete-ros-package nil t)
   (add-hook 'comint-dynamic-complete-functions 'comint-dynamic-complete-ros-topic nil t)
   (add-hook 'comint-dynamic-complete-functions 'comint-dynamic-complete-ros-node nil t))
@@ -1453,6 +1639,9 @@ The page delimiter in this buffer matches the start, so you can use forward/back
     (add-to-list 'auto-mode-alist '("manifest.xml" . nxml-mode))
     (add-to-list 'auto-mode-alist '("\\.urdf" . xml-mode))
     (add-to-list 'auto-mode-alist '("\\.xacro" . xml-mode)))
+
+  ;; rosbag view mode
+  (add-to-list 'auto-mode-alist '("\.bag$" . rosbag-view-mode))  
 
   ;; msg and srv files: for now use gdb-script-mode
   (add-to-list 'auto-mode-alist '("\\.msg\\'" . gdb-script-mode))
@@ -1557,11 +1746,15 @@ The page delimiter in this buffer matches the start, so you can use forward/back
            (when rosemacs/invoked
              (rosemacs/track-nodes val))))
 
+(defcustom ros-command-shell-directory-tracking t
+  "Whether to track directories in shell mode given roscd, rospd, etc."
+  :type 'boolean
+  :group 'rosemacs)
+
+
 (defvar ros-topic-timeout-rate 5 "Number of seconds before info from rostopic hz is considered out-of-date" )
 
 
-
 (provide 'rosemacs)
-
 
 ;;; rosemacs.el ends here

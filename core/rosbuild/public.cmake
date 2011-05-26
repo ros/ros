@@ -1020,47 +1020,14 @@ macro(rosbuild_add_openmp_flags target)
 endmacro(rosbuild_add_openmp_flags)
 
 macro(rosbuild_make_distribution)
-  # Infer stack name from directory name.
-  get_filename_component(_project ${PROJECT_SOURCE_DIR} NAME)
-  project(${_project})
-
-  # Set up for packaging
-  # TODO: get version from manifest
-  #set(CPACK_PACKAGE_VERSION_MAJOR "0")
-  #set(CPACK_PACKAGE_VERSION_MINOR "0")
-  #set(CPACK_PACKAGE_VERSION_PATCH "1")
-  set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
-  if("${ARGN}" STREQUAL "")
-    set(CPACK_PACKAGE_VERSION "latest")
-  else("${ARGN}" STREQUAL "")
-    set(CPACK_PACKAGE_VERSION "${ARGN}")
-  endif("${ARGN}" STREQUAL "")
-  set(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${CPACK_PACKAGE_VERSION}")
-  set(CPACK_GENERATOR "TBZ2")
-  # The CPACK_SOURCE_GENERATOR variable seems only to be obeyed in 2.6.
-  # 2.4 seems to use CPACK_GENERATOR for both binary and source packages.
-  set(CPACK_SOURCE_GENERATOR "TBZ2")
-  # CPACK_SOURCE_IGNORE_FILES contains things we want to ignore when
-  # building a source package.  We assume that the package was already
-  # cleaned, so we don't need to ignore .a, .o, .so, etc.
-  list(APPEND CPACK_SOURCE_IGNORE_FILES "/build/;/.svn/;.gitignore;build-failure;test-failure;rosmakeall-buildfailures-withcontext.txt;rosmakeall-profile;rosmakeall-buildfailures.txt;rosmakeall-testfailures.txt;rosmakeall-coverage.txt;/log/")
-  include(CPack)
+  # Noop.  This logic is handled in Python instead.
 endmacro(rosbuild_make_distribution)
 
 # Compute the number of hardware cores on the machine.  Intended to use for
-# gating tests that have heavy processor requirements. It calls out to
-# Python to do the work (UNIX only)
+# gating tests that have heavy processor requirements. 
+include($ENV{ROS_ROOT}/core/rosbuild/ProcessorCount.cmake)
 macro(rosbuild_count_cores num)
-  execute_process(COMMAND $ENV{ROS_ROOT}/core/rosbuild/tests/count_cores.py
-                  OUTPUT_VARIABLE _cores_out
-                  ERROR_VARIABLE _cores_error
-                  RESULT_VARIABLE _cores_result
-                  OUTPUT_STRIP_TRAILING_WHITESPACE)
-  if(_cores_result)
-    message(FATAL_ERROR "Failed to run count_cores")
-  endif(_cores_result)
-
-  set(${num} ${_cores_out})
+  ProcessorCount(${num})
 endmacro(rosbuild_count_cores)
 
 # Check whether we're running as a VM Intended to use for

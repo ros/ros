@@ -66,6 +66,7 @@
 
          ;; Override user's implementations if set
          (slime-lisp-implementations nil))
+    (message "Starting sbcl version from %s" sbcl-binary)
 
     (slime)))
 

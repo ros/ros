@@ -1,0 +1,14 @@
+<package>
+  <description brief="foo_pkg_2">
+
+     foo_pkg_2
+
+  </description>
+  <author>Ken Conley</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/foo_pkg_2</url>
+
+</package>
+
+

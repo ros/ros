@@ -24,7 +24,9 @@ rosbuild_add_rostest(test/shapeshifter.test)
 rosbuild_add_rostest(test/throttle.test)
 rosbuild_add_rostest(test/drop.test)
 rosbuild_add_rostest(test/relay.test)
-rosbuild_add_rostest(test/relay_latched.test)
+# Latched test disabled until underlying issue in roscpp is resolved,
+# #3385, #3434.
+#rosbuild_add_rostest(test/relay_latched.test)
 rosbuild_add_rostest(test/mux.test)
 rosbuild_add_rostest(test/switch_mux.test)
 rosbuild_add_rostest(test/switch_mux_leading_slash.test)

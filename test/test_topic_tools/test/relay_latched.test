@@ -11,7 +11,7 @@
         args="input output"/>
   <node pkg="topic_tools" type="relay" name="relay2"
         args="input output"/>
-  <test test-name="relay_hztest_explicit" pkg="rostest" type="hztest">
+  <test test-name="relay_latched_hztest_explicit" pkg="rostest" type="hztest">
     <param name="topic" value="output"/>
     <param name="hz" value="0.5"/>
     <param name="hzerror" value="10000"/>

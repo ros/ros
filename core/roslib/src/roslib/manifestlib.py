@@ -54,6 +54,9 @@ VALID = REQUIRED + OPTIONAL
 
 class ManifestException(roslib.exceptions.ROSLibException): pass
 
+def get_nodes_by_name(n, name):
+    return [t for t in n.childNodes if t.nodeType == t.ELEMENT_NODE and t.tagName == name]
+
 # TODO: this is all needlessly complicated in and indirect. Now that
 # we are more commited to our manifest spec, this can be more direct
 # (and unit tested)
@@ -110,7 +113,8 @@ def check_depends(name):
     @raise ManifestException: if validation fails
     """
     def check(n, filename):
-        depends = [e.attributes for e in n.getElementsByTagName(name)]
+        nodes = get_nodes_by_name(n, name)
+        depends = [e.attributes for e in nodes if 'thirdparty' not in e.attributes.keys()]
         packages = [d['package'].value for d in depends]
         return [Depend(p) for p in packages]
     return check
@@ -121,7 +125,8 @@ def check_stack_depends(name):
     @raise ManifestException: if validation fails
     """
     def check(n, filename):
-        depends = [e.attributes for e in n.getElementsByTagName(name)]
+        nodes = get_nodes_by_name(n, name)
+        depends = [e.attributes for e in nodes if 'thirdparty' not in e.attributes.keys()]
         packages = [d['stack'].value for d in depends]
         return [StackDepend(p) for p in packages]
     return check
@@ -132,7 +137,8 @@ def check_rosdeps(name):
     @raise ManifestException: if validation fails
     """
     def check(n, filename):
-        rosdeps = [e.attributes for e in n.getElementsByTagName(name)]
+        nodes = get_nodes_by_name(n, name)
+        rosdeps = [e.attributes for e in nodes]
         names = [d['name'].value for d in rosdeps]
         return [ROSDep(n) for n in names]
     return check

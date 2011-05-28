@@ -16,8 +16,7 @@ python-yaml:
   fedora: PyYAML
   rhel: PyYAML
   centos: PyYAML
-  arch: |
-    if ! pacman -Q libyaml python-yaml; then yaourt -S libyaml python-yaml; fi
+  arch: python-yaml
   macports: py26-yaml
   gentoo: pyyaml
   cygwin: |
@@ -223,6 +222,7 @@ automake:
   freebsd: automake14 automake111
 libtool:
   ubuntu: 
+    '11.04': libtool libltdl-dev
     '10.10': libtool libltdl-dev
     '10.04': libtool libltdl-dev
     '9.10': libtool libltdl-dev
@@ -243,7 +243,7 @@ pkg-config:
   opensuse: pkg-config 
   fedora: pkgconfig
   rhel: pkgconfig
-  arch: pkgconfig
+  arch: pkg-config
   macports: pkgconfig
   gentoo: dev-util/pkgconfig
   cygwin: pkg-config

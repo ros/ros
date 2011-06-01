@@ -161,7 +161,7 @@ def robust_connect_subscriber(conn, dest_addr, dest_port, pub_uri, receive_cb):
     while conn.socket is None and not conn.done and not rospy.is_shutdown():
         try:
             conn.connect(dest_addr, dest_port, pub_uri, timeout=60.)
-        except rospy.exceptions.TransportInitError, e:
+        except rospy.exceptions.TransportInitError as e:
             rospyerr("unable to create subscriber transport: %s.  Will try again in %ss", e, interval)
             interval = interval * 2
             time.sleep(interval)
@@ -286,6 +286,8 @@ class TCPROSHandler(rospy.impl.transport.ProtocolHandler):
         @return: error string or None 
         @rtype: str
         """
+        if rospy.core.is_shutdown_requested():
+            return "Node is shutting down"
         for required in ['topic', 'md5sum', 'callerid']:
             if not required in header:
                 return "Missing required '%s' field"%required
@@ -295,10 +297,12 @@ class TCPROSHandler(rospy.impl.transport.ProtocolHandler):
             tm = rospy.impl.registration.get_topic_manager()
             topic = tm.get_publisher_impl(resolved_topic_name)
             if not topic:
-                return "[%s] is not a publisher of  [%s]. Topics are %s"%(rospy.names.get_caller_id(), resolved_topic_name, tm.get_publications())
+                return "[%s] is not a publisher of [%s]. Topics are %s"%(rospy.names.get_caller_id(), resolved_topic_name, tm.get_publications())
+            elif not topic.data_class or topic.closed:
+                return "Internal error processing topic [%s]"%(resolved_topic_name)
             elif md5sum != rospy.names.TOPIC_ANYTYPE and md5sum != topic.data_class._md5sum:
-
-                actual_type = topic.data_class._type
+                data_class = topic.data_class
+                actual_type = data_class._type
 
                 # check to see if subscriber sent 'type' header. If they did, check that
                 # types are same first as this provides a better debugging message
@@ -310,7 +314,7 @@ class TCPROSHandler(rospy.impl.transport.ProtocolHandler):
                     # defaults to actual type
                     requested_type = actual_type
 
-                return "Client [%s] wants topic [%s] to have datatype/md5sum [%s/%s], but our version has [%s/%s] Dropping connection."%(header['callerid'], resolved_topic_name, requested_type, md5sum, actual_type, topic.data_class._md5sum)
+                return "Client [%s] wants topic [%s] to have datatype/md5sum [%s/%s], but our version has [%s/%s] Dropping connection."%(header['callerid'], resolved_topic_name, requested_type, md5sum, actual_type, data_class._md5sum)
 
             else:
                 #TODO:POLLING if polling header is present, have to spin up receive loop as well

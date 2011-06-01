@@ -343,6 +343,19 @@ def is_shutdown():
     """
     return _shutdown_flag
 
+def is_shutdown_requested():
+    """
+    is_shutdown_requested is a state that occurs just before
+    is_shutdown.  It is initiated when a shutdown requested is
+    received and continues until client shutdown handlers have been
+    called.  After client shutdown handlers have been serviced, the
+    is_shutdown state becomes true.
+    
+    @return: True if shutdown has been requested (but possibly not yet initiated)
+    @rtype: bool
+    """
+    return _in_shutdown
+
 def _add_shutdown_hook(h, hooks):
     """
     shared implementation of add_shutdown_hook and add_preshutdown_hook

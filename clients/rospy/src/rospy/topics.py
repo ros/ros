@@ -225,7 +225,7 @@ class _TopicImpl(object):
                         # seems more logger.error internal than external logerr
                         _logger.error(traceback.format_exc())
                 del self.connections[:]
-            self.c_lock = self.connections = self.handler = self.data_class = self.type = None
+            self.handler = None
             
             # note: currently not deleting self.dead_connections. not
             # sure what the right policy here as dead_connections is
@@ -287,11 +287,10 @@ class _TopicImpl(object):
         @param c: connection instance to remove
         @type  c: Transport
         """
-        try:
+        with self.c_lock:
             # c_lock is to make remove_connection thread-safe, but we
             # still make a copy of self.connections so that the rest of the
             # code can use self.connections in an unlocked manner
-            self.c_lock.acquire()
             new_connections = self.connections[:]
             new_dead_connections = self.dead_connections[:]                        
             if c in new_connections:
@@ -299,8 +298,6 @@ class _TopicImpl(object):
                 new_dead_connections.append(DeadTransport(c))
             self.connections = new_connections
             self.dead_connections = new_dead_connections
-        finally:
-            self.c_lock.release()
 
     def get_stats_info(self): # STATS
         """

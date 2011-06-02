@@ -28,7 +28,7 @@ python-yaml:
         cd PyYAML-3.09
         python setup.py install 
       fi
-  freebsd: py26-yaml
+  freebsd: py27-yaml
 python-gtk2:
   ubuntu: python-gtk2
   arch: pygtk
@@ -139,7 +139,7 @@ wxpython:
   debian: python-wxgtk2.8
   macports: py26-wxpython py26-gobject py26-gtk py26-cairo
   gentoo: dev-python/wxpython
-  freebsd: py26-wxPython
+  freebsd: py27-wxPython
 libxext:
   ubuntu: libxext-dev
   debian: libxext-dev

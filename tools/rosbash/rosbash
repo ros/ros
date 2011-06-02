@@ -172,7 +172,7 @@ function _roscmd {
         echo "Couldn't find package [$1]"
         return 1
     fi
-    exepath=(`find -H $pkgdir -name $2 -type f ! -regex .*/[.].* ! -regex .*$pkgdir\/build\/.*`)
+    exepath=(`find -L $pkgdir -name $2 -type f ! -regex .*/[.].* ! -regex .*$pkgdir\/build\/.*`)
     if [[ ${#exepath[@]} == 0 ]] ; then
         echo "That file does not exist in that package."
         return 1
@@ -234,7 +234,7 @@ function _roscomplete_sub_dir {
         unset IFS
     else
         if [ -e ${rosvals[1]}${rosvals[2]} ]; then
-          opts=`find -H ${rosvals[1]}${rosvals[2]} -maxdepth 1 -mindepth 1 -type d ! -regex ".*/[.].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1\//g"`
+          opts=`find -L ${rosvals[1]}${rosvals[2]} -maxdepth 1 -mindepth 1 -type d ! -regex ".*/[.].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1\//g"`
         else
           opts=''
         fi
@@ -269,7 +269,7 @@ function _msg_opts {
     else
         path=`rospack find ${pkgname}`
         if [ -d ${path}/msg ]; then
-            echo `find -H ${path}/msg -maxdepth 1 -mindepth 1 -name *.msg ! -regex ".*/[.].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.msg/${pkgname}\/\1/g"`
+            echo `find -L ${path}/msg -maxdepth 1 -mindepth 1 -name *.msg ! -regex ".*/[.].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.msg/${pkgname}\/\1/g"`
         fi
     fi
 }
@@ -286,7 +286,7 @@ function _roscomplete_search_dir {
     elif [[ $COMP_CWORD == 2 ]]; then
         pkgdir=`_ros_package_find ${COMP_WORDS[1]}`
         if [[ $? == 0 ]]; then
-            opts=`find -H $pkgdir ${1} ! -regex ".*/[.].*" ! -regex ".*$pkgdir\/build\/.*"  -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
+            opts=`find -L $pkgdir ${1} ! -regex ".*/[.].*" ! -regex ".*$pkgdir\/build\/.*"  -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
         else
             opts=""
         fi
@@ -302,7 +302,7 @@ function _roscomplete_search_dir {
            path=.
         fi
         if [[ -e ${path} ]]; then
-           opts=`find -H $path -maxdepth 1 -type d ! -regex ".*/[.].*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/$/\//g" -e "s/^[.]\///g" -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g"`$'\n'`find -H $path -maxdepth 1 -type f ! -regex ".*/[.][^.]*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/^[.]\///g"  -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g"`
+           opts=`find -L $path -maxdepth 1 -type d ! -regex ".*/[.].*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/$/\//g" -e "s/^[.]\///g" -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g"`$'\n'`find -L $path -maxdepth 1 -type f ! -regex ".*/[.][^.]*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/^[.]\///g"  -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g"`
         else
            opts=""
         fi
@@ -312,7 +312,7 @@ function _roscomplete_search_dir {
         if [[ ${#COMPREPLY[*]} = 1 ]]; then
             newpath=${COMPREPLY[0]%/*}
             if [[ -d ${newpath} ]]; then
-               opts=`find -H $newpath -maxdepth 1 -type d ! -regex ".*/[.].*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/$/\//g" -e "s/^[.]\///g" -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g"`$'\n'`find -H $newpath -maxdepth 1 -type f ! -regex ".*/[.][^.]*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/^[.]\///g"  -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g"`
+               opts=`find -L $newpath -maxdepth 1 -type d ! -regex ".*/[.].*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/$/\//g" -e "s/^[.]\///g" -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g"`$'\n'`find -L $newpath -maxdepth 1 -type f ! -regex ".*/[.][^.]*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/^[.]\///g"  -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g"`
                IFS=$'\n'
                COMPREPLY=($(compgen -W "$opts" -- ${arg}))
                unset IFS
@@ -514,7 +514,7 @@ function _msg_opts {
     path=`rospack find ${pkgname} 2> /dev/null`
 
     if [ $? -eq 0 ] && [ -d ${path}/msg ]; then
-        echo `find -H ${path}/msg -maxdepth 1 -mindepth 1 -name *.msg ! -regex ".*/[.].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.msg/${pkgname}\/\1/g"`
+        echo `find -L ${path}/msg -maxdepth 1 -mindepth 1 -name *.msg ! -regex ".*/[.].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.msg/${pkgname}\/\1/g"`
     fi
 }
 

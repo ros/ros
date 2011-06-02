@@ -53,7 +53,7 @@ python-imaging:
   arch: python-imaging
   macports: py26-pil
   gentoo: dev-python/imaging
-  freebsd: py26-imaging
+  freebsd: py27-imaging
 python-numpy:
   ubuntu: python-numpy
   debian: python-numpy
@@ -73,7 +73,7 @@ python-matplotlib:
   fedora: python-matplotlib
   rhel: python-matplotlib
   gentoo: dev-python/matplotlib
-  freebsd: py26-matplotlib
+  freebsd: py27-matplotlib
 paramiko:
   ubuntu: python-paramiko
   debian: python-paramiko
@@ -81,4 +81,4 @@ paramiko:
   fedora: python-paramiko
   macports: py26-paramiko
   gentoo: dev-python/paramiko
-  freebsd: py26-paramiko
+  freebsd: py27-paramiko

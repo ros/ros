@@ -154,7 +154,7 @@ class RosdepException(Exception):
 
 class RosdepLookupPackage:
     """
-    This is a class for interacting with rosdep.yaml files.  It will
+    This is a class for interacting with rosdeps for a specific package.  It will
     load all rosdep.yaml files in the current configuration at
     startup.  It has accessors to allow lookups into the rosdep.yaml
     from rosdep name and returns the string from the yaml file for the
@@ -176,11 +176,16 @@ class RosdepLookupPackage:
 
 
         if package:
-            self.load_for_package(package, yaml_cache.cached_ros_package_list)
+            self._load_for_package(package, yaml_cache.cached_ros_package_list)
         
         
 
-    def load_for_package(self, package, ros_package_proxy):
+    def _load_for_package(self, package, ros_package_proxy):
+        """ Load into local structures the information for this
+        specific package 
+
+        Called in constructor. """
+
         try:
             rosdep_dependent_packages = ros_package_proxy.depends([package])[package]
             #print "package", package, "needs", rosdep_dependent_packages
@@ -222,7 +227,7 @@ class RosdepLookupPackage:
                     print >> sys.stderr, "Failed to load rosdep.yaml for package [%s]:%s"%(p, ex)
                     pass
         for path in paths:
-            self.insert_map(self.parse_yaml(path), path)
+            self._insert_map(self.parse_yaml(path), path)
             if "ROSDEP_DEBUG" in os.environ:
                 print "rosdep loading from file: %s got"%path, self.parse_yaml(path)
         #print "built map", self.rosdep_map
@@ -230,10 +235,11 @@ class RosdepLookupPackage:
         # Override with ros_home/rosdep.yaml if present
         ros_home = roslib.rosenv.get_ros_home()
         path = os.path.join(ros_home, "rosdep.yaml")
-        self.insert_map(self.parse_yaml(path), path, override=True)
+        self._insert_map(self.parse_yaml(path), path, override=True)
 
 
-    def insert_map(self, yaml_dict, source_path, override=False):
+    def _insert_map(self, yaml_dict, source_path, override=False):
+        """ Insert the current map into the full dictionary"""
         for key in yaml_dict:
             rosdep_entry = yaml_dict[key]
             if not rosdep_entry: # if no match don't do anything
@@ -264,6 +270,8 @@ Rules for %s do not match:
 
 
     def parse_yaml(self, path):
+        """ Return the parsed yaml for this path.  Useing cached value
+        in yaml_cache"""
         return self.yaml_cache.get_specific_rosdeps(path)
         
 

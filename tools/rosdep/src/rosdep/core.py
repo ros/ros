@@ -63,15 +63,20 @@ yaml.add_constructor(
     yaml.constructor.Constructor.construct_yaml_str)
 
 class YamlCache:
+    """ A class into which to load the yaml files for quicker access
+    from repeated lookups """
+
     def __init__(self, os_name, os_version):
         self.os_name = os_name
         self.os_version = os_version
         self._yaml_cache = {}
         self._rosstack_depends_cache = {}
         self._expanded_rosdeps = {}
+        # Cache the list of packages for quicker access
         self.cached_ros_package_list = roslib.packages.ROSPackages()
         
     def get_yaml(self, path):
+        """ Get the yaml from a specific path.  Caching accelerated"""
         if path in self._yaml_cache:
             return self._yaml_cache[path]
         
@@ -91,6 +96,7 @@ class YamlCache:
         return {}
 
     def get_rosstack_depends(self, stack):
+        """ A caching query to get rosstack_depends(stack) """
         if stack in self._rosstack_depends_cache:
             return self._rosstack_depends_cache[stack]
         
@@ -98,6 +104,7 @@ class YamlCache:
         return self._rosstack_depends_cache[stack]
     
     def get_specific_rosdeps(self, path):
+        """ Get the rosdeps for the active os"""
         if path in self._expanded_rosdeps:
             return self._expanded_rosdeps[path]
 
@@ -115,7 +122,7 @@ class YamlCache:
 
     def get_os_from_yaml(self, rosdep_name, yaml_map, source_path): #source_path is for debugging where errors come from
         """
-        @return The os (and version specific if required) local package name
+        @return The os (and version specific if required ) local package name
         """
         # See if the version for this OS exists
         if self.os_name in yaml_map:
@@ -126,6 +133,7 @@ class YamlCache:
 
     def get_version_from_yaml(self, rosdep_name, os_specific, source_path):
         """
+        Helper function for get_os_from_yaml to parse if version is required.  
         @return The os (and version specific if required) local package name
         """
         if type(os_specific) == type("String"):

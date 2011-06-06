@@ -69,7 +69,7 @@ class YamlCache:
         self._yaml_cache = {}
         self._rosstack_depends_cache = {}
         self._expanded_rosdeps = {}
-        self.rp = roslib.packages.ROSPackages()
+        self.cached_ros_package_list = roslib.packages.ROSPackages()
         
     def get_yaml(self, path):
         if path in self._yaml_cache:
@@ -168,7 +168,7 @@ class RosdepLookupPackage:
 
 
         if package:
-            self.load_for_package(package, yaml_cache.rp)
+            self.load_for_package(package, yaml_cache.cached_ros_package_list)
         
         
 

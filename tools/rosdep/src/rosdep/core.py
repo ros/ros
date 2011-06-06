@@ -175,8 +175,9 @@ class RosdepLookupPackage:
         ## Find all rosdep.yamls here and load them into a map
 
 
-        if package:
-            self._load_for_package(package, yaml_cache.cached_ros_package_list)
+        if not package:
+            raise RosdepException("RosdepLookupPackage requires a package argument")
+        self._load_for_package(package, yaml_cache.cached_ros_package_list)
         
         
 
@@ -285,10 +286,7 @@ Rules for %s do not match:
         else:
             print >> sys.stderr, "Failed to find rosdep %s for package %s on OS:%s version:%s"%(rosdep, self.package, self.os_name, self.os_version)
             return False
-        
-    def get_map(self):
-        return self.rosdep_map
-        
+                
 
     def get_sources(self, rosdep):
         if rosdep in self.rosdep_source:
@@ -420,21 +418,22 @@ class Rosdep:
         for p in packages:
             output += "\nPACKAGE: %s\n"%p
             rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, yc)
-            map = rdlp.get_map()
-            for k in map:
-                output = output + "<<<< %s -> %s >>>>\n"%(k, map[k])
+            rosdep_map = rdlp.rosdep_map
+            for k,v in rosdep_map.iteritems():
+                output = output + "<<<< %s -> %s >>>>\n"%(k, v)
         return output
 
     def where_defined(self, rosdeps):
         output = ""
         locations = {}
-        rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), None, YamlCache(self.osi.get_name(), self.osi.get_version()))
-        
+
+        yc = YamlCache(self.osi.get_name(), self.osi.get_version())
+
         for r in rosdeps:
             locations[r] = set()
 
         path = os.path.join(roslib.rosenv.get_ros_home(), "rosdep.yaml")
-        rosdep_dict = rdlp.parse_yaml(path)
+        rosdep_dict = yc.get_specific_rosdeps(path)
         for r in rosdeps:
             if r in rosdep_dict:
                 locations[r].add("Override:"+path)
@@ -442,7 +441,7 @@ class Rosdep:
 
         for p in roslib.packages.list_pkgs():
             path = os.path.join(roslib.packages.get_pkg_dir(p), "rosdep.yaml")
-            rosdep_dict = rdlp.parse_yaml(path)
+            rosdep_dict = yc.get_specific_rosdeps(path)
             for r in rosdeps:
                 if r in rosdep_dict:
                     addendum = ""
@@ -453,7 +452,7 @@ class Rosdep:
 
         for s in roslib.stacks.list_stacks():
             path = os.path.join(roslib.stacks.get_stack_dir(s), "rosdep.yaml")
-            rosdep_dict = rdlp.parse_yaml(path)
+            rosdep_dict = yc.get_specific_rosdeps(path)
             for r in rosdeps:
                 if r in rosdep_dict:
                     locations[r].add(path)

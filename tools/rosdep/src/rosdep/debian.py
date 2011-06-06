@@ -115,7 +115,9 @@ class Mint(AptGetInstall, rosdep.base_rosdep.RosdepBaseOS):
     
     def __init__(self):
         self.mint_detector = roslib.os_detect.Mint()
-        self.version_map = {'9':'10.04',
+        self.version_map = {'11':'11.04',
+                            '10':'10.10',
+                            '9':'10.04',
                             '8':'9.10', 
                             '7':'9.04',
                             '6':'8.10',

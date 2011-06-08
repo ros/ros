@@ -56,21 +56,25 @@ ROS_STACK = 'ros'
 class ROSStackException(roslib.exceptions.ROSLibException): pass
 class InvalidROSStackException(ROSStackException): pass
 
-def stack_of(pkg):
+def stack_of(pkg, env=None):
     """
+    @param env: override environment variables
+    @type  env: {str: str}
     @return: name of stack that pkg is in, or None if pkg is not part of a stack
     @rtype: str
     @raise roslib.packages.InvalidROSPkgException: if pkg cannot be located
     """
-    pkg_dir = roslib.packages.get_pkg_dir(pkg)
-    dir = os.path.dirname(pkg_dir)
-    while dir and os.path.dirname(dir) != dir:
-        stack_file = os.path.join(dir, STACK_FILE)
+    if env is None:
+        env = os.environ
+    pkg_dir = roslib.packages.get_pkg_dir(pkg, ros_root=env[ROS_ROOT], ros_package_path=env.get(ROS_PACKAGE_PATH, None))
+    d = pkg_dir
+    while d and os.path.dirname(d) != d:
+        stack_file = os.path.join(d, STACK_FILE)
         if os.path.exists(stack_file):
             #TODO: need to resolve issues regarding whether the
             #stack.xml or the directory defines the stack name
-            return os.path.basename(dir)
-        dir = os.path.dirname(dir)
+            return os.path.basename(d)
+        d = os.path.dirname(d)
         
 def packages_of(stack, env=None):
     """

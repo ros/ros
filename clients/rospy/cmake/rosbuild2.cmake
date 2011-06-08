@@ -134,5 +134,6 @@ macro(gentargets_py)
     DEPENDS ${${PROJECT_NAME}_generated_py})
 
   add_dependencies(codegen_py ${PROJECT_NAME}_codegen_py)
+  add_dependencies(${PROJECT_NAME}_codegen ${PROJECT_NAME}_codegen_py)
 
 endmacro()

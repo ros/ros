@@ -31,6 +31,11 @@
 import subprocess
 import os.path 
 import roslib.os_detect
+import os 
+import shutil
+import urllib
+import tarfile
+import tempfile
 
 import rosdep.base_rosdep
 
@@ -82,11 +87,100 @@ class AptGetInstall():
 
     def generate_package_install_command(self, packages, default_yes):
         if not packages:
-            return "#No Packages to install"
+            return "#!/bin/bash \n#No Packages to install"
         if default_yes:
-            return "#Packages\nsudo apt-get install -y " + ' '.join(packages)        
+            return "#!/bin/bash \n#Packages\nsudo apt-get install -y " + ' '.join(packages)        
         else:
-            return "#Packages\nsudo apt-get install " + ' '.join(packages)
+            return "#!/bin/bash \n#Packages\nsudo apt-get install " + ' '.join(packages)
+
+def create_tempfile_from_string_and_execute(string_script, path= tempfile.gettempdir()):
+    result = 1
+
+    try:
+        fh = tempfile.NamedTemporaryFile('w', delete=False)
+        fh.write(string_script)
+        fh.close()
+        print "running script \n{{{\n", string_script, "\n}}}\nin directory", path
+        try:
+            os.chmod(fh.name, 0700)
+            result = subprocess.call(fh.name, cwd=path)
+        except OSError, ex:
+            print "Execution failed with OSError:", ex
+        print "return code ", result
+
+    finally:
+        if os.path.exists(fh.name):
+            os.remove(fh.name)
+    return result == 0
+    
+
+class InstallerAPI():
+    def __init__(self, arg_dict):
+        raise NotImplementedError, "Base class __init__"
+    
+    def check_presence(self):
+        raise NotImplementedError, "Base class check_presence"
+
+    def generate_package_install_command(self, default_yes):
+        raise NotImplementedError, "Base class generate_package_install_command"
+
+class SourceInstaller(InstallerAPI):
+    def __init__(self, arg_dict):
+        self.install_command = arg_dict.get("install_command", "make install")
+        self.check_presence_command = arg_dict.get("check_presence_command", "false")
+
+        self.exec_path = arg_dict.get("exec_path", ".")
+
+        self.tarball = arg_dict.get("url")
+        if not self.tarball:
+            raise RosdepException("url required for source rosdeps") 
+
+
+    def check_presence(self):
+
+        return False#create_tempfile_from_string_and_execute(self.check_presence_command)
+
+    def generate_package_install_command(self, default_yes = False):
+        tempdir = tempfile.mkdtemp()
+
+        f = urllib.urlretrieve(self.tarball)
+
+        try:
+            tarf = tarfile.open(f[0])
+            tarf.extractall(tempdir)
+
+            success = create_tempfile_from_string_and_execute(self.install_command, os.path.join(tempdir, self.exec_path))
+                
+            
+        finally:
+            shutil.rmtree(tempdir)
+            os.remove(f[0])
+
+        if success:
+            print "successfully executed"
+            return True
+        return False
+
+class AptInstaller(InstallerAPI):
+    def __init__(self, arg_dict):
+
+        packages = arg_dict.get("packages", "").split()
+
+        #Use previous implementation
+        self.apt_installer = AptGetInstall()
+
+        self.packages_to_install = list(set(packages) - set(self.apt_installer.dpkg_detect(packages)))
+
+
+    def check_presence(self):
+        return len(self.packages_to_install) == 0
+
+
+    def generate_package_install_command(self, default_yes = False):
+        script = self.apt_installer.generate_package_install_command(self.packages_to_install, default_yes)
+        return create_tempfile_from_string_and_execute(script)
+
+
 
 ###### Debian SPECIALIZATION #########################
 class Debian(roslib.os_detect.Debian, AptGetInstall, rosdep.base_rosdep.RosdepBaseOS):
@@ -94,6 +188,14 @@ class Debian(roslib.os_detect.Debian, AptGetInstall, rosdep.base_rosdep.RosdepBa
     interacting with rosdep.  This defines all Ubuntu sepecific
     methods, including detecting the OS/Version number.  As well as
     how to check for and install packages."""
+    def __init__(self):
+        self.installers = {}
+        self.installers['apt'] = AptInstaller
+        self.installers['source'] = SourceInstaller
+
+
+
+
     pass
 ###### END Debian SPECIALIZATION ########################
 

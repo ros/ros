@@ -265,7 +265,9 @@ which causes more consing and is less performant."
          ,@(when msg-type
              (mapcar-with-field-definition
               (lambda (name def)
-                `(declare (type ,(field-reader-type msg-type def) ,name)))
+                (let ((inferred-msg-type (field-reader-type msg-type def)))
+                  (when inferred-msg-type
+                    `(declare (type ,inferred-msg-type ,name)))))
               bindings))
          ,@body))))
 

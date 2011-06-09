@@ -42,9 +42,11 @@ Warning: this API is still fairly experimental and incomplete.
 
 import os
 import sys
+import re
 
 import roslib.exceptions
 import roslib.packages
+import roslib.stack_manifest
 from roslib.rosenv import ROS_ROOT, ROS_PACKAGE_PATH
 
 
@@ -54,21 +56,25 @@ ROS_STACK = 'ros'
 class ROSStackException(roslib.exceptions.ROSLibException): pass
 class InvalidROSStackException(ROSStackException): pass
 
-def stack_of(pkg):
+def stack_of(pkg, env=None):
     """
+    @param env: override environment variables
+    @type  env: {str: str}
     @return: name of stack that pkg is in, or None if pkg is not part of a stack
     @rtype: str
     @raise roslib.packages.InvalidROSPkgException: if pkg cannot be located
     """
-    pkg_dir = roslib.packages.get_pkg_dir(pkg)
-    dir = os.path.dirname(pkg_dir)
-    while dir and os.path.dirname(dir) != dir:
-        stack_file = os.path.join(dir, STACK_FILE)
+    if env is None:
+        env = os.environ
+    pkg_dir = roslib.packages.get_pkg_dir(pkg, ros_root=env[ROS_ROOT], ros_package_path=env.get(ROS_PACKAGE_PATH, None))
+    d = pkg_dir
+    while d and os.path.dirname(d) != d:
+        stack_file = os.path.join(d, STACK_FILE)
         if os.path.exists(stack_file):
             #TODO: need to resolve issues regarding whether the
             #stack.xml or the directory defines the stack name
-            return os.path.basename(dir)
-        dir = os.path.dirname(dir)
+            return os.path.basename(d)
+        d = os.path.dirname(d)
         
 def packages_of(stack, env=None):
     """
@@ -292,3 +298,46 @@ def expand_to_packages(names, env=None):
         else:
             valid.append(n)
     return valid, invalid
+
+def get_stack_version(stack, env=None):
+    """
+    @param env: override environment variables
+    @type  env: {str: str}
+
+    @return: version number of stack, or None if stack is unversioned.
+    @rtype: str
+    """
+    return get_stack_version_by_dir(get_stack_dir(stack, env=env))
+
+def get_stack_version_by_dir(stack_dir):
+    """
+    Get stack version where stack_dir points to root directory of stack.
+    
+    @param env: override environment variables
+    @type  env: {str: str}
+
+    @return: version number of stack, or None if stack is unversioned.
+    @rtype: str
+    """
+    # REP 109: check for <version> tag first, then CMakeLists.txt
+    manifest_filename = os.path.join(stack_dir, STACK_FILE)
+    if os.path.isfile(manifest_filename):
+        m = roslib.stack_manifest.parse_file(manifest_filename)
+        if m.version:
+            return m.version
+    
+    cmake_filename = os.path.join(stack_dir, 'CMakeLists.txt')
+    if os.path.isfile(cmake_filename):
+        with open(cmake_filename) as f:
+            return _get_cmake_version(f.read())
+    else:
+        return None
+
+def _get_cmake_version(text):
+    for l in text.split('\n'):
+        if l.strip().startswith('rosbuild_make_distribution'):
+            x_re = re.compile(r'[()]')
+            lsplit = x_re.split(l.strip())
+            if len(lsplit) < 2:
+                raise ReleaseException("couldn't find version number in CMakeLists.txt:\n\n%s"%l)
+            return lsplit[1]

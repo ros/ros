@@ -63,15 +63,20 @@ yaml.add_constructor(
     yaml.constructor.Constructor.construct_yaml_str)
 
 class YamlCache:
+    """ A class into which to load the yaml files for quicker access
+    from repeated lookups """
+
     def __init__(self, os_name, os_version):
         self.os_name = os_name
         self.os_version = os_version
         self._yaml_cache = {}
         self._rosstack_depends_cache = {}
         self._expanded_rosdeps = {}
-        self.rp = roslib.packages.ROSPackages()
+        # Cache the list of packages for quicker access
+        self.cached_ros_package_list = roslib.packages.ROSPackages()
         
     def get_yaml(self, path):
+        """ Get the yaml from a specific path.  Caching accelerated"""
         if path in self._yaml_cache:
             return self._yaml_cache[path]
         
@@ -91,6 +96,7 @@ class YamlCache:
         return {}
 
     def get_rosstack_depends(self, stack):
+        """ A caching query to get rosstack_depends(stack) """
         if stack in self._rosstack_depends_cache:
             return self._rosstack_depends_cache[stack]
         
@@ -98,6 +104,7 @@ class YamlCache:
         return self._rosstack_depends_cache[stack]
     
     def get_specific_rosdeps(self, path):
+        """ Get the rosdeps for the active os"""
         if path in self._expanded_rosdeps:
             return self._expanded_rosdeps[path]
 
@@ -115,7 +122,7 @@ class YamlCache:
 
     def get_os_from_yaml(self, rosdep_name, yaml_map, source_path): #source_path is for debugging where errors come from
         """
-        @return The os (and version specific if required) local package name
+        @return The os (and version specific if required ) local package name
         """
         # See if the version for this OS exists
         if self.os_name in yaml_map:
@@ -126,6 +133,7 @@ class YamlCache:
 
     def get_version_from_yaml(self, rosdep_name, os_specific, source_path):
         """
+        Helper function for get_os_from_yaml to parse if version is required.  
         @return The os (and version specific if required) local package name
         """
         if type(os_specific) == type("String"):
@@ -146,7 +154,7 @@ class RosdepException(Exception):
 
 class RosdepLookupPackage:
     """
-    This is a class for interacting with rosdep.yaml files.  It will
+    This is a class for interacting with rosdeps for a specific package.  It will
     load all rosdep.yaml files in the current configuration at
     startup.  It has accessors to allow lookups into the rosdep.yaml
     from rosdep name and returns the string from the yaml file for the
@@ -167,12 +175,18 @@ class RosdepLookupPackage:
         ## Find all rosdep.yamls here and load them into a map
 
 
-        if package:
-            self.load_for_package(package, yaml_cache.rp)
+        if not package:
+            raise RosdepException("RosdepLookupPackage requires a package argument")
+        self._load_for_package(package, yaml_cache.cached_ros_package_list)
         
         
 
-    def load_for_package(self, package, ros_package_proxy):
+    def _load_for_package(self, package, ros_package_proxy):
+        """ Load into local structures the information for this
+        specific package 
+
+        Called in constructor. """
+
         try:
             rosdep_dependent_packages = ros_package_proxy.depends([package])[package]
             #print "package", package, "needs", rosdep_dependent_packages
@@ -214,7 +228,7 @@ class RosdepLookupPackage:
                     print >> sys.stderr, "Failed to load rosdep.yaml for package [%s]:%s"%(p, ex)
                     pass
         for path in paths:
-            self.insert_map(self.parse_yaml(path), path)
+            self._insert_map(self.parse_yaml(path), path)
             if "ROSDEP_DEBUG" in os.environ:
                 print "rosdep loading from file: %s got"%path, self.parse_yaml(path)
         #print "built map", self.rosdep_map
@@ -222,10 +236,11 @@ class RosdepLookupPackage:
         # Override with ros_home/rosdep.yaml if present
         ros_home = roslib.rosenv.get_ros_home()
         path = os.path.join(ros_home, "rosdep.yaml")
-        self.insert_map(self.parse_yaml(path), path, override=True)
+        self._insert_map(self.parse_yaml(path), path, override=True)
 
 
-    def insert_map(self, yaml_dict, source_path, override=False):
+    def _insert_map(self, yaml_dict, source_path, override=False):
+        """ Insert the current map into the full dictionary"""
         for key in yaml_dict:
             rosdep_entry = yaml_dict[key]
             if not rosdep_entry: # if no match don't do anything
@@ -256,6 +271,8 @@ Rules for %s do not match:
 
 
     def parse_yaml(self, path):
+        """ Return the parsed yaml for this path.  Useing cached value
+        in yaml_cache"""
         return self.yaml_cache.get_specific_rosdeps(path)
         
 
@@ -269,10 +286,7 @@ Rules for %s do not match:
         else:
             print >> sys.stderr, "Failed to find rosdep %s for package %s on OS:%s version:%s"%(rosdep, self.package, self.os_name, self.os_version)
             return False
-        
-    def get_map(self):
-        return self.rosdep_map
-        
+                
 
     def get_sources(self, rosdep):
         if rosdep in self.rosdep_source:
@@ -404,21 +418,22 @@ class Rosdep:
         for p in packages:
             output += "\nPACKAGE: %s\n"%p
             rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, yc)
-            map = rdlp.get_map()
-            for k in map:
-                output = output + "<<<< %s -> %s >>>>\n"%(k, map[k])
+            rosdep_map = rdlp.rosdep_map
+            for k,v in rosdep_map.iteritems():
+                output = output + "<<<< %s -> %s >>>>\n"%(k, v)
         return output
 
     def where_defined(self, rosdeps):
         output = ""
         locations = {}
-        rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), None, YamlCache(self.osi.get_name(), self.osi.get_version()))
-        
+
+        yc = YamlCache(self.osi.get_name(), self.osi.get_version())
+
         for r in rosdeps:
             locations[r] = set()
 
         path = os.path.join(roslib.rosenv.get_ros_home(), "rosdep.yaml")
-        rosdep_dict = rdlp.parse_yaml(path)
+        rosdep_dict = yc.get_specific_rosdeps(path)
         for r in rosdeps:
             if r in rosdep_dict:
                 locations[r].add("Override:"+path)
@@ -426,7 +441,7 @@ class Rosdep:
 
         for p in roslib.packages.list_pkgs():
             path = os.path.join(roslib.packages.get_pkg_dir(p), "rosdep.yaml")
-            rosdep_dict = rdlp.parse_yaml(path)
+            rosdep_dict = yc.get_specific_rosdeps(path)
             for r in rosdeps:
                 if r in rosdep_dict:
                     addendum = ""
@@ -437,7 +452,7 @@ class Rosdep:
 
         for s in roslib.stacks.list_stacks():
             path = os.path.join(roslib.stacks.get_stack_dir(s), "rosdep.yaml")
-            rosdep_dict = rdlp.parse_yaml(path)
+            rosdep_dict = yc.get_specific_rosdeps(path)
             for r in rosdeps:
                 if r in rosdep_dict:
                     locations[r].add(path)

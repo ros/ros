@@ -813,11 +813,12 @@ class RosMakeAll:
               roslib.rosenv.makedirs_with_parent_perms(self.log_dir)
 
           self.printer.print_verbose("Finished setting up logging")
+        stacks_arguments = [s for s in packages if s in roslib.stacks.list_stacks()]
         (self.specified_packages, self.rejected_packages) = roslib.stacks.expand_to_packages(packages)
         self.printer.print_all("Expanded args %s to:\n%s"%(packages, self.specified_packages))
         if self.rejected_packages:
             self.printer.print_all("WARNING: The following args could not be parsed as stacks or packages: %s"%self.rejected_packages)
-        if len(self.specified_packages) == 0 and options.bootstrap == False:
+        if len(self.specified_packages) + len(stacks_arguments) == 0 and options.bootstrap == False:
             self.printer.print_all("ERROR: No arguments could be parsed into valid package or stack names.")
             self.printer.running = False
             return False
@@ -830,11 +831,15 @@ class RosMakeAll:
             return True
             
         required_packages = self.specified_packages[:]
-        # these packages are not in the dependency tree but are needed they only cost 0.01 seconds to build
-        #always_build = ["rosout"]
-        #for p in always_build:
-        #    if p not in self.specified_packages:
-        #        required_packages.append(p)
+
+        # catch dependent packages which are inside of zero sized stacks #3528 
+        # add them to required list but not the specified list. 
+        for s in stacks_arguments:
+            for d in roslib.rospack.rosstack_depends_1(s):
+                required_packages.extend(roslib.stacks.packages_of(d))
+
+        # deduplicate required_packages
+        required_packages = list(set(required_packages))
 
         # make sure all dependencies are satisfied and if not warn
         buildable_packages = []

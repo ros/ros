@@ -23,7 +23,7 @@ target_link_libraries(rosrecord rosrecorder)
 rosbuild_link_boost(rosrecord iostreams)
 
 rosbuild_add_executable(rosplay src/rosplay/rosplay.cpp src/rosplay/time_publisher.cpp)
-rosbuild_link_boost(rosplay iostreams system)
+rosbuild_link_boost(rosplay iostreams system filesystem)
 
 #INSTALL(TARGETS rosrecord rosplay
 #        RUNTIME DESTINATION $ENV{ROS_ROOT}/bin)

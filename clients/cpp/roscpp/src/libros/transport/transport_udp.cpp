@@ -40,6 +40,7 @@
 #include <boost/bind.hpp>
 
 #include <fcntl.h>
+#include <sys/uio.h>
 
 namespace ros
 {

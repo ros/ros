@@ -52,7 +52,7 @@ ifneq ($(strip $(INITIAL_DIR)),)
 	mv $(INITIAL_DIR) $(SOURCE_DIR)
 endif
 ifneq ($(strip $(TARBALL_PATCH)),)
-	cd $(SOURCE_DIR) && $(foreach patch,$(TARBALL_PATCH), patch -p0 < ../../$(patch);)
+	$(foreach patch,$(TARBALL_PATCH), patch -d $(SOURCE_DIR) -p0 < $(patch);)
 endif
 	touch $(SOURCE_DIR)/unpacked
 

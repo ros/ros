@@ -141,6 +141,13 @@ macro(rosbuild_init)
     set(_project ${PROJECT_NAME})
   endif(NOT DEFINED ROSBUILD_DONT_REDEFINE_PROJECT)
 
+  # Declare that the minimum version of OSX we support is 10.6, #3491.
+  # For background on how CMAKE_OSX_DEPLOYMENT_TARGET works, see:
+  #   http://public.kitware.com/Bug/view.php?id=6195
+  if(APPLE)
+    SET(CMAKE_OSX_DEPLOYMENT_TARGET "10.6" CACHE STRING "Deployment target for OSX" FORCE)
+  endif(APPLE)
+
   message("[rosbuild] Building package ${_project}")
 
   # Must call include(rosconfig) after project, because rosconfig uses

@@ -1,3 +1,42 @@
+test_sourcedep:
+  ubuntu:
+    source:
+      url: 'https://kforge.ros.org/rosrelease/viewvc/sourcedeps/test_sourcedep/test_sourcedep-0.0.rdmanifest'
+test_sourcedep_dependent:
+  ubuntu:
+    source:
+      url: 'https://kforge.ros.org/rosrelease/viewvc/sourcedeps/test_sourcedep_dependent/test_sourcedep-0.0.rdmanifest'
+test_sourcedep_versioned:
+  ubuntu:
+    '10.04':
+      source:
+        url: 'https://kforge.ros.org/rosrelease/viewvc/sourcedeps/test_sourcedep/test_sourcedep-0.0.rdmanifest'
+test_sourcedep_dependent_versioned:
+  ubuntu:
+    '10.04':
+      source:
+        url: 'https://kforge.ros.org/rosrelease/viewvc/sourcedeps/test_sourcedep_dependent/test_sourcedep-0.0.rdmanifest'
+
+aptvsource:
+  ubuntu:
+    '10.04':
+      apt:
+        packages: python-yaml
+bptvsource:
+  ubuntu:
+    '10.04':
+      apt:
+        packages: not-a-package
+aptsource:
+  ubuntu:
+    apt:
+      packages: python-yaml
+bptsource:
+  ubuntu:
+    apt:
+      packages: not-a-package
+        
+
 python:
   ubuntu: python-dev
   debian: python-dev

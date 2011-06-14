@@ -36,8 +36,11 @@ import shutil
 import urllib
 import tarfile
 import tempfile
+import yaml
 
 import rosdep.base_rosdep
+import rosdep.core
+import rosdep.installers
 
 ###### DEBIAN SPECIALIZATION #########################
 
@@ -67,6 +70,9 @@ class RosdepTestOS(rosdep.base_rosdep.RosdepBaseOS):
 
 
 class AptGetInstall():
+    def __init__(self):
+        print "===================================================================UNUSED"
+
 
     def dpkg_detect(self, pkgs):
         ret_list = []
@@ -87,89 +93,26 @@ class AptGetInstall():
 
     def generate_package_install_command(self, packages, default_yes):
         if not packages:
-            return "#!/bin/bash \n#No Packages to install"
+            return "#No Packages to install"
         if default_yes:
-            return "#!/bin/bash \n#Packages\nsudo apt-get install -y " + ' '.join(packages)        
+            return "#Packages\nsudo apt-get install -y " + ' '.join(packages)        
         else:
-            return "#!/bin/bash \n#Packages\nsudo apt-get install " + ' '.join(packages)
+            return "#Packages\nsudo apt-get install " + ' '.join(packages)
 
-def create_tempfile_from_string_and_execute(string_script, path= tempfile.gettempdir()):
-    result = 1
-
-    try:
-        fh = tempfile.NamedTemporaryFile('w', delete=False)
-        fh.write(string_script)
-        fh.close()
-        print "running script \n{{{\n", string_script, "\n}}}\nin directory", path
-        try:
-            os.chmod(fh.name, 0700)
-            result = subprocess.call(fh.name, cwd=path)
-        except OSError, ex:
-            print "Execution failed with OSError:", ex
-        print "return code ", result
-
-    finally:
-        if os.path.exists(fh.name):
-            os.remove(fh.name)
-    return result == 0
     
 
-class InstallerAPI():
-    def __init__(self, arg_dict):
-        raise NotImplementedError, "Base class __init__"
-    
-    def check_presence(self):
-        raise NotImplementedError, "Base class check_presence"
+        
 
-    def generate_package_install_command(self, default_yes):
-        raise NotImplementedError, "Base class generate_package_install_command"
-
-class SourceInstaller(InstallerAPI):
-    def __init__(self, arg_dict):
-        self.install_command = arg_dict.get("install_command", "make install")
-        self.check_presence_command = arg_dict.get("check_presence_command", "false")
-
-        self.exec_path = arg_dict.get("exec_path", ".")
-
-        self.tarball = arg_dict.get("url")
-        if not self.tarball:
-            raise RosdepException("url required for source rosdeps") 
-
-
-    def check_presence(self):
-
-        return False#create_tempfile_from_string_and_execute(self.check_presence_command)
-
-    def generate_package_install_command(self, default_yes = False):
-        tempdir = tempfile.mkdtemp()
-
-        f = urllib.urlretrieve(self.tarball)
-
-        try:
-            tarf = tarfile.open(f[0])
-            tarf.extractall(tempdir)
-
-            success = create_tempfile_from_string_and_execute(self.install_command, os.path.join(tempdir, self.exec_path))
-                
-            
-        finally:
-            shutil.rmtree(tempdir)
-            os.remove(f[0])
-
-        if success:
-            print "successfully executed"
-            return True
-        return False
-
-class AptInstaller(InstallerAPI):
+class AptInstaller(rosdep.installers.InstallerAPI):
     def __init__(self, arg_dict):
 
-        packages = arg_dict.get("packages", "").split()
+        
+        packages = arg_dict.get("packages", "")
+        if type(packages) == type("string"):
+            packages = packages.split()
 
-        #Use previous implementation
-        self.apt_installer = AptGetInstall()
 
-        self.packages_to_install = list(set(packages) - set(self.apt_installer.dpkg_detect(packages)))
+        self.packages_to_install = list(set(packages) - set(self.dpkg_detect(packages)))
 
 
     def check_presence(self):
@@ -177,8 +120,33 @@ class AptInstaller(InstallerAPI):
 
 
     def generate_package_install_command(self, default_yes = False):
-        script = self.apt_installer.generate_package_install_command(self.packages_to_install, default_yes)
-        return create_tempfile_from_string_and_execute(script)
+        script = '!#/bin/bash\n#no script'
+        if not self.packages_to_install:
+            script =  "#!/bin/bash\n#No Packages to install"
+        if default_yes:
+            script = "#!/bin/bash\n#Packages\nsudo apt-get install -y " + ' '.join(self.packages_to_install)        
+        else:
+            script =  "#!/bin/bash\n#Packages\nsudo apt-get install " + ' '.join(self.packages_to_install)
+        return rosdep.core.create_tempfile_from_string_and_execute(script)
+
+
+
+    def dpkg_detect(self, pkgs):
+        """ 
+        Given a list of package, return the list of installed packages.
+        """
+        ret_list = []
+        cmd = ['dpkg-query', '-W', '-f=\'${Package} ${Status}\n\'']
+        cmd.extend(pkgs)
+        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (std_out, std_err) = pop.communicate()
+        std_out = std_out.replace('\'','')
+        pkg_list = std_out.split('\n')
+        for pkg in pkg_list:
+            pkg_row = pkg.split()
+            if len(pkg_row) == 4 and (pkg_row[3] =='installed'):
+                ret_list.append( pkg_row[0])
+        return ret_list
 
 
 
@@ -191,11 +159,10 @@ class Debian(roslib.os_detect.Debian, AptGetInstall, rosdep.base_rosdep.RosdepBa
     def __init__(self):
         self.installers = {}
         self.installers['apt'] = AptInstaller
-        self.installers['source'] = SourceInstaller
+        self.installers['source'] = rosdep.installers.SourceInstaller
+        self.installers['default'] = AptInstaller
 
-
-
-
+    
     pass
 ###### END Debian SPECIALIZATION ########################
 
@@ -205,6 +172,12 @@ class Ubuntu(roslib.os_detect.Ubuntu, AptGetInstall, rosdep.base_rosdep.RosdepBa
     interacting with rosdep.  This defines all Ubuntu sepecific
     methods, including detecting the OS/Version number.  As well as
     how to check for and install packages."""
+
+    def __init__(self):
+        self.installers = {}
+        self.installers['apt'] = AptInstaller
+        self.installers['source'] = rosdep.installers.SourceInstaller
+        self.installers['default'] = AptInstaller
     pass
 
 ###### END UBUNTU SPECIALIZATION ########################

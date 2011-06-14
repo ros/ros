@@ -116,6 +116,7 @@ class YamlCache:
             rosdep_entry = self.get_os_from_yaml(key, yaml_dict[key], path)
             if not rosdep_entry: # if no match don't do anything
                 continue # matches for loop
+            print "adding entry", rosdep_entry
             expanded_rosdeps[key] = rosdep_entry
         self._expanded_rosdeps[path] = expanded_rosdeps
         return expanded_rosdeps
@@ -124,6 +125,7 @@ class YamlCache:
         """
         @return The os (and version specific if required ) local package name
         """
+        print "yaml map is", yaml_map
         # See if the version for this OS exists
         if self.os_name in yaml_map:
             return self.get_version_from_yaml(rosdep_name, yaml_map[self.os_name], source_path)
@@ -136,16 +138,42 @@ class YamlCache:
         Helper function for get_os_from_yaml to parse if version is required.  
         @return The os (and version specific if required) local package name
         """
+        print "os_specific ", os_specific
         if type(os_specific) == type("String"):
             return os_specific
-        else:# it must be a map of versions
-            if self.os_version in os_specific.keys():
-                return os_specific[self.os_version]
-            #print >> sys.stderr, "failed to find definition of %s for OS(%s) Version(%s) within '''%s'''. Defined in file %s"%(rosdep_name, self.os_name, self.os_version, os_specific, source_path)
+        elif self.os_version in os_specific.keys(): # it must be a map of versions
+            print "Found version", os_specific[self.os_version]
+            return os_specific[self.os_version]
+        elif type(os_specific) == type({}): # detected a map
+            for k in os_specific.keys():
+                if not k in rosdep.installers.reserved_installer_keys:
+                    return False # If the map doesn't have a valid installer key reject it, it must be a version key
+            # return the map 
+            return os_specific
+        else:
             return False                    
 
 
 
+def create_tempfile_from_string_and_execute(string_script, path= tempfile.gettempdir()):
+    result = 1
+
+    try:
+        fh = tempfile.NamedTemporaryFile('w', delete=False)
+        fh.write(string_script)
+        fh.close()
+        print "Executing script below with cwd=%s\n{{{\n%s\n}}}\n"%(path, string_script)
+        try:
+            os.chmod(fh.name, 0700)
+            result = subprocess.call(fh.name, cwd=path)
+        except OSError, ex:
+            print "Execution failed with OSError:", ex
+        #print "Return code ", result
+
+    finally:
+        if os.path.exists(fh.name):
+            os.remove(fh.name)
+    return result == 0
 
 
 
@@ -308,6 +336,7 @@ class Rosdep:
                 raise RosdepException("Class [%s] not derived from RosdepBaseOS"%o.__class__.__name__)
         # Detect the OS on which this program is running. 
         self.osi = roslib.os_detect.OSDetect(os_list)
+        self.yc = YamlCache(self.osi.get_name(), self.osi.get_version())
         self.packages = packages
         self.rosdeps = roslib.packages.rosdeps_of(packages)
         rp = roslib.packages.ROSPackages()
@@ -327,16 +356,20 @@ class Rosdep:
         native_packages = []
         scripts = []
         failed_rosdeps = []
-        yc = YamlCache(self.osi.get_name(), self.osi.get_version())
         start_time = time.time()
         if "ROSDEP_DEBUG" in os.environ:
             print "Generating package list and scripts for %d rosdeps.  This may take a few seconds..."%len(self.packages)
         for p in self.packages:
-            rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, yc)
+            rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, self.yc)
             for r in self.rosdeps[p]:
+                #print "rosdep", r
                 specific = rdlp.lookup_rosdep(r)
+                #print "specific", specific
                 if specific:
-                    if len(specific.split('\n')) == 1:
+                    if type(specific) == type({}):
+                        if "ROSDEP_DEBUG" in os.environ:
+                            print "%s NEW TYPE, SKIPPING"%r
+                    elif len(specific.split('\n')) == 1:
                         for pk in specific.split():
                             native_packages.append(pk)
                     else:
@@ -363,7 +396,7 @@ class Rosdep:
         native_packages, scripts = self.get_packages_and_scripts()
         undetected = native_packages if include_duplicates else \
             self.osi.get_os().strip_detected_packages(native_packages)
-        return "set -o errexit\n" + self.osi.get_os().generate_package_install_command(undetected, default_yes) + \
+        return "#!/bin/bash\nset -o errexit\n" + self.osi.get_os().generate_package_install_command(undetected, default_yes) + \
             "\n".join(["\n%s"%sc for sc in scripts])
         
     def check(self):
@@ -396,28 +429,87 @@ class Rosdep:
         return packages
 
     def install(self, include_duplicates, default_yes):
-        with tempfile.NamedTemporaryFile() as fh:
-            script = self.generate_script(include_duplicates, default_yes)
-            fh.write(script)
-            fh.flush()
-            
-            print "rosdep executing this script:\n{{{\n%s\n}}}"%script
-            p= subprocess.Popen(['bash', fh.name], stderr=subprocess.PIPE )
-            (out, err) = p.communicate()
-            if p.returncode != 0:
-                if err:
-                    return "rosdep script failed with stderr \n{{{\n%s\n}}}"%err
-                else:
-                    return "rosdep script failed without stderr output"
+        success = self.NEW_install(default_yes)
+        if not success:
+            return "Rosdep install failed"
+        return None
+        
+
+    def install_rosdep(self, rosdep_name, rdlp, default_yes):
+        if "ROSDEP_DEBUG" in os.environ:
+            print "Processing rosdep %s"%rosdep_name
+        rosdep_dict = rdlp.lookup_rosdep(rosdep_name)
+        if not rosdep_dict:
+            return False
+        mode = 'default'
+        installer = None
+        if type(rosdep_dict) != type({}):
+            if "ROSDEP_DEBUG" in os.environ:
+                print "OLD TYPE BACKWARDS COMPATABILITY MODE", rosdep_dict
+                
+            installer = self.osi.get_os().get_installer('default')
+            packages = rosdep_dict.split()
+            arg_map = {}
+            arg_map['packages'] = packages
+            rosdep_dict = {} #override old values
+            rosdep_dict['default'] = arg_map 
+
+        else:
+            modes = rosdep_dict.keys()
+            if len(modes) != 1:
+                print "ERRROR: only one mode allowed, rosdep %s has mode %s"%(rosdep_name, modes)
+                return False
             else:
-                return None
+                mode = modes[0]
+                if "ROSDEP_DEBUG" in os.environ:
+                    print "rosdep mode:", mode
+                installer = self.osi.get_os().get_installer(mode)
+        
+        if not installer:
+            raise RosdepException( "Rosdep failed to get an installer for mode %s"%mode)
+            
+        my_installer = installer(rosdep_dict[mode])
+
+
+        # Check if it's already there
+        print "Checking if rosdep %s is present"%rosdep_name
+        if my_installer.check_presence():
+            print "%s already installed"%rosdep_name
+            return True
+        else:
+            print "%s not installed"%rosdep_name
+        
+        # Check for dependencies
+        dependencies = my_installer.get_depends()
+        for d in dependencies:
+            print "Installing dependent rosdep %s"%d
+            self.install_rosdep(d, rdlp, default_yes)
+            
+
+
+        result = my_installer.generate_package_install_command(default_yes)
+        if result:
+            print "successfully installed %s"%rosdep_name
+        else:
+            print "unsuccessfully installed %s"%rosdep_name
+        return result
+
+    def NEW_install(self, default_yes):
+        failure = False
+        for p in self.packages:
+            rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, self.yc)
+            for r in self.rosdeps[p]:
+                if not self.install_rosdep(r, rdlp, default_yes):
+                    failure = True
+                    if not self.robust:
+                        return False
+        return not failure
                     
     def depdb(self, packages):
         output = "Rosdep dependencies for operating system %s version %s "%(self.osi.get_name(), self.osi.get_version())
-        yc = YamlCache(self.osi.get_name(), self.osi.get_version())
         for p in packages:
             output += "\nPACKAGE: %s\n"%p
-            rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, yc)
+            rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, self.yc)
             rosdep_map = rdlp.rosdep_map
             for k,v in rosdep_map.iteritems():
                 output = output + "<<<< %s -> %s >>>>\n"%(k, v)
@@ -427,13 +519,11 @@ class Rosdep:
         output = ""
         locations = {}
 
-        yc = YamlCache(self.osi.get_name(), self.osi.get_version())
-
         for r in rosdeps:
             locations[r] = set()
 
         path = os.path.join(roslib.rosenv.get_ros_home(), "rosdep.yaml")
-        rosdep_dict = yc.get_specific_rosdeps(path)
+        rosdep_dict = self.yc.get_specific_rosdeps(path)
         for r in rosdeps:
             if r in rosdep_dict:
                 locations[r].add("Override:"+path)
@@ -441,7 +531,7 @@ class Rosdep:
 
         for p in roslib.packages.list_pkgs():
             path = os.path.join(roslib.packages.get_pkg_dir(p), "rosdep.yaml")
-            rosdep_dict = yc.get_specific_rosdeps(path)
+            rosdep_dict = self.yc.get_specific_rosdeps(path)
             for r in rosdeps:
                 if r in rosdep_dict:
                     addendum = ""
@@ -452,7 +542,7 @@ class Rosdep:
 
         for s in roslib.stacks.list_stacks():
             path = os.path.join(roslib.stacks.get_stack_dir(s), "rosdep.yaml")
-            rosdep_dict = yc.get_specific_rosdeps(path)
+            rosdep_dict = self.yc.get_specific_rosdeps(path)
             for r in rosdeps:
                 if r in rosdep_dict:
                     locations[r].add(path)

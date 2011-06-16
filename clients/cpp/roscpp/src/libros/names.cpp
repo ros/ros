@@ -136,7 +136,6 @@ std::string remap(const std::string& name)
 std::string resolve(const std::string& name, bool _remap)
 {
   std::string s = resolve(this_node::getNamespace(), name, _remap);
-  ROSCPP_LOG_DEBUG("names::resolve(%s, %s) == %s", name.c_str(), _remap ? "true" : "false", s.c_str());
   return s;
 }
 

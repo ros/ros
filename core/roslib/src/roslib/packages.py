@@ -371,7 +371,7 @@ def _read_rospack_cache(cache, ros_root, ros_package_path):
     except:
         pass
     
-def list_pkgs(pkg_dirs=None, cache=None, env=None):
+def list_pkgs(cache=None, env=None):
     """
     List packages in ROS_ROOT and ROS_PACKAGE_PATH.
 
@@ -379,38 +379,27 @@ def list_pkgs(pkg_dirs=None, cache=None, env=None):
     use internal _pkg_dir_cache and will return cached answers if
     available.
 
-    NOTE: use of pkg_dirs argument is DEPRECATED. Use
-    list_pkgs_by_path() instead, which has clearer meaning with the
-    cache.
-    
-    @param pkg_dirs: (optional) list of paths to search for packages
-    @type  pkg_dirs: [str]
-    
     @param cache: Empty dictionary to store package list in.     
         The format of the cache is {package_name: dir_path, ros_root, ros_package_path}.
     @type  cache: {str: str, str, str}
     @return: complete list of package names in ROS environment
     @rtype: [str]
     """
-    if pkg_dirs is None:
-        pkg_dirs = get_package_paths(True, env=env)
-        if cache is None:
-            # if cache is not specified, we use global cache instead
+    pkg_dirs = get_package_paths(True, env=env)
+    if cache is None:
+        # if cache is not specified, we use global cache instead
 
-            # TODO: this cache can be out-of-date if rospack has not
-            # been run recently. Figure out correct approach for
-            # out-of-date cache.
+        # TODO: this cache can be out-of-date if rospack has not
+        # been run recently. Figure out correct approach for
+        # out-of-date cache.
             
-            # TODO: we don't have any logic go populate user-specified
-            # cache in most optimal way
-            cache = _pkg_dir_cache
-            if cache:
-                return cache.keys()
-            if _update_rospack_cache(env=env):
-                return cache.keys()
-    else:
-        import warnings
-        warnings.warn("pkg_dirs argument is deprecated. Please use list_pkgs_by_path() instead", DeprecationWarning, stacklevel=2)
+        # TODO: we don't have any logic go populate user-specified
+        # cache in most optimal way
+        cache = _pkg_dir_cache
+        if cache:
+            return cache.keys()
+        if _update_rospack_cache(env=env):
+            return cache.keys()
     packages = []
     for pkg_root in pkg_dirs:
         list_pkgs_by_path(pkg_root, packages, cache=cache, env=env)

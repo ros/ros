@@ -227,18 +227,6 @@ class Time(TVal):
         """
         self.secs, self.nsecs = state
 
-    @deprecated
-    def from_seconds(float_secs):
-        """
-        Use from_sec() instead. This is retained for backwards compatibility.
-        
-        @param float_secs: time value in time.time() format
-        @type  float_secs: float
-        @return: Time instance for specified time
-        @rtype: L{Time}
-        """
-        return Time.from_sec(float_secs)
-
     def from_sec(float_secs):
         """
         Create new Time instance using time.time() value (float
@@ -253,7 +241,6 @@ class Time(TVal):
         nsecs = int((float_secs - secs) * 1000000000)
         return Time(secs, nsecs)
     
-    from_seconds = staticmethod(from_seconds)
     from_sec = staticmethod(from_sec)    
 
     def to_time(self):

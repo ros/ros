@@ -381,7 +381,7 @@ class Rosdep:
             fh.flush()
             
             print "executing this script:\n %s"%script
-            p= subprocess.Popen(['bash', fh.name], stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+            p= subprocess.Popen(['bash', fh.name], stderr=subprocess.PIPE )
             (out, err) = p.communicate()
             if p.returncode != 0:
                 if err:

@@ -186,14 +186,8 @@ def compute_md5_v1(get_deps_dict):
     @return: md5 hash
     @rtype: str
     """
-    try:
-        # md5 is deprecated in Python 2.6 in favor of hashlib, but hashlib is
-        # unavailable in Python 2.4
-        import hashlib
-        return _compute_hash_v1(get_deps_dict, hashlib.md5())
-    except ImportError:
-        import md5
-        return _compute_hash_v1(get_deps_dict, md5.new())
+    import hashlib
+    return _compute_hash_v1(get_deps_dict, hashlib.md5())
 
 def compute_md5(get_deps_dict):
     """

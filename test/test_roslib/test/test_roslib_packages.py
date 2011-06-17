@@ -74,37 +74,6 @@ class RoslibPackagesTest(unittest.TestCase):
     d = roslib.packages.get_pkg_dir('test_roslib')
     d = os.path.join(d, 'test', 'package_tests')
     
-    # - p1/p2/p3
-    paths = [os.path.join(d, p) for p in ['p1', 'p2', 'p3']]
-    cache = {}
-    packages = roslib.packages.list_pkgs(pkg_dirs=paths, cache=cache)
-    self.assert_('foo' in packages)
-    self.assert_('bar' in packages)
-
-    foo_p = os.path.join(d, 'p1', 'foo')
-    bar_p = os.path.join(d, 'p1', 'bar')
-    self.assertEquals(foo_p, cache['foo'][0])
-    self.assertEquals(bar_p, cache['bar'][0])
-
-    # - p2/p3/p1
-    paths = [os.path.join(d, p) for p in ['p2', 'p3', 'p1']]
-    cache = {}
-    packages = roslib.packages.list_pkgs(pkg_dirs=paths, cache=cache)
-    self.assert_('foo' in packages)
-    self.assert_('bar' in packages)
-
-    foo_p = os.path.join(d, 'p2', 'foo')
-    bar_p = os.path.join(d, 'p1', 'bar')
-    self.assertEquals(foo_p, cache['foo'][0])
-    self.assertEquals(bar_p, cache['bar'][0])
-    
-  def test_list_pkgs_unary(self):
-    d = roslib.packages.get_pkg_dir('test_roslib')
-    d = os.path.join(d, 'test', 'stack_tests_unary')
-    cache = {}
-    packages = roslib.packages.list_pkgs(pkg_dirs=[d], cache=cache)
-    self.assertEquals(set(['foo', 'bar']), set(packages))
-
   def test_find_node(self):
     import roslib.packages
     d = roslib.packages.get_pkg_dir('test_roslib')

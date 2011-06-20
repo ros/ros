@@ -261,7 +261,8 @@ def _rostopic_bw(topic, window_size=-1):
     _, real_topic, _ = get_topic_type(topic, blocking=True) #pause hz until topic is published
     if rospy.is_shutdown():
         return
-    rospy.init_node(NAME, anonymous=True)
+    # #3543 disable all auto-subscriptions to /clock
+    rospy.init_node(NAME, anonymous=True, disable_rostime=True)
     rt = ROSTopicBandwidth(window_size)
     # we use a large buffer size as we don't know what sort of messages we're dealing with.
     # may parameterize this in the future

@@ -34,13 +34,13 @@ import roslib.os_detect
 import os 
 import shutil
 import urllib
+import urllib2
 import tarfile
 import tempfile
 import yaml
 
 import rosdep.base_rosdep
 import rosdep.core
-
 
 #TODO find an automated way to generate this list 
 # This needs to list keys which identify installers
@@ -68,13 +68,19 @@ class SourceInstaller(InstallerAPI):
     def __init__(self, arg_dict):
         self.url = arg_dict.get("url")
         if not self.url:
-            raise RosdepException("url required for source rosdeps") 
+            raise rosdep.core.RosdepException("url required for source rosdeps") 
 
 
         #TODO add md5sum verification
         if "ROSDEP_DEBUG" in os.environ:
             print "Downloading manifest %s"%self.url
-        self.manifest = yaml.load(urllib.urlopen(self.url))
+        try:
+            self.manifest = yaml.load(urllib2.urlopen(self.url))
+        except urllib2.URLError, ex:
+            raise rosdep.core.RosdepException("Failed to load url %s with error: %s"%(self.url, ex))
+        except yaml.scanner.ScannerError, ex:
+            raise rosdep.core.RosdepException("Failed to parse yaml in %s:  Error: %s"%(self.url, ex))
+            
         if "ROSDEP_DEBUG" in os.environ:
             print "Downloaded manifest:\n{{{%s\n}}}\n"%self.manifest
         
@@ -87,7 +93,7 @@ class SourceInstaller(InstallerAPI):
 
         self.tarball = self.manifest.get("url")
         if not self.tarball:
-            raise RosdepException("url required for source rosdeps") 
+            raise rosdep.core.RosdepException("url required for source rosdeps") 
 
 
     def check_presence(self):

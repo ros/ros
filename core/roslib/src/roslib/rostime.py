@@ -49,20 +49,6 @@ def _canon(secs, nsecs):
         nsecs += 1000000000
     return secs,nsecs
 
-import warnings
-def deprecated(func):
-    """This is a decorator which can be used to mark functions
-    as deprecated. It will result in a warning being emmitted
-    when the function is used."""
-    def newFunc(*args, **kwargs):
-        warnings.warn("Call to deprecated function %s." % func.__name__,
-                      category=DeprecationWarning, stacklevel=2)
-        return func(*args, **kwargs)
-    newFunc.__name__ = func.__name__
-    newFunc.__doc__ = func.__doc__
-    newFunc.__dict__.update(func.__dict__)
-    return newFunc
-
 class TVal(object):
     """
     Base class of L{Time} and L{Duration} representations. Representation
@@ -227,18 +213,6 @@ class Time(TVal):
         """
         self.secs, self.nsecs = state
 
-    @deprecated
-    def from_seconds(float_secs):
-        """
-        Use from_sec() instead. This is retained for backwards compatibility.
-        
-        @param float_secs: time value in time.time() format
-        @type  float_secs: float
-        @return: Time instance for specified time
-        @rtype: L{Time}
-        """
-        return Time.from_sec(float_secs)
-
     def from_sec(float_secs):
         """
         Create new Time instance using time.time() value (float
@@ -253,7 +227,6 @@ class Time(TVal):
         nsecs = int((float_secs - secs) * 1000000000)
         return Time(secs, nsecs)
     
-    from_seconds = staticmethod(from_seconds)
     from_sec = staticmethod(from_sec)    
 
     def to_time(self):

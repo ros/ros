@@ -60,3 +60,15 @@ class RosdepBaseOS(roslib.os_detect.OSBase):
         raise OSDetectException("generate_package_install_command unimplemented")
 
 
+
+    def get_installer(self, mode):
+        """ 
+        Return the correct installer for a given OS from the
+        self.installer dict.
+        """
+        try:
+            if not mode in self.installers:
+                raise RosdepException("Invalid installation mode %s for %s"%(mode, self.get_name()))
+            return self.installers[mode]
+        except NameError, ex:
+            raise RosdepException("Invalid installation mode %s for %s"%(mode, self.get_name()))

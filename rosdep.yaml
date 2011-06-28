@@ -1,3 +1,6 @@
+tinyxml:
+  ubuntu: libtinyxml-dev
+  debian: libtinyxml-dev
 python:
   ubuntu: python-dev
   debian: python-dev

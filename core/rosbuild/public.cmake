@@ -787,8 +787,10 @@ macro(rosbuild_gensrv)
   else(NOT _srvlist)
     file(WRITE ${PROJECT_SOURCE_DIR}/srv_gen/generated "yes")
     # Now set the mtime to something consistent.  We only want whether or not this file exists to matter
+    # But we set it to the current time, because setting it to zero causes
+    # annoying warning, #3396.
     execute_process(
-      COMMAND python -c "import os; os.utime('${PROJECT_SOURCE_DIR}/srv_gen/generated', (0, 0))"
+      COMMAND python -c "import os; os.utime('${PROJECT_SOURCE_DIR}/srv_gen/generated', None)"
       ERROR_VARIABLE _set_mtime_error
       RESULT_VARIABLE _set_mtime_failed
       OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -822,8 +824,10 @@ macro(rosbuild_genmsg)
   else(NOT _msglist)
     file(WRITE ${PROJECT_SOURCE_DIR}/msg_gen/generated "yes")
     # Now set the mtime to something consistent.  We only want whether or not this file exists to matter
+    # But we set it to the current time, because setting it to zero causes
+    # annoying warning, #3396.
     execute_process(
-      COMMAND python -c "import os; os.utime('${PROJECT_SOURCE_DIR}/msg_gen/generated', (0, 0))"
+      COMMAND python -c "import os; os.utime('${PROJECT_SOURCE_DIR}/msg_gen/generated', None)"
       ERROR_VARIABLE _set_mtime_error
       RESULT_VARIABLE _set_mtime_failed
       OUTPUT_STRIP_TRAILING_WHITESPACE)

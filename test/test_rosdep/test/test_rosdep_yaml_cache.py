@@ -113,7 +113,7 @@ class RosdepYamlCacheTest(unittest.TestCase):
     def test_YamlCache_get_specific_rosdeps(self):
         yc = rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version")
         yaml_dict = yc.get_specific_rosdeps(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"), "test", "example_rosdep.yaml"))
-
+        print "yaml_dict", yaml_dict
         yaml_truth = { 
             'zlib': 'zlib1g-dev',
             'rosdep_test':'librosdep_test1.37-dev', 

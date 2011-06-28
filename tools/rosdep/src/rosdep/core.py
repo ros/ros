@@ -137,11 +137,9 @@ class YamlCache:
         Helper function for get_os_from_yaml to parse if version is required.  
         @return The os (and version specific if required) local package name
         """
-        print "os_specific ", os_specific
         if type(os_specific) == type("String"):
             return os_specific
         elif self.os_version in os_specific.keys(): # it must be a map of versions
-            print "Found version", os_specific[self.os_version]
             return os_specific[self.os_version]
         elif type(os_specific) == type({}): # detected a map
             for k in os_specific.keys():

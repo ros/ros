@@ -116,7 +116,7 @@ class YamlCache:
             rosdep_entry = self.get_os_from_yaml(key, yaml_dict[key], path)
             if not rosdep_entry: # if no match don't do anything
                 continue # matches for loop
-            print "adding entry", rosdep_entry
+            #print "adding entry", rosdep_entry
             expanded_rosdeps[key] = rosdep_entry
         self._expanded_rosdeps[path] = expanded_rosdeps
         return expanded_rosdeps

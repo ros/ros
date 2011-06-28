@@ -125,7 +125,6 @@ class YamlCache:
         """
         @return The os (and version specific if required ) local package name
         """
-        print "yaml map is", yaml_map
         # See if the version for this OS exists
         if self.os_name in yaml_map:
             return self.get_version_from_yaml(rosdep_name, yaml_map[self.os_name], source_path)

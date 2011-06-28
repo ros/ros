@@ -1,7 +1,6 @@
-yaml-cpp:
-  ubuntu:
-    source:
-      url: 'https://kforge.ros.org/rosrelease/viewvc/sourcedeps/yaml-cpp/yaml-cpp-0.2.5.rdmanifest'
+tinyxml:
+  ubuntu: tinyxml-dev
+  debian: tinyxml-dev
 python:
   ubuntu: python-dev
   debian: python-dev

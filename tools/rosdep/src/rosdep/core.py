@@ -469,17 +469,12 @@ class Rosdep:
 
 
         # Check if it's already there
-        print "Checking if rosdep %s is present"%rosdep_name
         if my_installer.check_presence():
-            print "%s already installed"%rosdep_name
             return True
-        else:
-            print "%s not installed"%rosdep_name
         
         # Check for dependencies
         dependencies = my_installer.get_depends()
         for d in dependencies:
-            print "Installing dependent rosdep %s"%d
             self.install_rosdep(d, rdlp, default_yes)
             
 

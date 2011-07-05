@@ -489,6 +489,10 @@ class Rosdep:
         result = my_installer.generate_package_install_command(default_yes)
         if result:
             print "successfully installed %s"%rosdep_name
+            if not my_installer.check_presence():
+                print "rosdep %s failed check-presence-script after installation"%rosdep_name
+                return False
+
         else:
             print "unsuccessfully installed %s"%rosdep_name
         return result

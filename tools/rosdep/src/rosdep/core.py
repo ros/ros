@@ -470,7 +470,14 @@ class Rosdep:
 
         # Check if it's already there
         if my_installer.check_presence():
+            if "ROSDEP_DEBUG" in os.environ:
+                print "rosdep %s already present"%rosdep_name
+            
             return True
+        else:
+            if "ROSDEP_DEBUG" in os.environ:
+                print "rosdep %s not detected.  It will be installed"%rosdep_name
+            
         
         # Check for dependencies
         dependencies = my_installer.get_depends()

@@ -98,7 +98,7 @@ class SourceInstaller(InstallerAPI):
 
     def check_presence(self):
 
-        return False#rosdep.core.create_tempfile_from_string_and_execute(self.check_presence_command)
+        return rosdep.core.create_tempfile_from_string_and_execute(self.check_presence_command)
 
     def generate_package_install_command(self, default_yes = False):
         tempdir = tempfile.mkdtemp()

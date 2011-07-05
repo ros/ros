@@ -66,9 +66,9 @@ class InstallerAPI():
 
 class SourceInstaller(InstallerAPI):
     def __init__(self, arg_dict):
-        self.url = arg_dict.get("url")
+        self.url = arg_dict.get("uri")
         if not self.url:
-            raise rosdep.core.RosdepException("url required for source rosdeps") 
+            raise rosdep.core.RosdepException("uri required for source rosdeps") 
 
 
         #TODO add md5sum verification
@@ -91,9 +91,9 @@ class SourceInstaller(InstallerAPI):
 
         self.depends = self.manifest.get("depends", [])
 
-        self.tarball = self.manifest.get("url")
+        self.tarball = self.manifest.get("uri")
         if not self.tarball:
-            raise rosdep.core.RosdepException("url required for source rosdeps") 
+            raise rosdep.core.RosdepException("uri required for source rosdeps") 
 
 
     def check_presence(self):

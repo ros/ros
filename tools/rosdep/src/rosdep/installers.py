@@ -85,7 +85,7 @@ class SourceInstaller(InstallerAPI):
             print "Downloaded manifest:\n{{{%s\n}}}\n"%self.manifest
         
         self.install_command = self.manifest.get("install-script", "make install")
-        self.check_presence_command = self.manifest.get("check_presence_script", "false")
+        self.check_presence_command = self.manifest.get("check-presence-script", "#!/bin/bash\n#no file found\nfalse")
 
         self.exec_path = self.manifest.get("exec-path", ".")
 

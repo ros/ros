@@ -136,9 +136,12 @@ def main():
 
     try:
         if command == "generate_bash" or command == "satisfy":
-            # Old style print r.generate_script(include_duplicates=options.include_duplicates, default_yes=options.default_yes)
-            error = r.install(options.include_duplicates, options.default_yes, execute=False)
-            return 0
+            result = r.satisfy()
+            if result:
+                return 0
+            else:
+                return 1
+        
         elif command == "install":
             error = r.install(options.include_duplicates, options.default_yes)
             if error:

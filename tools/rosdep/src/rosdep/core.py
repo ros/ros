@@ -396,24 +396,31 @@ class Rosdep:
         return "#!/bin/bash\nset -o errexit\n" + self.osi.get_os().generate_package_install_command(undetected, default_yes) + \
             "\n".join(["\n%s"%sc for sc in scripts])
         
-    def check(self):
+
+    def satisfy(self):
+        return self.check(display = True)
+
+    def check(self, display = False):
         failure = False
         try:
             native_packages, scripts = self.get_packages_and_scripts()
+            num_scripts = len(scripts)
+            if num_scripts > 0:
+                print "Found %d scripts.  Cannot check scripts for presence. rosdep check will always fail."%num_scripts
+                failure = False
+                if display == True:
+                    for s in scripts:
+                        print "Script:\n{{{\n%s\n}}}"%s
         except RosdepException, e:
-            print >> sys.stderr, e
+            print >> sys.stderr, "error in processing scripts", e
             pass
 
-        num_scripts = len(scripts)
-        if num_scripts > 0:
-            print "Found %d scripts.  Cannot check scripts for presence. rosdep check will always fail."%num_scripts
-            failure = False
 
 
         for p in self.packages:
             rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, self.yc)
             for r in self.rosdeps[p]:
-                if not self.install_rosdep(r, rdlp, default_yes=False, execute=False, display=False):
+                if not self.install_rosdep(r, rdlp, default_yes=False, execute=False, display=display):
                     failure = True
     
 
@@ -443,7 +450,7 @@ class Rosdep:
         return None
         
 
-    def install_rosdep(self, rosdep_name, rdlp, default_yes, execute, display):
+    def install_rosdep(self, rosdep_name, rdlp, default_yes, execute, display=True):
         """
         Install a single rosdep given it's name and a lookup table. 
         @param default_yes Add a -y to the installation call

@@ -134,23 +134,29 @@ class RosdepCoreTest(unittest.TestCase):
 
     def test_Rosdep_tripwire_robust(self):
         rd = rosdep.core.Rosdep(["rosdep"], "rosdep", robust=True)
-        try:
-            rd.check()
-            rd.what_needs(["boost"])
-            rd.depdb(['rosdep'])
-            rd.where_defined(['boost'])
-        except:
-            self.fail("test Rosdep improperly Raised an exception.")
+        self.tripwire_impl(rd)
         
     def test_Rosdep_tripwire(self):
         rd = rosdep.core.Rosdep(["rosdep"], "rosdep", robust=False)
+        self.tripwire_impl(rd)
+
+    def tripwire_impl(self, rd):
         try:
             rd.check()
+        except rosdep.core.RosdepException, ex:
+            self.fail("test Rosdep check improperly Raised an exception.", ex)
+        try:
             rd.what_needs(["boost"])
+        except rosdep.core.RosdepException, ex:
+            self.fail("test Rosdep what_needs improperly Raised an exception.", ex)
+        try:
             rd.depdb(['rosdep'])
+        except rosdep.core.RosdepException, ex:
+            self.fail("test Rosdep depdb improperly Raised an exception.", ex)
+        try:
             rd.where_defined(['boost'])
-        except:
-            self.fail("test Rosdep improperly Raised an exception.")
+        except rosdep.core.RosdepException, ex:
+            self.fail("test Rosdep where_defined improperly Raised an exception.", ex)
 
         
         

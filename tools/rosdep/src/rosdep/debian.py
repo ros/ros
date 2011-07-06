@@ -69,37 +69,6 @@ class RosdepTestOS(rosdep.base_rosdep.RosdepBaseOS):
             return "#no"
 
 
-class AptGetInstall():
-    def __init__(self):
-        print "===================================================================UNUSED"
-
-
-    def dpkg_detect(self, pkgs):
-        ret_list = []
-        cmd = ['dpkg-query', '-W', '-f=\'${Package} ${Status}\n\'']
-        cmd.extend(pkgs)
-        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (std_out, std_err) = pop.communicate()
-        std_out = std_out.replace('\'','')
-        pkg_list = std_out.split('\n')
-        for pkg in pkg_list:
-            pkg_row = pkg.split()
-            if len(pkg_row) == 4 and (pkg_row[3] =='installed'):
-                ret_list.append( pkg_row[0])
-        return ret_list
-
-    def strip_detected_packages(self, packages):
-        return list(set(packages) - set(self.dpkg_detect(packages)))
-
-    def generate_package_install_command(self, packages, default_yes):
-        if not packages:
-            return "#No Packages to install"
-        if default_yes:
-            return "#Packages\nsudo apt-get install -y " + ' '.join(packages)        
-        else:
-            return "#Packages\nsudo apt-get install " + ' '.join(packages)
-
-    
 
         
 
@@ -156,7 +125,7 @@ class AptInstaller(rosdep.installers.InstallerAPI):
 
 
 ###### Debian SPECIALIZATION #########################
-class Debian(roslib.os_detect.Debian, AptGetInstall, rosdep.base_rosdep.RosdepBaseOS):
+class Debian(roslib.os_detect.Debian, rosdep.base_rosdep.RosdepBaseOS):
     """ This is an implementation of a standard interface for
     interacting with rosdep.  This defines all Ubuntu sepecific
     methods, including detecting the OS/Version number.  As well as
@@ -188,7 +157,7 @@ class Ubuntu(roslib.os_detect.Ubuntu, rosdep.base_rosdep.RosdepBaseOS):
 ###### END UBUNTU SPECIALIZATION ########################
 
 ###### Mint SPECIALIZATION #########################
-class Mint(AptGetInstall, rosdep.base_rosdep.RosdepBaseOS):
+class Mint(rosdep.base_rosdep.RosdepBaseOS):
     """ This is an implementation of a standard interface for
     interacting with rosdep.  Mint is closely coupled to Ubuntu, it
     will masquerade as ubuntu for the purposes of rosdep. """

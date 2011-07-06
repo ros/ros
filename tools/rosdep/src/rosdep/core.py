@@ -474,6 +474,10 @@ class Rosdep:
             if "ROSDEP_DEBUG" in os.environ:
                 print "OLD TYPE BACKWARDS COMPATABILITY MODE", rosdep_dict
                 
+
+            if len(rosdep_dict.split('\n')) > 1:
+                raise RosdepException( "SCRIPT UNIMPLEMENTED AT THE MOMENT TODO")
+
             installer = self.osi.get_os().get_installer('default')
             packages = rosdep_dict.split()
             arg_map = {}
@@ -488,9 +492,10 @@ class Rosdep:
                 return False
             else:
                 mode = modes[0]
-                if "ROSDEP_DEBUG" in os.environ:
-                    print "rosdep mode:", mode
-                installer = self.osi.get_os().get_installer(mode)
+
+        if "ROSDEP_DEBUG" in os.environ:
+            print "rosdep mode:", mode
+        installer = self.osi.get_os().get_installer(mode)
         
         if not installer:
             raise RosdepException( "Rosdep failed to get an installer for mode %s"%mode)
@@ -500,7 +505,7 @@ class Rosdep:
 
         # Check if it's already there
         if my_installer.check_presence():
-            if "ROSDEP_DEBUG" in os.environ:
+            if "ROSDEP_DEBUG" in os.environ or not execute:
                 print "rosdep %s already present"%rosdep_name
             
             return True
@@ -512,9 +517,8 @@ class Rosdep:
         # Check for dependencies
         dependencies = my_installer.get_depends()
         for d in dependencies:
-            self.install_rosdep(d, rdlp, default_yes)
+            self.install_rosdep(d, rdlp, default_yes, execute)
             
-
 
         result = my_installer.generate_package_install_command(default_yes, execute=True)
 
@@ -524,7 +528,7 @@ class Rosdep:
                 print "rosdep %s failed check-presence-script after installation"%rosdep_name
                 return False
 
-        else:
+        elif execute:
             print "unsuccessfully installed %s"%rosdep_name
         return result
 

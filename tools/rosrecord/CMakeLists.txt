@@ -16,7 +16,7 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 #rosbuild_add_executable(demo src/demo/demo.cpp)
 
 rosbuild_add_library(rosrecorder src/rosrecord/recorder.cpp)
-rosbuild_link_boost(rosrecorder iostreams system)
+rosbuild_link_boost(rosrecorder iostreams system filesystem-mt)
 
 rosbuild_add_executable(rosrecord src/rosrecord/rosrecord.cpp)
 target_link_libraries(rosrecord rosrecorder)

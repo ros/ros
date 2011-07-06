@@ -335,12 +335,10 @@ class Rosdep:
         self.osi = roslib.os_detect.OSDetect(os_list)
         self.yc = YamlCache(self.osi.get_name(), self.osi.get_version())
         self.packages = packages
-        self.rosdeps = roslib.packages.rosdeps_of(packages)
         rp = roslib.packages.ROSPackages()
         self.rosdeps = rp.rosdeps(packages)
         self.robust = robust
         
-
 
     def get_rosdep0(self, package):
         m = roslib.manifest.load_manifest(package)
@@ -385,16 +383,6 @@ class Rosdep:
             print "Done loading rosdeps in %f seconds, averaging %f per rosdep."%(time_delta, time_delta/len(self.packages))
 
         return (list(set(native_packages)), list(set(scripts)))
-
-    def get_native_packages(self):
-        return get_packages_and_scripts()[0]
-
-    def generate_script(self, include_duplicates=False, default_yes = False):
-        native_packages, scripts = self.get_packages_and_scripts()
-        undetected = native_packages if include_duplicates else \
-            self.osi.get_os().strip_detected_packages(native_packages)
-        return "#!/bin/bash\nset -o errexit\n" + self.osi.get_os().generate_package_install_command(undetected, default_yes) + \
-            "\n".join(["\n%s"%sc for sc in scripts])
         
 
     def satisfy(self):

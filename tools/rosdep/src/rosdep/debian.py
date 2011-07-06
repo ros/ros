@@ -119,7 +119,7 @@ class AptInstaller(rosdep.installers.InstallerAPI):
         return len(self.packages_to_install) == 0
 
 
-    def generate_package_install_command(self, default_yes = False, execute = True):
+    def generate_package_install_command(self, default_yes = False, execute = True, display = True):
         script = '!#/bin/bash\n#no script'
         if not self.packages_to_install:
             script =  "#!/bin/bash\n#No Packages to install"
@@ -130,9 +130,9 @@ class AptInstaller(rosdep.installers.InstallerAPI):
 
         if execute:
             return rosdep.core.create_tempfile_from_string_and_execute(script)
-        else:
+        elif display:
             print "To install packages: %s would have executed script\n{{{\n%s\n}}}"%(self.packages_to_install, script)
-            return False
+        return False
 
 
 

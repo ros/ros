@@ -404,39 +404,20 @@ class Rosdep:
             print >> sys.stderr, e
             pass
 
+        num_scripts = len(scripts)
+        if num_scripts > 0:
+            print "Found %d scripts.  Cannot check scripts for presence. rosdep check will always fail."%num_scripts
+            failure = False
 
 
         for p in self.packages:
             rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, self.yc)
             for r in self.rosdeps[p]:
-                if not self.install_rosdep(r, rdlp, default_yes=False, execute=False):
+                if not self.install_rosdep(r, rdlp, default_yes=False, execute=False, display=False):
                     failure = True
-                    print "Failed to detect rosdep %s"%r
-                    
     
 
         return not failure
-
-
-    def unused_DELETE_ME(self):
-        native_packages = []
-        scripts = []
-        try:
-            native_packages, scripts = self.get_packages_and_scripts()
-        except RosdepException, e:
-            print >> sys.stderr, e
-            pass
-
-        undetected = self.osi.get_os().strip_detected_packages(native_packages)
-        return_str = ""
-        return_str_scripts = ""
-        if len(undetected) > 0:
-            return_str += "Did not detect packages: %s\n"%undetected
-        if len(scripts) > 0:
-            return_str_scripts += "The following scripts were not tested:\n"
-        for s in scripts:
-            return_str_scripts += s + '\n'
-        return return_str, return_str_scripts
 
     def what_needs(self, rosdep_args):
         packages = []
@@ -462,7 +443,13 @@ class Rosdep:
         return None
         
 
-    def install_rosdep(self, rosdep_name, rdlp, default_yes, execute):
+    def install_rosdep(self, rosdep_name, rdlp, default_yes, execute, display):
+        """
+        Install a single rosdep given it's name and a lookup table. 
+        @param default_yes Add a -y to the installation call
+        @param execute If True execute, if false, don't execute just print
+        @return If the install was successful
+        """
         if "ROSDEP_DEBUG" in os.environ:
             print "Processing rosdep %s"%rosdep_name
         rosdep_dict = rdlp.lookup_rosdep(rosdep_name)
@@ -505,7 +492,7 @@ class Rosdep:
 
         # Check if it's already there
         if my_installer.check_presence():
-            if "ROSDEP_DEBUG" in os.environ or not execute:
+            if "ROSDEP_DEBUG" in os.environ:
                 print "rosdep %s already present"%rosdep_name
             
             return True
@@ -520,7 +507,7 @@ class Rosdep:
             self.install_rosdep(d, rdlp, default_yes, execute)
             
 
-        result = my_installer.generate_package_install_command(default_yes, execute=True)
+        result = my_installer.generate_package_install_command(default_yes, execute, display)
 
         if result:
             print "successfully installed %s"%rosdep_name

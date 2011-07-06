@@ -61,9 +61,11 @@ class InstallerAPI():
         """
         raise NotImplementedError, "Base class check_presence"
 
-    def generate_package_install_command(self, default_yes, execute = True):
+    def generate_package_install_command(self, default_yes, execute = True, display = True):
         """
-        If execute is True, install the rosdep, else 
+        If execute is True, install the rosdep, else if display = True
+        print the script it would have run to install.
+        @param default_yes  Pass through -y or equivilant to package manager
         """
         raise NotImplementedError, "Base class generate_package_install_command"
 

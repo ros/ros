@@ -48,7 +48,7 @@ class RosdepBaseOS(roslib.os_detect.OSBase):
         which is not installed. (If undetectable keep the package in
         the list.)
         """
-        raise OSDetectException("strip_detected_packages unimplemented")
+        raise roslib.os_detect.OSDetectException("strip_detected_packages unimplemented")
 
     def generate_package_install_command(self, packages, default_yes):
         """
@@ -57,7 +57,7 @@ class RosdepBaseOS(roslib.os_detect.OSBase):
         pass through an apt-get -y equivilant to the package manager
         to allow this call to be non interactive in scripts.
         """
-        raise OSDetectException("generate_package_install_command unimplemented")
+        raise roslib.os_detect.OSDetectException("generate_package_install_command unimplemented")
 
 
 

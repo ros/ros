@@ -470,7 +470,14 @@ class Rosdep:
 
         # Check if it's already there
         if my_installer.check_presence():
+            if "ROSDEP_DEBUG" in os.environ:
+                print "rosdep %s already present"%rosdep_name
+            
             return True
+        else:
+            if "ROSDEP_DEBUG" in os.environ:
+                print "rosdep %s not detected.  It will be installed"%rosdep_name
+            
         
         # Check for dependencies
         dependencies = my_installer.get_depends()
@@ -482,6 +489,10 @@ class Rosdep:
         result = my_installer.generate_package_install_command(default_yes)
         if result:
             print "successfully installed %s"%rosdep_name
+            if not my_installer.check_presence():
+                print "rosdep %s failed check-presence-script after installation"%rosdep_name
+                return False
+
         else:
             print "unsuccessfully installed %s"%rosdep_name
         return result

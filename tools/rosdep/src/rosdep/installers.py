@@ -66,9 +66,9 @@ class InstallerAPI():
 
 class SourceInstaller(InstallerAPI):
     def __init__(self, arg_dict):
-        self.url = arg_dict.get("url")
+        self.url = arg_dict.get("uri")
         if not self.url:
-            raise rosdep.core.RosdepException("url required for source rosdeps") 
+            raise rosdep.core.RosdepException("uri required for source rosdeps") 
 
 
         #TODO add md5sum verification
@@ -85,20 +85,20 @@ class SourceInstaller(InstallerAPI):
             print "Downloaded manifest:\n{{{%s\n}}}\n"%self.manifest
         
         self.install_command = self.manifest.get("install-script", "make install")
-        self.check_presence_command = self.manifest.get("check_presence_script", "false")
+        self.check_presence_command = self.manifest.get("check-presence-script", "#!/bin/bash\n#no file found\nfalse")
 
         self.exec_path = self.manifest.get("exec-path", ".")
 
         self.depends = self.manifest.get("depends", [])
 
-        self.tarball = self.manifest.get("url")
+        self.tarball = self.manifest.get("uri")
         if not self.tarball:
-            raise rosdep.core.RosdepException("url required for source rosdeps") 
+            raise rosdep.core.RosdepException("uri required for source rosdeps") 
 
 
     def check_presence(self):
 
-        return False#rosdep.core.create_tempfile_from_string_and_execute(self.check_presence_command)
+        return rosdep.core.create_tempfile_from_string_and_execute(self.check_presence_command)
 
     def generate_package_install_command(self, default_yes = False):
         tempdir = tempfile.mkdtemp()

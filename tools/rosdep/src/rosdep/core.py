@@ -397,6 +397,28 @@ class Rosdep:
             "\n".join(["\n%s"%sc for sc in scripts])
         
     def check(self):
+        failure = False
+        try:
+            native_packages, scripts = self.get_packages_and_scripts()
+        except RosdepException, e:
+            print >> sys.stderr, e
+            pass
+
+
+
+        for p in self.packages:
+            rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, self.yc)
+            for r in self.rosdeps[p]:
+                if not self.install_rosdep(r, rdlp, default_yes=False, execute=False):
+                    failure = True
+                    print "Failed to detect rosdep %s"%r
+                    
+    
+
+        return not failure
+
+
+    def unused_DELETE_ME(self):
         native_packages = []
         scripts = []
         try:
@@ -404,6 +426,7 @@ class Rosdep:
         except RosdepException, e:
             print >> sys.stderr, e
             pass
+
         undetected = self.osi.get_os().strip_detected_packages(native_packages)
         return_str = ""
         return_str_scripts = ""
@@ -425,14 +448,21 @@ class Rosdep:
                 
         return packages
 
-    def install(self, include_duplicates, default_yes):
-        success = self.NEW_install(default_yes)
-        if not success:
+    def install(self, include_duplicates, default_yes, execute=True):
+        failure = False
+        for p in self.packages:
+            rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, self.yc)
+            for r in self.rosdeps[p]:
+                if not self.install_rosdep(r, rdlp, default_yes, execute):
+                    failure = True
+                    if not self.robust:
+                        return False
+        if failure:
             return "Rosdep install failed"
         return None
         
 
-    def install_rosdep(self, rosdep_name, rdlp, default_yes):
+    def install_rosdep(self, rosdep_name, rdlp, default_yes, execute):
         if "ROSDEP_DEBUG" in os.environ:
             print "Processing rosdep %s"%rosdep_name
         rosdep_dict = rdlp.lookup_rosdep(rosdep_name)
@@ -486,7 +516,7 @@ class Rosdep:
             
 
 
-        result = my_installer.generate_package_install_command(default_yes)
+        result = my_installer.generate_package_install_command(default_yes, execute=True)
 
         if result:
             print "successfully installed %s"%rosdep_name
@@ -498,17 +528,6 @@ class Rosdep:
             print "unsuccessfully installed %s"%rosdep_name
         return result
 
-    def NEW_install(self, default_yes):
-        failure = False
-        for p in self.packages:
-            rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, self.yc)
-            for r in self.rosdeps[p]:
-                if not self.install_rosdep(r, rdlp, default_yes):
-                    failure = True
-                    if not self.robust:
-                        return False
-        return not failure
-                    
     def depdb(self, packages):
         output = "Rosdep dependencies for operating system %s version %s "%(self.osi.get_name(), self.osi.get_version())
         for p in packages:

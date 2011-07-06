@@ -136,7 +136,8 @@ def main():
 
     try:
         if command == "generate_bash" or command == "satisfy":
-            print r.generate_script(include_duplicates=options.include_duplicates, default_yes=options.default_yes)
+            # Old style print r.generate_script(include_duplicates=options.include_duplicates, default_yes=options.default_yes)
+            error = r.install(options.include_duplicates, options.default_yes, execute=False)
             return 0
         elif command == "install":
             error = r.install(options.include_duplicates, options.default_yes)
@@ -164,18 +165,15 @@ def main():
 
         elif command == "check":
             return_val = 0
-            (output, scripts) = r.check()
+            success = r.check()
             if len(rejected_packages) > 0:
                 print >> sys.stderr, "Arguments %s are not packages"%rejected_packages
                 return_val = 1
-            if len(output) != 0:
-                print >> sys.stderr, output
+            if success:
+                return 0
+            else:
                 return 1
-            if len(scripts)>0:
-                print >> sys.stderr, scripts
-                # not an error condition
 
-            return return_val
     except core.RosdepException, e:
         print >> sys.stderr, str(e)
         return 1

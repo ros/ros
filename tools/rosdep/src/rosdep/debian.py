@@ -124,14 +124,15 @@ class AptInstaller(rosdep.installers.InstallerAPI):
         if not self.packages_to_install:
             script =  "#!/bin/bash\n#No Packages to install"
         if default_yes:
-            script = "#!/bin/bash\n#Packages\nsudo apt-get install -y " + ' '.join(self.packages_to_install)        
+            script = "#!/bin/bash\n#Packages %s\nsudo apt-get install -y "%self.packages_to_install + ' '.join(self.packages_to_install)        
         else:
-            script =  "#!/bin/bash\n#Packages\nsudo apt-get install " + ' '.join(self.packages_to_install)
+            script =  "#!/bin/bash\n#Packages %s\nsudo apt-get install "%self.packages_to_install + ' '.join(self.packages_to_install)
 
         if execute:
             return rosdep.core.create_tempfile_from_string_and_execute(script)
         else:
-            print "would have executed script\n{{{\n%s\n}}}"%script
+            print "To install packages: %s would have executed script\n{{{\n%s\n}}}"%(self.packages_to_install, script)
+            return False
 
 
 
@@ -171,7 +172,7 @@ class Debian(roslib.os_detect.Debian, AptGetInstall, rosdep.base_rosdep.RosdepBa
 ###### END Debian SPECIALIZATION ########################
 
 ###### UBUNTU SPECIALIZATION #########################
-class Ubuntu(roslib.os_detect.Ubuntu, AptGetInstall, rosdep.base_rosdep.RosdepBaseOS):
+class Ubuntu(roslib.os_detect.Ubuntu, rosdep.base_rosdep.RosdepBaseOS):
     """ This is an implementation of a standard interface for
     interacting with rosdep.  This defines all Ubuntu sepecific
     methods, including detecting the OS/Version number.  As well as

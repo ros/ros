@@ -9,6 +9,8 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/rosgraph_msgs</url>
 
+  <depend package="std_msgs" />
+  
   <rosbuild2>
     <msgs>
       msg/Clock.msg

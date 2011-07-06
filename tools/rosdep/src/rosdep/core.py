@@ -487,6 +487,7 @@ class Rosdep:
 
 
         result = my_installer.generate_package_install_command(default_yes)
+
         if result:
             print "successfully installed %s"%rosdep_name
             if not my_installer.check_presence():

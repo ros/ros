@@ -119,7 +119,7 @@ class AptInstaller(rosdep.installers.InstallerAPI):
         return len(self.packages_to_install) == 0
 
 
-    def generate_package_install_command(self, default_yes = False):
+    def generate_package_install_command(self, default_yes = False, execute = True):
         script = '!#/bin/bash\n#no script'
         if not self.packages_to_install:
             script =  "#!/bin/bash\n#No Packages to install"
@@ -127,7 +127,11 @@ class AptInstaller(rosdep.installers.InstallerAPI):
             script = "#!/bin/bash\n#Packages\nsudo apt-get install -y " + ' '.join(self.packages_to_install)        
         else:
             script =  "#!/bin/bash\n#Packages\nsudo apt-get install " + ' '.join(self.packages_to_install)
-        return rosdep.core.create_tempfile_from_string_and_execute(script)
+
+        if execute:
+            return rosdep.core.create_tempfile_from_string_and_execute(script)
+        else:
+            print "would have executed script\n{{{\n%s\n}}}"%script
 
 
 

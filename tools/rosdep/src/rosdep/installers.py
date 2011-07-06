@@ -49,12 +49,22 @@ reserved_installer_keys = ['apt', 'source']
 
 class InstallerAPI():
     def __init__(self, arg_dict):
+        """
+        Set all required fields here 
+        """
         raise NotImplementedError, "Base class __init__"
     
     def check_presence(self):
+        """
+        This script will return true if the rosdep is found on the
+        system, otherwise false.
+        """
         raise NotImplementedError, "Base class check_presence"
 
-    def generate_package_install_command(self, default_yes):
+    def generate_package_install_command(self, default_yes, execute = True):
+        """
+        If execute is True, install the rosdep, else 
+        """
         raise NotImplementedError, "Base class generate_package_install_command"
 
     def get_depends(self): 
@@ -84,8 +94,8 @@ class SourceInstaller(InstallerAPI):
         if "ROSDEP_DEBUG" in os.environ:
             print "Downloaded manifest:\n{{{%s\n}}}\n"%self.manifest
         
-        self.install_command = self.manifest.get("install-script", "make install")
-        self.check_presence_command = self.manifest.get("check-presence-script", "#!/bin/bash\n#no file found\nfalse")
+        self.install_command = self.manifest.get("install-script", "#!/bin/bash\n#no install-script specificd")
+        self.check_presence_command = self.manifest.get("check-presence-script", "#!/bin/bash\n#no check-presence-script\nfalse")
 
         self.exec_path = self.manifest.get("exec-path", ".")
 
@@ -100,8 +110,9 @@ class SourceInstaller(InstallerAPI):
 
         return rosdep.core.create_tempfile_from_string_and_execute(self.check_presence_command)
 
-    def generate_package_install_command(self, default_yes = False):
+    def generate_package_install_command(self, default_yes = False, execute = True):
         tempdir = tempfile.mkdtemp()
+        success = False
 
         if "ROSDEP_DEBUG" in os.environ:
             print "Fetching %s"%self.tarball
@@ -111,10 +122,12 @@ class SourceInstaller(InstallerAPI):
             tarf = tarfile.open(f[0])
             tarf.extractall(tempdir)
 
-            if "ROSDEP_DEBUG" in os.environ:
-                print "Running installation script"
-            success = rosdep.core.create_tempfile_from_string_and_execute(self.install_command, os.path.join(tempdir, self.exec_path))
-                
+            if execute:
+                if "ROSDEP_DEBUG" in os.environ:
+                    print "Running installation script"
+                success = rosdep.core.create_tempfile_from_string_and_execute(self.install_command, os.path.join(tempdir, self.exec_path))
+            else:
+                print "Would have executed\n{{{%s\n}}}"%self.install_command
             
         finally:
             shutil.rmtree(tempdir)

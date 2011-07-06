@@ -271,11 +271,10 @@ class MsgSpecTest(unittest.TestCase):
     self.assert_('Clock' in types1, types1)
     self.assert_('Log' in types1, types1)        
     
-    # roslib has no deps, so this should be equivalent
-    self.assertEquals(types1, types2)
-
     types1 = roslib.msgs.list_msg_types('std_msgs', False)
     types2 = roslib.msgs.list_msg_types('std_msgs', True)
+    # std_msgs has no message deps, so this should be equivalent
+    self.assertEquals(types1, types2)
     
     self.assert_('Header' in types1, types1)
     self.assert_('Header' in types2, types2)

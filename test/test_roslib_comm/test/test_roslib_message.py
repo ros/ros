@@ -387,7 +387,7 @@ d:
             ('string', ''), ('string', 'a string of text'),
             ('int32[]', []),
             ('int32[]', [1, 2, 3, 4]),
-            ('time', Time()), ('time', Time.from_seconds(1.0)),
+            ('time', Time()), ('time', Time.from_sec(1.0)),
             ('time', Time(10000)), ('time', Time(1000, -100)),
             ('duration', Duration()),('duration', Duration()), 
             ('duration', Duration(100)), ('duration', Duration(-100, -100)),

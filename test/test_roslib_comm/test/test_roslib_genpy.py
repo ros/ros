@@ -418,7 +418,7 @@ byte is_calibrated
         import roslib.rostime
         import time
         m_instance1 = msgs['std_msgs/Header']() # make sure default constructor works
-        m_instance2 = msgs['std_msgs/Header'](stamp=roslib.rostime.Time.from_seconds(time.time()), frame_id='foo-%s'%time.time(), seq=12391)
+        m_instance2 = msgs['std_msgs/Header'](stamp=roslib.rostime.Time.from_sec(time.time()), frame_id='foo-%s'%time.time(), seq=12390)
         self._test_ser_deser(m_instance2, m_instance1)
 
         m_instance1 = msgs['probot_msgs/ControllerStatus']()

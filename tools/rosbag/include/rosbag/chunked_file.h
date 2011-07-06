@@ -42,7 +42,6 @@
 #include <boost/shared_ptr.hpp>
 
 #include <bzlib.h>
-#include <zlib.h>
 
 #include "rosbag/stream.h"
 

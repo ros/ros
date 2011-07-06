@@ -84,7 +84,6 @@ class Compression:
     """
     NONE = 'none'
     BZ2  = 'bz2'
-    #ZLIB = 'zlib'
 
 class Bag(object):
     """
@@ -127,7 +126,7 @@ class Bag(object):
         self._filename = None
         self._version  = None
 
-        allowed_compressions = [Compression.NONE, Compression.BZ2] #, Compression.ZLIB]
+        allowed_compressions = [Compression.NONE, Compression.BZ2]
         if compression not in allowed_compressions:
             raise ValueError('compression must be one of: %s' % ', '.join(allowed_compressions))  
         self._compression = compression      
@@ -202,7 +201,7 @@ class Bag(object):
     
     def _set_compression(self, compression):
         """Set the compression method to use for writing."""
-        allowed_compressions = [Compression.NONE, Compression.BZ2] #, Compression.ZLIB]
+        allowed_compressions = [Compression.NONE, Compression.BZ2]
         if compression not in allowed_compressions:
             raise ValueError('compression must be one of: %s' % ', '.join(allowed_compressions))        
         

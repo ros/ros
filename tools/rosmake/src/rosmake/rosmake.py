@@ -282,7 +282,7 @@ class RosMakeAll:
         return self.paths[package]
         
     def check_rosdep(self, packages):
-        failed_rosdeps
+        failed_rosdeps = []
         try:
             r = rosdep.core.Rosdep(packages, robust=True)
             failed_rosdeps = r.check()

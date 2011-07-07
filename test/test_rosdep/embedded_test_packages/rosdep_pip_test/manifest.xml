@@ -9,7 +9,7 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/rosdeptest</url>
 
-  <rosdep name="pip-based-install"/>
+  <rosdep name="pip-based-install-dependent"/>
   <rosdep name="pip-versioned-install"/>
 
 </package>

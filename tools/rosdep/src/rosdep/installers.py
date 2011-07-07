@@ -208,18 +208,21 @@ class PipInstaller(InstallerAPI):
     """
     def __init__(self, arg_dict):
 
-        
         packages = arg_dict.get("packages", "")
         if type(packages) == type("string"):
             packages = packages.split()
 
 
         self.packages_to_install = list(set(packages) - set(self.pip_detect(packages)))
+        self.depends = arg_dict.get("depends", [])
 
 
     def check_presence(self):
         return len(self.packages_to_install) == 0
 
+    def get_depends(self):
+        #todo verify type before returning
+        return self.depends
 
     def generate_package_install_command(self, default_yes = False, execute = True, display = True):
         script = '!#/bin/bash\n#no script'

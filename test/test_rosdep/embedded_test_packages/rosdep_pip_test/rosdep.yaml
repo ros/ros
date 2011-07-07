@@ -7,3 +7,9 @@ pip-versioned-install:
     lucid: 
       pip:
         packages: [ pycurl ]
+
+pip-based-install-dependent:
+  ubuntu: 
+    pip:
+      packages: [ pycurl ]
+      depends: [ pip-based-install]

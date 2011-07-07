@@ -199,7 +199,7 @@ class Ubuntu(Debian):
         return False
 
     def get_version(self):
-        return lsb_get_version()
+        return lsb_get_codename()
     def get_name(self):
         return "ubuntu"
 

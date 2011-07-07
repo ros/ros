@@ -132,22 +132,34 @@ class YamlCache:
             #print >> sys.stderr, "failed to resolve a rule for rosdep(%s) on OS(%s)"%(rosdep_name, self.os_name)
             return False
 
+
     def get_version_from_yaml(self, rosdep_name, os_specific, source_path):
         """
         Helper function for get_os_from_yaml to parse if version is required.  
         @return The os (and version specific if required) local package name
         """
-        if type(os_specific) == type("String"):
+        
+        # This is a map to provide backwards compatability for rep111 changes.  
+        # See http://www.ros.org/reps/rep-0111.html for more info. 
+        rep111version_map = {'lucid':'10.04', 'maverick':'10.10', 'natty':'11.04'}
+
+        if type(os_specific) == type("String"): # It's just a single string 
             return os_specific
-        elif self.os_version in os_specific.keys(): # it must be a map of versions
+        if self.os_version in os_specific: # if it is a version key, just return it
             return os_specific[self.os_version]
-        elif type(os_specific) == type({}): # detected a map
+        if self.os_version in rep111version_map: # check for rep 111 special versions 
+            rep_version = rep111version_map[self.os_version]
+            if rep_version in os_specific:
+                return os_specific[rep_version]
+        if type(os_specific) == type({}): # detected a map
             for k in os_specific.keys():
                 if not k in rosdep.installers.reserved_installer_keys:
+                    print "Invalid identifier found [%s]"%k
                     return False # If the map doesn't have a valid installer key reject it, it must be a version key
             # return the map 
             return os_specific
         else:
+            print "Unknown formatting of os_specific", os_specific
             return False                    
 
 
@@ -357,7 +369,7 @@ class Rosdep:
         failed_rosdeps = []
         start_time = time.time()
         if "ROSDEP_DEBUG" in os.environ:
-            print "Generating package list and scripts for %d rosdeps.  This may take a few seconds..."%len(self.packages)
+            print "Generating package list and scripts for %d packages.  This may take a few seconds..."%len(self.packages)
         for p in self.packages:
             rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, self.yc)
             for r in self.rosdeps[p]:
@@ -456,7 +468,7 @@ class Rosdep:
         @return If the install was successful
         """
         if "ROSDEP_DEBUG" in os.environ:
-            print "Processing rosdep %s"%rosdep_name
+            print "Processing rosdep %s in install_rosdep method"%rosdep_name
         rosdep_dict = rdlp.lookup_rosdep(rosdep_name)
         if not rosdep_dict:
             return False

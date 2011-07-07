@@ -332,7 +332,7 @@ class Rhel(Fedora):
 
 ###### END Rhel SPECIALIZATION ########################
 
-###### Macports SPECIALIZATION #########################
+###### OSX SPECIALIZATION #########################
 def port_detect(p):
     """
     Detect presence of Macports by running "port installed" command.
@@ -354,12 +354,12 @@ class Macports(OSBase):
         return False
     
     def get_version(self):
-        return "macports" # macports is a rolling release and isn't versionsed
+        return "macports" # REP 111 this should be lion, snow, or tiger #3570
 
     def get_name(self):
-        return "macports"
+        return "osx"
 
-###### END Macports SPECIALIZATION ########################
+###### END OSX SPECIALIZATION ########################
 
 ###### Arch SPECIALIZATION #########################
 class Arch(OSBase):

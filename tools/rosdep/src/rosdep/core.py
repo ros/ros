@@ -128,6 +128,10 @@ class YamlCache:
         # See if the version for this OS exists
         if self.os_name in yaml_map:
             return self.get_version_from_yaml(rosdep_name, yaml_map[self.os_name], source_path)
+        if self.os_name == 'osx': #backwards compatability for osx in REP 111.
+            if 'macports' in yaml_map:  
+                return self.get_version_from_yaml(rosdep_name, yaml_map['macports'], source_path)
+            
         else:
             #print >> sys.stderr, "failed to resolve a rule for rosdep(%s) on OS(%s)"%(rosdep_name, self.os_name)
             return False

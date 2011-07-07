@@ -140,7 +140,7 @@ def main():
             if not missing_packages:
                 return 0
             else:
-                print "The following rosdeps were not installed", missing_packages
+                print "The following rosdeps are not installed but are required", missing_packages
                 return 1
         
         elif command == "install":
@@ -149,6 +149,7 @@ def main():
                 print >> sys.stderr, "rosdep install ERROR:\n%s"%error
                 return 1
             else:
+                print "All required rosdeps installed successfully"
                 return 0
     except core.RosdepException, e:
         print >> sys.stderr, "ERROR: %s"%e
@@ -174,6 +175,7 @@ def main():
                 print >> sys.stderr, "Arguments %s are not packages"%rejected_packages
                 return_val = 1
             if len(missing_packages) == 0:
+                print "All required rosdeps are installed" 
                 return 0
             else:
                 print "The following rosdeps were not installed", missing_packages

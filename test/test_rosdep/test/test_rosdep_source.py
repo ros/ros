@@ -46,14 +46,14 @@ class RosdepSourceTest(unittest.TestCase):
     def test_aptinstaller_installed(self):
         args = {}
         args["packages"] = "libc6 gcc"
-        ai = rosdep.debian.AptInstaller(args)
+        ai = rosdep.installers.AptInstaller(args)
         self.assertTrue(ai.check_presence())
         ## Requires sudo self.assertTrue(ai.generate_package_install_command())
         
     def test_aptinstaller_not_installed(self):
         args = {}
         args["packages"] = "not-a-package"
-        ai = rosdep.debian.AptInstaller(args)
+        ai = rosdep.installers.AptInstaller(args)
         self.assertFalse(ai.check_presence())
         ## Requres sudo self.assertFalse(ai.generate_package_install_command())
 

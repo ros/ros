@@ -48,6 +48,8 @@ import rosdep.installers
 class RosdepTestOS(rosdep.base_rosdep.RosdepBaseOS):
     def __init__(self):
         self.name = "uninitialized"
+        self.installers = {}
+
     def check_presence(self):
         if "ROSDEP_TEST_OS" in os.environ:
             return True
@@ -81,6 +83,7 @@ class Debian(roslib.os_detect.Debian, rosdep.base_rosdep.RosdepBaseOS):
     def __init__(self):
         self.installers = {}
         self.installers['apt'] = rosdep.installers.AptInstaller
+        self.installers['pip'] = rosdep.installers.PipInstaller
         self.installers['source'] = rosdep.installers.SourceInstaller
         self.installers['default'] = rosdep.installers.AptInstaller
 
@@ -98,6 +101,7 @@ class Ubuntu(roslib.os_detect.Ubuntu, rosdep.base_rosdep.RosdepBaseOS):
     def __init__(self):
         self.installers = {}
         self.installers['apt'] = rosdep.installers.AptInstaller
+        self.installers['pip'] = rosdep.installers.PipInstaller
         self.installers['source'] = rosdep.installers.SourceInstaller
         self.installers['default'] = rosdep.installers.AptInstaller
     pass

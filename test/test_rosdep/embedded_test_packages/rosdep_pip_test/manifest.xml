@@ -1,0 +1,17 @@
+<package>
+  <description brief="rosdeptest">
+
+     rosdeptest
+
+  </description>
+  <author>Tully Foote</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/rosdeptest</url>
+
+  <rosdep name="pip-based-install"/>
+  <rosdep name="pip-versioned-install"/>
+
+</package>
+
+

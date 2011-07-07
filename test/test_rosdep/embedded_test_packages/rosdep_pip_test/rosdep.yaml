@@ -1,0 +1,9 @@
+pip-based-install:
+  ubuntu: 
+    pip:
+      packages: [ pycurl ]
+pip-versioned-install:
+  ubuntu: 
+    lucid: 
+      pip:
+        packages: [ pycurl ]

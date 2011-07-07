@@ -66,9 +66,10 @@ class YamlCache:
     """ A class into which to load the yaml files for quicker access
     from repeated lookups """
 
-    def __init__(self, os_name, os_version):
+    def __init__(self, os_name, os_version, installers = {}):
         self.os_name = os_name
         self.os_version = os_version
+        self.installers = installers
         self._yaml_cache = {}
         self._rosstack_depends_cache = {}
         self._expanded_rosdeps = {}
@@ -157,7 +158,7 @@ class YamlCache:
                 return os_specific[rep_version]
         if type(os_specific) == type({}): # detected a map
             for k in os_specific.keys():
-                if not k in rosdep.installers.reserved_installer_keys:
+                if not k in self.installers:
                     print "Invalid identifier found [%s]"%k
                     return False # If the map doesn't have a valid installer key reject it, it must be a version key
             # return the map 
@@ -353,7 +354,7 @@ class Rosdep:
                 raise RosdepException("Class [%s] not derived from RosdepBaseOS"%o.__class__.__name__)
         # Detect the OS on which this program is running. 
         self.osi = roslib.os_detect.OSDetect(os_list)
-        self.yc = YamlCache(self.osi.get_name(), self.osi.get_version())
+        self.yc = YamlCache(self.osi.get_name(), self.osi.get_version(), self.osi.get_os().installers)
         self.packages = packages
         rp = roslib.packages.ROSPackages()
         self.rosdeps = rp.rosdeps(packages)

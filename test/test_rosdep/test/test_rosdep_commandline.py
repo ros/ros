@@ -93,6 +93,13 @@ class RosdepCommandlineExternalPackages(unittest.TestCase):
         self.assertEqual(0,subprocess.call(["rosdep", "satisfy", "rosdeptest"], env=my_env))
         self.assertEqual(0,subprocess.call(["rosdep", "install", "rosdeptest"], env=my_env))
 
+    def test_pip(self):
+        my_env = self.env.copy()
+        my_env['ROS_OS_OVERRIDE']='ubuntu:lucid'
+        self.assertEqual(0,subprocess.call(["rosdep", "check", "rosdep_pip_test"], env=my_env))
+        self.assertEqual(0,subprocess.call(["rosdep", "satisfy", "rosdep_pip_test"], env=my_env))
+        self.assertEqual(0,subprocess.call(["rosdep", "install", "rosdep_pip_test"], env=my_env))
+
     def test_check_test_missing(self):
         my_env = self.env.copy()
         my_env['ROS_OS_OVERRIDE']='ubuntu:lucid'

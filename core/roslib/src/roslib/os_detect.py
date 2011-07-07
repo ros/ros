@@ -47,6 +47,7 @@ import subprocess
 import types
 import tempfile
 import yaml
+import distutils.version # To parse version numbers
 
 ####### Linux Helper Functions #####
 def lsb_get_os():
@@ -354,7 +355,25 @@ class Osx(OSBase):
         return False
     
     def get_version(self):
-        return "macports" # REP 111 this should be lion, snow, or tiger #3570
+        # REP 111 this should be the code name (e.g., lion, snow, tiger) #3570
+        cmd = ['/usr/bin/sw_vers','-productVersion'];
+        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (std_out, std_err) = pop.communicate()
+        ver = distutils.version.StrictVersion(std_out).version
+        if len(ver) < 2:
+            raise OSDetectException("invalid version string: %s"%(std_out))
+        major, minor = ver[0:2]
+        # Source: http://en.wikipedia.org/wiki/Mac_OS_X#Versions
+        if major == 10 and minor == 4:
+            return 'tiger'
+        elif major == 10 and minor == 5:
+            return 'leopard'
+        elif major == 10 and minor == 6:
+            return 'snow'
+        elif major == 10 and minor == 7:
+            return 'lion'
+        else:
+            raise OSDetectException("unrecognized version: %s"%(std_out))
 
     def get_name(self):
         return "osx"

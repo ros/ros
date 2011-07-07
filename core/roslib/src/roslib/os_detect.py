@@ -85,6 +85,20 @@ def lsb_get_version():
     except:
         return None
 
+def uname_get_machine():
+    """
+    Linux: wrapper around uname to determine if OS is 64-bit
+    """
+    try:
+        cmd = ['uname', '-m']
+        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (std_out, std_err) = pop.communicate()
+        return std_out.strip()
+    except:
+        return None
+
+
+
 #### Override class for debugging and unsupported OSs ###########
 class OSOverride:
     def __init__(self):
@@ -151,6 +165,26 @@ class Debian(OSBase):
         return "debian"
 
 ###### END Debian SPECIALIZATION ########################
+
+###### Mandriva SPECIALIZATION #########################
+class Mandriva(OSBase):
+    """
+    Detect Mandriva OS. The returned version will be the year release (e.g.
+    2010.0) concatenated with the machine architecture (e.g. x86_64), resulting
+    in something like 2010.0x86_64.
+    """
+    def check_presence(self):
+        if "MandrivaLinux" == lsb_get_os():
+            return True
+        return False
+    
+    def get_version(self):
+        return lsb_get_version()+uname_get_machine()
+    def get_name(self):
+        return "mandriva"
+
+###### END Mandriva SPECIALIZATION ########################
+
 
 
 ###### UBUNTU SPECIALIZATION #########################
@@ -466,7 +500,7 @@ class FreeBSD(OSBase):
 class OSDetect:
     """ This class will iterate over registered classes to lookup the
     active OS and version"""
-    def __init__(self, os_list = [Debian(), Ubuntu(), Mint(), Macports(), Arch(), OpenSuse(), Fedora(), Rhel(), Gentoo(), Cygwin(), FreeBSD()]):
+    def __init__(self, os_list = [Debian(), Mandriva(), Ubuntu(), Mint(), Macports(), Arch(), OpenSuse(), Fedora(), Rhel(), Gentoo(), Cygwin(), FreeBSD()]):
         self._os_list = os_list
         for o in self._os_list:
             if not isinstance(o, OSBase):

@@ -253,9 +253,10 @@ class RosdepLookupPackage:
                     print >> sys.stderr, "Failed to load rosdep.yaml for package [%s]:%s"%(p, ex)
                     pass
         for path in paths:
-            self._insert_map(self.parse_yaml(path), path)
+            yaml_in = self.parse_yaml(path)
+            self._insert_map(yaml_in, path)
             if "ROSDEP_DEBUG" in os.environ:
-                print "rosdep loading from file: %s got"%path, self.parse_yaml(path)
+                print "rosdep loading from file: %s got"%path, yaml_in
         #print "built map", self.rosdep_map
 
         # Override with ros_home/rosdep.yaml if present

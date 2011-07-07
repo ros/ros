@@ -57,12 +57,6 @@ class RosdepSourceTest(unittest.TestCase):
         ## Requres sudo self.assertFalse(ai.generate_package_install_command())
 
 
-    def test_sourceinstaller(self):
-        args = {}
-        args["uri"] = 'https://kforge.ros.org/rosrelease/viewvc/sourcedeps/test_sourcedep/test_sourcedep-0.0.rdmanifest'
-        ai = rosdep.installers.SourceInstaller(args)
-        self.assertFalse(ai.check_presence())
-        self.assertTrue(ai.generate_package_install_command())
 
         
 

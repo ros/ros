@@ -93,7 +93,7 @@ class RosdepCommandlineExternalPackages(unittest.TestCase):
         self.assertEqual(0,subprocess.call(["rosdep", "satisfy", "rosdeptest"], env=my_env))
         self.assertEqual(0,subprocess.call(["rosdep", "install", "rosdeptest"], env=my_env))
 
-    def test_pip(self):
+    def REMOVED_UNTIL_PIP_IN_DEFAULT_test_pip(self):
         my_env = self.env.copy()
         my_env['ROS_OS_OVERRIDE']='ubuntu:lucid'
         self.assertEqual(0,subprocess.call(["rosdep", "check", "rosdep_pip_test"], env=my_env))
@@ -110,7 +110,10 @@ class RosdepCommandlineExternalPackages(unittest.TestCase):
     def test_source(self):
         my_env = self.env.copy()
         my_env['ROS_OS_OVERRIDE']='ubuntu:lucid'
-        self.assertEqual(0,subprocess.call(["rosdep", "install", "rosdep_source"], env=my_env)) # install first it touches a file the other detect
+        os.remove('/tmp/test_sourcedep_installed')
+        self.assertEqual(1,subprocess.call(["rosdep", "check", "rosdep_source"], env=my_env))
+        self.assertEqual(1,subprocess.call(["rosdep", "satisfy", "rosdep_source"], env=my_env))
+        self.assertEqual(0,subprocess.call(["rosdep", "install", "rosdep_source"], env=my_env)) # install first it touches a file the others detect
         self.assertEqual(0,subprocess.call(["rosdep", "check", "rosdep_source"], env=my_env))
         self.assertEqual(0,subprocess.call(["rosdep", "satisfy", "rosdep_source"], env=my_env))
 

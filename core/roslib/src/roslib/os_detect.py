@@ -343,9 +343,9 @@ def port_detect(p):
     
     return (std_out.count("(active)") > 0)
 
-class Macports(OSBase):
+class Osx(OSBase):
     """
-    Detect OS X and Macports.
+    Detect OS X 
     """
     def check_presence(self):
         filename = "/usr/bin/sw_vers"
@@ -500,7 +500,7 @@ class FreeBSD(OSBase):
 class OSDetect:
     """ This class will iterate over registered classes to lookup the
     active OS and version"""
-    def __init__(self, os_list = [Debian(), Mandriva(), Ubuntu(), Mint(), Macports(), Arch(), OpenSuse(), Fedora(), Rhel(), Gentoo(), Cygwin(), FreeBSD()]):
+    def __init__(self, os_list = [Debian(), Mandriva(), Ubuntu(), Mint(), Osx(), Arch(), OpenSuse(), Fedora(), Rhel(), Gentoo(), Cygwin(), FreeBSD()]):
         self._os_list = os_list
         for o in self._os_list:
             if not isinstance(o, OSBase):

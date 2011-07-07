@@ -32,6 +32,7 @@ import os
 
 import rosdep.base_rosdep
 from rosdep.linux_helpers import *
+import roslib.os_detect
 
 ###### Macports SPECIALIZATION #########################
 def port_detect(p):
@@ -41,19 +42,7 @@ def port_detect(p):
     
     return (std_out.count("(active)") > 0)
 
-class Macports(rosdep.base_rosdep.RosdepBaseOS):
-    def check_presence(self):
-        filename = "/usr/bin/sw_vers"
-        if os.path.exists(filename):
-            return True
-        return False
-    
-    def get_version(self):
-        return "macports" # macports is a rolling release and isn't versionsed
-
-    def get_name(self):
-        return "macports"
-
+class Osx(roslib.os_detect.Osx, rosdep.base_rosdep.RosdepBaseOS):
     def strip_detected_packages(self, packages):
         return [p for p in packages if not port_detect(p)] 
 
@@ -62,4 +51,4 @@ class Macports(rosdep.base_rosdep.RosdepBaseOS):
             return "#No packages to install"
         return "#Packages\nsudo port install " + ' '.join(packages)
 
-###### END Macports SPECIALIZATION ########################
+###### END Osx SPECIALIZATION ########################

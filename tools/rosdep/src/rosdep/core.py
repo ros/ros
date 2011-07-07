@@ -52,7 +52,7 @@ import rosdep.debian as debian
 import rosdep.opensuse as opensuse
 import rosdep.redhat as redhat
 import rosdep.gentoo as gentoo
-import rosdep.macports as macports
+import rosdep.osx as osx
 import rosdep.arch as arch
 import rosdep.cygwin as cygwin
 import rosdep.freebsd as freebsd
@@ -346,7 +346,7 @@ Rules for %s do not match:
 
 class Rosdep:
     def __init__(self, packages, command = "rosdep", robust = False):
-        os_list = [debian.RosdepTestOS(), debian.Debian(), debian.Ubuntu(), debian.Mint(), opensuse.OpenSuse(), redhat.Fedora(), redhat.Rhel(), arch.Arch(), macports.Macports(), gentoo.Gentoo(), cygwin.Cygwin(), freebsd.FreeBSD()]
+        os_list = [debian.RosdepTestOS(), debian.Debian(), debian.Ubuntu(), debian.Mint(), opensuse.OpenSuse(), redhat.Fedora(), redhat.Rhel(), arch.Arch(), osx.Osx(), gentoo.Gentoo(), cygwin.Cygwin(), freebsd.FreeBSD()]
         # Make sure that these classes are all well formed.  
         for o in os_list:
             if not isinstance(o, rosdep.base_rosdep.RosdepBaseOS):

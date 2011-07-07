@@ -39,7 +39,6 @@ import unittest
 import rosunit
 import rosdep.core
 import rosdep.installers
-import rosdep.debian
 
 class RosdepSourceTest(unittest.TestCase):
     

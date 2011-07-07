@@ -691,7 +691,7 @@ class RosMakeAll:
         parser.add_option("--rosdep-install", dest="rosdep_install",
                           action="store_true", help="call rosdep install before running")
         parser.add_option("--rosdep-yes", dest="rosdep_yes",
-                          action="store_true", help="call rosdep install with default yes argument")
+                          action="store_true", help="if calling rosdep install use the default yes argument")
         parser.add_option("--no-rosdep", dest="rosdep_disabled",
                           action="store_true", help="disable the default check of rosdep")
 

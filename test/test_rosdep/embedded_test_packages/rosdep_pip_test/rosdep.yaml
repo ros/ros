@@ -2,17 +2,14 @@ pip-based-install:
   ubuntu: 
     pip:
       packages: [ wsgiref ]
-      depends: [ python-pip]
 pip-versioned-install:
   ubuntu: 
     lucid: 
       pip:
         packages: [ wsgiref ]
-        depends: [ python-pip]
+
 pip-based-install-dependent:
   ubuntu: 
     pip:
       packages: [ wsgiref ]
-      depends: [ python-pip]
-python-pip:
-  ubuntu: python-pip
+      depends: [ pip-based-install]

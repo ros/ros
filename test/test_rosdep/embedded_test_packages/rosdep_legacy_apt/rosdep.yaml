@@ -1,0 +1,6 @@
+apt-based-install:
+  ubuntu: subversion
+apt-versioned-install:
+  ubuntu: 
+    '10.04': subversion
+

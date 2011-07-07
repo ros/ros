@@ -1,0 +1,14 @@
+<package>
+  <description brief="rosdep_test_missing">
+
+     rosdep_test_missing
+
+  </description>
+  <author>Tully Foote</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/rosdep_test_missing</url>
+
+</package>
+
+

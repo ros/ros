@@ -1,0 +1,9 @@
+apt-based-install:
+  ubuntu: 
+    apt:
+      packages: [ subversion ]
+apt-versioned-install:
+  ubuntu: 
+    lucid: 
+      apt:
+        packages: [ subversion ]

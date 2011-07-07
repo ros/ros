@@ -36,12 +36,17 @@ import struct
 import sys
 import unittest
 import subprocess
+import shutil
+import tempfile
 
 import rosunit
 import rosdep.core
 
 
 class RosdepCommandlineTest(unittest.TestCase):
+    """ Basic Tripwire Testing"""
+
+
 
     def test_Rosdep_commandline_satisfy(self):
         self.assertEqual(0,subprocess.call(["rosdep", "satisfy", "test_rosdep"]))
@@ -58,6 +63,31 @@ class RosdepCommandlineTest(unittest.TestCase):
         self.assertEqual(0,subprocess.call(["rosdep", "where_defined", "boost"]))
 
 
+class RosdepCommandlineExternalPackages(unittest.TestCase):
+
+    def setUp(self):
+        self.env = os.environ
+        self.env['ROS_PACKAGE_PATH'] = self.env['ROS_PACKAGE_PATH']+':'+\
+            os.path.join(roslib.packages.get_pkg_dir('test_rosdep'),
+                         'embedded_test_packages')
+
+    def test_check_legacy_apt(self):
+        my_env = self.env.copy()
+        my_env['ROS_OS_OVERRIDE']='ubuntu:10.04'
+        self.assertEqual(0,subprocess.call(["rosdep", "check", "rosdep_legacy_apt"], env=self.env))
+        self.assertEqual(0,subprocess.call(["rosdep", "satisfy", "rosdep_legacy_apt"], env=self.env))
+        self.assertEqual(0,subprocess.call(["rosdep", "install", "rosdep_legacy_apt"], env=self.env))
+
+
+    def ________FIXME_____TODO______test_apt(self):
+        my_env = self.env.copy()
+        my_env['ROS_OS_OVERRIDE']='ubuntu:10.04'
+        self.assertEqual(0,subprocess.call(["rosdep", "check", "rosdeptest"], env=self.env))
+        self.assertEqual(0,subprocess.call(["rosdep", "satisfy", "rosdeptest"], env=self.env))
+        self.assertEqual(0,subprocess.call(["rosdep", "install", "rosdeptest"], env=self.env))
+
+
 if __name__ == '__main__':
   rosunit.unitrun('test_rosdep', 'test_commandline', RosdepCommandlineTest, coverage_packages=['rosdep.commandline'])  
+  rosunit.unitrun('test_rosdep', 'test_commandline', RosdepCommandlineExternalPackages, coverage_packages=['rosdep.commandline'])  
 

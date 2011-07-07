@@ -1,15 +1,15 @@
 pip-based-install:
   ubuntu: 
     pip:
-      packages: [ pycurl ]
+      packages: [ wsgiref ]
 pip-versioned-install:
   ubuntu: 
     lucid: 
       pip:
-        packages: [ pycurl ]
+        packages: [ wsgiref ]
 
 pip-based-install-dependent:
   ubuntu: 
     pip:
-      packages: [ pycurl ]
+      packages: [ wsgiref ]
       depends: [ pip-based-install]

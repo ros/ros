@@ -340,9 +340,7 @@ macro(_rosbuild_add_library lib libname type)
   
   # Add explicit dependency of each file on our manifest.xml and those of
   # our dependencies
-  # The SOURCES property seems to be available only since 2.6.  Yar.
-  #get_target_property(_srclist ${lib} SOURCES)
-  set(_srclist ${ARGN})
+  get_target_property(_srclist ${lib} SOURCES)
   foreach(_src ${_srclist})
     set(_file_name _file_name-NOTFOUND)
     find_file(_file_name ${_src} ${CMAKE_CURRENT_SOURCE_DIR} /)

@@ -82,3 +82,4 @@ paramiko:
   macports: py26-paramiko
   gentoo: dev-python/paramiko
   freebsd: py27-paramiko
+  arch: python-paramiko 

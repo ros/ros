@@ -38,6 +38,7 @@ import urllib2
 import tarfile
 import tempfile
 import yaml
+import hashlib
 
 import rosdep.base_rosdep
 import rosdep.core
@@ -72,23 +73,69 @@ class InstallerAPI():
         """
         return [] # Default return empty list
 
+
+
 class SourceInstaller(InstallerAPI):
     def __init__(self, arg_dict):
         self.url = arg_dict.get("uri")
         if not self.url:
             raise rosdep.core.RosdepException("uri required for source rosdeps") 
+        self.alt_url = arg_dict.get("alternate-uri")
+        self.md5sum = arg_dict.get("md5sum")
 
+        self.manifest = None
 
         #TODO add md5sum verification
         if "ROSDEP_DEBUG" in os.environ:
             print "Downloading manifest %s"%self.url
+
+        error = ''
         try:
-            self.manifest = yaml.load(urllib2.urlopen(self.url))
+            fh= urllib2.urlopen(self.url)
+            contents = fh.read()
+            filehash =  hashlib.md5(contents).hexdigest()
+            if self.md5sum and filehash != self.md5sum:
+                error += "md5sum didn't match for %s"%self.url
+                if "ROSDEP_DEBUG" in os.environ:
+                    error += "md5sum didn't match for %s.  Expected %s got %s"%(self.url, self.md5sum, filehash)
+            else:
+                self.manifest = yaml.load(contents)
+                    
         except urllib2.URLError, ex:
-            raise rosdep.core.RosdepException("Failed to load url %s with error: %s"%(self.url, ex))
+            error += "Failed to load url %s with error: %s"%(self.url, ex)
         except yaml.scanner.ScannerError, ex:
-            raise rosdep.core.RosdepException("Failed to parse yaml in %s:  Error: %s"%(self.url, ex))
+            error += "Failed to parse yaml in %s:  Error: %s"%(self.url, ex)
+        
+        if error and "ROSDEP_DEBUG" in os.environ:
+            print "Errors when downloading manifest %s"%self.url, error
             
+
+        if error or self.manifest == None:
+            error = ''
+            if "ROSDEP_DEBUG" in os.environ:
+                print "Downloading backup manifest %s"%self.alt_url
+
+            try:
+                fh= urllib2.urlopen(self.alt_url)
+                contents = fh.read()
+                filehash =  hashlib.md5(contents).hexdigest()
+                if self.md5sum and filehash != self.md5sum:
+                    error += "md5sum didn't match for %s.  Expected %s got %s"%(self.alt_url, self.md5sum, filehash)
+                    if "ROSDEP_DEBUG" in os.environ:
+                        print "ms5sum mismatch", error
+                else:
+                    self.manifest = yaml.load(contents)
+            except urllib2.URLError, ex:
+                error += "Failed to load url %s with error: %s"%(self.alt_url, ex)
+            except yaml.scanner.ScannerError, ex:
+                error += "Failed to parse yaml in %s:  Error: %s"%(self.alt_url, ex)
+        
+        if error:
+            raise rosdep.core.RosdepException(error)
+
+        if not self.manifest:
+            raise rosdep.core.RosdepException("Failed to load a rdmanifest from either %s or %s"%(self.url, self.alt_url))
+    
         if "ROSDEP_DEBUG" in os.environ:
             print "Downloaded manifest:\n{{{%s\n}}}\n"%self.manifest
         
@@ -102,13 +149,15 @@ class SourceInstaller(InstallerAPI):
         self.tarball = self.manifest.get("uri")
         if not self.tarball:
             raise rosdep.core.RosdepException("uri required for source rosdeps") 
+        self.alternate_tarball = self.manifest.get("alternate-uri")
 
+        
 
     def check_presence(self):
 
         return rosdep.core.create_tempfile_from_string_and_execute(self.check_presence_command)
 
-    def generate_package_install_command(self, default_yes = False, execute = True):
+    def generate_package_install_command(self, default_yes = False, execute = True, display =True):
         tempdir = tempfile.mkdtemp()
         success = False
 
@@ -124,7 +173,7 @@ class SourceInstaller(InstallerAPI):
                 if "ROSDEP_DEBUG" in os.environ:
                     print "Running installation script"
                 success = rosdep.core.create_tempfile_from_string_and_execute(self.install_command, os.path.join(tempdir, self.exec_path))
-            else:
+            elif display:
                 print "Would have executed\n{{{%s\n}}}"%self.install_command
             
         finally:

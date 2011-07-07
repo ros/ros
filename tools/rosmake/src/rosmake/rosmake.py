@@ -289,7 +289,7 @@ class RosMakeAll:
         except roslib.exceptions.ROSLibException, ex:
             return ("rosdep ABORTED: %s"%ex, '')
 
-        return (', '.join(failed_rosdeps))
+        return ', '.join(failed_rosdeps)
         
     def install_rosdeps(self, packages, default_yes):
         """

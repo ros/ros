@@ -74,6 +74,19 @@ class InstallerAPI():
         return [] # Default return empty list
 
 
+def fetch_file(url, md5sum=None):
+    contents = ''
+    try:
+        fh= urllib2.urlopen(url)
+        contents = fh.read()
+        filehash =  hashlib.md5(contents).hexdigest()
+        if md5sum and filehash != md5sum:
+            raise rosdep.core.RosdepException( "md5sum didn't match for %s.  Expected %s got %s"%(url, md5sum, filehash))
+    except urllib2.URLError, ex:
+        raise rosdep.core.RosdepException(str(ex))
+
+    return contents    
+    
 
 class SourceInstaller(InstallerAPI):
     def __init__(self, arg_dict):
@@ -90,52 +103,35 @@ class SourceInstaller(InstallerAPI):
             print "Downloading manifest %s"%self.url
 
         error = ''
+
+
+        contents = ''
+        # fetch the manifest
         try:
-            fh= urllib2.urlopen(self.url)
-            contents = fh.read()
-            filehash =  hashlib.md5(contents).hexdigest()
-            if self.md5sum and filehash != self.md5sum:
-                error += "md5sum didn't match for %s"%self.url
-                if "ROSDEP_DEBUG" in os.environ:
-                    error += "md5sum didn't match for %s.  Expected %s got %s"%(self.url, self.md5sum, filehash)
-            else:
-                self.manifest = yaml.load(contents)
-                    
-        except urllib2.URLError, ex:
-            error += "Failed to load url %s with error: %s"%(self.url, ex)
-        except yaml.scanner.ScannerError, ex:
-            error += "Failed to parse yaml in %s:  Error: %s"%(self.url, ex)
-        
-        if error and "ROSDEP_DEBUG" in os.environ:
-            print "Errors when downloading manifest %s"%self.url, error
-            
-
-        if error or self.manifest == None:
-            error = ''
+            contents = fetch_file(self.url, self.md5sum)
+        except rosdep.core.RosdepException, ex:
             if "ROSDEP_DEBUG" in os.environ:
-                print "Downloading backup manifest %s"%self.alt_url
+                print "Failed to fetch file %s for reason %s"%(self.url, ex)
 
+
+        if not contents: # try the backup url
             try:
-                fh= urllib2.urlopen(self.alt_url)
-                contents = fh.read()
-                filehash =  hashlib.md5(contents).hexdigest()
-                if self.md5sum and filehash != self.md5sum:
-                    error += "md5sum didn't match for %s.  Expected %s got %s"%(self.alt_url, self.md5sum, filehash)
-                    if "ROSDEP_DEBUG" in os.environ:
-                        print "ms5sum mismatch", error
-                else:
-                    self.manifest = yaml.load(contents)
-            except urllib2.URLError, ex:
-                error += "Failed to load url %s with error: %s"%(self.alt_url, ex)
-            except yaml.scanner.ScannerError, ex:
-                error += "Failed to parse yaml in %s:  Error: %s"%(self.alt_url, ex)
-        
-        if error:
-            raise rosdep.core.RosdepException(error)
+                contents = fetch_file(self.alt_url, self.md5sum)
+            except rosdep.core.RosdepException, ex:
+                if "ROSDEP_DEBUG" in os.environ:
+                    print "Failed to fetch file %s for reason %s"%(self.alt_url, ex)
 
-        if not self.manifest:
+        if not contents:
             raise rosdep.core.RosdepException("Failed to load a rdmanifest from either %s or %s"%(self.url, self.alt_url))
-    
+
+                
+        try:
+            self.manifest = yaml.load(contents)
+                    
+        except yaml.scanner.ScannerError, ex:
+            raise rosdep.core.RosdepException("Failed to parse yaml in %s:  Error: %s"%(contents, ex))
+        
+                
         if "ROSDEP_DEBUG" in os.environ:
             print "Downloaded manifest:\n{{{%s\n}}}\n"%self.manifest
         

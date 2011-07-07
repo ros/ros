@@ -94,7 +94,13 @@ def assert_file_hash(filename, md5sum):
             md5.update(chunk)
     if md5sum != md5.hexdigest():
         raise rosdep.core.RosdepException("md5sum check on %s failed.  Expected %s got %s"%(filename, md5sum, md5.hexdigest()))
-        
+
+def get_file_hash(filename):
+    md5 = hashlib.md5()
+    with open(filename,'rb') as f: 
+        for chunk in iter(lambda: f.read(8192), ''): 
+            md5.update(chunk)
+    return md5.hexdigest()
 
 class SourceInstaller(InstallerAPI):
     def __init__(self, arg_dict):
@@ -170,7 +176,18 @@ class SourceInstaller(InstallerAPI):
         f = urllib.urlretrieve(self.tarball)
         filename = f[0]
         if self.tarball_md5sum:
-            assert_file_hash(filename, self.tarball_md5sum)
+            hash1 = get_file_hash(filename)
+            if self.tarball_md5sum != hash1:
+                #try backup tarball if it is defined
+                if self.alternate_tarball:
+                    f = urllib.urlretrieve(self.alternate_tarball)
+                    filename = f[0]
+                    hash2 = get_file_hash(filename)
+                    if self.tarball_md5sum != hash2:
+                        raise rosdep.core.RosdepException("md5sum check on %s and %s failed.  Expected %s got %s and %s"%(self.tarball, self.alternate_tarball, self.tarball_md5sum, hash1, hash2))
+                else:
+                    raise rosdep.core.RosdepException("md5sum check on %sfailed.  Expected %s got %s "%(self.tarball, self.tarball_md5sum, hash1))
+            
         else:
             if "ROSDEP_DEBUG" in os.environ:
                 print "No md5sum defined for tarball, not checking."

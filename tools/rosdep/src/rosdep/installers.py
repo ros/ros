@@ -205,27 +205,31 @@ class AptInstaller(InstallerAPI):
         if type(packages) == type("string"):
             packages = packages.split()
 
+        self.packages = packages
 
-        self.packages_to_install = list(set(packages) - set(self.dpkg_detect(packages)))
+
+    def get_packages_to_install(self):
+         return list(set(self.packages) - set(self.dpkg_detect(self.packages)))
 
 
     def check_presence(self):
-        return len(self.packages_to_install) == 0
+        return len(self.get_packages_to_install()) == 0
 
 
     def generate_package_install_command(self, default_yes = False, execute = True, display = True):
         script = '!#/bin/bash\n#no script'
-        if not self.packages_to_install:
+        packages_to_install = self.get_packages_to_install()
+        if not packages_to_install:
             script =  "#!/bin/bash\n#No Packages to install"
         if default_yes:
-            script = "#!/bin/bash\n#Packages %s\nsudo apt-get install -y "%self.packages_to_install + ' '.join(self.packages_to_install)        
+            script = "#!/bin/bash\n#Packages %s\nsudo apt-get install -y "%packages_to_install + ' '.join(packages_to_install)        
         else:
-            script =  "#!/bin/bash\n#Packages %s\nsudo apt-get install "%self.packages_to_install + ' '.join(self.packages_to_install)
+            script =  "#!/bin/bash\n#Packages %s\nsudo apt-get install "%packages_to_install + ' '.join(packages_to_install)
 
         if execute:
             return rosdep.core.create_tempfile_from_string_and_execute(script)
         elif display:
-            print "To install packages: %s would have executed script\n{{{\n%s\n}}}"%(self.packages_to_install, script)
+            print "To install packages: %s would have executed script\n{{{\n%s\n}}}"%(packages_to_install, script)
         return False
 
 
@@ -262,31 +266,40 @@ class PipInstaller(InstallerAPI):
             packages = packages.split()
 
 
-        self.packages_to_install = list(set(packages) - set(self.pip_detect(packages)))
         self.depends = arg_dict.get("depends", [])
+
+        self.packages = packages
+
+
+    def get_packages_to_install(self):
+         return list(set(self.packages) - set(self.pip_detect(self.packages)))
+
 
 
     def check_presence(self):
-        return len(self.packages_to_install) == 0
+        return len(self.get_packages_to_install()) == 0
 
     def get_depends(self):
         #todo verify type before returning
         return self.depends
 
     def generate_package_install_command(self, default_yes = False, execute = True, display = True):
+        packages_to_install = self.get_packages_to_install()
         script = '!#/bin/bash\n#no script'
-        if not self.packages_to_install:
+        if not packages_to_install:
             script =  "#!/bin/bash\n#No PIP Packages to install"
         #if default_yes:
-        #    script = "#!/bin/bash\n#Packages %s\nsudo apt-get install -U "%self.packages_to_install + ' '.join(self.packages_to_install)        
+        #    script = "#!/bin/bash\n#Packages %s\nsudo apt-get install -U "%packages_to_install + ' '.join(packages_to_install)        
         #else:
-        script =  "#!/bin/bash\n#Packages %s\nsudo pip install -U "%self.packages_to_install + ' '.join(self.packages_to_install)
+        script =  "#!/bin/bash\n#Packages %s\nsudo pip install -U "%packages_to_install + ' '.join(packages_to_install)
 
         if execute:
             return rosdep.core.create_tempfile_from_string_and_execute(script)
         elif display:
-            print "To install packages: %s would have executed script\n{{{\n%s\n}}}"%(self.packages_to_install, script)
+            print "To install packages: %s would have executed script\n{{{\n%s\n}}}"%(packages_to_install, script)
         return False
+
+
 
 
 

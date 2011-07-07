@@ -1,0 +1,5 @@
+test-sourcedep:
+  ubuntu:
+    source:
+      uri: https://kforge.ros.org/rosrelease/viewvc/sourcedeps/test_sourcedep/test_sourcedep-0.0-with-invalid-md5.rdmanifest
+

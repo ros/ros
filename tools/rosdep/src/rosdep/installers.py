@@ -86,7 +86,15 @@ def fetch_file(url, md5sum=None):
         raise rosdep.core.RosdepException(str(ex))
 
     return contents    
-    
+
+def assert_file_hash(filename, md5sum):
+    md5 = hashlib.md5()
+    with open(filename,'rb') as f: 
+        for chunk in iter(lambda: f.read(8192), ''): 
+            md5.update(chunk)
+    if md5sum != md5.hexdigest():
+        raise rosdep.core.RosdepException("md5sum check on %s failed.  Expected %s got %s"%(filename, md5sum, md5.hexdigest()))
+        
 
 class SourceInstaller(InstallerAPI):
     def __init__(self, arg_dict):
@@ -146,7 +154,7 @@ class SourceInstaller(InstallerAPI):
         if not self.tarball:
             raise rosdep.core.RosdepException("uri required for source rosdeps") 
         self.alternate_tarball = self.manifest.get("alternate-uri")
-
+        self.tarball_md5sum = self.manifest.get("md5sum")
         
 
     def check_presence(self):
@@ -160,9 +168,15 @@ class SourceInstaller(InstallerAPI):
         if "ROSDEP_DEBUG" in os.environ:
             print "Fetching %s"%self.tarball
         f = urllib.urlretrieve(self.tarball)
-
+        filename = f[0]
+        if self.tarball_md5sum:
+            assert_file_hash(filename, self.tarball_md5sum)
+        else:
+            if "ROSDEP_DEBUG" in os.environ:
+                print "No md5sum defined for tarball, not checking."
+            
         try:
-            tarf = tarfile.open(f[0])
+            tarf = tarfile.open(filename)
             tarf.extractall(tempdir)
 
             if execute:

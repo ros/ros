@@ -136,10 +136,11 @@ def main():
 
     try:
         if command == "generate_bash" or command == "satisfy":
-            result = r.satisfy()
-            if result:
+            missing_packages = r.satisfy()
+            if not missing_packages:
                 return 0
             else:
+                print "The following rosdeps were not installed", missing_packages
                 return 1
         
         elif command == "install":
@@ -168,13 +169,14 @@ def main():
 
         elif command == "check":
             return_val = 0
-            success = r.check()
+            missing_packages = r.check()
             if len(rejected_packages) > 0:
                 print >> sys.stderr, "Arguments %s are not packages"%rejected_packages
                 return_val = 1
-            if success:
+            if len(missing_packages) == 0:
                 return 0
             else:
+                print "The following rosdeps were not installed", missing_packages
                 return 1
 
     except core.RosdepException, e:

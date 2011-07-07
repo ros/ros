@@ -171,6 +171,12 @@ class Mint(rosdep.base_rosdep.RosdepBaseOS):
                             '7':'9.04',
                             '6':'8.10',
                             '5':'8.04'}
+
+        self.installers = {}
+        self.installers['apt'] = AptInstaller
+        self.installers['source'] = rosdep.installers.SourceInstaller
+        self.installers['default'] = AptInstaller
+
     def get_version(self):
         return self.version_map[self.mint_detector.get_version()]
 

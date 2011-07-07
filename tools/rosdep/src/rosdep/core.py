@@ -386,10 +386,16 @@ class Rosdep:
         
 
     def satisfy(self):
+        """ 
+        return a list of failed rosdeps and print what would have been done to install them
+        """
         return self.check(display = True)
 
     def check(self, display = False):
-        failure = False
+        """ 
+        Return a list of failed rosdeps
+        """
+        failed_rosdeps = []
         try:
             native_packages, scripts = self.get_packages_and_scripts()
             num_scripts = len(scripts)
@@ -401,7 +407,7 @@ class Rosdep:
                         print "Script:\n{{{\n%s\n}}}"%s
         except RosdepException, e:
             print >> sys.stderr, "error in processing scripts", e
-            pass
+
 
 
 
@@ -409,10 +415,10 @@ class Rosdep:
             rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, self.yc)
             for r in self.rosdeps[p]:
                 if not self.install_rosdep(r, rdlp, default_yes=False, execute=False, display=display):
-                    failure = True
+                    failed_rosdeps.append(r)
     
 
-        return not failure
+        return failed_rosdeps
 
     def what_needs(self, rosdep_args):
         packages = []

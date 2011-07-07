@@ -146,3 +146,59 @@ class SourceInstaller(InstallerAPI):
         return self.depends
         
 
+        
+
+class AptInstaller(InstallerAPI):
+    """ 
+    An implementation of the InstallerAPI for use on debian style
+    systems.
+    """
+    def __init__(self, arg_dict):
+
+        
+        packages = arg_dict.get("packages", "")
+        if type(packages) == type("string"):
+            packages = packages.split()
+
+
+        self.packages_to_install = list(set(packages) - set(self.dpkg_detect(packages)))
+
+
+    def check_presence(self):
+        return len(self.packages_to_install) == 0
+
+
+    def generate_package_install_command(self, default_yes = False, execute = True, display = True):
+        script = '!#/bin/bash\n#no script'
+        if not self.packages_to_install:
+            script =  "#!/bin/bash\n#No Packages to install"
+        if default_yes:
+            script = "#!/bin/bash\n#Packages %s\nsudo apt-get install -y "%self.packages_to_install + ' '.join(self.packages_to_install)        
+        else:
+            script =  "#!/bin/bash\n#Packages %s\nsudo apt-get install "%self.packages_to_install + ' '.join(self.packages_to_install)
+
+        if execute:
+            return rosdep.core.create_tempfile_from_string_and_execute(script)
+        elif display:
+            print "To install packages: %s would have executed script\n{{{\n%s\n}}}"%(self.packages_to_install, script)
+        return False
+
+
+
+    def dpkg_detect(self, pkgs):
+        """ 
+        Given a list of package, return the list of installed packages.
+        """
+        ret_list = []
+        cmd = ['dpkg-query', '-W', '-f=\'${Package} ${Status}\n\'']
+        cmd.extend(pkgs)
+        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (std_out, std_err) = pop.communicate()
+        std_out = std_out.replace('\'','')
+        pkg_list = std_out.split('\n')
+        for pkg in pkg_list:
+            pkg_row = pkg.split()
+            if len(pkg_row) == 4 and (pkg_row[3] =='installed'):
+                ret_list.append( pkg_row[0])
+        return ret_list
+

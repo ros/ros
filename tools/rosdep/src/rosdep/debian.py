@@ -70,58 +70,6 @@ class RosdepTestOS(rosdep.base_rosdep.RosdepBaseOS):
 
 
 
-        
-
-class AptInstaller(rosdep.installers.InstallerAPI):
-    def __init__(self, arg_dict):
-
-        
-        packages = arg_dict.get("packages", "")
-        if type(packages) == type("string"):
-            packages = packages.split()
-
-
-        self.packages_to_install = list(set(packages) - set(self.dpkg_detect(packages)))
-
-
-    def check_presence(self):
-        return len(self.packages_to_install) == 0
-
-
-    def generate_package_install_command(self, default_yes = False, execute = True, display = True):
-        script = '!#/bin/bash\n#no script'
-        if not self.packages_to_install:
-            script =  "#!/bin/bash\n#No Packages to install"
-        if default_yes:
-            script = "#!/bin/bash\n#Packages %s\nsudo apt-get install -y "%self.packages_to_install + ' '.join(self.packages_to_install)        
-        else:
-            script =  "#!/bin/bash\n#Packages %s\nsudo apt-get install "%self.packages_to_install + ' '.join(self.packages_to_install)
-
-        if execute:
-            return rosdep.core.create_tempfile_from_string_and_execute(script)
-        elif display:
-            print "To install packages: %s would have executed script\n{{{\n%s\n}}}"%(self.packages_to_install, script)
-        return False
-
-
-
-    def dpkg_detect(self, pkgs):
-        """ 
-        Given a list of package, return the list of installed packages.
-        """
-        ret_list = []
-        cmd = ['dpkg-query', '-W', '-f=\'${Package} ${Status}\n\'']
-        cmd.extend(pkgs)
-        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (std_out, std_err) = pop.communicate()
-        std_out = std_out.replace('\'','')
-        pkg_list = std_out.split('\n')
-        for pkg in pkg_list:
-            pkg_row = pkg.split()
-            if len(pkg_row) == 4 and (pkg_row[3] =='installed'):
-                ret_list.append( pkg_row[0])
-        return ret_list
-
 
 
 ###### Debian SPECIALIZATION #########################
@@ -132,9 +80,9 @@ class Debian(roslib.os_detect.Debian, rosdep.base_rosdep.RosdepBaseOS):
     how to check for and install packages."""
     def __init__(self):
         self.installers = {}
-        self.installers['apt'] = AptInstaller
+        self.installers['apt'] = rosdep.installers.AptInstaller
         self.installers['source'] = rosdep.installers.SourceInstaller
-        self.installers['default'] = AptInstaller
+        self.installers['default'] = rosdep.installers.AptInstaller
 
     
     pass
@@ -149,9 +97,9 @@ class Ubuntu(roslib.os_detect.Ubuntu, rosdep.base_rosdep.RosdepBaseOS):
 
     def __init__(self):
         self.installers = {}
-        self.installers['apt'] = AptInstaller
+        self.installers['apt'] = rosdep.installers.AptInstaller
         self.installers['source'] = rosdep.installers.SourceInstaller
-        self.installers['default'] = AptInstaller
+        self.installers['default'] = rosdep.installers.AptInstaller
     pass
 
 ###### END UBUNTU SPECIALIZATION ########################
@@ -173,9 +121,9 @@ class Mint(rosdep.base_rosdep.RosdepBaseOS):
                             '5':'8.04'}
 
         self.installers = {}
-        self.installers['apt'] = AptInstaller
+        self.installers['apt'] = rosdep.installers.AptInstaller
         self.installers['source'] = rosdep.installers.SourceInstaller
-        self.installers['default'] = AptInstaller
+        self.installers['default'] = rosdep.installers.AptInstaller
 
     def get_version(self):
         return self.version_map[self.mint_detector.get_version()]

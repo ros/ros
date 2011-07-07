@@ -110,7 +110,10 @@ class RosdepCommandlineExternalPackages(unittest.TestCase):
     def test_source(self):
         my_env = self.env.copy()
         my_env['ROS_OS_OVERRIDE']='ubuntu:lucid'
-        os.remove('/tmp/test_sourcedep_installed')
+        try:
+            os.remove('/tmp/test_sourcedep_installed')
+        except:
+            pass #it's ok if the file's not there
         self.assertEqual(1,subprocess.call(["rosdep", "check", "rosdep_source"], env=my_env))
         self.assertEqual(1,subprocess.call(["rosdep", "satisfy", "rosdep_source"], env=my_env))
         self.assertEqual(0,subprocess.call(["rosdep", "install", "rosdep_source"], env=my_env)) # install first it touches a file the others detect

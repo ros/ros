@@ -170,6 +170,9 @@ def create_tempfile_from_string_and_execute(string_script, path= tempfile.gettem
     finally:
         if os.path.exists(fh.name):
             os.remove(fh.name)
+    
+    if "ROSDEP_DEBUG" in os.environ:
+        print "Return code was:", result
     return result == 0
 
 
@@ -439,7 +442,7 @@ class Rosdep:
                 if not self.install_rosdep(r, rdlp, default_yes, execute):
                     failure = True
                     if not self.robust:
-                        return False
+                        return "failed to install %s"%r
         if failure:
             return "Rosdep install failed"
         return None
@@ -518,7 +521,7 @@ class Rosdep:
                 return False
 
         elif execute:
-            print "unsuccessfully installed %s"%rosdep_name
+            print "Failed to install %s!"%rosdep_name
         return result
 
     def depdb(self, packages):

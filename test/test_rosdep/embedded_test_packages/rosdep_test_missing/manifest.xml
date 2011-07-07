@@ -9,6 +9,8 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/rosdep_test_missing</url>
 
+  <rosdep name="not-a-package"/>
+
 </package>
 
 

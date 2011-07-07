@@ -66,25 +66,39 @@ class RosdepCommandlineTest(unittest.TestCase):
 class RosdepCommandlineExternalPackages(unittest.TestCase):
 
     def setUp(self):
+        self.tempdir = tempfile.mkdtemp()
+        shutil.copytree(os.path.join(roslib.packages.get_pkg_dir('test_rosdep'),
+                                     'embedded_test_packages'), 
+                        self.tempdir+"/packges")
+        
         self.env = os.environ
-        self.env['ROS_PACKAGE_PATH'] = self.env['ROS_PACKAGE_PATH']+':'+\
-            os.path.join(roslib.packages.get_pkg_dir('test_rosdep'),
-                         'embedded_test_packages')
+        self.env['ROS_PACKAGE_PATH'] = self.tempdir+":"+self.env['ROS_PACKAGE_PATH']
+        self.env['ROSDEP_DEBUG']='true'            
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)
 
     def test_check_legacy_apt(self):
         my_env = self.env.copy()
         my_env['ROS_OS_OVERRIDE']='ubuntu:10.04'
-        self.assertEqual(0,subprocess.call(["rosdep", "check", "rosdep_legacy_apt"], env=self.env))
-        self.assertEqual(0,subprocess.call(["rosdep", "satisfy", "rosdep_legacy_apt"], env=self.env))
-        self.assertEqual(0,subprocess.call(["rosdep", "install", "rosdep_legacy_apt"], env=self.env))
+        self.assertEqual(0,subprocess.call(["rosdep", "check", "rosdep_legacy_apt"], env=my_env))
+        self.assertEqual(0,subprocess.call(["rosdep", "satisfy", "rosdep_legacy_apt"], env=my_env))
+        self.assertEqual(0,subprocess.call(["rosdep", "install", "rosdep_legacy_apt"], env=my_env))
 
 
     def ________FIXME_____TODO______test_apt(self):
         my_env = self.env.copy()
         my_env['ROS_OS_OVERRIDE']='ubuntu:10.04'
-        self.assertEqual(0,subprocess.call(["rosdep", "check", "rosdeptest"], env=self.env))
-        self.assertEqual(0,subprocess.call(["rosdep", "satisfy", "rosdeptest"], env=self.env))
-        self.assertEqual(0,subprocess.call(["rosdep", "install", "rosdeptest"], env=self.env))
+        self.assertEqual(0,subprocess.call(["rosdep", "check", "rosdeptest"], env=my_env))
+        self.assertEqual(0,subprocess.call(["rosdep", "satisfy", "rosdeptest"], env=my_env))
+        self.assertEqual(0,subprocess.call(["rosdep", "install", "rosdeptest"], env=my_env))
+
+    def test_check_test_missing(self):
+        my_env = self.env.copy()
+        my_env['ROS_OS_OVERRIDE']='ubuntu:10.04'
+        self.assertEqual(1,subprocess.call(["rosdep", "check", "rosdep_test_missing"], env=my_env))
+        self.assertEqual(1,subprocess.call(["rosdep", "satisfy", "rosdep_test_missing"], env=my_env))
+        self.assertEqual(1,subprocess.call(["rosdep", "install", "rosdep_test_missing"], env=my_env))
 
 
 if __name__ == '__main__':

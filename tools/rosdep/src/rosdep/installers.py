@@ -346,7 +346,7 @@ class PipInstaller(InstallerAPI):
                 ret_list.append( pkg_row[0])
         return ret_list
 
-class PortInstaller(InstallerAPI):
+class MacportsInstaller(InstallerAPI):
     """ 
     An implementation of the InstallerAPI for use on macports systems.
     """

@@ -430,13 +430,14 @@ class Rosdep:
             print >> sys.stderr, "error in processing scripts", e
 
 
-
-
+        rosdeps = []
         for p in self.packages:
             rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, self.yc)
-            for r in self.rosdeps[p]:
-                if not self.install_rosdep(r, rdlp, default_yes=False, execute=False, display=display):
-                    failed_rosdeps.append(r)
+            rosdeps.extend(self.rosdeps[p])
+            
+        for r in set(rosdeps):
+            if not self.install_rosdep(r, rdlp, default_yes=False, execute=False, display=display):
+                failed_rosdeps.append(r)
     
 
         return failed_rosdeps

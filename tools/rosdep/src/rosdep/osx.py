@@ -45,8 +45,9 @@ def port_detect(p):
 class Osx(roslib.os_detect.Osx, rosdep.base_rosdep.RosdepBaseOS):
     def __init__(self):
         self.installers = {}
-        #FIXME: I guess that there should be something like:
-        #self.installers['port'] = rosdep.installers.PortInstaller
+        self.installers['pip'] = rosdep.installers.PipInstaller
+        self.installers['port'] = rosdep.installers.PortInstaller
+        self.installers['default'] = rosdep.installers.PortInstaller
 
     def strip_detected_packages(self, packages):
         return [p for p in packages if not port_detect(p)] 

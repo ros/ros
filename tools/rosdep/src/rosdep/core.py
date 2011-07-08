@@ -453,13 +453,17 @@ class Rosdep:
 
     def install(self, include_duplicates, default_yes, execute=True):
         failure = False
+        rosdeps = []
         for p in self.packages:
             rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, self.yc)
-            for r in self.rosdeps[p]:
-                if not self.install_rosdep(r, rdlp, default_yes, execute):
-                    failure = True
-                    if not self.robust:
-                        return "failed to install %s"%r
+            rosdeps.extend(self.rosdeps[p])
+
+        for r in set(rosdeps):
+            if not self.install_rosdep(r, rdlp, default_yes, execute):
+                failure = True
+                if not self.robust:
+                    return "failed to install %s"%r
+
         if failure:
             return "Rosdep install failed"
         return None

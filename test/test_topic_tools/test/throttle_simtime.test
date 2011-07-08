@@ -1,0 +1,18 @@
+<launch>
+  <param name="use_sim_time" value="True"/>
+  <node pkg="rostopic" type="rostopic" name="rostopic_pub" 
+        args="pub -r 20 input std_msgs/String chatter"/>
+
+  <!-- Automatic output name -->
+  <node pkg="topic_tools" type="throttle" name="throttle"
+        args="messages input 5">
+    <param name="wall_clock" value="True"/>
+  </node>
+  <test test-name="throttle_simtime_hztest" pkg="rostest" type="hztest">
+    <param name="topic" value="input_throttle"/>
+    <param name="hz" value="5.0"/>
+    <param name="hzerror" value="1.0"/>
+    <param name="wall_clock" value="True"/>
+    <param name="test_duration" value="2.0" />
+  </test>
+</launch>

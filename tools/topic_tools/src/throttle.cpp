@@ -54,6 +54,7 @@ static ros::Publisher g_pub;
 static bool g_use_messages;
 static ros::Time g_last_time;
 //static ShapeShifter g_in_msg;
+static bool g_use_wallclock;
 
 class Sent
 {
@@ -73,8 +74,12 @@ void in_cb(const boost::shared_ptr<ShapeShifter const>& msg)
     printf("advertised as %s\n", g_output_topic.c_str());
   }
   if(g_use_messages)
- {
-    ros::Time now = ros::Time::now();
+  {
+    ros::Time now;
+    if(g_use_wallclock)
+      now.fromSec(ros::WallTime::now().toSec());
+    else
+      now = ros::Time::now();
     if((now - g_last_time) > g_period)
     {
       g_pub.publish(msg);
@@ -84,7 +89,12 @@ void in_cb(const boost::shared_ptr<ShapeShifter const>& msg)
   else
   {
     // pop the front of the queue until it's within the window
-    const double t = ros::Time::now().toSec();
+    ros::Time now;
+    if(g_use_wallclock)
+      now.fromSec(ros::WallTime::now().toSec());
+    else
+      now = ros::Time::now();
+    const double t = now.toSec();
     while (!g_sent.empty() && g_sent.front().t < t - g_window)
       g_sent.pop_front();
     // sum up how many bytes are in the window
@@ -125,6 +135,8 @@ int main(int argc, char **argv)
 
   ros::init(argc, argv, topic_name + string("_throttle"),
             ros::init_options::AnonymousName);
+  ros::NodeHandle pnh("~");
+  pnh.getParam("wall_clock", g_use_wallclock);
 
   if(!strcmp(argv[1], "messages"))
     g_use_messages = true;

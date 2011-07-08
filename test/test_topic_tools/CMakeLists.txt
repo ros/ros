@@ -22,6 +22,7 @@ rosbuild_add_gtest_build_flags(test/test_shapeshifter)
 
 rosbuild_add_rostest(test/shapeshifter.test)
 rosbuild_add_rostest(test/throttle.test)
+rosbuild_add_rostest(test/throttle_simtime.test)
 rosbuild_add_rostest(test/drop.test)
 rosbuild_add_rostest(test/relay.test)
 # Latched test disabled until underlying issue in roscpp is resolved,

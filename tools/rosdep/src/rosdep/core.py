@@ -341,9 +341,7 @@ Rules for %s do not match:
             return []
 
 
-
-
- 
+from collections import defaultdict 
 
 class Rosdep:
     def __init__(self, packages, command = "rosdep", robust = False):
@@ -366,6 +364,17 @@ class Rosdep:
         return [d.name for d in m.rosdeps]
             
 
+    def get_rosdeps(self, packages):
+        """
+        @return: dictionary mapping rosdep names to list of packages
+        that require that rosdep.
+        """
+        rosdeps = defaultdict(list)
+        for p in packages:
+            for r in self.rosdeps[p]:
+                rosdeps[r].append(p)
+        return rosdeps
+    
     def get_packages_and_scripts(self):
         if len(self.packages) == 0:
             return ([], [])
@@ -375,23 +384,24 @@ class Rosdep:
         start_time = time.time()
         if "ROSDEP_DEBUG" in os.environ:
             print "Generating package list and scripts for %d packages.  This may take a few seconds..."%len(self.packages)
-        for p in self.packages:
+        for r, packages in self.get_rosdeps(self.packages).iteritems():
+            # use first package for lookup rules
+            p = packages[0]
             rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, self.yc)
-            for r in self.rosdeps[p]:
-                #print "rosdep", r
-                specific = rdlp.lookup_rosdep(r)
-                #print "specific", specific
-                if specific:
-                    if type(specific) == type({}):
-                        if "ROSDEP_DEBUG" in os.environ:
-                            print "%s NEW TYPE, SKIPPING"%r
-                    elif len(specific.split('\n')) == 1:
-                        for pk in specific.split():
-                            native_packages.append(pk)
-                    else:
-                        scripts.append(specific)
+            #print "rosdep", r
+            specific = rdlp.lookup_rosdep(r)
+            #print "specific", specific
+            if specific:
+                if type(specific) == type({}):
+                    if "ROSDEP_DEBUG" in os.environ:
+                        print "%s NEW TYPE, SKIPPING"%r
+                elif len(specific.split('\n')) == 1:
+                    for pk in specific.split():
+                        native_packages.append(pk)
                 else:
-                    failed_rosdeps.append(r)
+                    scripts.append(specific)
+            else:
+                failed_rosdeps.append(r)
 
         if len(failed_rosdeps) > 0:
             if not self.robust:
@@ -429,16 +439,12 @@ class Rosdep:
         except RosdepException, e:
             print >> sys.stderr, "error in processing scripts", e
 
-
-        rosdeps = []
-        for p in self.packages:
+        for r, packages in self.get_rosdeps(self.packages).iteritems():
+            # use first package for lookup rule
+            p = packages[0]
             rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, self.yc)
-            rosdeps.extend(self.rosdeps[p])
-            
-        for r in set(rosdeps):
             if not self.install_rosdep(r, rdlp, default_yes=False, execute=False, display=display):
                 failed_rosdeps.append(r)
-    
 
         return failed_rosdeps
 
@@ -454,12 +460,11 @@ class Rosdep:
 
     def install(self, include_duplicates, default_yes, execute=True):
         failure = False
-        rosdeps = []
-        for p in self.packages:
-            rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, self.yc)
-            rosdeps.extend(self.rosdeps[p])
 
-        for r in set(rosdeps):
+        for r, packages in self.get_rosdeps(self.packages).iteritems():
+            # use the first package as the lookup rule
+            p = packages[0]
+            rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, self.yc)
             if not self.install_rosdep(r, rdlp, default_yes, execute):
                 failure = True
                 if not self.robust:

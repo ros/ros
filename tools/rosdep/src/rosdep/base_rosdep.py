@@ -31,6 +31,7 @@
 import subprocess
 import os.path 
 import roslib.os_detect
+import rosdep.core
 
 ###### DEBIAN SPECIALIZATION #########################
 
@@ -52,7 +53,7 @@ class RosdepBaseOS(roslib.os_detect.OSBase):
         """
         try:
             if not mode in self.installers:
-                raise RosdepException("Invalid installation mode %s for %s"%(mode, self.get_name()))
+                raise rosdep.core.RosdepException("Invalid installation mode %s for %s"%(mode, self.get_name()))
             return self.installers[mode]
         except NameError, ex:
-            raise RosdepException("Invalid installation mode %s for %s"%(mode, self.get_name()))
+            raise rosdep.core.RosdepException("Invalid installation mode %s for %s"%(mode, self.get_name()))

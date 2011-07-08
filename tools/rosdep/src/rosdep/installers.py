@@ -356,7 +356,6 @@ class PortInstaller(InstallerAPI):
             packages = packages.split()
 
         self.packages = packages
-        print 'packages: ' + `self.packages`
 
     def get_packages_to_install(self):
          return list(set(self.packages) - set(self.port_detect(self.packages)))

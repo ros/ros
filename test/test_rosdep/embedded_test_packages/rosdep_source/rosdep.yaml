@@ -1,0 +1,24 @@
+test-sourcedep:
+  ubuntu:
+    source:
+      uri: https://kforge.ros.org/rosrelease/viewvc/sourcedeps/test_sourcedep/test_sourcedep-0.0.rdmanifest
+      md5sum: 833a8a3eda3b04315e8b790277931025
+
+test-sourcedep-alternate-url:
+  ubuntu:
+    source:
+      uri: https://kforge.ros.org/rosrelease/viewvc/sourcedeps/test_sourcedep/test_sourcedep-0.0.rdmanifest.doesnotexit
+      alternate-uri: https://kforge.ros.org/rosrelease/viewvc/sourcedeps/test_sourcedep/test_sourcedep-0.0.rdmanifest
+      md5sum: 833a8a3eda3b04315e8b790277931025
+
+
+test-sourcedep-alternate-url-nomd5:
+  ubuntu:
+    source:
+      alternate-uri: https://kforge.ros.org/rosrelease/viewvc/sourcedeps/test_sourcedep/test_sourcedep-0.0.rdmanifest
+
+test-sourcedep-nomd5:
+  ubuntu:
+    source:
+      uri: https://kforge.ros.org/rosrelease/viewvc/sourcedeps/test_sourcedep/test_sourcedep-0.0.rdmanifest
+      md5sum: 833a8a3eda3b04315e8b790277931025

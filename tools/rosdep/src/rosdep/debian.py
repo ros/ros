@@ -48,6 +48,8 @@ import rosdep.installers
 class RosdepTestOS(rosdep.base_rosdep.RosdepBaseOS):
     def __init__(self):
         self.name = "uninitialized"
+        self.installers = {}
+
     def check_presence(self):
         if "ROSDEP_TEST_OS" in os.environ:
             return True
@@ -69,105 +71,28 @@ class RosdepTestOS(rosdep.base_rosdep.RosdepBaseOS):
             return "#no"
 
 
-class AptGetInstall():
-    def __init__(self):
-        print "===================================================================UNUSED"
-
-
-    def dpkg_detect(self, pkgs):
-        ret_list = []
-        cmd = ['dpkg-query', '-W', '-f=\'${Package} ${Status}\n\'']
-        cmd.extend(pkgs)
-        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (std_out, std_err) = pop.communicate()
-        std_out = std_out.replace('\'','')
-        pkg_list = std_out.split('\n')
-        for pkg in pkg_list:
-            pkg_row = pkg.split()
-            if len(pkg_row) == 4 and (pkg_row[3] =='installed'):
-                ret_list.append( pkg_row[0])
-        return ret_list
-
-    def strip_detected_packages(self, packages):
-        return list(set(packages) - set(self.dpkg_detect(packages)))
-
-    def generate_package_install_command(self, packages, default_yes):
-        if not packages:
-            return "#No Packages to install"
-        if default_yes:
-            return "#Packages\nsudo apt-get install -y " + ' '.join(packages)        
-        else:
-            return "#Packages\nsudo apt-get install " + ' '.join(packages)
-
-    
-
-        
-
-class AptInstaller(rosdep.installers.InstallerAPI):
-    def __init__(self, arg_dict):
-
-        
-        packages = arg_dict.get("packages", "")
-        if type(packages) == type("string"):
-            packages = packages.split()
-
-
-        self.packages_to_install = list(set(packages) - set(self.dpkg_detect(packages)))
-
-
-    def check_presence(self):
-        return len(self.packages_to_install) == 0
-
-
-    def generate_package_install_command(self, default_yes = False):
-        script = '!#/bin/bash\n#no script'
-        if not self.packages_to_install:
-            script =  "#!/bin/bash\n#No Packages to install"
-        if default_yes:
-            script = "#!/bin/bash\n#Packages\nsudo apt-get install -y " + ' '.join(self.packages_to_install)        
-        else:
-            script =  "#!/bin/bash\n#Packages\nsudo apt-get install " + ' '.join(self.packages_to_install)
-        return rosdep.core.create_tempfile_from_string_and_execute(script)
-
-
-
-    def dpkg_detect(self, pkgs):
-        """ 
-        Given a list of package, return the list of installed packages.
-        """
-        ret_list = []
-        cmd = ['dpkg-query', '-W', '-f=\'${Package} ${Status}\n\'']
-        cmd.extend(pkgs)
-        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (std_out, std_err) = pop.communicate()
-        std_out = std_out.replace('\'','')
-        pkg_list = std_out.split('\n')
-        for pkg in pkg_list:
-            pkg_row = pkg.split()
-            if len(pkg_row) == 4 and (pkg_row[3] =='installed'):
-                ret_list.append( pkg_row[0])
-        return ret_list
 
 
 
 ###### Debian SPECIALIZATION #########################
-class Debian(roslib.os_detect.Debian, AptGetInstall, rosdep.base_rosdep.RosdepBaseOS):
+class Debian(roslib.os_detect.Debian, rosdep.base_rosdep.RosdepBaseOS):
     """ This is an implementation of a standard interface for
     interacting with rosdep.  This defines all Ubuntu sepecific
     methods, including detecting the OS/Version number.  As well as
     how to check for and install packages."""
     def __init__(self):
         self.installers = {}
-        self.installers['apt'] = AptInstaller
+        self.installers['apt'] = rosdep.installers.AptInstaller
+        self.installers['pip'] = rosdep.installers.PipInstaller
         self.installers['source'] = rosdep.installers.SourceInstaller
-        self.installers['default'] = AptInstaller
+        self.installers['default'] = rosdep.installers.AptInstaller
 
     
     pass
 ###### END Debian SPECIALIZATION ########################
 
 ###### UBUNTU SPECIALIZATION #########################
-class Ubuntu(roslib.os_detect.Ubuntu, AptGetInstall, rosdep.base_rosdep.RosdepBaseOS):
+class Ubuntu(roslib.os_detect.Ubuntu, rosdep.base_rosdep.RosdepBaseOS):
     """ This is an implementation of a standard interface for
     interacting with rosdep.  This defines all Ubuntu sepecific
     methods, including detecting the OS/Version number.  As well as
@@ -175,15 +100,16 @@ class Ubuntu(roslib.os_detect.Ubuntu, AptGetInstall, rosdep.base_rosdep.RosdepBa
 
     def __init__(self):
         self.installers = {}
-        self.installers['apt'] = AptInstaller
+        self.installers['apt'] = rosdep.installers.AptInstaller
+        self.installers['pip'] = rosdep.installers.PipInstaller
         self.installers['source'] = rosdep.installers.SourceInstaller
-        self.installers['default'] = AptInstaller
+        self.installers['default'] = rosdep.installers.AptInstaller
     pass
 
 ###### END UBUNTU SPECIALIZATION ########################
 
 ###### Mint SPECIALIZATION #########################
-class Mint(AptGetInstall, rosdep.base_rosdep.RosdepBaseOS):
+class Mint(rosdep.base_rosdep.RosdepBaseOS):
     """ This is an implementation of a standard interface for
     interacting with rosdep.  Mint is closely coupled to Ubuntu, it
     will masquerade as ubuntu for the purposes of rosdep. """
@@ -197,6 +123,12 @@ class Mint(AptGetInstall, rosdep.base_rosdep.RosdepBaseOS):
                             '7':'9.04',
                             '6':'8.10',
                             '5':'8.04'}
+
+        self.installers = {}
+        self.installers['apt'] = rosdep.installers.AptInstaller
+        self.installers['source'] = rosdep.installers.SourceInstaller
+        self.installers['default'] = rosdep.installers.AptInstaller
+
     def get_version(self):
         return self.version_map[self.mint_detector.get_version()]
 

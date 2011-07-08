@@ -1,0 +1,15 @@
+pip-based-install:
+  ubuntu: 
+    pip:
+      packages: [ wsgiref ]
+pip-versioned-install:
+  ubuntu: 
+    lucid: 
+      pip:
+        packages: [ wsgiref ]
+
+pip-based-install-dependent:
+  ubuntu: 
+    pip:
+      packages: [ wsgiref ]
+      depends: [ pip-based-install]

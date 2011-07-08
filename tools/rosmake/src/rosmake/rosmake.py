@@ -282,21 +282,15 @@ class RosMakeAll:
         return self.paths[package]
         
     def check_rosdep(self, packages):
-        warning = ''
+        failed_rosdeps = []
         try:
             r = rosdep.core.Rosdep(packages, robust=True)
-            (output, scripts) = r.check()
+            failed_rosdeps = r.check()
         except roslib.exceptions.ROSLibException, ex:
             return ("rosdep ABORTED: %s"%ex, '')
 
-        if len(scripts) > 0:
-            warning = "rosdep check could not check scripts: %s"%scripts
-            
-        if len(output) == 0:
-            return ('', warning)
-        else:
-            return (output, warning)
-
+        return ', '.join(failed_rosdeps)
+        
     def install_rosdeps(self, packages, default_yes):
         """
         Install all rosdeps of packages.
@@ -697,7 +691,7 @@ class RosMakeAll:
         parser.add_option("--rosdep-install", dest="rosdep_install",
                           action="store_true", help="call rosdep install before running")
         parser.add_option("--rosdep-yes", dest="rosdep_yes",
-                          action="store_true", help="call rosdep install with default yes argument")
+                          action="store_true", help="if calling rosdep install use the default yes argument")
         parser.add_option("--no-rosdep", dest="rosdep_disabled",
                           action="store_true", help="disable the default check of rosdep")
 
@@ -860,10 +854,7 @@ class RosMakeAll:
 
         elif not options.rosdep_disabled:
             self.printer.print_all("Checking rosdeps compliance for packages %s.  This may take a few seconds."%(', '.join(packages)))
-            (self.rosdep_check_result, warning) = self.check_rosdep(buildable_packages)
-
-            if warning:
-                self.printer.print_all("rosdep produced a warning: %s"%warning)
+            self.rosdep_check_result = self.check_rosdep(buildable_packages)
 
             if len(self.rosdep_check_result) == 0:
                 self.printer.print_all( "rosdep check passed all system dependencies in packages")# %s"% packages)

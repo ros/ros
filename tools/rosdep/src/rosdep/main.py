@@ -136,14 +136,20 @@ def main():
 
     try:
         if command == "generate_bash" or command == "satisfy":
-            print r.generate_script(include_duplicates=options.include_duplicates, default_yes=options.default_yes)
-            return 0
+            missing_packages = r.satisfy()
+            if not missing_packages:
+                return 0
+            else:
+                print "The following rosdeps are not installed but are required", missing_packages
+                return 1
+        
         elif command == "install":
             error = r.install(options.include_duplicates, options.default_yes)
             if error:
                 print >> sys.stderr, "rosdep install ERROR:\n%s"%error
                 return 1
             else:
+                print "All required rosdeps installed successfully"
                 return 0
     except core.RosdepException, e:
         print >> sys.stderr, "ERROR: %s"%e
@@ -164,18 +170,17 @@ def main():
 
         elif command == "check":
             return_val = 0
-            (output, scripts) = r.check()
+            missing_packages = r.check()
             if len(rejected_packages) > 0:
                 print >> sys.stderr, "Arguments %s are not packages"%rejected_packages
                 return_val = 1
-            if len(output) != 0:
-                print >> sys.stderr, output
+            if len(missing_packages) == 0:
+                print "All required rosdeps are installed" 
+                return 0
+            else:
+                print "The following rosdeps were not installed", missing_packages
                 return 1
-            if len(scripts)>0:
-                print >> sys.stderr, scripts
-                # not an error condition
 
-            return return_val
     except core.RosdepException, e:
         print >> sys.stderr, str(e)
         return 1

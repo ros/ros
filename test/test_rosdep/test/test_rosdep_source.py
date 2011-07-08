@@ -39,31 +39,24 @@ import unittest
 import rosunit
 import rosdep.core
 import rosdep.installers
-import rosdep.debian
 
 class RosdepSourceTest(unittest.TestCase):
     
     def test_aptinstaller_installed(self):
         args = {}
         args["packages"] = "libc6 gcc"
-        ai = rosdep.debian.AptInstaller(args)
+        ai = rosdep.installers.AptInstaller(args)
         self.assertTrue(ai.check_presence())
         ## Requires sudo self.assertTrue(ai.generate_package_install_command())
         
     def test_aptinstaller_not_installed(self):
         args = {}
         args["packages"] = "not-a-package"
-        ai = rosdep.debian.AptInstaller(args)
+        ai = rosdep.installers.AptInstaller(args)
         self.assertFalse(ai.check_presence())
         ## Requres sudo self.assertFalse(ai.generate_package_install_command())
 
 
-    def test_sourceinstaller(self):
-        args = {}
-        args["uri"] = 'https://kforge.ros.org/rosrelease/viewvc/sourcedeps/test_sourcedep/test_sourcedep-0.0.rdmanifest'
-        ai = rosdep.installers.SourceInstaller(args)
-        self.assertFalse(ai.check_presence())
-        self.assertTrue(ai.generate_package_install_command())
 
         
 

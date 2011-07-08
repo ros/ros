@@ -36,12 +36,17 @@ import struct
 import sys
 import unittest
 import subprocess
+import shutil
+import tempfile
 
 import rosunit
 import rosdep.core
 
 
 class RosdepCommandlineTest(unittest.TestCase):
+    """ Basic Tripwire Testing"""
+
+
 
     def test_Rosdep_commandline_satisfy(self):
         self.assertEqual(0,subprocess.call(["rosdep", "satisfy", "test_rosdep"]))
@@ -58,6 +63,90 @@ class RosdepCommandlineTest(unittest.TestCase):
         self.assertEqual(0,subprocess.call(["rosdep", "where_defined", "boost"]))
 
 
+class RosdepCommandlineExternalPackages(unittest.TestCase):
+
+    def setUp(self):
+        self.tempdir = tempfile.mkdtemp()
+        shutil.copytree(os.path.join(roslib.packages.get_pkg_dir('test_rosdep'),
+                                     'embedded_test_packages'), 
+                        self.tempdir+"/packges")
+        
+        self.env = os.environ
+        self.env['ROS_PACKAGE_PATH'] = self.tempdir+":"+self.env['ROS_PACKAGE_PATH']
+        self.env['ROSDEP_DEBUG']='true'            
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)
+
+    def test_check_legacy_apt(self):
+        my_env = self.env.copy()
+        my_env['ROS_OS_OVERRIDE']='ubuntu:lucid'
+        self.assertEqual(0,subprocess.call(["rosdep", "check", "rosdep_legacy_apt"], env=my_env))
+        self.assertEqual(0,subprocess.call(["rosdep", "satisfy", "rosdep_legacy_apt"], env=my_env))
+        self.assertEqual(0,subprocess.call(["rosdep", "install", "rosdep_legacy_apt"], env=my_env))
+
+
+    def test_apt(self):
+        my_env = self.env.copy()
+        my_env['ROS_OS_OVERRIDE']='ubuntu:lucid'
+        self.assertEqual(0,subprocess.call(["rosdep", "check", "rosdeptest"], env=my_env))
+        self.assertEqual(0,subprocess.call(["rosdep", "satisfy", "rosdeptest"], env=my_env))
+        self.assertEqual(0,subprocess.call(["rosdep", "install", "rosdeptest"], env=my_env))
+
+    def REMOVED_UNTIL_PIP_IN_DEFAULT_test_pip(self):
+        my_env = self.env.copy()
+        my_env['ROS_OS_OVERRIDE']='ubuntu:lucid'
+        self.assertEqual(0,subprocess.call(["rosdep", "check", "rosdep_pip_test"], env=my_env))
+        self.assertEqual(0,subprocess.call(["rosdep", "satisfy", "rosdep_pip_test"], env=my_env))
+        self.assertEqual(0,subprocess.call(["rosdep", "install", "rosdep_pip_test"], env=my_env))
+
+    def test_check_test_missing(self):
+        my_env = self.env.copy()
+        my_env['ROS_OS_OVERRIDE']='ubuntu:lucid'
+        self.assertEqual(1,subprocess.call(["rosdep", "check", "rosdep_test_missing"], env=my_env))
+        self.assertEqual(1,subprocess.call(["rosdep", "satisfy", "rosdep_test_missing"], env=my_env))
+        self.assertEqual(1,subprocess.call(["rosdep", "install", "rosdep_test_missing"], env=my_env))
+
+    def test_source(self):
+        my_env = self.env.copy()
+        my_env['ROS_OS_OVERRIDE']='ubuntu:lucid'
+        try:
+            os.remove('/tmp/test_sourcedep_installed')
+        except:
+            pass #it's ok if the file's not there
+        self.assertEqual(1,subprocess.call(["rosdep", "check", "rosdep_source"], env=my_env))
+        self.assertEqual(1,subprocess.call(["rosdep", "satisfy", "rosdep_source"], env=my_env))
+        self.assertEqual(0,subprocess.call(["rosdep", "install", "rosdep_source"], env=my_env)) # install first it touches a file the others detect
+        self.assertEqual(0,subprocess.call(["rosdep", "check", "rosdep_source"], env=my_env))
+        self.assertEqual(0,subprocess.call(["rosdep", "satisfy", "rosdep_source"], env=my_env))
+
+
+    def test_md5_source(self):
+        my_env = self.env.copy()
+        my_env['ROS_OS_OVERRIDE']='ubuntu:lucid'
+        try:
+            os.remove('/tmp/test_sourcedep_installed')
+        except:
+            pass #it's ok if the file's not there
+        self.assertEqual(1,subprocess.call(["rosdep", "check", "rosdep_md5_source"], env=my_env))
+        self.assertEqual(1,subprocess.call(["rosdep", "satisfy", "rosdep_md5_source"], env=my_env))
+        self.assertEqual(0,subprocess.call(["rosdep", "install", "rosdep_md5_source"], env=my_env)) # install first it touches a file the others detect
+        self.assertEqual(0,subprocess.call(["rosdep", "check", "rosdep_md5_source"], env=my_env))
+        self.assertEqual(0,subprocess.call(["rosdep", "satisfy", "rosdep_md5_source"], env=my_env))
+
+    def test_invalid_md5_source(self):
+        my_env = self.env.copy()
+        my_env['ROS_OS_OVERRIDE']='ubuntu:lucid'
+        try:
+            os.remove('/tmp/test_sourcedep_installed')
+        except:
+            pass #it's ok if the file's not there
+        self.assertEqual(1,subprocess.call(["rosdep", "check", "rosdep_invalid_md5_source"], env=my_env))
+        self.assertEqual(1,subprocess.call(["rosdep", "satisfy", "rosdep_invalid_md5_source"], env=my_env))
+        self.assertEqual(1,subprocess.call(["rosdep", "install", "rosdep_invalid_md5_source"], env=my_env)) 
+
+
 if __name__ == '__main__':
   rosunit.unitrun('test_rosdep', 'test_commandline', RosdepCommandlineTest, coverage_packages=['rosdep.commandline'])  
+  rosunit.unitrun('test_rosdep', 'test_commandline', RosdepCommandlineExternalPackages, coverage_packages=['rosdep.commandline'])  
 

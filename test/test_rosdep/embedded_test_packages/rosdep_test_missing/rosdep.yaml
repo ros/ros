@@ -1,0 +1,4 @@
+not-a-package:
+  ubuntu: notapackage
+other:
+  ubuntu: otherpkg

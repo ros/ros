@@ -40,8 +40,11 @@ import rosunit
 import rosdep.core
 
 class RosdepCoreTest(unittest.TestCase):
+    def setUp(self):
+        self.rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep", rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version", {'apt':'unused'}))
+    
     def test_RosdepLookupPackage_parse_yaml_package(self):
-        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep", rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version"))
+        rdlp = self.rdlp
         yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep.yaml"))
         rdlp._insert_map(yaml_map, "example_yaml_path", False)
         output = rdlp.lookup_rosdep("rosdep_test")
@@ -51,7 +54,7 @@ class RosdepCoreTest(unittest.TestCase):
 
 
     def test_RosdepLookupPackage_parse_yaml_package_override(self):
-        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep", rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version"))
+        rdlp = self.rdlp
         yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep.yaml"))
         rdlp._insert_map(yaml_map, "example_yaml_path", False)
         rdlp._insert_map(yaml_map, "example_yaml_path2", True)
@@ -62,7 +65,7 @@ class RosdepCoreTest(unittest.TestCase):
 
 
     def test_RosdepLookupPackage_parse_yaml_package_collision_pass(self):
-        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep", rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version"))
+        rdlp = self.rdlp
         yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep.yaml"))
         rdlp._insert_map(yaml_map, "example_yaml_path", False) 
         rdlp._insert_map(yaml_map, "example_yaml_path2", False) 
@@ -73,14 +76,14 @@ class RosdepCoreTest(unittest.TestCase):
 
 
     def test_RosdepLookupPackage_parse_yaml_package_collision_fail(self):
-        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep", rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version"))
+        rdlp = self.rdlp
         yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep.yaml"))
         rdlp._insert_map(yaml_map, "example_yaml_path", False) 
         yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep_conflicting.yaml"))
         self.assertRaises(rosdep.core.RosdepException, rdlp._insert_map, yaml_map, "example_yaml_path2", False)
 
     def test_RosdepLookupPackage_parse_yaml_package_collision_override(self):
-        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep", rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version"))
+        rdlp = self.rdlp
         yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep.yaml"))
         rdlp._insert_map(yaml_map, "example_yaml_path", False)
         yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep_conflicting.yaml"))
@@ -91,7 +94,7 @@ class RosdepCoreTest(unittest.TestCase):
         self.assertEqual(False, output)
 
     def test_RosdepLookupPackage_get_sources(self):
-        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep", rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version"))
+        rdlp = self.rdlp
 
         sources = rdlp.get_sources("rosdep_test")
         self.assertEqual([], sources)
@@ -107,7 +110,7 @@ class RosdepCoreTest(unittest.TestCase):
         self.assertEqual([], sources)
         
     def test_RosdepLookupPackage_rosdep_map(self):
-        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep", rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version"))
+        rdlp = self.rdlp
 
 
         yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep.yaml"))
@@ -119,14 +122,14 @@ class RosdepCoreTest(unittest.TestCase):
         self.assertEqual(parsed_output, rdlp.rosdep_map)
 
     def test_RosdepLookupPackage_failed_version_lookup(self):
-        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep", rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version"))
+        rdlp = self.rdlp
         yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep.yaml"))
         rdlp._insert_map(yaml_map, "example_yaml_path", False)
         output = rdlp.lookup_rosdep("other_rosdep_test")
         self.assertEqual(output, False)
     
     def test_RosdepLookupPackage_failed_os_lookup(self):
-        rdlp = rosdep.core.RosdepLookupPackage("rosdep_test_os", "rosdep_test_version", "test_rosdep", rosdep.core.YamlCache("rosdep_test_os", "rosdep_test_version"))
+        rdlp = self.rdlp
         yaml_map = rdlp.parse_yaml(os.path.join(roslib.packages.get_pkg_dir("test_rosdep"),"test", "example_rosdep.yaml"))
         rdlp._insert_map(yaml_map, "example_yaml_path", False)
         output = rdlp.lookup_rosdep("no_os_rosdep_test")
@@ -134,23 +137,29 @@ class RosdepCoreTest(unittest.TestCase):
 
     def test_Rosdep_tripwire_robust(self):
         rd = rosdep.core.Rosdep(["rosdep"], "rosdep", robust=True)
-        try:
-            rd.check()
-            rd.what_needs(["boost"])
-            rd.depdb(['rosdep'])
-            rd.where_defined(['boost'])
-        except:
-            self.fail("test Rosdep improperly Raised an exception.")
+        self.tripwire_impl(rd)
         
     def test_Rosdep_tripwire(self):
         rd = rosdep.core.Rosdep(["rosdep"], "rosdep", robust=False)
+        self.tripwire_impl(rd)
+
+    def tripwire_impl(self, rd):
         try:
             rd.check()
+        except rosdep.core.RosdepException, ex:
+            self.fail("test Rosdep check improperly Raised an exception.", ex)
+        try:
             rd.what_needs(["boost"])
+        except rosdep.core.RosdepException, ex:
+            self.fail("test Rosdep what_needs improperly Raised an exception.", ex)
+        try:
             rd.depdb(['rosdep'])
+        except rosdep.core.RosdepException, ex:
+            self.fail("test Rosdep depdb improperly Raised an exception.", ex)
+        try:
             rd.where_defined(['boost'])
-        except:
-            self.fail("test Rosdep improperly Raised an exception.")
+        except rosdep.core.RosdepException, ex:
+            self.fail("test Rosdep where_defined improperly Raised an exception.", ex)
 
         
         

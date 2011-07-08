@@ -68,9 +68,9 @@ class RoslibOsDetectTest(unittest.TestCase):
       debian = roslib.os_detect.Debian()
       self.assertEqual("debian", debian.get_name())
 
-  def test_tripwire_macports(self):
-      macports = roslib.os_detect.Macports()
-      self.assertEqual("macports", macports.get_name())
+  def test_tripwire_osx(self):
+      osx = roslib.os_detect.Osx()
+      self.assertEqual("osx", osx.get_name())
     
   def test_tripwire_arch(self):
       arch = roslib.os_detect.Arch()

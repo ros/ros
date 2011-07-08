@@ -52,7 +52,7 @@ import rosdep.debian as debian
 import rosdep.opensuse as opensuse
 import rosdep.redhat as redhat
 import rosdep.gentoo as gentoo
-import rosdep.macports as macports
+import rosdep.osx as osx
 import rosdep.arch as arch
 import rosdep.cygwin as cygwin
 import rosdep.freebsd as freebsd
@@ -66,9 +66,10 @@ class YamlCache:
     """ A class into which to load the yaml files for quicker access
     from repeated lookups """
 
-    def __init__(self, os_name, os_version):
+    def __init__(self, os_name, os_version, installers = {}):
         self.os_name = os_name
         self.os_version = os_version
+        self.installers = installers
         self._yaml_cache = {}
         self._rosstack_depends_cache = {}
         self._expanded_rosdeps = {}
@@ -128,26 +129,42 @@ class YamlCache:
         # See if the version for this OS exists
         if self.os_name in yaml_map:
             return self.get_version_from_yaml(rosdep_name, yaml_map[self.os_name], source_path)
+        if self.os_name == 'osx': #backwards compatability for osx in REP 111.
+            if 'macports' in yaml_map:  
+                return self.get_version_from_yaml(rosdep_name, yaml_map['macports'], source_path)
+            
         else:
             #print >> sys.stderr, "failed to resolve a rule for rosdep(%s) on OS(%s)"%(rosdep_name, self.os_name)
             return False
+
 
     def get_version_from_yaml(self, rosdep_name, os_specific, source_path):
         """
         Helper function for get_os_from_yaml to parse if version is required.  
         @return The os (and version specific if required) local package name
         """
-        if type(os_specific) == type("String"):
+        
+        # This is a map to provide backwards compatability for rep111 changes.  
+        # See http://www.ros.org/reps/rep-0111.html for more info. 
+        rep111version_map = {'lucid':'10.04', 'maverick':'10.10', 'natty':'11.04'}
+
+        if type(os_specific) == type("String"): # It's just a single string 
             return os_specific
-        elif self.os_version in os_specific.keys(): # it must be a map of versions
+        if self.os_version in os_specific: # if it is a version key, just return it
             return os_specific[self.os_version]
-        elif type(os_specific) == type({}): # detected a map
+        if self.os_version in rep111version_map: # check for rep 111 special versions 
+            rep_version = rep111version_map[self.os_version]
+            if rep_version in os_specific:
+                return os_specific[rep_version]
+        if type(os_specific) == type({}): # detected a map
             for k in os_specific.keys():
-                if not k in rosdep.installers.reserved_installer_keys:
+                if not k in self.installers:
+                    print "Invalid identifier found [%s]"%k
                     return False # If the map doesn't have a valid installer key reject it, it must be a version key
             # return the map 
             return os_specific
         else:
+            print "Unknown formatting of os_specific", os_specific
             return False                    
 
 
@@ -170,6 +187,9 @@ def create_tempfile_from_string_and_execute(string_script, path= tempfile.gettem
     finally:
         if os.path.exists(fh.name):
             os.remove(fh.name)
+    
+    if "ROSDEP_DEBUG" in os.environ:
+        print "Return code was:", result
     return result == 0
 
 
@@ -253,9 +273,10 @@ class RosdepLookupPackage:
                     print >> sys.stderr, "Failed to load rosdep.yaml for package [%s]:%s"%(p, ex)
                     pass
         for path in paths:
-            self._insert_map(self.parse_yaml(path), path)
+            yaml_in = self.parse_yaml(path)
+            self._insert_map(yaml_in, path)
             if "ROSDEP_DEBUG" in os.environ:
-                print "rosdep loading from file: %s got"%path, self.parse_yaml(path)
+                print "rosdep loading from file: %s got"%path, yaml_in
         #print "built map", self.rosdep_map
 
         # Override with ros_home/rosdep.yaml if present
@@ -326,21 +347,19 @@ Rules for %s do not match:
 
 class Rosdep:
     def __init__(self, packages, command = "rosdep", robust = False):
-        os_list = [debian.RosdepTestOS(), debian.Debian(), debian.Ubuntu(), debian.Mint(), opensuse.OpenSuse(), redhat.Fedora(), redhat.Rhel(), arch.Arch(), macports.Macports(), gentoo.Gentoo(), cygwin.Cygwin(), freebsd.FreeBSD()]
+        os_list = [debian.RosdepTestOS(), debian.Debian(), debian.Ubuntu(), debian.Mint(), opensuse.OpenSuse(), redhat.Fedora(), redhat.Rhel(), arch.Arch(), osx.Osx(), gentoo.Gentoo(), cygwin.Cygwin(), freebsd.FreeBSD()]
         # Make sure that these classes are all well formed.  
         for o in os_list:
             if not isinstance(o, rosdep.base_rosdep.RosdepBaseOS):
                 raise RosdepException("Class [%s] not derived from RosdepBaseOS"%o.__class__.__name__)
         # Detect the OS on which this program is running. 
         self.osi = roslib.os_detect.OSDetect(os_list)
-        self.yc = YamlCache(self.osi.get_name(), self.osi.get_version())
+        self.yc = YamlCache(self.osi.get_name(), self.osi.get_version(), self.osi.get_os().installers)
         self.packages = packages
-        self.rosdeps = roslib.packages.rosdeps_of(packages)
         rp = roslib.packages.ROSPackages()
         self.rosdeps = rp.rosdeps(packages)
         self.robust = robust
         
-
 
     def get_rosdep0(self, package):
         m = roslib.manifest.load_manifest(package)
@@ -355,7 +374,7 @@ class Rosdep:
         failed_rosdeps = []
         start_time = time.time()
         if "ROSDEP_DEBUG" in os.environ:
-            print "Generating package list and scripts for %d rosdeps.  This may take a few seconds..."%len(self.packages)
+            print "Generating package list and scripts for %d packages.  This may take a few seconds..."%len(self.packages)
         for p in self.packages:
             rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, self.yc)
             for r in self.rosdeps[p]:
@@ -385,35 +404,42 @@ class Rosdep:
             print "Done loading rosdeps in %f seconds, averaging %f per rosdep."%(time_delta, time_delta/len(self.packages))
 
         return (list(set(native_packages)), list(set(scripts)))
-
-    def get_native_packages(self):
-        return get_packages_and_scripts()[0]
-
-    def generate_script(self, include_duplicates=False, default_yes = False):
-        native_packages, scripts = self.get_packages_and_scripts()
-        undetected = native_packages if include_duplicates else \
-            self.osi.get_os().strip_detected_packages(native_packages)
-        return "#!/bin/bash\nset -o errexit\n" + self.osi.get_os().generate_package_install_command(undetected, default_yes) + \
-            "\n".join(["\n%s"%sc for sc in scripts])
         
-    def check(self):
-        native_packages = []
-        scripts = []
+
+    def satisfy(self):
+        """ 
+        return a list of failed rosdeps and print what would have been done to install them
+        """
+        return self.check(display = True)
+
+    def check(self, display = False):
+        """ 
+        Return a list of failed rosdeps
+        """
+        failed_rosdeps = []
         try:
             native_packages, scripts = self.get_packages_and_scripts()
+            num_scripts = len(scripts)
+            if num_scripts > 0:
+                print "Found %d scripts.  Cannot check scripts for presence. rosdep check will always fail."%num_scripts
+                failure = False
+                if display == True:
+                    for s in scripts:
+                        print "Script:\n{{{\n%s\n}}}"%s
         except RosdepException, e:
-            print >> sys.stderr, e
-            pass
-        undetected = self.osi.get_os().strip_detected_packages(native_packages)
-        return_str = ""
-        return_str_scripts = ""
-        if len(undetected) > 0:
-            return_str += "Did not detect packages: %s\n"%undetected
-        if len(scripts) > 0:
-            return_str_scripts += "The following scripts were not tested:\n"
-        for s in scripts:
-            return_str_scripts += s + '\n'
-        return return_str, return_str_scripts
+            print >> sys.stderr, "error in processing scripts", e
+
+
+
+
+        for p in self.packages:
+            rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, self.yc)
+            for r in self.rosdeps[p]:
+                if not self.install_rosdep(r, rdlp, default_yes=False, execute=False, display=display):
+                    failed_rosdeps.append(r)
+    
+
+        return failed_rosdeps
 
     def what_needs(self, rosdep_args):
         packages = []
@@ -425,16 +451,29 @@ class Rosdep:
                 
         return packages
 
-    def install(self, include_duplicates, default_yes):
-        success = self.NEW_install(default_yes)
-        if not success:
+    def install(self, include_duplicates, default_yes, execute=True):
+        failure = False
+        for p in self.packages:
+            rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, self.yc)
+            for r in self.rosdeps[p]:
+                if not self.install_rosdep(r, rdlp, default_yes, execute):
+                    failure = True
+                    if not self.robust:
+                        return "failed to install %s"%r
+        if failure:
             return "Rosdep install failed"
         return None
         
 
-    def install_rosdep(self, rosdep_name, rdlp, default_yes):
+    def install_rosdep(self, rosdep_name, rdlp, default_yes, execute, display=True):
+        """
+        Install a single rosdep given it's name and a lookup table. 
+        @param default_yes Add a -y to the installation call
+        @param execute If True execute, if false, don't execute just print
+        @return If the install was successful
+        """
         if "ROSDEP_DEBUG" in os.environ:
-            print "Processing rosdep %s"%rosdep_name
+            print "Processing rosdep %s in install_rosdep method"%rosdep_name
         rosdep_dict = rdlp.lookup_rosdep(rosdep_name)
         if not rosdep_dict:
             return False
@@ -444,6 +483,10 @@ class Rosdep:
             if "ROSDEP_DEBUG" in os.environ:
                 print "OLD TYPE BACKWARDS COMPATABILITY MODE", rosdep_dict
                 
+
+            if len(rosdep_dict.split('\n')) > 1:
+                raise RosdepException( "SCRIPT UNIMPLEMENTED AT THE MOMENT TODO")
+
             installer = self.osi.get_os().get_installer('default')
             packages = rosdep_dict.split()
             arg_map = {}
@@ -458,9 +501,10 @@ class Rosdep:
                 return False
             else:
                 mode = modes[0]
-                if "ROSDEP_DEBUG" in os.environ:
-                    print "rosdep mode:", mode
-                installer = self.osi.get_os().get_installer(mode)
+
+        if "ROSDEP_DEBUG" in os.environ:
+            print "rosdep mode:", mode
+        installer = self.osi.get_os().get_installer(mode)
         
         if not installer:
             raise RosdepException( "Rosdep failed to get an installer for mode %s"%mode)
@@ -482,32 +526,21 @@ class Rosdep:
         # Check for dependencies
         dependencies = my_installer.get_depends()
         for d in dependencies:
-            self.install_rosdep(d, rdlp, default_yes)
+            self.install_rosdep(d, rdlp, default_yes, execute)
             
 
+        result = my_installer.generate_package_install_command(default_yes, execute, display)
 
-        result = my_installer.generate_package_install_command(default_yes)
         if result:
             print "successfully installed %s"%rosdep_name
             if not my_installer.check_presence():
                 print "rosdep %s failed check-presence-script after installation"%rosdep_name
                 return False
 
-        else:
-            print "unsuccessfully installed %s"%rosdep_name
+        elif execute:
+            print "Failed to install %s!"%rosdep_name
         return result
 
-    def NEW_install(self, default_yes):
-        failure = False
-        for p in self.packages:
-            rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, self.yc)
-            for r in self.rosdeps[p]:
-                if not self.install_rosdep(r, rdlp, default_yes):
-                    failure = True
-                    if not self.robust:
-                        return False
-        return not failure
-                    
     def depdb(self, packages):
         output = "Rosdep dependencies for operating system %s version %s "%(self.osi.get_name(), self.osi.get_version())
         for p in packages:

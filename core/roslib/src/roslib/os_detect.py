@@ -47,6 +47,7 @@ import subprocess
 import types
 import tempfile
 import yaml
+import distutils.version # To parse version numbers
 
 ####### Linux Helper Functions #####
 def lsb_get_os():
@@ -84,6 +85,20 @@ def lsb_get_version():
         return std_out.strip()
     except:
         return None
+
+def uname_get_machine():
+    """
+    Linux: wrapper around uname to determine if OS is 64-bit
+    """
+    try:
+        cmd = ['uname', '-m']
+        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (std_out, std_err) = pop.communicate()
+        return std_out.strip()
+    except:
+        return None
+
+
 
 #### Override class for debugging and unsupported OSs ###########
 class OSOverride:
@@ -152,6 +167,26 @@ class Debian(OSBase):
 
 ###### END Debian SPECIALIZATION ########################
 
+###### Mandriva SPECIALIZATION #########################
+class Mandriva(OSBase):
+    """
+    Detect Mandriva OS. The returned version will be the year release (e.g.
+    2010.0) concatenated with the machine architecture (e.g. x86_64), resulting
+    in something like 2010.0x86_64.
+    """
+    def check_presence(self):
+        if "MandrivaLinux" == lsb_get_os():
+            return True
+        return False
+    
+    def get_version(self):
+        return lsb_get_version()+uname_get_machine()
+    def get_name(self):
+        return "mandriva"
+
+###### END Mandriva SPECIALIZATION ########################
+
+
 
 ###### UBUNTU SPECIALIZATION #########################
 class Ubuntu(Debian):
@@ -165,7 +200,7 @@ class Ubuntu(Debian):
         return False
 
     def get_version(self):
-        return lsb_get_version()
+        return lsb_get_codename()
     def get_name(self):
         return "ubuntu"
 
@@ -298,7 +333,7 @@ class Rhel(Fedora):
 
 ###### END Rhel SPECIALIZATION ########################
 
-###### Macports SPECIALIZATION #########################
+###### OSX SPECIALIZATION #########################
 def port_detect(p):
     """
     Detect presence of Macports by running "port installed" command.
@@ -309,9 +344,9 @@ def port_detect(p):
     
     return (std_out.count("(active)") > 0)
 
-class Macports(OSBase):
+class Osx(OSBase):
     """
-    Detect OS X and Macports.
+    Detect OS X 
     """
     def check_presence(self):
         filename = "/usr/bin/sw_vers"
@@ -320,12 +355,30 @@ class Macports(OSBase):
         return False
     
     def get_version(self):
-        return "macports" # macports is a rolling release and isn't versionsed
+        # REP 111 this should be the code name (e.g., lion, snow, tiger) #3570
+        cmd = ['/usr/bin/sw_vers','-productVersion'];
+        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (std_out, std_err) = pop.communicate()
+        ver = distutils.version.StrictVersion(std_out).version
+        if len(ver) < 2:
+            raise OSDetectException("invalid version string: %s"%(std_out))
+        major, minor = ver[0:2]
+        # Source: http://en.wikipedia.org/wiki/Mac_OS_X#Versions
+        if major == 10 and minor == 4:
+            return 'tiger'
+        elif major == 10 and minor == 5:
+            return 'leopard'
+        elif major == 10 and minor == 6:
+            return 'snow'
+        elif major == 10 and minor == 7:
+            return 'lion'
+        else:
+            raise OSDetectException("unrecognized version: %s"%(std_out))
 
     def get_name(self):
-        return "macports"
+        return "osx"
 
-###### END Macports SPECIALIZATION ########################
+###### END OSX SPECIALIZATION ########################
 
 ###### Arch SPECIALIZATION #########################
 class Arch(OSBase):
@@ -466,7 +519,7 @@ class FreeBSD(OSBase):
 class OSDetect:
     """ This class will iterate over registered classes to lookup the
     active OS and version"""
-    def __init__(self, os_list = [Debian(), Ubuntu(), Mint(), Macports(), Arch(), OpenSuse(), Fedora(), Rhel(), Gentoo(), Cygwin(), FreeBSD()]):
+    def __init__(self, os_list = [Debian(), Mandriva(), Ubuntu(), Mint(), Osx(), Arch(), OpenSuse(), Fedora(), Rhel(), Gentoo(), Cygwin(), FreeBSD()]):
         self._os_list = os_list
         for o in self._os_list:
             if not isinstance(o, OSBase):

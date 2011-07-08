@@ -479,22 +479,15 @@ macro(rosbuild_add_executable exe)
 
   # Add explicit dependency of each file on our manifest.xml and those of
   # our dependencies.
-  # The SOURCES property seems to be available only since 2.6.  Yar.
-  #get_target_property(_srclist ${exe} SOURCES) 
-  set(_srclist ${ARGN})
+  get_target_property(_srclist ${exe} SOURCES) 
   foreach(_src ${_srclist}) 
-    # Handle the case where the second argument is EXCLUDE_FROM_ALL, not a
-    # source file.  Only have to do this because we can't get the SOURCES
-    # property.
-    if(NOT _src STREQUAL EXCLUDE_FROM_ALL)
-      set(_file_name _file_name-NOTFOUND)
-      find_file(_file_name ${_src} ${CMAKE_CURRENT_SOURCE_DIR} /)
-      if(NOT _file_name)
-        message("[rosbuild] Couldn't find source file ${_src}; assuming that it is in ${CMAKE_CURRENT_SOURCE_DIR} and will be generated later")
-        set(_file_name ${CMAKE_CURRENT_SOURCE_DIR}/${_src})
-      endif(NOT _file_name)
-      add_file_dependencies(${_file_name} ${ROS_MANIFEST_LIST}) 
-    endif(NOT _src STREQUAL EXCLUDE_FROM_ALL)
+    set(_file_name _file_name-NOTFOUND)
+    find_file(_file_name ${_src} ${CMAKE_CURRENT_SOURCE_DIR} /)
+    if(NOT _file_name)
+      message("[rosbuild] Couldn't find source file ${_src}; assuming that it is in ${CMAKE_CURRENT_SOURCE_DIR} and will be generated later")
+      set(_file_name ${CMAKE_CURRENT_SOURCE_DIR}/${_src})
+    endif(NOT _file_name)
+    add_file_dependencies(${_file_name} ${ROS_MANIFEST_LIST}) 
   endforeach(_src)
 
   rosbuild_add_compile_flags(${exe} ${${PROJECT_NAME}_CFLAGS_OTHER})

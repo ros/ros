@@ -44,17 +44,19 @@ using std::deque;
 using namespace topic_tools;
 
 // TODO: move all these globals into a reasonable local scope
-static ros::NodeHandle *g_node = NULL;
-static uint32_t g_bps = 0; // bytes per second, not bits!
-static ros::Duration g_period; // minimum inter-message period
-static double g_window = 1.0; // 1 second window for starters
-static bool g_advertised = false;
-static string g_output_topic;
-static ros::Publisher g_pub;
-static bool g_use_messages;
-static ros::Time g_last_time;
-//static ShapeShifter g_in_msg;
-static bool g_use_wallclock;
+ros::NodeHandle *g_node = NULL;
+uint32_t g_bps = 0; // bytes per second, not bits!
+ros::Duration g_period; // minimum inter-message period
+double g_window = 1.0; // 1 second window for starters
+bool g_advertised = false;
+string g_output_topic;
+string g_input_topic;
+ros::Publisher g_pub;
+ros::Subscriber* g_sub;
+bool g_use_messages;
+ros::Time g_last_time;
+bool g_use_wallclock;
+bool g_lazy;
 ros::TransportHints g_th;
 
 class Sent
@@ -66,46 +68,79 @@ public:
 };
 deque<Sent> g_sent;
 
+void conn_cb(const ros::SingleSubscriberPublisher&);
+void in_cb(const boost::shared_ptr<ShapeShifter const>& msg);
+
+void conn_cb(const ros::SingleSubscriberPublisher&)
+{
+  // If we're in lazy subscribe mode, and the first subscriber just
+  // connected, then subscribe, #3546
+  if(g_lazy && !g_sub)
+  {
+    ROS_DEBUG("lazy mode; resubscribing");
+    g_sub = new ros::Subscriber(g_node->subscribe<ShapeShifter>(g_input_topic, 10, &in_cb, g_th));
+  }
+}
+
 void in_cb(const boost::shared_ptr<ShapeShifter const>& msg)
 {
   if (!g_advertised)
   {
-    g_pub = msg->advertise(*g_node, g_output_topic, 10);
+    // If the input topic is latched, make the output topic latched
+    bool latch = false;
+    ros::M_string::iterator it = msg->__connection_header->find("latching");
+    if((it != msg->__connection_header->end()) && (it->second == "1"))
+    {
+      ROS_DEBUG("input topic is latched; latching output topic to match");
+      latch = true;
+    }
+    g_pub = msg->advertise(*g_node, g_output_topic, 10, latch, conn_cb);
     g_advertised = true;
     printf("advertised as %s\n", g_output_topic.c_str());
   }
-  if(g_use_messages)
+  // If we're in lazy subscribe mode, and nobody's listening, 
+  // then unsubscribe, #3546.
+  if(g_lazy && !g_pub.getNumSubscribers())
   {
-    ros::Time now;
-    if(g_use_wallclock)
-      now.fromSec(ros::WallTime::now().toSec());
-    else
-      now = ros::Time::now();
-    if((now - g_last_time) > g_period)
-    {
-      g_pub.publish(msg);
-      g_last_time = now;
-    }
+    ROS_DEBUG("lazy mode; unsubscribing");
+    delete g_sub;
+    g_sub = NULL;
   }
   else
   {
-    // pop the front of the queue until it's within the window
-    ros::Time now;
-    if(g_use_wallclock)
-      now.fromSec(ros::WallTime::now().toSec());
-    else
-      now = ros::Time::now();
-    const double t = now.toSec();
-    while (!g_sent.empty() && g_sent.front().t < t - g_window)
-      g_sent.pop_front();
-    // sum up how many bytes are in the window
-    uint32_t bytes = 0;
-    for (deque<Sent>::iterator i = g_sent.begin(); i != g_sent.end(); ++i)
-      bytes += i->len;
-    if (bytes < g_bps)
+    if(g_use_messages)
     {
-      g_pub.publish(msg);
-      g_sent.push_back(Sent(t, msg->size()));
+      ros::Time now;
+      if(g_use_wallclock)
+        now.fromSec(ros::WallTime::now().toSec());
+      else
+        now = ros::Time::now();
+      if((now - g_last_time) > g_period)
+      {
+        g_pub.publish(msg);
+        g_last_time = now;
+      }
+    }
+    else
+    {
+      // pop the front of the queue until it's within the window
+      ros::Time now;
+      if(g_use_wallclock)
+        now.fromSec(ros::WallTime::now().toSec());
+      else
+        now = ros::Time::now();
+      const double t = now.toSec();
+      while (!g_sent.empty() && g_sent.front().t < t - g_window)
+        g_sent.pop_front();
+      // sum up how many bytes are in the window
+      uint32_t bytes = 0;
+      for (deque<Sent>::iterator i = g_sent.begin(); i != g_sent.end(); ++i)
+        bytes += i->len;
+      if (bytes < g_bps)
+      {
+        g_pub.publish(msg);
+        g_sent.push_back(Sent(t, msg->size()));
+      }
     }
   }
 }
@@ -128,7 +163,7 @@ int main(int argc, char **argv)
     return 1;
   }
 
-  string intopic = string(argv[2]);
+  g_input_topic = string(argv[2]);
 
   std::string topic_name;
   if(!getBaseName(string(argv[2]), topic_name))
@@ -140,6 +175,7 @@ int main(int argc, char **argv)
   ros::NodeHandle pnh("~");
   pnh.getParam("wall_clock", g_use_wallclock);
   pnh.getParam("unreliable", unreliable);
+  pnh.getParam("lazy", g_lazy);
 
   if (unreliable)
     g_th.unreliable().reliable(); // Prefers unreliable, but will accept reliable.
@@ -159,7 +195,7 @@ int main(int argc, char **argv)
   else if(!g_use_messages && argc == 6)
     g_output_topic = string(argv[5]);
   else
-    g_output_topic = intopic + "_throttle";
+    g_output_topic = g_input_topic + "_throttle";
 
   if(g_use_messages)
   {
@@ -183,7 +219,7 @@ int main(int argc, char **argv)
 
   ros::NodeHandle n;
   g_node = &n;
-  ros::Subscriber sub = n.subscribe<ShapeShifter>(intopic, 10, &in_cb, g_th);
+  g_sub = new ros::Subscriber(n.subscribe<ShapeShifter>(g_input_topic, 10, &in_cb, g_th));
   ros::spin();
   return 0;
 }

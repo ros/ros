@@ -55,6 +55,7 @@ static bool g_use_messages;
 static ros::Time g_last_time;
 //static ShapeShifter g_in_msg;
 static bool g_use_wallclock;
+ros::TransportHints g_th;
 
 class Sent
 {
@@ -135,8 +136,13 @@ int main(int argc, char **argv)
 
   ros::init(argc, argv, topic_name + string("_throttle"),
             ros::init_options::AnonymousName);
+  bool unreliable = false;
   ros::NodeHandle pnh("~");
   pnh.getParam("wall_clock", g_use_wallclock);
+  pnh.getParam("unreliable", unreliable);
+
+  if (unreliable)
+    g_th.unreliable().reliable(); // Prefers unreliable, but will accept reliable.
 
   if(!strcmp(argv[1], "messages"))
     g_use_messages = true;
@@ -177,7 +183,7 @@ int main(int argc, char **argv)
 
   ros::NodeHandle n;
   g_node = &n;
-  ros::Subscriber sub = n.subscribe<ShapeShifter>(intopic, 10, &in_cb);
+  ros::Subscriber sub = n.subscribe<ShapeShifter>(intopic, 10, &in_cb, g_th);
   ros::spin();
   return 0;
 }

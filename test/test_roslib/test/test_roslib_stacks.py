@@ -36,8 +36,6 @@ import struct
 import sys
 import unittest
 
-import roslib.rosenv
-import roslib.stacks
 import rosunit
 
 class RoslibStacksTest(unittest.TestCase):
@@ -112,6 +110,7 @@ class RoslibStacksTest(unittest.TestCase):
 
     def test_list_stacks_by_path(self):
         from roslib.stacks import list_stacks_by_path
+        import roslib.rosenv
 
         # test with the ros stack
         rr = roslib.rosenv.get_ros_root()

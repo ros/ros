@@ -82,7 +82,7 @@ def _stack_file_by_dir(stack_dir, required=True):
 Stack '%(stack_dir)s' is improperly configured: no manifest file is present.
 """%locals())
         return p
-    except roslib.stacks.InvalidROSStackException, e:
+    except roslib.stacks.InvalidROSStackException as e:
         if required:
             raise
 

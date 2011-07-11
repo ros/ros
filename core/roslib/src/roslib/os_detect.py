@@ -39,8 +39,6 @@ command-line tool.
 from __future__ import with_statement
 
 import roslib.exceptions
-import roslib.rospack
-import roslib.stacks
 import os
 import sys
 import subprocess

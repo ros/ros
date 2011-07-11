@@ -52,7 +52,7 @@ class Module(object):
             import roslib.packages
             try:
                 roslib.load_manifest(name.split('.')[0])
-            except roslib.packages.InvalidROSPkgException, e:
+            except roslib.packages.InvalidROSPkgException as e:
                 raise ImportError("Cannot import module '%s': \n%s"%(name, str(e)))
             return __import__(name)
 

@@ -783,7 +783,7 @@ macro(rosbuild_gensrv)
     # But we set it to the current time, because setting it to zero causes
     # annoying warning, #3396.
     execute_process(
-      COMMAND python -c "import os; os.utime('${PROJECT_SOURCE_DIR}/srv_gen/generated', None)"
+      COMMAND python -c "import os; os.utime('${PROJECT_SOURCE_DIR}/srv_gen/generated', (1, 1))"
       ERROR_VARIABLE _set_mtime_error
       RESULT_VARIABLE _set_mtime_failed
       OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -820,7 +820,7 @@ macro(rosbuild_genmsg)
     # But we set it to the current time, because setting it to zero causes
     # annoying warning, #3396.
     execute_process(
-      COMMAND python -c "import os; os.utime('${PROJECT_SOURCE_DIR}/msg_gen/generated', None)"
+      COMMAND python -c "import os; os.utime('${PROJECT_SOURCE_DIR}/msg_gen/generated', (1, 1))"
       ERROR_VARIABLE _set_mtime_error
       RESULT_VARIABLE _set_mtime_failed
       OUTPUT_STRIP_TRAILING_WHITESPACE)

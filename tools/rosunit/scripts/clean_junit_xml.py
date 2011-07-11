@@ -33,7 +33,7 @@
 #
 # Revision $Id$
 
-from __future__ import with_statement
+from __future__ import print_function
 
 """
 clean_junit_xml.py is a simple script that takes all the xml-formatted
@@ -53,10 +53,10 @@ import rosunit.junitxml as junitxml
 
 def prepare_dirs(output_dir_name):
     test_results_dir = roslib.rosenv.get_test_results_dir()
-    print "will read test results from", test_results_dir
+    print("will read test results from", test_results_dir)
     output_dir = os.path.join(test_results_dir, output_dir_name)
     if not os.path.exists(output_dir):
-        print "creating directory", output_dir
+        print("creating directory", output_dir)
         os.makedirs(output_dir)
     return test_results_dir, output_dir
 
@@ -67,7 +67,7 @@ def clean_results(test_results_dir, output_dir, filter):
     for d in os.listdir(test_results_dir):
         if filter and d in filter:
             continue
-        print "looking at", d
+        print("looking at", d)
         test_dir = os.path.join(test_results_dir, d)
         if not os.path.isdir(test_dir):
             continue
@@ -84,23 +84,23 @@ def clean_results(test_results_dir, output_dir, filter):
                 result = junitxml.read(file, test_name)
                 output_path = os.path.join(output_dir, "%s.xml"%test_name)
                 with open(output_path, 'w') as f:
-                    print "re-writing", output_path
+                    print("re-writing", output_path)
                     f.write(result.xml().encode('utf-8'))
-            except Exception, e:
-                print >> sys.stderr, "ignoring [%s]: %s"%(file, e)
+            except Exception as e:
+                sys.stderr.write("ignoring [%s]: %s\n"%(file, e))
 
 def main():
     
-    print "[clean_junit_xml]: STARTING"
+    print("[clean_junit_xml]: STARTING")
     
     output_dir_name = '_hudson'
     test_results_dir, output_dir = prepare_dirs(output_dir_name)
     
-    print "[clean_junit_xml]: writing aggregated test results to %s"%output_dir
+    print("[clean_junit_xml]: writing aggregated test results to %s"%output_dir)
     
     clean_results(test_results_dir, output_dir, [output_dir_name, '.svn'])
     
-    print "[clean_junit_xml]: FINISHED"
+    print("[clean_junit_xml]: FINISHED")
   
 if __name__ == '__main__':
     main()

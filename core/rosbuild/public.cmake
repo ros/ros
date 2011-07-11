@@ -20,6 +20,18 @@ macro(rosbuild_find_ros_package pkgname)
   set(${pkgname}_PACKAGE_PATH ${__pkg_dir}) 
 endmacro(rosbuild_find_ros_package) 
 
+# Find a ros stack. 
+macro(rosbuild_find_ros_stack stackname) 
+  # catch the error output to suppress it 
+  execute_process( 
+    COMMAND rosstack find ${stackname} 
+    ERROR_VARIABLE __rospack_err_ignore 
+    OUTPUT_VARIABLE __stack_dir 
+    OUTPUT_STRIP_TRAILING_WHITESPACE) 
+  # todo: catch return code and be smart about it 
+  set(${stackname}_STACK_PATH ${__stack_dir}) 
+endmacro(rosbuild_find_ros_stack)
+
 # Retrieve the current COMPILE_FLAGS for the given target, append the new
 # ones, and set the result.
 macro(rosbuild_add_compile_flags target)

@@ -46,13 +46,13 @@ import roslib
 try:
     import coverage
 except ImportError, e:
-    print >> sys.stderr, "ERROR: cannot import python-coverage, coverage report will not run.\nTo install coverage, run 'easy_install coverage'"
+    sys.stderr.write("ERROR: cannot import python-coverage, coverage report will not run.\nTo install coverage, run 'easy_install coverage'\n")
     sys.exit(1)
 
 def coverage_html():
     import os.path
     if not os.path.isfile('.coverage-modules'):
-        print >> sys.stderr, "No .coverage-modules file; nothing to do"
+        sys.stderr.write("No .coverage-modules file; nothing to do\n")
         return
 
     with open('.coverage-modules','r') as f:
@@ -68,9 +68,10 @@ def coverage_html():
             roslib.load_manifest(base)
             __import__(m)
         except:
-            print >> sys.stderr, "WARN: cannot import %s"%base
+            sys.stderr.write("WARN: cannot import %s\n"%(base))
 
-    print "Generating for\n"+'\n'.join([" * %s"%m for m in modules])
+    modlist = '\n'.join([" * %s"%m for m in modules])
+    sys.stdout.write("Generating for\n%s\n"%(modlist))
 
     # load the module instances to pass to coverage so it can generate annotation html reports
     mods = []

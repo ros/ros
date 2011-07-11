@@ -44,7 +44,11 @@ md5sums and message definitions of classes.
 # generator library is rospy.genpy.
 
 import sys
-import cStringIO
+
+try:
+    from cStringIO import StringIO # Python 2.x
+except ImportError:
+    from io import StringIO # Python 3.x
 
 import roslib.msgs 
 from roslib.msgs import MsgSpecException
@@ -111,7 +115,7 @@ def compute_md5_text(get_deps_dict, spec):
     # #1554: need to suppress computation of files in dynamic generation case
     compute_files = 'files' in get_deps_dict
 
-    buff = cStringIO.StringIO()    
+    buff = StringIO()    
 
     for c in spec.constants:
         buff.write("%s %s=%s\n"%(c.type, c.name, c.val_text))
@@ -222,7 +226,7 @@ def compute_full_text(get_deps_dict):
     @return: concatenated text for msg/srv file and embedded msg/srv types.
     @rtype:  str
     """
-    buff = cStringIO.StringIO()
+    buff = StringIO()
     sep = '='*80+'\n'
 
     # write the text of the top-level type

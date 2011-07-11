@@ -38,7 +38,11 @@ by roslaunch and xacro, but it is not yet a top-level ROS feature.
 """
 
 import os
-import cStringIO
+
+try:
+    from cStringIO import StringIO # Python 2.x
+except ImportError:
+    from io import StringIO # Python 3.x
 
 import roslib.exceptions
 import roslib.names
@@ -66,7 +70,7 @@ def _env(resolved, a, args, context):
         raise SubstitutionException("$(env var) command only accepts one argument [%s]"%a)
     try:
         return resolved.replace("$(%s)"%a, os.environ[args[0]])
-    except KeyError, e:
+    except KeyError as e:
         raise SubstitutionException("environment variable %s is not set"%str(e))
 
 def _optenv(resolved, a, args, context):
@@ -143,9 +147,9 @@ def _arg(resolved, a, args, context):
     @raise ArgException: if arg invalidly specified
     """
     if len(args) == 0:
-        raise SubstitutionException("$(arg var) must specify an environment variable [%s]"%a)
+        raise SubstitutionException("$(arg var) must specify an environment variable [%s]"%(a))
     elif len(args) > 1:
-        raise SubstitutionException("$(arg var) may only specify one arg [%s]"%a)
+        raise SubstitutionException("$(arg var) may only specify one arg [%s]"%(a))
     
     if 'arg' not in context:
         context['arg'] = {}
@@ -224,7 +228,7 @@ def _collect_args(arg_str):
     @return: list of arguments
     @rtype: [str]
     """
-    buff = cStringIO.StringIO()
+    buff = StringIO()
     args = []
     state = _OUT
     for c in arg_str:

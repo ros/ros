@@ -91,21 +91,7 @@ public:
   //! Return the size of the serialized message
   uint32_t size() const;
 
-  // Deprecated old-style API
-  ROS_DEPRECATED virtual const std::string __getDataType() const;
-  ROS_DEPRECATED virtual const std::string __getMD5Sum() const;
-  ROS_DEPRECATED virtual const std::string __getMessageDefinition() const;
-  
-  ROS_DEPRECATED static const std::string __s_getDataType();
-  ROS_DEPRECATED static const std::string __s_getMD5Sum();
-  ROS_DEPRECATED static const std::string __s_getMessageDefinition();
-
-  ROS_DEPRECATED uint32_t serializationLength() const { return msgBufUsed; }
-  ROS_DEPRECATED virtual uint8_t *serialize(uint8_t *writePtr, uint32_t) const;
-  ROS_DEPRECATED virtual uint8_t *deserialize(uint8_t *readPtr);
-
   boost::shared_ptr<std::map<std::string, std::string> > __connection_header;
-  
 
 private:
 

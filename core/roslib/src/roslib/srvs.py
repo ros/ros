@@ -38,8 +38,13 @@ Implements U{http://ros.org/wiki/srv}
 """
 
 import os
+import sys
 import re
-import cStringIO
+
+try:
+    from cStringIO import StringIO # Python 2.x
+except ImportError:
+    from io import StringIO # Python 3.x
 
 import roslib.exceptions
 import roslib.msgs
@@ -85,14 +90,20 @@ class SrvSpec(object):
     def __eq__(self, other):
         if not other or not isinstance(other, SrvSpec):
             return False
-        return self.msgIn == other.msgIn and self.msgOut == other.msgOut
+        return self.request == other.request and \
+               self.response == other.response and \
+               self.text == other.text and \
+               self.full_name == other.full_name and \
+               self.short_name == other.short_name and \
+               self.package == other.package
+    
     def __ne__(self, other):
         if not other or not isinstance(other, SrvSpec):
             return True
         return not self.__eq__(other)
 
     def __repr__(self):
-        return "SrvSpec[%s, %s]"%(repr(self.msgIn), repr(self.msgOut))
+        return "SrvSpec[%s, %s]"%(repr(self.request), repr(self.response))
     
 # srv spec loading utilities ##########################################
 
@@ -102,11 +113,16 @@ def _srv_filter(f):
     return os.path.isfile(f) and f.endswith(EXT)
 
 # also used by doxymaker
-## list all services in the specified package
-## @param package str: name of package to search
-## @param include_depends bool: if True, will also list services in package dependencies
-## @return [str]: service type names
 def list_srv_types(package, include_depends):
+    """
+    list all services in the specified package
+    @param package: name of package to search
+    @type  package: str
+    @param include_depends: if True, will also list services in package dependencies
+    @type  include_depends: bool
+    @return: service type names
+    @rtype: [str]
+    """
     types = roslib.resources.list_package_resources(package, include_depends, roslib.packages.SRV_DIR, _srv_filter)
     return [x[:-len(EXT)] for x in types]
 
@@ -121,13 +137,16 @@ def srv_file(package, type_):
     """
     return roslib.packages.resource_file(package, roslib.packages.SRV_DIR, type_+EXT)
 
-#TODO: REMOVE? this is unused
-## List all messages that a package contains
-## @param depend Depend: roslib.manifest.Depend object representing package
-## to load messages from
-## @return [(str,roslib.MsgSpec), [str]]: list of message type names and specs for package, as well as a list
-##     of message names that could not be processed. 
 def get_pkg_srv_specs(package):
+    """
+    List all messages that a package contains
+    @param depend: roslib.manifest.Depend object representing package
+    to load messages from
+    @type  depend: Depend
+    @return: list of message type names and specs for package, as well as a list
+    of message names that could not be processed. 
+    @rtype: [(str,roslib.MsgSpec), [str]]
+    """
     #almost identical to roslib.msgs.get_pkg_msg_specs
     types = list_srv_types(package, False)
     specs = [] #no fancy list comprehension as we want to show errors
@@ -136,20 +155,24 @@ def get_pkg_srv_specs(package):
         try: 
             spec = load_from_file(srv_file(package, t), package)
             specs.append(spec)
-        except Exception, e:
+        except Exception as e:
             failures.append(t)
-            print "ERROR: unable to load %s"%t
+            sys.stderr.write("ERROR: unable to load %s\n"%(t))
     return specs, failures
 
-##
-#  @param text str: .msg text 
-#  @param package_context: context to use for msgTypeName, i.e. the package name,
-#      or '' to use local naming convention.
-#  @return roslib.MsgSpec: Message type name and message specification
-#  @throws roslib.MsgSpecException: if syntax errors or other problems are detected in file
 def load_from_string(text, package_context='', full_name='', short_name=''):
-    text_in  = cStringIO.StringIO()
-    text_out = cStringIO.StringIO()
+    """
+    @param text: .msg text 
+    @type  text: str
+    @param package_context: context to use for msgTypeName, i.e. the package name,
+    or '' to use local naming convention.
+    @type  package_context: str
+    @return: Message type name and message specification
+    @rtype: roslib.MsgSpec
+    @raise roslib.MsgSpecException: if syntax errors or other problems are detected in file
+    """
+    text_in  = StringIO()
+    text_out = StringIO()
     accum = text_in
     for l in text.split('\n'):
         l = l.split(COMMENTCHAR)[0].strip() #strip comments        
@@ -163,20 +186,25 @@ def load_from_string(text, package_context='', full_name='', short_name=''):
     msg_out = roslib.msgs.load_from_string(text_out.getvalue(), package_context, '%sResponse'%(full_name), '%sResponse'%(short_name))
     return SrvSpec(msg_in, msg_out, text, full_name, short_name, package_context)
 
-## Convert the .srv representation in the file to a SrvSpec instance.
-#  @param package_context: context to use for type name, i.e. the package name,
-#      or '' to use local naming convention.
-#  @param file str: name of file to load from
-#  @return (str, L{SrvSpec}): Message type name and message specification
-#  @throws SrvSpecException: if syntax errors or other problems are detected in file
-def load_from_file(file, package_context=''):
+def load_from_file(file_name, package_context=''):
+    """
+    Convert the .srv representation in the file to a SrvSpec instance.
+    @param file_name: name of file to load from
+    @type  file_name: str
+    @param package_context: context to use for type name, i.e. the package name,
+    or '' to use local naming convention.
+    @type package_context: str
+    @return: Message type name and message specification
+    @rtype: (str, L{SrvSpec})
+    @raise SrvSpecException: if syntax errors or other problems are detected in file
+    """
     if VERBOSE:
         if package_context:
-            print "Load spec from", file, "into namespace [%s]"%package_context
+            sys.stdout.write("Load spec from %s into namespace [%s]\n"%(file_name, package_context))
         else:
-            print "Load spec from", file            
-    fileName = os.path.basename(file)
-    type_ = fileName[:-len(EXT)]
+            sys.stdout.write("Load spec from %s\n"%(file_name))
+    base_file_name = os.path.basename(file_name)
+    type_ = base_file_name[:-len(EXT)]
     base_type_ = type_
     # determine the type name
     if package_context:
@@ -184,9 +212,9 @@ def load_from_file(file, package_context=''):
             package_context = package_context[:-1] #strip message separators
         type_ = "%s%s%s"%(package_context, SEP, type_)
     if not roslib.names.is_legal_resource_name(type_):
-        raise SrvSpecException("%s: %s is not a legal service type name"%(file, type_))
+        raise SrvSpecException("%s: %s is not a legal service type name"%(file_name, type_))
     
-    f = open(file, 'r')
+    f = open(file_name, 'r')
     try:
         text = f.read()
         return (type_, load_from_string(text, package_context, type_, base_type_))

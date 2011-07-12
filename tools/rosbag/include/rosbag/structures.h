@@ -38,7 +38,6 @@
 #include <map>
 #include <vector>
 
-#include "ros/message.h"
 #include "ros/time.h"
 #include "ros/ros.h"
 

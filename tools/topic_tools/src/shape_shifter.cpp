@@ -39,8 +39,7 @@ using namespace topic_tools;
 bool ShapeShifter::uses_old_API_ = false;
 
 ShapeShifter::ShapeShifter()
-  :  ros::Message(),
-     typed(false),
+  :  typed(false),
      msgBuf(NULL),
      msgBufUsed(0),
      msgBufAlloc(0)
@@ -153,6 +152,7 @@ ShapeShifter::deserialize(uint8_t *readPtr)
   msg_def = (*__connection_header)["message_definition"];
   typed = true;
 
+  uint32_t __serialized_length = serializationLength();
   // stash this message in our buffer
   if (__serialized_length > msgBufAlloc)
   {

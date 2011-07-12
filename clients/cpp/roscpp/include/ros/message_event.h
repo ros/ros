@@ -32,7 +32,7 @@
 #include "ros/forwards.h"
 #include "ros/time.h"
 #include <ros/assert.h>
-#include <ros/message.h>
+#include <ros/message_traits.h>
 
 #include <boost/type_traits/is_void.hpp>
 #include <boost/type_traits/is_base_of.hpp>
@@ -239,13 +239,15 @@ private:
   }
 
   template<typename T>
-  typename boost::enable_if<boost::is_base_of<ros::Message, T>,  boost::shared_ptr<ros::M_string> >::type getConnectionHeader(T* t) const
+  boost::shared_ptr<ros::M_string>
+  getConnectionHeader(T* t, typename boost::enable_if<ros::message_traits::IsMessage<T> >::type*_ = 0) const
   {
     return t->__connection_header;
   }
 
   template<typename T>
-  typename boost::disable_if<boost::is_base_of<ros::Message, T>,  boost::shared_ptr<ros::M_string> >::type getConnectionHeader(T* t) const
+  boost::shared_ptr<ros::M_string>
+  getConnectionHeader(T* t, typename boost::disable_if<ros::message_traits::IsMessage<T> >::type*_ = 0) const
   {
     return boost::shared_ptr<ros::M_string>();
   }

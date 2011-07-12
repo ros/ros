@@ -30,7 +30,6 @@
 
 #include <string>
 #include "ros/common.h"
-#include "ros/message.h"
 #include "ros/forwards.h"
 #include "ros/node_handle.h"
 #include "ros/service_traits.h"

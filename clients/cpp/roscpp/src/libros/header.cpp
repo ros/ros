@@ -33,7 +33,6 @@
  */
 
 #include "ros/header.h"
-#include "ros/message.h"
 #include "ros/transport/transport.h"
 #include <ros/console.h>
 #include <ros/assert.h>
@@ -41,6 +40,12 @@
 #include <sstream>
 
 #include <cerrno>
+
+#define SROS_SERIALIZE_PRIMITIVE(ptr, data) { memcpy(ptr, &data, sizeof(data)); ptr += sizeof(data); }
+#define SROS_SERIALIZE_BUFFER(ptr, data, data_size) { if (data_size > 0) { memcpy(ptr, data, data_size); ptr += data_size; } }
+#define SROS_DESERIALIZE_PRIMITIVE(ptr, data) { memcpy(&data, ptr, sizeof(data)); ptr += sizeof(data); }
+#define SROS_DESERIALIZE_BUFFER(ptr, data, data_size) { if (data_size > 0) { memcpy(data, ptr, data_size); ptr += data_size; } }
+
 
 using namespace std;
 

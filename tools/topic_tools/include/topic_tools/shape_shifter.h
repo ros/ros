@@ -55,7 +55,7 @@ public:
 };
 
 
-class ShapeShifter : public ros::Message
+class ShapeShifter 
 {
 public:
   typedef boost::shared_ptr<ShapeShifter> Ptr;
@@ -104,6 +104,9 @@ public:
   ROS_DEPRECATED virtual uint8_t *serialize(uint8_t *writePtr, uint32_t) const;
   ROS_DEPRECATED virtual uint8_t *deserialize(uint8_t *readPtr);
 
+  boost::shared_ptr<std::map<std::string, std::string> > __connection_header;
+  
+
 private:
 
   std::string md5, datatype, msg_def;
@@ -121,6 +124,8 @@ private:
 // Message traits allow shape shifter to work with the new serialization API
 namespace ros {
 namespace message_traits {
+
+template <> struct IsMessage<topic_tools::ShapeShifter> : TrueType { };
 
 template<>
 struct MD5Sum<topic_tools::ShapeShifter>

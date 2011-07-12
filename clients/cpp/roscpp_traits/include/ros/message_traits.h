@@ -106,6 +106,11 @@ template<typename M> struct IsFixedSize : public FalseType {};
 template<typename M> struct HasHeader : public FalseType {};
 
 /**
+ * \brief Am I message or not
+ */
+template<typename M> struct IsMessage : public FalseType {};
+
+/**
  * \brief Specialize to provide the md5sum for a message
  */
 template<typename M>

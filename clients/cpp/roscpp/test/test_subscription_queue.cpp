@@ -36,7 +36,6 @@
 #include <gtest/gtest.h>
 #include "ros/subscription_queue.h"
 #include "ros/message_deserializer.h"
-#include "ros/message.h"
 #include "ros/callback_queue_interface.h"
 #include "ros/subscription_callback_helper.h"
 #include "ros/init.h"
@@ -47,7 +46,7 @@
 
 using namespace ros;
 
-class FakeMessage : public Message
+class FakeMessage
 {
 public:
   virtual const std::string __getDataType() const { return ""; }

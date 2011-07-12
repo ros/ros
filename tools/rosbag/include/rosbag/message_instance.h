@@ -35,7 +35,6 @@
 #ifndef ROSBAG_MESSAGE_INSTANCE_H
 #define ROSBAG_MESSAGE_INSTANCE_H
 
-#include <ros/message.h>
 #include <ros/message_traits.h>
 #include <ros/ros.h>
 #include <ros/time.h>

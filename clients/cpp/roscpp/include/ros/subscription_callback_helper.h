@@ -35,7 +35,6 @@
 #include "ros/message_traits.h"
 #include "ros/builtin_message_traits.h"
 #include "ros/serialization.h"
-#include "ros/message.h"
 #include "ros/message_event.h"
 #include <ros/static_assert.h>
 
@@ -73,15 +72,17 @@ struct PreDeserialize
 }
 
 template<typename T>
-typename boost::enable_if<boost::is_base_of<ros::Message, T> >::type 
-assignSubscriptionConnectionHeader(T* t, const boost::shared_ptr<M_string>& connection_header)
+void
+assignSubscriptionConnectionHeader(T* t, const boost::shared_ptr<M_string>& connection_header,
+                                   typename boost::enable_if<ros::message_traits::IsMessage<T> >::type*_=0)
 {
   t->__connection_header = connection_header;
 }
 
 template<typename T>
-typename boost::disable_if<boost::is_base_of<ros::Message, T> >::type 
-assignSubscriptionConnectionHeader(T* t, const boost::shared_ptr<M_string>& connection_header)
+void
+assignSubscriptionConnectionHeader(T* t, const boost::shared_ptr<M_string>& connection_header,
+                                   typename boost::disable_if<ros::message_traits::IsMessage<T> >::type*_=0)
 { }
 
 struct SubscriptionCallbackHelperDeserializeParams

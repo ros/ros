@@ -29,7 +29,6 @@
 #define ROSCPP_MESSAGE_DESERIALIZER_H
 
 #include "forwards.h"
-#include "message.h"
 #include <ros/serialized_message.h>
 
 #include <boost/thread/mutex.hpp>

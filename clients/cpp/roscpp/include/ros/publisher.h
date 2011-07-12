@@ -30,7 +30,6 @@
 
 #include "ros/forwards.h"
 #include "ros/common.h"
-#include "ros/message.h"
 #include "ros/serialization.h"
 #include <boost/bind.hpp>
 

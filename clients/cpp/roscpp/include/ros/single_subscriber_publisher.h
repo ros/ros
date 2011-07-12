@@ -29,7 +29,6 @@
 #define ROSCPP_SINGLE_SUBSCRIBER_PUBLISHER_H
 
 #include "ros/forwards.h"
-#include "ros/message.h"
 #include "ros/serialization.h"
 
 #include <boost/utility.hpp>

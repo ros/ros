@@ -37,6 +37,7 @@
 #include "ros/time.h"
 #include <ros/init.h>
 #include "message_filters/synchronizer.h"
+#include <boost/array.hpp>
 
 using namespace message_filters;
 

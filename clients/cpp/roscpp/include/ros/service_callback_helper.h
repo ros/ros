@@ -30,7 +30,6 @@
 
 #include "ros/forwards.h"
 #include "ros/common.h"
-#include "ros/message.h"
 #include "ros/message_traits.h"
 #include "ros/service_traits.h"
 #include "ros/serialization.h"
@@ -48,15 +47,18 @@ struct ServiceCallbackHelperCallParams
 };
 
 template<typename T>
-typename boost::enable_if<boost::is_base_of<ros::Message, T> >::type assignServiceConnectionHeader(T* t, const boost::shared_ptr<M_string>& connection_header)
+void
+assignServiceConnectionHeader(T* t, const boost::shared_ptr<M_string>& connection_header,
+                              typename boost::enable_if<ros::message_traits::IsMessage<T> >::type*_ = 0)
 {
   t->__connection_header = connection_header;
 }
 
 template<typename T>
-typename boost::disable_if<boost::is_base_of<ros::Message, T> >::type assignServiceConnectionHeader(T* t, const boost::shared_ptr<M_string>& connection_header)
-{
-}
+void
+assignServiceConnectionHeader(T* t, const boost::shared_ptr<M_string>& connection_header,
+                              typename boost::disable_if<ros::message_traits::IsMessage<T> >::type*_ = 0)
+{ }
 
 template<typename M>
 inline boost::shared_ptr<M> defaultServiceCreateFunction()

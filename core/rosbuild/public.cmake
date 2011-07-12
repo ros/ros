@@ -20,6 +20,18 @@ macro(rosbuild_find_ros_package pkgname)
   set(${pkgname}_PACKAGE_PATH ${__pkg_dir}) 
 endmacro(rosbuild_find_ros_package) 
 
+# Find a ros stack. 
+macro(rosbuild_find_ros_stack stackname) 
+  # catch the error output to suppress it 
+  execute_process( 
+    COMMAND rosstack find ${stackname} 
+    ERROR_VARIABLE __rospack_err_ignore 
+    OUTPUT_VARIABLE __stack_dir 
+    OUTPUT_STRIP_TRAILING_WHITESPACE) 
+  # todo: catch return code and be smart about it 
+  set(${stackname}_STACK_PATH ${__stack_dir}) 
+endmacro(rosbuild_find_ros_stack)
+
 # Retrieve the current COMPILE_FLAGS for the given target, append the new
 # ones, and set the result.
 macro(rosbuild_add_compile_flags target)
@@ -783,7 +795,7 @@ macro(rosbuild_gensrv)
     # But we set it to the current time, because setting it to zero causes
     # annoying warning, #3396.
     execute_process(
-      COMMAND python -c "import os; os.utime('${PROJECT_SOURCE_DIR}/srv_gen/generated', None)"
+      COMMAND python -c "import os; os.utime('${PROJECT_SOURCE_DIR}/srv_gen/generated', (1, 1))"
       ERROR_VARIABLE _set_mtime_error
       RESULT_VARIABLE _set_mtime_failed
       OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -820,7 +832,7 @@ macro(rosbuild_genmsg)
     # But we set it to the current time, because setting it to zero causes
     # annoying warning, #3396.
     execute_process(
-      COMMAND python -c "import os; os.utime('${PROJECT_SOURCE_DIR}/msg_gen/generated', None)"
+      COMMAND python -c "import os; os.utime('${PROJECT_SOURCE_DIR}/msg_gen/generated', (1, 1))"
       ERROR_VARIABLE _set_mtime_error
       RESULT_VARIABLE _set_mtime_failed
       OUTPUT_STRIP_TRAILING_WHITESPACE)

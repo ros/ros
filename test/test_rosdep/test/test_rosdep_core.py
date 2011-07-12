@@ -146,19 +146,19 @@ class RosdepCoreTest(unittest.TestCase):
     def tripwire_impl(self, rd):
         try:
             rd.check()
-        except rosdep.core.RosdepException, ex:
+        except rosdep.core.RosdepException as ex:
             self.fail("test Rosdep check improperly Raised an exception.", ex)
         try:
             rd.what_needs(["boost"])
-        except rosdep.core.RosdepException, ex:
+        except rosdep.core.RosdepException as ex:
             self.fail("test Rosdep what_needs improperly Raised an exception.", ex)
         try:
             rd.depdb(['rosdep'])
-        except rosdep.core.RosdepException, ex:
+        except rosdep.core.RosdepException as ex:
             self.fail("test Rosdep depdb improperly Raised an exception.", ex)
         try:
             rd.where_defined(['boost'])
-        except rosdep.core.RosdepException, ex:
+        except rosdep.core.RosdepException as ex:
             self.fail("test Rosdep where_defined improperly Raised an exception.", ex)
 
         

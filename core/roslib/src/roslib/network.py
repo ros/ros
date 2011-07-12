@@ -45,11 +45,14 @@ add-on. netifaces improves IP address configuration detection.
 
 import os
 import socket
-import string
 import struct
 import sys
 import platform
-import urlparse
+
+try:
+    import urllib.parse as urlparse
+except ImportError:
+    import urlparse
 
 import roslib.exceptions
 import roslib.rosenv 
@@ -97,7 +100,7 @@ def parse_http_host_and_port(url):
         raise ValueError('not a valid URL')
     if ':' in p[1]:
         hostname, port = p[1].split(':')
-        port = string.atoi(port)
+        port = int(port)
     else: 
         hostname, port = p[1], 80
     return hostname, port
@@ -338,7 +341,7 @@ def read_ros_handshake_header(sock, b, buff_size):
     @param sock: socket must be in blocking mode
     @type  sock: socket
     @param b: buffer to use
-    @type  b: cStringIO
+    @type  b: StringIO
     @param buff_size: incoming buffer size to use
     @type  buff_size: int
     @return: key value pairs encoded in handshake
@@ -384,7 +387,7 @@ def encode_ros_handshake_header(header):
     @return: header encoded as byte string
     @rtype: str
     """    
-    fields = ["%s=%s"%(k,v) for k,v in header.iteritems()]
+    fields = ["%s=%s"%(k,v) for k,v in header.items()] #py3k
     s = ''.join(["%s%s"%(struct.pack('<I', len(f)), f) for f in fields])
     return struct.pack('<I', len(s)) + s
                                         

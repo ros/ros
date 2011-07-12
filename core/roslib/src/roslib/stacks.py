@@ -49,7 +49,6 @@ import roslib.packages
 import roslib.stack_manifest
 from roslib.rosenv import ROS_ROOT, ROS_PACKAGE_PATH
 
-
 STACK_FILE = 'stack.xml'
 ROS_STACK = 'ros'
 
@@ -163,8 +162,9 @@ def get_stack_dir(stack, env=None):
         except KeyError:
             pass
     _update_stack_cache(env=env) #update cache
-    val = _dir_cache.get(stack, None)
-    if val is None:
+    try:
+        val = _dir_cache[stack]
+    except KeyError:
         raise InvalidROSStackException("Cannot location installation of stack %s. ROS_ROOT[%s] ROS_PACKAGE_PATH[%s]"%(stack, env[ROS_ROOT], env.get(ROS_PACKAGE_PATH, '')))
     return val
 
@@ -219,7 +219,7 @@ def list_stacks(env=None):
     @rtype: [str]
     """
     _update_stack_cache(env=env)
-    return _dir_cache.keys()
+    return list(_dir_cache.keys()) #py3k
 
 def list_stacks_by_path(path, stacks=None, cache=None):
     """
@@ -293,7 +293,7 @@ def expand_to_packages(names, env=None):
         if not n in package_list:
             try:
                 valid.extend(roslib.stacks.packages_of(n, env=env))
-            except roslib.stacks.InvalidROSStackException, e:
+            except roslib.stacks.InvalidROSStackException as e:
                 invalid.append(n)
         else:
             valid.append(n)

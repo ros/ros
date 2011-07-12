@@ -243,3 +243,23 @@ gtest:
   macports: google-test
   gentoo: dev-util/gtest
   freebsd: googletest
+autoconf:
+  ubuntu: autoconf
+  debian: autoconf
+  opensuse: autoconf
+  fedora: autoconf
+  rhel: autoconf
+  arch: autoconf
+  macports: autoconf
+  gentoo: sys-devel/autoconf
+  freebsd: autoconf213 autoconf268
+automake:
+  ubuntu: automake
+  debian: automake
+  opensuse: automake
+  fedora: automake
+  rhel: automake
+  arch: automake
+  macports: automake
+  gentoo: sys-devel/automake
+  freebsd: automake14 automake111

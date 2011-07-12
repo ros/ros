@@ -404,6 +404,10 @@ class Graph(object):
         else:
             # [[connectionId1, destinationId1, direction1, transport1, ...]... ]
             for info in bus_info:
+                # #3579 bad node, ignore
+                if len(info) < 5:
+                    continue
+                
                 connection_id = info[0]
                 dest_id       = info[1]
                 direction     = info[2]

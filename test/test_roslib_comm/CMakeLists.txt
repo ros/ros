@@ -12,4 +12,5 @@ rosbuild_add_pyunit(test/test_roslib_genpy.py)
 rosbuild_add_pyunit(test/test_roslib_gentools.py)
 rosbuild_add_pyunit(test/test_roslib_message.py)
 rosbuild_add_pyunit(test/test_roslib_msgs.py)
+rosbuild_add_pyunit(test/test_roslib_srvs.py)
  

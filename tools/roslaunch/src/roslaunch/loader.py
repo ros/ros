@@ -51,8 +51,9 @@ except ImportError:
     raise ImportError('Cannot import new roslib libraries.\nThis is probably due to incompatible "roslib" directories on your PYTHONPATH.\nPlease check your PYTHONPATH and try again')
 
 
-#lazy-import global for yaml
+#lazy-import global for yaml and rosparam
 yaml = None
+rosparam = None
 
 class LoadException(RLException):
     """Error loading data as specified (e.g. cannot find included files, etc...)"""
@@ -333,7 +334,7 @@ class Loader(object):
         @type  param_value: str
         @raise ValueError: if parameters cannot be processed into valid Params
         """
-        
+
         # shouldn't ever happen
         if not param_name:
             raise ValueError("no parameter name specified")
@@ -389,12 +390,16 @@ class Loader(object):
             global yaml
             if yaml is None:
                 import yaml
+            # - lazy import: we have to import rosparam in oder to to configure the YAML constructors
+            global rosparam
+            if rosparam is None:
+                import rosparam
             try:
                 data = yaml.load(text)
                 # #3162: if there is no YAML, load() will return an
                 # empty string.  We want an empty dictionary instead
                 # for our representation of empty.
-                if not data:
+                if data is None:
                     data = {}
             except yaml.MarkedYAMLError, e:
                 if not file_: 

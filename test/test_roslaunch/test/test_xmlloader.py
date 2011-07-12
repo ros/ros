@@ -284,10 +284,40 @@ class TestXmlLoader(unittest.TestCase):
         p = [p for p in mock.params if p.key == '/noparam2'][0]
         self.assertEquals('value2', p.value)
 
+        # #3580: test degree/rad conversions
+        import math
+        p = [p for p in mock.params if p.key == '/inline_degrees0'][0]
+        self.assertAlmostEquals(0, p.value)
+        p = [p for p in mock.params if p.key == '/inline_degrees180'][0]
+        self.assertAlmostEquals(p.value, math.pi)
+        p = [p for p in mock.params if p.key == '/inline_degrees360'][0]
+        self.assertAlmostEquals(p.value, 2 * math.pi)
+
+        p = [p for p in mock.params if p.key == '/dict_degrees/deg0'][0]
+        self.assertAlmostEquals(0, p.value)
+        p = [p for p in mock.params if p.key == '/dict_degrees/deg180'][0]
+        self.assertAlmostEquals(p.value, math.pi)
+        p = [p for p in mock.params if p.key == '/dict_degrees/deg360'][0]
+        self.assertAlmostEquals(p.value, 2 * math.pi)
+
+        p = [p for p in mock.params if p.key == '/inline_rad0'][0]
+        self.assertAlmostEquals(0, p.value)
+        p = [p for p in mock.params if p.key == '/inline_radpi'][0]
+        self.assertAlmostEquals(p.value, math.pi)
+        p = [p for p in mock.params if p.key == '/inline_rad2pi'][0]
+        self.assertAlmostEquals(p.value, 2 * math.pi)
+
+        p = [p for p in mock.params if p.key == '/dict_rad/rad0'][0]
+        self.assertAlmostEquals(0, p.value)
+        p = [p for p in mock.params if p.key == '/dict_rad/radpi'][0]
+        self.assertAlmostEquals(p.value, math.pi)
+        p = [p for p in mock.params if p.key == '/dict_rad/rad2pi'][0]
+        self.assertAlmostEquals(p.value, 2 * math.pi)
+                    
         # rosparam file also contains empty params
         mock = self._load(os.path.join(self.xml_dir, 'test-rosparam-empty.xml'))
         self.assertEquals([], mock.params)
-                    
+
     def test_rosparam_invalid(self):
         tests = ['test-rosparam-invalid-%s.xml'%i for i in range(1, 6)]
         loader = roslaunch.xmlloader.XmlLoader()

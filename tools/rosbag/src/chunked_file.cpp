@@ -172,11 +172,14 @@ bool ChunkedFile::truncate(uint64_t length) {
 //! \todo add error handling
 string ChunkedFile::getline() {
     char buffer[1024];
-    fgets(buffer, 1024, file_);
-    string s(buffer);
-    offset_ += s.size();
-
-    return s;
+    if(fgets(buffer, 1024, file_))
+    {
+      string s(buffer);
+      offset_ += s.size();
+      return s;
+    }
+    else
+      return string("");
 }
 
 void ChunkedFile::decompress(CompressionType compression, uint8_t* dest, unsigned int dest_len, uint8_t* source, unsigned int source_len) {

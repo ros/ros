@@ -49,3 +49,7 @@ numerous ROS tools (e.g. rostopic).
 
 from roslib.launcher import load_manifest
 from roslib.scriptutil import is_interactive, set_interactive
+
+# this import is necessary due to a bug in purge_build.py in our
+# debian assets.
+import roslib.stacks

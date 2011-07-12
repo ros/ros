@@ -37,12 +37,12 @@ import os
 import sys
 import unittest
 
-import roslib.msgs
 import rosunit
 
 class MsgSpecTest(unittest.TestCase):
   
   def test_verbose(self):
+    import roslib.msgs
     self.failIf(roslib.msgs.is_verbose())
     roslib.msgs.set_verbose(True)
     self.assert_(roslib.msgs.is_verbose())
@@ -50,6 +50,7 @@ class MsgSpecTest(unittest.TestCase):
     self.failIf(roslib.msgs.is_verbose())
     
   def test_base_msg_type(self):
+    import roslib.msgs    
     tests = [(None, None), ('String', 'String'), ('std_msgs/String', 'std_msgs/String'),
              ('String[10]', 'String'), ('string[10]', 'string'), ('std_msgs/String[10]', 'std_msgs/String'),
              ]
@@ -98,6 +99,7 @@ class MsgSpecTest(unittest.TestCase):
 
   def test_Constant(self):
     import random
+    import roslib.msgs    
     vals = [random.randint(0, 1000) for i in xrange(0, 3)]
     type_, name, val = [str(x) for x in vals]
     x = roslib.msgs.Constant(type_, name, val, str(val))
@@ -177,6 +179,7 @@ class MsgSpecTest(unittest.TestCase):
     [repr(x) for x in [empty, one_field, one_header, two_fields, embed_types]]
 
   def test_init(self):
+    import roslib.msgs    
     roslib.msgs._initialized = False
     roslib.msgs._init()
     self.assert_(roslib.msgs._initialized)
@@ -223,6 +226,7 @@ class MsgSpecTest(unittest.TestCase):
     except MsgSpecException: pass
     
   def test_load_package_dependencies(self):
+    import roslib.msgs    
     # in order to do this test, we have to observe some inner state
     roslib.msgs.reinit()
     self.failIf(PKG in roslib.msgs._loaded_packages)
@@ -250,6 +254,7 @@ class MsgSpecTest(unittest.TestCase):
     self.assert_('data' in spec.names) # make sure we have an actual std_msgs msg
 
   def test_load_package(self):
+    import roslib.msgs    
     # in order to do this test, we have to observe some inner state
     roslib.msgs.reinit()
     self.failIf(PKG in roslib.msgs._loaded_packages)
@@ -265,6 +270,7 @@ class MsgSpecTest(unittest.TestCase):
     self.assertEquals(['i32', 'str', 'i32_array', 'b'], spec.names) # make sure we have an actual msg
     
   def test_list_msg_types(self):
+    import roslib.msgs    
     types1 = roslib.msgs.list_msg_types('rosgraph_msgs', False)
     types2 = roslib.msgs.list_msg_types('rosgraph_msgs', True)
     
@@ -296,6 +302,7 @@ class MsgSpecTest(unittest.TestCase):
     self.assertNotEquals(types1, types2)
 
   def test_msg_file(self):
+    import roslib.msgs    
     f = roslib.msgs.msg_file('rosgraph_msgs', 'Log')
     self.assert_(os.path.isfile(f))
     self.assert_(f.endswith('rosgraph_msgs/msg/Log.msg'))
@@ -306,7 +313,7 @@ class MsgSpecTest(unittest.TestCase):
     self.assert_(f.endswith('roslib/msg/Fake.msg'))
 
   def test_is_valid_msg_type(self):
-
+    import roslib.msgs
     vals = [
       #basic
       'F', 'f', 'Foo', 'Foo1',
@@ -325,6 +332,7 @@ class MsgSpecTest(unittest.TestCase):
       self.failIf(roslib.msgs.is_valid_msg_type(v), "roslib.msgs.is_valid_msg_type should have returned False for '%s'"%v)
       
   def test_is_valid_constant_type(self):
+    import roslib.msgs
     valid = ['int8', 'uint8', 'int16', 'uint16', 'int32', 'uint32', 'int64', \
              'uint64', 'float32', 'float64', 'char', 'byte', 'string']
     invalid = [
@@ -338,5 +346,5 @@ class MsgSpecTest(unittest.TestCase):
     
 
 if __name__ == '__main__':
-  rosunit.unitrun(PKG, 'test_msgspec', MsgSpecTest, coverage_packages=['roslib.msgs'])
+  rosunit.unitrun(PKG, 'test_roslib_msgs', MsgSpecTest, coverage_packages=['roslib.msgs'])
 

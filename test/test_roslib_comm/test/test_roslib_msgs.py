@@ -40,7 +40,11 @@ import unittest
 import rosunit
 
 class MsgSpecTest(unittest.TestCase):
-  
+
+  def setUp(self):
+    # for coverage
+    reload(roslib.msgs)
+    
   def test_verbose(self):
     import roslib.msgs
     self.failIf(roslib.msgs.is_verbose())
@@ -113,6 +117,10 @@ class MsgSpecTest(unittest.TestCase):
     self.assertNotEquals(roslib.msgs.Constant(type_, 'foo', val, str(val)), x)
     self.assertNotEquals(roslib.msgs.Constant(type_, name, 'foo', 'foo'), x)
 
+    # tripwire
+    self.assert_(repr(x))
+    self.assert_(str(x))    
+    
     try:
       roslib.msgs.Constant(None, name, val, str(val))
     except: pass
@@ -157,13 +165,17 @@ class MsgSpecTest(unittest.TestCase):
     self.assertNotEquals(one_field, MsgSpec(['int32'], ['x'], [], 'uint32 x'))
     # test against __ne__ as well
     self.assert_(one_field != MsgSpec(['int32'], ['x'], [], 'uint32 x'))
+    #test strify
+    self.assertEquals("int32 x", str(one_field).strip())
     
     # test variations of multiple fields and headers
     two_fields = sub_test_MsgSpec(['int32', 'string'], ['x', 'str'], [], 'int32 x\nstring str', False)
     one_header = sub_test_MsgSpec(['Header'], ['header'], [], 'Header header', True)
     header_and_fields = sub_test_MsgSpec(['Header', 'int32', 'string'], ['header', 'x', 'str'], [], 'Header header\nint32 x\nstring str', True)
     embed_types = sub_test_MsgSpec(['Header', 'std_msgs/Int32', 'string'], ['header', 'x', 'str'], [], 'Header header\nstd_msgs/Int32 x\nstring str', True)
-    
+    #test strify
+    self.assertEquals("int32 x\nstring str", str(two_fields).strip())
+
     # types and names mismatch
     try:
       MsgSpec(['int32', 'int32'], ['intval'], [], 'int32 intval\int32 y')
@@ -224,6 +236,14 @@ class MsgSpecTest(unittest.TestCase):
       _convert_val('foo', '1')
       self.fail("should have failed invalid type")
     except MsgSpecException: pass
+    
+  def test_load_by_type(self):
+    from roslib.msgs import load_by_type
+    name, msgspec = load_by_type('std_msgs/String')
+    self.assertEquals('std_msgs/String', name)
+    self.assertEquals(['data'], msgspec.names)
+    self.assertEquals(['string'], msgspec.types)    
+    
     
   def test_load_package_dependencies(self):
     import roslib.msgs    

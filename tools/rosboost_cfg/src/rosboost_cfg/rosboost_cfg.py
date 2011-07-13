@@ -31,6 +31,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import print_function
+
 import sys
 import os
 import string
@@ -38,7 +40,6 @@ from glob import glob
 import subprocess
 import platform
 from optparse import OptionParser
-from cStringIO import StringIO
 
 lib_suffix = "so"
 if (sys.platform == "darwin"):
@@ -60,12 +61,12 @@ if ('ROS_BOOST_VERSION' in os.environ and len(os.environ['ROS_BOOST_VERSION']) >
         boost_version.append(0)
 
 def print_usage_and_exit():
-  print >> sys.stderr, "Usage: rosboost-cfg --lflags [thread,regex,graph,...]"
-  print >> sys.stderr, "       rosboost-cfg --cflags"
-  print >> sys.stderr, "       rosboost-cfg --libs [thread,regex,graph,...]"
-  print >> sys.stderr, "       rosboost-cfg --include_dirs"
-  print >> sys.stderr, "       rosboost-cfg --lib_dirs"
-  print >> sys.stderr, "       rosboost-cfg --root"
+  print("Usage: rosboost-cfg --lflags [thread,regex,graph,...]")
+  print("       rosboost-cfg --cflags")
+  print("       rosboost-cfg --libs [thread,regex,graph,...]")
+  print("       rosboost-cfg --include_dirs")
+  print("       rosboost-cfg --lib_dirs")
+  print("       rosboost-cfg --root")
   sys.exit(1)
 
 class BoostError(Exception):
@@ -231,7 +232,7 @@ def find_lib(ver, name, full_lib = link_static):
     
     dir = lib_dir(ver)
 
-    if (dir is None):
+    if dir is None:
       raise BoostError('Could not locate library [%s]'%(name))
     
     for p in search_paths:
@@ -246,7 +247,7 @@ def find_lib(ver, name, full_lib = link_static):
     raise BoostError('Could not locate library [%s] in lib directory [%s]'%(name, dir))
   
 def include_dirs(ver, prefix = ''):
-    if (ver.is_system_install or no_L_or_I):
+    if ver.is_system_install or no_L_or_I:
         return ""
     
     return " %s%s"%(prefix, ver.include_dir)
@@ -255,7 +256,7 @@ def cflags(ver):
     return include_dirs(ver, '-I')
 
 def lib_dir_flags(ver):
-    if (not ver.is_default_search_location):
+    if not ver.is_default_search_location:
         dir = lib_dir(ver)
         return ' -L%s -Wl,-rpath,%s'%(dir, dir)
     
@@ -270,19 +271,16 @@ def lib_flags(ver, name):
         return ' -l%s'%(os.path.splitext(lib)[0][len('lib'):])
 
 def lflags(ver, libs):
-    s = StringIO()
-    print >> s, lib_dir_flags(ver),
+    s= lib_dir_flags(ver) + " "
     for lib in libs:
-        print >> s, lib_flags(ver, lib),
-    
-    return s.getvalue()
+        s += lib_flags(ver, lib) + " "
+    return s
 
 def libs(ver, libs):
-    s = StringIO()
+    s = ""
     for lib in libs:
-        print >> s, find_lib(ver, lib, True),
-    
-    return s.getvalue()
+        s += find_lib(ver, lib, True) + " "
+    return s
 
 def lib_dirs(ver):
     if (ver.is_default_search_location or no_L_or_I):
@@ -301,7 +299,7 @@ def check_one_option(options, key):
 
 def main():
     if (len(sys.argv) < 2):
-      print_usage_and_exit()
+        print_usage_and_exit()
     
     parser = OptionParser()
     parser.add_option("-l", "--libs", dest="libs", type="string", help="")
@@ -319,21 +317,21 @@ def main():
     if (options.print_versions):
         check_one_option(options, 'print_versions')
         for ver in find_versions(search_paths(options.sysroot)):
-            print '%s.%s.%s root=%s include_dir=%s'%(ver.major, ver.minor, ver.patch, ver.root, ver.include_dir)
+            print('%s.%s.%s root=%s include_dir=%s'%(ver.major, ver.minor, ver.patch, ver.root, ver.include_dir))
         return
        
     ver = find_boost(search_paths(options.sysroot))
     
-    if (ver is None):
+    if ver is None:
         raise BoostError("Cannot find boost in any of %s"%search_paths(options.sysroot))
         sys.exit(0)
     
-    if (options.version):
+    if options.version:
         check_one_option(options, 'version')
-        print '%s.%s.%s root=%s include_dir=%s'%(ver.major, ver.minor, ver.patch, ver.root, ver.include_dir)
+        print('%s.%s.%s root=%s include_dir=%s'%(ver.major, ver.minor, ver.patch, ver.root, ver.include_dir))
         return
     
-    if (ver.major < 1 or (ver.major == 1 and ver.minor < 37)):
+    if ver.major < 1 or (ver.major == 1 and ver.minor < 37):
         raise BoostError('Boost version %s.%s.%s does not meet the minimum requirements of boost 1.37.0'%(ver.major, ver.minor, ver.patch))
     
     
@@ -360,7 +358,7 @@ def main():
     else:
         print_usage_and_exit()
     
-    print output.strip()
+    print(output.strip())
 
 if __name__ == "__main__":
     main()

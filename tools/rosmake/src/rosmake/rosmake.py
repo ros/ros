@@ -34,18 +34,15 @@ from __future__ import with_statement
 
 import os
 import re
-import distutils.version
-import sys, string
+import sys
 import subprocess
 import time
-import getopt
 import roslib
 import roslib.rospack
 import roslib.rosenv
 import roslib.stacks
 import threading
 import traceback
-import math
 import signal
 import exceptions
 

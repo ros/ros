@@ -225,7 +225,7 @@ class Process(object):
     def is_alive(self):
         return False
 
-    def stop(self, errors=[]):
+    def stop(self, errors=None):
         """
         Stop the process. Record any significant error messages in the errors parameter
         

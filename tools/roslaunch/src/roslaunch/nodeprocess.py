@@ -413,13 +413,15 @@ executable permission. This is often caused by a bad launch-prefix."""%(msg, ' '
         finally:
             self.popen = None
 
-    def stop(self, errors=[]):
+    def stop(self, errors=None):
         """
         Stop the process. Record any significant error messages in the errors parameter
         
         @param errors: error messages. stop() will record messages into this list.
         @type  errors: [str]
         """
+        if errors is None:
+            errors = []
         super(LocalProcess, self).stop(errors)
         self.lock.acquire()        
         try:

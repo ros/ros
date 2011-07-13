@@ -275,10 +275,12 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
             return False
         return True
 
-    def stop(self, errors=[]):
+    def stop(self, errors=None):
         """
         Terminate this process, including the SSH connection.
         """
+        if errors is None:
+            errors = []
         try:
             self.lock.acquire()            
             if not self.ssh:

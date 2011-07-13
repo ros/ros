@@ -9,7 +9,8 @@ fi
 pkgdir=`${ROS_ROOT}/bin/rospack find $1` || exit 2
 # The -perm /mode usage is not available in find on the Mac
 #exepathlist=(`find $pkgdir -name $2 -type f -perm /u+x,g+x,o+x`)
-exepathlist=(`find -H $pkgdir -name $2 -type f  -perm +111 ! -regex ".*$pkgdir\/build\/.*"`)
+# -L: #3475
+exepathlist=(`find -L $pkgdir -name $2 -type f  -perm +111 ! -regex ".*$pkgdir\/build\/.*"`)
 if [[ ${#exepathlist[@]} == 0 ]] ; then
     echo "[rosrun] Couldn't find executable named $2 below $pkgdir"
     nonexepathlist=(`find -H $pkgdir -name $2`)

@@ -58,7 +58,10 @@ import tempfile
 import traceback
 import struct
 
-from cStringIO import StringIO
+try:
+    from cStringIO import StringIO # Python 2.x
+except ImportError:
+    from io import StringIO # Python 3.x
 
 import roslib.exceptions
 import roslib.gentools
@@ -108,7 +111,7 @@ SIMPLE_TYPES_DICT = { #see python module struct
     }
 
 ## Simple types are primitives with fixed-serialization length
-SIMPLE_TYPES = SIMPLE_TYPES_DICT.keys()
+SIMPLE_TYPES = list(SIMPLE_TYPES_DICT.keys()) #py3k
 
 def is_simple(type_):
     """
@@ -743,7 +746,7 @@ def array_serializer_generator(package, type_, name, serialize, is_numpy):
 
     except MsgGenerationException:
         raise #re-raise
-    except Exception, e:
+    except Exception as e:
         raise MsgGenerationException(e) #wrap
     
 def complex_serializer_generator(package, type_, name, serialize, is_numpy):
@@ -1182,17 +1185,17 @@ def generate_dynamic(core_type, msg_cat):
     # types. The types have to be registered globally in order for
     # message generation of dependents to work correctly.
     roslib.msgs.reinit()
-    for t, spec in specs.iteritems():
+    for t, spec in specs.items():
         roslib.msgs.register(t, spec)
 
     # process actual MsgSpecs: we accumulate them into a single file,
     # rewriting the generated text as needed
     buff = StringIO()
-    for t, spec in specs.iteritems():
+    for t, spec in specs.items():
         pkg, s_type = roslib.names.package_resource_name(t)
         # dynamically generate python message code
         for l in msg_generator(pkg, s_type, spec):
-            l = _gen_dyn_modify_references(l, specs.keys())
+            l = _gen_dyn_modify_references(l, list(specs.keys()))
             buff.write(l + '\n')
     full_text = buff.getvalue()
 
@@ -1215,7 +1218,7 @@ def generate_dynamic(core_type, msg_cat):
 
     # finally, retrieve the message classes from the dynamic module
     messages = {}
-    for t in specs.iterkeys():
+    for t in specs.keys():
         pkg, s_type = roslib.names.package_resource_name(t)
         try:
             messages[t] = getattr(mod, _gen_dyn_name(pkg, s_type))

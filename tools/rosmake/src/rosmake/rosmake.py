@@ -27,10 +27,9 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-
 # Author Tully Foote/tfoote@willowgarage.com
 
-from __future__ import with_statement
+from __future__ import print_function
 
 import os
 import re
@@ -44,7 +43,11 @@ import roslib.stacks
 import threading
 import traceback
 import signal
-import exceptions
+
+try: 
+    from exceptions import SystemExit #Python 2.x
+except ImportError: 
+    pass #Python 3.x (in Python 3, 'exceptions' is always imported) 
 
 from operator import itemgetter
 
@@ -118,7 +121,7 @@ class Printer:
         def __exit__(self, mtype, value, tb):
             self.shutdown()
             if value:
-                if not mtype == type(exceptions.SystemExit()):
+                if not mtype == type(SystemExit()):
                     traceback.print_exception(mtype, value, tb)
                 else:
                     sys.exit(value)
@@ -149,7 +152,7 @@ class Printer:
 
         def rosmake_pkg_times_to_string(self, start_times):
             threads = []
-            for p, t in sorted(start_times.iteritems(), key=itemgetter(1)):
+            for p, t in sorted(start_times.items(), key=itemgetter(1)): #py3k
                 threads.append("[ %s: %.1f sec ]"%(p, time.time() - t))
 
             return " ".join(threads)
@@ -188,7 +191,7 @@ class Printer:
 
         def print_full_verbose(self, s):
             if self.full_verbose:
-                print "[ rosmake ] %s"%s
+                print("[ rosmake ] %s"%(s))
 
         def print_tail(self, s, tail_lines=40):
             lines = s.splitlines()
@@ -197,13 +200,13 @@ class Printer:
 
             num_lines = min(len(lines), tail_lines)
             if num_lines == tail_lines:
-                print "[ rosmake ] Last %d lines"%num_lines
+                print("[ rosmake ] Last %d lines"%(num_lines))
             else:
-                print "[ rosmake ] All %d lines"%num_lines
-            print "{" + "-"*79
-            for l in xrange(-num_lines, -1):
-                print "  %s"%lines[l]
-            print "-"*79 + "}"
+                print("[ rosmake ] All %d lines"%(num_lines))
+            print("{" + "-"*79)
+            for l in range(-num_lines, -1):
+                print("  %s"%(lines[l]))
+            print("-"*79 + "}")
 
         def _print_status(self, s):
             sys.stdout.write("%s\r"%(s))
@@ -268,7 +271,7 @@ class RosMakeAll:
         @return: number of packages that were built
         @rtype: int
         """
-        return len(self.result[argument].keys())
+        return len(list(self.result[argument].keys())) #py3k
 
     def update_status(self, argument, start_times, right):
         self.printer.rosmake_cache_info(argument, start_times, right)
@@ -283,7 +286,7 @@ class RosMakeAll:
         try:
             r = rosdep.core.Rosdep(packages, robust=True)
             failed_rosdeps = r.check()
-        except roslib.exceptions.ROSLibException, ex:
+        except roslib.exceptions.ROSLibException as ex:
             return ("rosdep ABORTED: %s"%ex, '')
 
         return ', '.join(failed_rosdeps)
@@ -303,9 +306,9 @@ class RosMakeAll:
                 return None
             else:
                 return "%s"%error
-        except rosdep.core.RosdepException, e:
+        except rosdep.core.RosdepException as e:
             return "%s"%e
-        except roslib.exceptions.ROSLibException, ex:
+        except roslib.exceptions.ROSLibException as ex:
             return "%s"%ex
 
     def build_or_recurse(self,p):
@@ -316,7 +319,7 @@ class RosMakeAll:
         try: # append it ot the list only if present
           self.get_path(p)
           self.build_list.append(p)
-        except roslib.packages.InvalidROSPkgException, ex:
+        except roslib.packages.InvalidROSPkgException as ex:
           if not self.robust_build:
             self.printer.print_all("Exiting due to missing package: %s"%ex)
             sys.exit(-1)
@@ -332,7 +335,7 @@ class RosMakeAll:
                 self.result[argument] = {}
 
         cts = []
-        for i in  xrange(0, threads):
+        for i in range(0, threads):
           ct = parallel_build.CompileThread(str(i), build_queue, self, argument)
           #print "TTTH starting thread ", ct
           ct.start()
@@ -452,7 +455,7 @@ class RosMakeAll:
                 return_string += why
                 return(error, return_string)
             return (True, return_string) # this means that we didn't error in any case above
-        except roslib.packages.InvalidROSPkgException, ex:
+        except roslib.packages.InvalidROSPkgException as ex:
             with self._result_lock:
                 self.result[argument][p] = False
             self.printer.print_verbose ("[SKIP] Package not found\n")
@@ -607,11 +610,11 @@ class RosMakeAll:
 
                     self.printer.print_verbose(pstd_out)
                     if command_line.returncode:
-                        print >> sys.stderr, "Failed to build %s"%pkg_name
-                        print >> sys.stderr, "Error:\n{{{\n%s\n}}}"%pstd_out
+                        sys.stderr.write("Failed to build %s\n"%(pkg_name))
+                        sys.stderr.write("Error:\n{{{\n%s\n}}}\n"%(pstd_out))
                         sys.exit(-1)
                     self.printer.print_all("Finished <<< %s"%pkg)
-                except KeyboardInterrupt, ex:
+                except KeyboardInterrupt as ex:
                     self.printer.print_all("Keyboard interrupt caught in pkg %s"%pkg)
                     return False
         return True
@@ -766,7 +769,7 @@ class RosMakeAll:
               else:
                 self.printer.print_all("No package selected and the current directory is not the correct path for package '%s'."%p)
                 
-            except roslib.packages.InvalidROSPkgException, ex:
+            except roslib.packages.InvalidROSPkgException as ex:
                 try:
                     stack_dir = roslib.stacks.get_stack_dir(p)
                     if os.path.samefile(stack_dir, '.'):

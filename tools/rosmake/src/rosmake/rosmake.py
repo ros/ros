@@ -48,8 +48,8 @@ import exceptions
 
 from operator import itemgetter
 
-import parallel_build
-import package_stats
+from . import parallel_build
+from . import package_stats
 
 from optparse import OptionParser
 

@@ -32,13 +32,20 @@
 #
 # Revision $Id$
 # $Author$
+
+from __future__ import print_function
+
 """
 ROS msg library for Python
 
 Implements: U{http://ros.org/wiki/msg}
 """
 
-import cStringIO
+try:
+    from cStringIO import StringIO # Python 2.x
+except ImportError:
+    from io import StringIO # Python 3.x
+
 import os
 import itertools
 import sys
@@ -234,7 +241,7 @@ def _strify_spec(spec, buff=None, indent=''):
     @rtype: str
     """
     if buff is None:
-        buff = cStringIO.StringIO()
+        buff = StringIO()
     for c in spec.constants:
         buff.write("%s%s %s=%s\n"%(indent, c.type, c.name, c.val_text))
     for type_, name in zip(spec.types, spec.names):
@@ -310,7 +317,7 @@ class MsgSpec(object):
         @return: zip list of types and names (e.g. [('int32', 'x'), ('int32', 'y')]
         @rtype: [(str,str),]
         """
-        return zip(self.types, self.names)
+        return list(zip(self.types, self.names)) #py3k
     
     def parsed_fields(self):
         """
@@ -373,7 +380,7 @@ def _init():
     
     header = os.path.join(std_msgs_dir, roslib.packages.MSG_DIR, fname)
     if not os.path.isfile(header):
-        print >> sys.stderr, "ERROR: cannot locate %s. Expected to find it at '%s'"%(fname, header)
+        sys.stderr.write("ERROR: cannot locate %s. Expected to find it at '%s'\n"%(fname, header))
         return False
 
     # register Header under both contexted and de-contexted name
@@ -382,7 +389,7 @@ def _init():
     register('std_msgs/'+HEADER, spec)    
     # backwards compat, REP 100
     register('roslib/'+HEADER, spec)    
-    for k, spec in EXTENDED_BUILTINS.iteritems():
+    for k, spec in EXTENDED_BUILTINS.items():
         register(k, spec)
         
     _initialized = True
@@ -440,9 +447,9 @@ def get_pkg_msg_specs(package):
         try: 
             typespec = load_from_file(msg_file(package, t), package)
             specs.append(typespec)
-        except Exception, e:
+        except Exception as e:
             failures.append(t)
-            print "ERROR: unable to load %s"%t
+            print("ERROR: unable to load %s"%t)
     return specs, failures
 
 def load_package_dependencies(package, load_recursive=False):
@@ -457,7 +464,7 @@ def load_package_dependencies(package, load_recursive=False):
     global _loaded_packages
     _init()    
     if VERBOSE:
-        print "Load dependencies for package", package
+        print("Load dependencies for package", package)
         
     if not load_recursive:
         manifest_file = roslib.manifest.manifest_file(package, True)
@@ -470,7 +477,7 @@ def load_package_dependencies(package, load_recursive=False):
     failures = []
     for d in depends:
         if VERBOSE:
-            print "Load dependency", d
+            print("Load dependency", d)
         #check if already loaded
         # - we are dependent on manifest.getAll returning first-order dependencies first
         if d in _loaded_packages or d == package:
@@ -495,19 +502,19 @@ def load_package(package):
     global _loaded_packages
     _init()    
     if VERBOSE:
-        print "Load package", package
+        print("Load package", package)
         
     #check if already loaded
     # - we are dependent on manifest.getAll returning first-order dependencies first
     if package in _loaded_packages:
         if VERBOSE:
-            print "Package %s is already loaded"%package
+            print("Package %s is already loaded"%package)
         return
 
     _loaded_packages.append(package)
     specs, failed = get_pkg_msg_specs(package)
     if VERBOSE:
-        print "Package contains the following messages: %s"%specs
+        print("Package contains the following messages: %s"%specs)
     for key, spec in specs:
         #register spec under both local and fully-qualified key
         register(key, spec)
@@ -588,7 +595,7 @@ def load_from_string(text, package_context='', full_name='', short_name=''):
         l = orig_line.split(COMMENTCHAR)[0].strip() #strip comments
         if not l:
             continue #ignore empty lines
-        splits = filter(lambda s: s, [x.strip() for x in l.split(" ")]) #split type/name, filter out empties
+        splits = [s for s in [x.strip() for x in l.split(" ")] if s] #split type/name, filter out empties
         type_ = splits[0]
         if not is_valid_msg_type(type_):
             raise MsgSpecException("%s is not a legal message type"%type_)
@@ -608,7 +615,7 @@ def load_from_string(text, package_context='', full_name='', short_name=''):
                 val = splits[1]
             try:
                 val_converted  = _convert_val(type_, val)
-            except Exception, e:
+            except Exception as e:
                 raise MsgSpecException("Invalid declaration: %s"%e)
             constants.append(Constant(type_, name, val_converted, val.strip()))
         else:
@@ -640,9 +647,9 @@ def load_from_file(file_path, package_context=''):
     """
     if VERBOSE:
         if package_context:
-            print "Load spec from", file_path, "into package [%s]"%package_context
+            print("Load spec from", file_path, "into package [%s]"%package_context)
         else:
-            print "Load spec from", file_path
+            print("Load spec from", file_path)
 
     file_name = os.path.basename(file_path)
     type_ = file_name[:-len(EXT)]
@@ -660,7 +667,7 @@ def load_from_file(file_path, package_context=''):
         try:
             text = f.read()
             return (type_, load_from_string(text, package_context, type_, base_type_))
-        except MsgSpecException, e:
+        except MsgSpecException as e:
             raise MsgSpecException('%s: %s'%(file_name, e))
     finally:
         f.close()
@@ -725,7 +732,7 @@ def is_registered(msg_type_name):
     registered. NOTE: builtin types are not registered.
     @rtype: bool
     """
-    return REGISTERED_TYPES.has_key(msg_type_name)
+    return msg_type_name in REGISTERED_TYPES
 
 def get_registered(msg_type_name, default_package=None):
     """
@@ -753,6 +760,6 @@ def register(msg_type_name, msg_spec):
     @type  msg_spec: L{MsgSpec}
     """
     if VERBOSE:
-        print "Register msg %s"%msg_type_name
+        print("Register msg %s"%msg_type_name)
     REGISTERED_TYPES[msg_type_name] = msg_spec
 

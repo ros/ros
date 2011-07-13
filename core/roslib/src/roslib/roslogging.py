@@ -80,7 +80,7 @@ def configure_logging(logname, level=logging.INFO, filename=None, env=None):
             makedirs_with_parent_perms(logfile_dir)
         except OSError:
             # cannot print to screen because command-line tools with output use this
-            sys.stderr.write("WARNING: cannot create log directory [%s]. Please set %s to a writable location."%(logfile_dir, ROS_LOG_DIR))
+            sys.stderr.write("WARNING: cannot create log directory [%s]. Please set %s to a writable location.\n"%(logfile_dir, ROS_LOG_DIR))
             return None
     elif os.path.isfile(logfile_dir):
         raise roslib.exceptions.ROSLibException("Cannot save log files: file [%s] is in the way"%logfile_dir)
@@ -92,7 +92,7 @@ def configure_logging(logname, level=logging.INFO, filename=None, env=None):
 
     if not os.path.isfile(config_file):
         # logging is considered soft-fail
-        sys.stderr.write("WARNING: cannot load logging configuration file, logging is disabled")
+        sys.stderr.write("WARNING: cannot load logging configuration file, logging is disabled\n")
         return log_filename
     
     # pass in log_filename as argument to pylogging.conf

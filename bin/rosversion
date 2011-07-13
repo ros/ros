@@ -28,9 +28,9 @@
 
 # This tool is a place-holder for a future version inspection system.
 
-from __future__ import with_statement
+from __future__ import print_function
 
-USAGE = "Usage: rosversion <stack>"
+USAGE = "Usage: rosversion <stack> or rosversion -d"
 
 import os
 import sys
@@ -49,24 +49,28 @@ def get_source_version(text):
     
 if len(sys.argv) == 2:
     stack_name = sys.argv[1]
+
+    if stack_name == '-d' or stack_name == '--distro':
+        print('unstable')
+        sys.exit(0)
     
     try:
         d = roslib.stacks.get_stack_dir(stack_name)
-    except Exception, e:
-        print >> sys.stderr, str(e)
+    except Exception as e:
+        sys.stderr.write(str(e)+'\n')
         sys.exit(1)
 
     cmake_p = os.path.join(d, 'CMakeLists.txt')
     if not os.path.isfile(cmake_p):
-        print '<unversioned>'
+        print('<unversioned>')
     else:
         with open(cmake_p) as f:
             text = f.read()
         try:
-            print get_source_version(text)
-        except Exception, e:
-            print >> sys.stderr, str(e)
+            print(get_source_version(text))
+        except Exception as e:
+            sys.stderr.write(str(e)+'\n')
             sys.exit(1)
 else:
-    print >> sys.stderr, USAGE
-    sys.exit(-1)
+    sys.stderr.write(USAGE+'\n')
+    sys.exit(os.EX_USAGE)

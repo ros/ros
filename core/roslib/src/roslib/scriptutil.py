@@ -128,14 +128,18 @@ def get_master():
     @return: XML-RPC proxy to ROS master
     @rtype: xmlrpclib.ServerProxy
     """
-    import xmlrpclib
+    try:
+        import xmlrpc.client as xmlrpcclient  #Python 3.x
+    except ImportError:
+        import xmlrpclib as xmlrpcclient #Python 2.x
+    
     # #1730 validate URL for better error messages
     uri = roslib.rosenv.get_master_uri()
     try:
         roslib.network.parse_http_host_and_port(uri)
     except ValueError:
         raise roslib.exceptions.ROSLibException("invalid master URI: %s"%uri)
-    return xmlrpclib.ServerProxy(uri)
+    return xmlrpcclient.ServerProxy(uri)
 
 
 def get_param_server():
@@ -194,7 +198,7 @@ def ask_and_call(cmds, cwd=None):
     # Pretty-print a string version of the commands
     def quote(s):
         return '"%s"'%s if ' ' in s else s
-    print "Okay to execute:\n\n%s\n(y/n)?"%('\n'.join([' '.join([quote(s) for s in c]) for c in cmds]))
+    sys.stdout.write("Okay to execute:\n\n%s\n(y/n)?\n"%('\n'.join([' '.join([quote(s) for s in c]) for c in cmds])))
     while 1:
         input = sys.stdin.readline().strip()
         if input in ['y', 'n']:

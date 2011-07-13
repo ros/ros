@@ -28,6 +28,8 @@
 #ifndef ROSCPP_MESSAGE_H
 #define ROSCPP_MESSAGE_H
 
+#warning You shouldn't be using this file
+
 #include "ros/macros.h"
 #include "ros/assert.h"
 #include <string>
@@ -35,6 +37,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/array.hpp>
 #include <stdint.h>
+
 
 #define ROSCPP_MESSAGE_HAS_DEFINITION
 

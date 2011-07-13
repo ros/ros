@@ -151,6 +151,8 @@ def write_generic_includes(s):
     s.write('#include "ros/builtin_message_traits.h"\n')
     s.write('#include "ros/message_operations.h"\n')
     s.write('#include "ros/time.h"\n\n')
+    s.write('#include "ros/macros.h"\n\n')
+    s.write('#include "ros/assert.h"\n\n')
     
 def write_includes(s, spec):
     """

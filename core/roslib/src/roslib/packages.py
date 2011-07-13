@@ -224,11 +224,11 @@ def get_pkg_dir(package, required=True, ros_root=None, ros_package_path=None):
         # rospack_cache as it will corrupt list_pkgs() otherwise.
         #_pkg_dir_cache[package] = (pkg_dir, ros_root, ros_package_path)
         return pkg_dir
-    except OSError, e:
+    except OSError as e:
         if required:
             raise InvalidROSPkgException("Environment configuration is invalid: cannot locate rospack (%s)"%e)
         return None
-    except Exception, e:
+    except Exception as e:
         if required:
             raise
         return None
@@ -268,7 +268,7 @@ Cannot create a '%(subdir)s' directory in %(package_dir)s.
 Please check permissions and try again.
 """%locals())
         return d
-    except Exception, e:
+    except Exception as e:
         if required:
             raise
         return None
@@ -397,9 +397,9 @@ def list_pkgs(cache=None, env=None):
         # cache in most optimal way
         cache = _pkg_dir_cache
         if cache:
-            return cache.keys()
+            return list(cache.keys()) #py3k
         if _update_rospack_cache(env=env):
-            return cache.keys()
+            return list(cache.keys()) #py3k
     packages = []
     for pkg_root in pkg_dirs:
         list_pkgs_by_path(pkg_root, packages, cache=cache, env=env)
@@ -573,9 +573,8 @@ def rosdeps_of(packages):
     _update_rospack_cache()
     from roslib.manifest import load_manifest
     manifests = [load_manifest(p) for p in packages]
-    import itertools
     map = {}
-    for pkg, m in itertools.izip(packages, manifests):
+    for pkg, m in zip(packages, manifests): #py3k
         map[pkg] = [d.name for d in m.rosdeps]
     return map
 

@@ -80,31 +80,31 @@ def get_ros_root(required=True, env=None):
         env = os.environ
     p = None
     try:
-        if not env.has_key(ROS_ROOT):
-            raise ROSEnvException, """
+        if ROS_ROOT not in env:
+            raise ROSEnvException("""
 The %(ROS_ROOT)s environment variable has not been set.
 Please set to the location of your ROS installation
 before continuing.
-"""%globals()
+"""%globals())
 
         p = env[ROS_ROOT]
         #Test:
         # 1. Is a path
         # 2. Is a directory
         if not os.path.exists(p):
-            raise ROSEnvException, """
+            raise ROSEnvException("""
 The %s environment variable has not been set properly:
 %s does not exist.
 Please update your ROS installation before continuing.
-"""%(ROS_ROOT, p)
+"""%(ROS_ROOT, p))
         if not os.path.isdir(p):
-            raise ROSEnvException, """
+            raise ROSEnvException("""
 The %s environment variable has not been set properly:
 %s is not a directory.
 Please update your ROS installation before continuing.
-"""%(ROS_ROOT, p)
+"""%(ROS_ROOT, p))
         return p
-    except Exception, e:
+    except Exception as e:
         if required:
             raise
         return p
@@ -121,7 +121,7 @@ def get_ros_package_path(required=False, env=None):
         env = os.environ
     try:
         return env[ROS_PACKAGE_PATH]
-    except KeyError, e:
+    except KeyError as e:
         if required:
             raise ROSEnvException("%s has not been configured"%ROS_PACKAGE_PATH)
 
@@ -158,7 +158,7 @@ def get_master_uri(required=True, env=None, argv=None):
                     raise ROSEnvException("__master remapping argument '%s' improperly specified"%arg)
                 return val
         return env[ROS_MASTER_URI]
-    except KeyError, e:
+    except KeyError as e:
         if required:
             raise ROSEnvException("%s has not been configured"%ROS_MASTER_URI)
         

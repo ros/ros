@@ -38,6 +38,7 @@ Utilities for accessing the Parameter Server
 
 import sys
 import xmlrpclib
+import yaml
 
 import roslib.rosenv
 from roslib.names import REMAP
@@ -53,11 +54,6 @@ def load_command_line_node_params(argv):
     @return: param->value remappings. 
     @rtype: {str: val}
     """    
-    try:
-        import yaml
-    except ImportError, e:
-        print >> sys.stderr, "Cannot import yaml. Please make sure the pyyaml system dependency is installed"
-        raise e
     mappings = {}
     for arg in argv:
         if REMAP in arg:
@@ -67,7 +63,7 @@ def load_command_line_node_params(argv):
                     if len(src) > 1 and src[0] == '_' and src[1] != '_':
                         mappings[src[1:]] = yaml.load(dst)
             except:
-                print >> sys.stderr, "ERROR: Invalid remapping argument '%s'"%arg
+                sys.stderr.write("ERROR: Invalid remapping argument '%s'\n"%arg)
     return mappings
 
 def get_param(key):

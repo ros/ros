@@ -36,8 +36,6 @@ The APIs of this library are still very coupled with the rosdep
 command-line tool.
 """
 
-from __future__ import with_statement
-
 import roslib.exceptions
 import os
 import sys
@@ -107,7 +105,7 @@ class OSOverride:
     def check_presence(self):
         try:
             (self._os_name, self._os_version) = os.environ["ROS_OS_OVERRIDE"].split(':')
-            print >> sys.stderr, "Using environment variable ROS_OS_OVERRIDE name = %s version = %s"%(self._os_name, self._os_version)
+            sys.stderr.write("Using environment variable ROS_OS_OVERRIDE name = %s version = %s\n"%(self._os_name, self._os_version))
             return True
         except:
             return False
@@ -285,7 +283,7 @@ class Fedora(OSBase):
                 if os_list[0] == "Fedora" and os_list[1] == "release":
                     return os_list[2]
         except:
-            print "Fedora failed to get version"
+            sys.stderr.write("Fedora failed to get version\n")
             return False
 
         return False
@@ -321,7 +319,7 @@ class Rhel(Fedora):
                 if os_list and os_list[2] == "Enterprise":
                     return os_list[6]
         except:
-            print "Rhel failed to get version"
+            sys.stderr.write("Rhel failed to get version\n")
             return False
 
         return False
@@ -392,19 +390,6 @@ class Arch(OSBase):
 
     def get_version(self):
         return ""
-        # arch didn't have a version parsing in cpp version
-        try:
-            filename = "/etc/issue"
-            if os.path.exists(filename):
-                with open(filename, 'r') as fh:
-                    os_list = fh.read().split()
-                if os_list[0] == "Linux" and os_list[1] == "Arch":
-                    return os_list[2]
-        except:
-            print "Arch failed to get version"
-            return False
-
-        return False
 
     def get_name(self):
         return "arch"
@@ -448,7 +433,7 @@ class Gentoo(OSBase):
                 if os_list and os_list[0] == "Gentoo" and os_list[1] == "Base":
                     return True
         except:
-            pass#print >> sys.stderr, "Gentoo failed to detect OS"
+            pass
         return False
 
     def get_version(self):
@@ -460,7 +445,7 @@ class Gentoo(OSBase):
                 if os_list[0] == "Gentoo" and os_list[1] == "Base":
                     return os_list[4]
         except:
-            print >> sys.stderr, "Gentoo failed to get version"
+            sys.stderr.write("Gentoo failed to get version\n")
             return False
 
         return False
@@ -499,7 +484,7 @@ class FreeBSD(OSBase):
             else:
                return False
         except:
-            print >> sys.stderr, "FreeBSD failed to get version"
+            sys.stderr.write("FreeBSD failed to get version\n")
             return False
 
         return False

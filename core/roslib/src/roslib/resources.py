@@ -81,7 +81,7 @@ def list_package_resources_by_dir(package_dir, include_depends, subdir, rfilter=
     if include_depends:
         depends = _get_manifest_by_dir(package_dir).depends
         dirs = [roslib.packages.get_pkg_subdir(d.package, subdir, False) for d in depends]
-        for (dep, dir_) in itertools.izip(depends, dirs):
+        for (dep, dir_) in zip(depends, dirs): #py3k
             if not dir_ or not os.path.isdir(dir_):
                 continue
             resources.extend(\

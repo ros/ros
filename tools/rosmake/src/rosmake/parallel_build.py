@@ -30,21 +30,15 @@
 
 # Author Tully Foote/tfoote@willowgarage.com
 
-from __future__ import with_statement
-
 import os
 import re
-import distutils.version
-import sys, string
+import sys
 import subprocess
 import time
-import getopt
+
 import roslib
 import roslib.rospack
-import roslib.rosenv
-import roslib.stacks
 import threading
-
 
 def num_cpus():
   """
@@ -52,7 +46,7 @@ def num_cpus():
   """
   # Linux, Unix and MacOS:
   if hasattr(os, "sysconf"):
-    if os.sysconf_names.has_key("SC_NPROCESSORS_ONLN"):
+    if "SC_NPROCESSORS_ONLN" in os.sysconf_names:
       # Linux & Unix:
       ncpus = os.sysconf("SC_NPROCESSORS_ONLN")
       if isinstance(ncpus, int) and ncpus > 0:
@@ -60,7 +54,7 @@ def num_cpus():
     else: # OSX:
       return subprocess.call("sysctl -n hw.ncpu".split())
   # Windows:
-  if os.environ.has_key("NUMBER_OF_PROCESSORS"):
+  if "NUMBER_OF_PROCESSORS" in os.environ:
     ncpus = int(os.environ["NUMBER_OF_PROCESSORS"]);
     if ncpus > 0:
       return ncpus

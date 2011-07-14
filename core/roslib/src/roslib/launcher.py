@@ -95,7 +95,7 @@ def _append_package_paths(manifest_, paths, pkg_dir):
                 paths.append(e.replace('${prefix}', pkg_dir))
     else:
         dirs = [os.path.join(pkg_dir, d) for d in ['src', 'lib']]
-        paths.extend(filter(os.path.isdir, dirs))
+        paths.extend(list(filter(os.path.isdir, dirs))) #py3k
     
 def _generate_python_path(pkg, depends, env=os.environ):
     """
@@ -126,7 +126,7 @@ def _generate_python_path(pkg, depends, env=os.environ):
                 continue 
             try: #add sub-dependencies to paths and depends
                 paths.extend(_generate_python_path(d.package, depends, env))
-            except roslib.packages.InvalidROSPkgException, e:
+            except roslib.packages.InvalidROSPkgException as e:
                 # translate error message to give more context
                 raise roslib.packages.InvalidROSPkgException("While loading package '%s': %s"%(d.package, str(e)))
             except:

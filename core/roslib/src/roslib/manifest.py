@@ -93,7 +93,7 @@ def _manifest_file_by_dir(package_dir, required=True, env=None):
 Package '%(package_dir)s' is improperly configured: no manifest file is present.
 """%locals())
         return p
-    except roslib.packages.InvalidROSPkgException, e:
+    except roslib.packages.InvalidROSPkgException as e:
         if required:
             raise
 

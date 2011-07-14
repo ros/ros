@@ -737,7 +737,7 @@ void TopicManager::publish(const std::string& topic, const boost::function<Seria
       m.type_info = 0;
     }
 
-    if (serialize)
+    if (serialize || p->isLatching())
     {
       SerializedMessage m2 = serfunc();
       m.buf = m2.buf;

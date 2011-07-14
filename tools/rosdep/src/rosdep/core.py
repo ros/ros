@@ -375,7 +375,12 @@ class Rosdep:
                 rosdeps[r].append(p)
         return rosdeps
     
-    def get_packages_and_scripts(self):
+    def get_packages_and_scripts(self, rdlp_cache=None):
+        """
+        @param rdlp_cache: cache of L{RosdepLookupPackage} instances.  Instances must have been created
+        with self.osi.get_name(), self.osi.get_version(), and self.yc.
+        @type  rdlp_cache: {str: RosdepLookupPackage}
+        """
         if len(self.packages) == 0:
             return ([], [])
         native_packages = []
@@ -384,10 +389,17 @@ class Rosdep:
         start_time = time.time()
         if "ROSDEP_DEBUG" in os.environ:
             print "Generating package list and scripts for %d packages.  This may take a few seconds..."%len(self.packages)
+        if rdlp_cache == None:
+            rdlp_cache = {}
+            
         for r, packages in self.get_rosdeps(self.packages).iteritems():
             # use first package for lookup rules
             p = packages[0]
-            rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, self.yc)
+            if p in rdlp_cache:
+                rdlp = rdlp_cache[p]
+            else:
+                rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, self.yc)
+                rdlp_cache[p] = rdlp
             #print "rosdep", r
             specific = rdlp.lookup_rosdep(r)
             #print "specific", specific
@@ -427,8 +439,9 @@ class Rosdep:
         Return a list of failed rosdeps
         """
         failed_rosdeps = []
+        rdlp_cache = {}
         try:
-            native_packages, scripts = self.get_packages_and_scripts()
+            native_packages, scripts = self.get_packages_and_scripts(rdlp_cache=rdlp_cache)
             num_scripts = len(scripts)
             if num_scripts > 0:
                 print "Found %d scripts.  Cannot check scripts for presence. rosdep check will always fail."%num_scripts
@@ -442,7 +455,11 @@ class Rosdep:
         for r, packages in self.get_rosdeps(self.packages).iteritems():
             # use first package for lookup rule
             p = packages[0]
-            rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, self.yc)
+            if p in rdlp_cache:
+                rdlp = rdlp_cache[p]
+            else:
+                rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, self.yc)
+                rdlp_cache[p] = rdlp
             if not self.install_rosdep(r, rdlp, default_yes=False, execute=False, display=display):
                 failed_rosdeps.append(r)
 

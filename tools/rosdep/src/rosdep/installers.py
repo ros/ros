@@ -266,8 +266,17 @@ class AptInstaller(InstallerAPI):
         Given a list of package, return the list of installed packages.
         """
         ret_list = []
+        # this is mainly a hack to support version locking for eigen.
+        # we strip version-locking syntax, e.g. libeigen3-dev=3.0.1-*.
+        # our query does not do the validation on the version itself.
+        version_lock_map = {}
+        for p in pkgs:
+            if '=' in p:
+                version_lock_map[p.split('=')[0]] = p
+            else:
+                version_lock_map[p] = p
         cmd = ['dpkg-query', '-W', '-f=\'${Package} ${Status}\n\'']
-        cmd.extend(pkgs)
+        cmd.extend(version_lock_map.keys())
         pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (std_out, std_err) = pop.communicate()
         std_out = std_out.replace('\'','')
@@ -276,9 +285,7 @@ class AptInstaller(InstallerAPI):
             pkg_row = pkg.split()
             if len(pkg_row) == 4 and (pkg_row[3] =='installed'):
                 ret_list.append( pkg_row[0])
-        return ret_list
-
-
+        return [version_lock_map[r] for r in ret_list]
         
 
 class PipInstaller(InstallerAPI):

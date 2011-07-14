@@ -26,8 +26,7 @@ python-yaml:
       if [ ! -d /usr/lib/python2.5/site-packages/yaml/ ] ; then
         mkdir -p ~/ros/ros-deps
         cd ~/ros/ros-deps
-        wget --tries=10 http://pyyaml.org/download/pyyaml/PyYAML-3.09.tar.gz
-        tar xzf PyYAML-3.09.tar.gz
+        wget --tries=10 http://pyyaml.org/download/pyyaml/PyYAML-3.09.tar.gz tar xzf PyYAML-3.09.tar.gz
         cd PyYAML-3.09
         python setup.py install 
       fi
@@ -265,11 +264,8 @@ automake:
   freebsd: automake14 automake111
 libtool:
   ubuntu:
-    '11.04': libtool libltdl-dev
-    '10.10': libtool libltdl-dev
-    '10.04': libtool libltdl-dev
-    '9.10': libtool libltdl-dev
-    '9.04': libtool libltdl7-dev
+    apt: 
+      packages: [libtool, libltdl-dev]
   debian:
     squeeze: libtool libltdl-dev
     lenny: libtool libltdl3-dev

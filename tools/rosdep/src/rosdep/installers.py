@@ -277,6 +277,7 @@ class AptInstaller(InstallerAPI):
                 version_lock_map[p] = p
         cmd = ['dpkg-query', '-W', '-f=\'${Package} ${Status}\n\'']
         cmd.extend(version_lock_map.keys())
+
         pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (std_out, std_err) = pop.communicate()
         std_out = std_out.replace('\'','')

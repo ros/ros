@@ -6,7 +6,7 @@
   </description>
   <author>Kenneth Conley</author>
   <license>BSD</license>
-  <review status="unreviewed" notes=""/>
+  <review status="API reviewed" notes="relocated from roslib"/>
   <url>http://ros.org/wiki/rosgraph_msgs</url>
 
   <depend package="std_msgs" />

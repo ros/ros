@@ -13,7 +13,7 @@ own fork.
 <url>http://xmlrpcpp.sourceforge.net</url>
 <logo>http://xmlrpcpp.sourceforge.net/xmlrpc.jpg</logo>
 <export>
-  <rosdoc external="http://xmlrpcpp.sourceforge.net"/>
+  <rosdoc external="http://xmlrpcpp.sourceforge.net/doc/hierarchy.html"/>
   <cpp cflags="-I${prefix}/src" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lXmlRpc"/>
 </export>
   <platform os="ubuntu" version="9.04"/>

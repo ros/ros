@@ -1,25 +1,7 @@
 <launch>
   <node pkg="rostopic" type="rostopic" name="rostopic_pub" 
         args="pub input std_msgs/String chatter"/>
-
-  <!-- We really want to run one relay and check that a single message is
-       received when subscribing to it.  But that requires writing another test
-       program.  Instead, we abuse hzerror by creating two relays and giving a huge error bound on 
-       received rate. In this configuration, the test will pass if any
-       message are published, and fail if no messages are published. 
-
-       TDS:  except when it doesn't.  
-  -->
-
   <node pkg="topic_tools" type="relay" name="relay"
-        args="input output"/>
-  <node pkg="topic_tools" type="relay" name="relay2"
-        args="input output"/>
-  <test test-name="relay_latched_hztest_explicit" pkg="rostest" type="hztest">
-    <param name="topic" value="output"/>
-    <param name="hz" value="1"/>
-    <param name="hzerror" value="100000"/>
-    <param name="test_duration" value="5.0" />
-  </test>
-
+        args="input output2"/>
+  <test test-name="relay_latched" pkg="test_topic_tools" type="test_one_message.py" time-limit="10"/>
 </launch>

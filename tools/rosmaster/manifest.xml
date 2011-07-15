@@ -6,7 +6,7 @@
   </description>
   <author>Ken Conley</author>
   <license>BSD</license>
-  <review status="experimental" notes=""/>
+  <review status="doc reviewed" notes="originally part of rospy"/>
   <url>http://ros.org/wiki/rosmaster</url>
 
   <depend package="roslib" />

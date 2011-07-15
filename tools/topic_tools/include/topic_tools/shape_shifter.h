@@ -72,10 +72,12 @@ public:
   std::string const& getMD5Sum()            const;
   std::string const& getMessageDefinition() const;
 
-  void morph(const std::string& md5sum, const std::string& datatype, const std::string& msg_def);
+  void morph(const std::string& md5sum, const std::string& datatype, const std::string& msg_def,
+             const std::string& latching);
 
   // Helper for advertising
-  ros::Publisher advertise(ros::NodeHandle& nh, const std::string& topic, uint32_t queue_size_, bool latch=false, const ros::SubscriberStatusCallback &connect_cb=ros::SubscriberStatusCallback()) const;
+  ros::Publisher advertise(ros::NodeHandle& nh, const std::string& topic, uint32_t queue_size_, bool latch=false, 
+                           const ros::SubscriberStatusCallback &connect_cb=ros::SubscriberStatusCallback()) const;
 
   //! Call to try instantiating as a particular type
   template<class M> 
@@ -95,7 +97,7 @@ public:
 
 private:
 
-  std::string md5, datatype, msg_def;
+  std::string md5, datatype, msg_def, latching;
   bool typed;
 
   uint8_t *msgBuf;
@@ -112,6 +114,7 @@ namespace ros {
 namespace message_traits {
 
 template <> struct IsMessage<topic_tools::ShapeShifter> : TrueType { };
+template <> struct IsMessage<const topic_tools::ShapeShifter> : TrueType { };
 
 template<>
 struct MD5Sum<topic_tools::ShapeShifter>
@@ -171,8 +174,12 @@ struct PreDeserialize<topic_tools::ShapeShifter>
     std::string md5      = (*params.connection_header)["md5sum"];
     std::string datatype = (*params.connection_header)["type"];
     std::string msg_def  = (*params.connection_header)["message_definition"];
+    std::string latching  = (*params.connection_header)["latching"];
 
-    params.message->morph(md5, datatype, msg_def);
+    typedef std::map<std::string, std::string> map_t;
+    boost::shared_ptr<map_t> shmap(new map_t(*params.connection_header));
+    params.message->__connection_header = shmap;
+    params.message->morph(md5, datatype, msg_def, latching);
   }
 };
 
@@ -187,9 +194,12 @@ struct PreDeserialize<topic_tools::ShapeShifter>
 namespace topic_tools
 {
 
+#if 0
+  // 20110714:  vestigial?
 template<class M> 
 boost::shared_ptr<M> ShapeShifter::instantiate() const
 {
+  ROS_WARN(__PRETTY_FUNCTION__);
   if (!typed)
     throw ShapeShifterException("Tried to instantiate message from an untyped shapeshifter.");
   
@@ -201,14 +211,20 @@ boost::shared_ptr<M> ShapeShifter::instantiate() const
   
   boost::shared_ptr<M> p(new M());
 
-  ros::assignSubscriptionConnectionHeader<M>(p.get(), __connection_header);
+  typedef std::map<std::string, std::string> map_t;
+  std::cout << ">>>>>>>>>>>>>>>>>> __connection__header\n";
+  for(map_t::const_iterator b = __connection_header->begin(), e = __connection_header->end();
+      b!=e; ++b)
+    std::cout << ">>>>>>>>>>>>>>>> " << b->first << " => " << b->second << "\n";
+  //ros::assignSubscriptionConnectionHeader<M>(p.get(), __connection_header);
+  p->__connection_header = __connection_header;
 
   ros::serialization::IStream s(msgBuf, msgBufUsed);
   ros::serialization::deserialize(s, *p);
 
   return p;
 }
-
+#endif
 
 template<typename Stream>
 void ShapeShifter::write(Stream& stream) const {

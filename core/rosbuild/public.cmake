@@ -604,7 +604,10 @@ macro(rosbuild_add_gtest exe)
   _rosbuild_add_gtest(${ARGV})
   # Create a legal target name, in case the target name has slashes in it
   string(REPLACE "/" "_" _testname ${exe})
-  add_custom_target(test)
+  # Redeclaration of test target is to workaround bug in 2.4.6
+  if(CMAKE_MINOR_VERSION LESS 6)
+    add_custom_target(test)
+  endif(CMAKE_MINOR_VERSION LESS 6)
   add_dependencies(test test_${_testname})
   # Register check for test output
   _rosbuild_check_rostest_xml_result(${_testname} ${rosbuild_test_results_dir}/${PROJECT_NAME}/TEST-${_testname}.xml)

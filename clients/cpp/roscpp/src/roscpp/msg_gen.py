@@ -594,6 +594,7 @@ def write_traits(s, spec, cpp_name_prefix, datatype = None):
     s.write('namespace message_traits\n{\n')
 
     write_trait_true_class(s, 'IsMessage', cpp_msg_with_alloc)
+    write_trait_true_class(s, 'IsMessage', cpp_msg_with_alloc + " const")
 
     write_trait_char_class(s, 'MD5Sum', cpp_msg_with_alloc, md5sum, True)
     write_trait_char_class(s, 'DataType', cpp_msg_with_alloc, datatype)

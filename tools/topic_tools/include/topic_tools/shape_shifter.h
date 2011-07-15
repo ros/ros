@@ -194,12 +194,12 @@ struct PreDeserialize<topic_tools::ShapeShifter>
 namespace topic_tools
 {
 
-#if 0
-  // 20110714:  vestigial?
+  //
+  //  only used in testing, seemingly
+  //
 template<class M> 
 boost::shared_ptr<M> ShapeShifter::instantiate() const
 {
-  ROS_WARN(__PRETTY_FUNCTION__);
   if (!typed)
     throw ShapeShifterException("Tried to instantiate message from an untyped shapeshifter.");
   
@@ -211,20 +211,13 @@ boost::shared_ptr<M> ShapeShifter::instantiate() const
   
   boost::shared_ptr<M> p(new M());
 
-  typedef std::map<std::string, std::string> map_t;
-  std::cout << ">>>>>>>>>>>>>>>>>> __connection__header\n";
-  for(map_t::const_iterator b = __connection_header->begin(), e = __connection_header->end();
-      b!=e; ++b)
-    std::cout << ">>>>>>>>>>>>>>>> " << b->first << " => " << b->second << "\n";
-  //ros::assignSubscriptionConnectionHeader<M>(p.get(), __connection_header);
-  p->__connection_header = __connection_header;
+  ros::assignSubscriptionConnectionHeader<M>(p.get(), __connection_header);
 
   ros::serialization::IStream s(msgBuf, msgBufUsed);
   ros::serialization::deserialize(s, *p);
 
   return p;
 }
-#endif
 
 template<typename Stream>
 void ShapeShifter::write(Stream& stream) const {

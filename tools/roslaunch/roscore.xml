@@ -6,6 +6,6 @@
   -->
 <launch>
   <param name="rosversion" value="1.5.3" />
-  <param name="rosdistro" value="diamondback" />
+  <param name="rosdistro" value="electric" />
   <node pkg="rosout" type="rosout" name="rosout" respawn="true"/>
 </launch>

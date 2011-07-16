@@ -49,6 +49,7 @@ using namespace topic_tools;
 const static string g_none_topic = "__none";
 
 static ros::NodeHandle *g_node = NULL;
+static bool g_lazy = false;
 static bool g_advertised = false;
 static string g_output_topic;
 static ros::Publisher g_pub;
@@ -56,25 +57,51 @@ static ros::Publisher g_pub_selected;
 
 struct sub_info_t
 {
-  ros::Subscriber sub;
+  std::string topic_name;
+  ros::Subscriber *sub;
   ShapeShifter* msg;
 };
 
+void in_cb(const boost::shared_ptr<ShapeShifter const>& msg, ShapeShifter* s);
+
 static list<struct sub_info_t> g_subs;
 static list<struct sub_info_t>::iterator g_selected = g_subs.end();
+
+void conn_cb(const ros::SingleSubscriberPublisher&)
+{
+  // If we're in lazy subscribe mode, and the first subscriber just
+  // connected, then subscribe
+  if(g_lazy && g_selected != g_subs.end() && !g_selected->sub)
+  {
+    ROS_DEBUG("lazy mode; resubscribing to %s", g_selected->topic_name.c_str());
+    g_selected->sub = new ros::Subscriber(g_node->subscribe<ShapeShifter>(g_selected->topic_name, 10, boost::bind(in_cb, _1, g_selected->msg)));
+  }
+}
 
 bool sel_srv_cb( topic_tools::MuxSelect::Request  &req,
                  topic_tools::MuxSelect::Response &res )
 {
   bool ret = false;
-  if (g_selected != g_subs.end())
-    res.prev_topic = g_selected->sub.getTopic();
+  if (g_selected != g_subs.end()) {
+    res.prev_topic = g_selected->topic_name;
+
+    // Unsubscribe to old topic if lazy
+    if (g_lazy) {
+      ROS_DEBUG("Unsubscribing to %s, lazy", res.prev_topic.c_str());
+      if (g_selected->sub)
+        g_selected->sub->shutdown();
+      delete g_selected->sub;
+      g_selected->sub = NULL;
+    }
+  }
   else
     res.prev_topic = string("");
+
   // see if it's the magical '__none' topic, in which case we open the circuit
   if (req.topic == g_none_topic)
   {
     ROS_INFO("mux selected to no input.");
+
     g_selected = g_subs.end();
     ret = true;
   }
@@ -86,15 +113,19 @@ bool sel_srv_cb( topic_tools::MuxSelect::Request  &req,
 	 it != g_subs.end();
 	 ++it)
     {
-      if (ros::names::resolve(it->sub.getTopic()) == ros::names::resolve(req.topic))
+      if (ros::names::resolve(it->topic_name) == ros::names::resolve(req.topic))
       {
-	g_selected = it;
-	ROS_INFO("mux selected input: [%s]", it->sub.getTopic().c_str());
-	ret = true;
+        g_selected = it;
+        ROS_INFO("mux selected input: [%s]", it->topic_name.c_str());
+        ret = true;
+        
+        if (!g_selected->sub && (!g_advertised || (g_advertised && g_pub.getNumSubscribers()))) {
+          g_selected->sub = new ros::Subscriber(g_node->subscribe<ShapeShifter>(g_selected->topic_name, 10, boost::bind(in_cb, _1, g_selected->msg)));
+        }
       }
     }
   }
-
+  
   if(ret)
   {
     std_msgs::String t;
@@ -119,10 +150,34 @@ void in_cb(const boost::shared_ptr<ShapeShifter const>& msg,
   if (!g_advertised)
   {
     ROS_INFO("advertising");
-    g_pub = msg->advertise(*g_node, g_output_topic, 10);
+    g_pub = msg->advertise(*g_node, g_output_topic, 10, false, conn_cb);
     g_advertised = true;
+    
+    // If lazy, unregister from all but the selected topic
+    if (g_lazy) {
+      for (static list<struct sub_info_t>::iterator it = g_subs.begin(); it != g_subs.end(); ++it) {
+        if (it != g_selected) {
+          ROS_INFO("Unregistering from %s", it->topic_name.c_str());
+          if (it->sub)
+            it->sub->shutdown();
+          delete it->sub;
+          it->sub = NULL;
+        }
+	    	}
+    }
   }
-  if (s == g_selected->msg)
+  
+  if (s != g_selected->msg)
+    return;
+  
+  // If we're in lazy subscribe mode, and nobody's listening, then unsubscribe
+  if (g_lazy && !g_pub.getNumSubscribers() && g_selected != g_subs.end()) {
+    ROS_INFO("lazy mode; unsubscribing");
+    g_selected->sub->shutdown();
+    delete g_selected->sub;
+    g_selected->sub = NULL;
+  }
+  else
     g_pub.publish(msg);
 }
 
@@ -133,7 +188,7 @@ bool list_topic_cb(topic_tools::MuxList::Request& req,
        it != g_subs.end();
        ++it)
   {
-    res.topics.push_back(it->sub.getTopic());
+    res.topics.push_back(it->topic_name);
   }
 
   return true;
@@ -158,19 +213,23 @@ bool add_topic_cb(topic_tools::MuxAdd::Request& req,
        it != g_subs.end();
        ++it)
   {
-    if (ros::names::resolve(it->sub.getTopic()) == ros::names::resolve(req.topic))
+    if (ros::names::resolve(it->topic_name) == ros::names::resolve(req.topic))
     {
       ROS_WARN("tried to add a topic that mux was already listening to: [%s]", 
-	       it->sub.getTopic().c_str());
+	       it->topic_name.c_str());
       return false;
     }
   }
 
   struct sub_info_t sub_info;
   sub_info.msg = new ShapeShifter;
+  sub_info.topic_name = ros::names::resolve(req.topic);
   try
   {
-    sub_info.sub = g_node->subscribe<ShapeShifter>(req.topic, 10, boost::bind(in_cb, _1, sub_info.msg));
+    if (g_lazy)
+      sub_info.sub = NULL;
+    else
+      sub_info.sub = new ros::Subscriber(g_node->subscribe<ShapeShifter>(sub_info.topic_name, 10, boost::bind(in_cb, _1, sub_info.msg)));
   }
   catch(ros::InvalidNameException& e)
   {
@@ -196,15 +255,17 @@ bool del_topic_cb(topic_tools::MuxDelete::Request& req,
        it != g_subs.end();
        ++it)
   {
-    if (ros::names::resolve(it->sub.getTopic()) == ros::names::resolve(req.topic))
+    if (ros::names::resolve(it->topic_name) == ros::names::resolve(req.topic))
     {
       // Can't delete the currently selected input, #2863
       if(it == g_selected)
       {
-	ROS_WARN("tried to delete currently selected topic %s from mux", req.topic.c_str());
-	return false;
+        ROS_WARN("tried to delete currently selected topic %s from mux", req.topic.c_str());
+        return false;
       }
-      it->sub.shutdown();
+      if (it->sub)
+        it->sub->shutdown();
+      delete it->sub;
       delete it->msg;
       g_subs.erase(it);
       ROS_INFO("deleted topic %s from mux", req.topic.c_str());
@@ -238,9 +299,26 @@ int main(int argc, char **argv)
   g_node = &n;
   g_output_topic = args[1];
   // Put our API into the "mux" namespace, which the user should usually remap
-  ros::NodeHandle mux_nh("mux");
+  ros::NodeHandle mux_nh("mux"), pnh("~");
+  pnh.getParam("lazy", g_lazy);
+
   // Latched publisher for selected input topic name
   g_pub_selected = mux_nh.advertise<std_msgs::String>(string("selected"), 1, true);
+
+  for (size_t i = 0; i < topics.size(); i++)
+  {
+    struct sub_info_t sub_info;
+    sub_info.msg = new ShapeShifter;
+    sub_info.topic_name = ros::names::resolve(topics[i]);
+    sub_info.sub = new ros::Subscriber(n.subscribe<ShapeShifter>(sub_info.topic_name, 10, boost::bind(in_cb, _1, sub_info.msg)));
+
+    g_subs.push_back(sub_info);
+  }
+  g_selected = g_subs.begin(); // select first topic to start
+  std_msgs::String t;
+  t.data = g_selected->topic_name;
+  g_pub_selected.publish(t);
+
   // Backward compatibility
   ros::ServiceServer ss = n.advertiseService(g_output_topic + string("_select"), sel_srv_cb_dep);
   // New service
@@ -248,23 +326,14 @@ int main(int argc, char **argv)
   ros::ServiceServer ss_add = mux_nh.advertiseService(string("add"), add_topic_cb);
   ros::ServiceServer ss_list = mux_nh.advertiseService(string("list"), list_topic_cb);
   ros::ServiceServer ss_del = mux_nh.advertiseService(string("delete"), del_topic_cb);
-  for (size_t i = 0; i < topics.size(); i++)
-  {
-    struct sub_info_t sub_info;
-    sub_info.msg = new ShapeShifter;
-    sub_info.sub = n.subscribe<ShapeShifter>(topics[i], 10, boost::bind(in_cb, _1, sub_info.msg));
-    g_subs.push_back(sub_info);
-  }
-  g_selected = g_subs.begin(); // select first topic to start
-  std_msgs::String t;
-  t.data = g_selected->sub.getTopic();
-  g_pub_selected.publish(t);
   ros::spin();
   for (list<struct sub_info_t>::iterator it = g_subs.begin();
        it != g_subs.end();
        ++it)
   {
-    it->sub.shutdown();
+    if (it->sub)
+      it->sub->shutdown();
+    delete it->sub;
     delete it->msg;
   }
 

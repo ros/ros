@@ -43,6 +43,17 @@
 ;; ROSLisp-specific utility code
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define-condition function-timeout (error) ())
+
+(defun with-function-timeout (expires body-fun)
+  "throws function-timeout error when call takes longer than expires arg"
+  (flet ((timeout-fun () (error 'function-timeout)))
+    (let ((timer (sb-ext:make-timer #'timeout-fun)))
+      (sb-ext:schedule-timer timer expires)
+      (unwind-protect
+           (funcall body-fun)
+        (sb-ext:unschedule-timer timer)))))
+
 (defun get-ros-log-location (name)
 
   ;; Tries various possibilities in order of decreasing priority

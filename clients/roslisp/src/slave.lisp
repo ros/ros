@@ -40,6 +40,8 @@
 
 (in-package roslisp)
 
+(defparameter *xmlrpc-timeout* 1.0 "How many seconds to wait until giving up")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Slave API - implements XML-RPC calls to this node from
 ;; other nodes or from the master node.
@@ -187,12 +189,17 @@ Right now, the transport must be TCPROS and the return value is the socket."
 
   (ros-debug (roslisp topic) "~&Subscribing to ~a at ~a" topic uri)
   (unless (hash-table-has-key *subscriptions* topic) (roslisp-error "I'm not subscribed to ~a" topic))
-
-  (dbind (protocol address port) (ros-rpc-call uri "requestTopic" topic (list (list "TCPROS")))
+  (dotimes (repeat 3 (error 'simple-error :format-control "Timeout when
+    subscribing publisher at ~a for topic ~a, check publisher node
+    status. Change *xmlrpc-timeout* to increase wait-time." :format-arguments (list uri topic) ))
+    (handler-case
+        (return
+  (dbind (protocol address port) (with-function-timeout *xmlrpc-timeout* (lambda () (ros-rpc-call uri "requestTopic" topic (list (list "TCPROS")))))
     (if (string= protocol "TCPROS")
 	(setup-tcpros-subscription address port topic)
 	(ros-error (roslisp tcp) "Protocol ~a did not equal TCPROS... skipping connection" protocol))))
-
+  (function-timeout () ;;just retry
+        nil))))
 
 
 

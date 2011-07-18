@@ -237,7 +237,7 @@
         (send-tcpros-header str "error" (msg c))
         (socket-close connection)
         (error c)))))
-  (connect-timeout () ;;just retry
+  (function-timeout () ;;just retry
       nil))) )
 
 
@@ -352,7 +352,7 @@
                (declare (ignore len))
                (deserialize response-type str))))
       (socket-close socket))))
-  (connect-timeout () ;;just retry
+  (function-timeout () ;;just retry
         nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -32,6 +32,22 @@
 #include <vector>
 #include <map>
 
+/*****************************************************************************
+ * Library Export Macros
+ ****************************************************************************/
+
+#include <ros/macros.h>
+
+#ifdef ROS_BUILD_SHARED_LIBS // ros is being built around shared libraries
+  #ifdef roslib_EXPORTS // we are building a shared lib/dll
+    #define ROSLIB_DECL ROS_HELPER_EXPORT
+  #else // we are using shared lib/dll
+    #define ROSLIB_DECL ROS_HELPER_IMPORT
+  #endif
+#else // ros is being built around static libraries
+  #define ROSLIB_DECL
+#endif
+
 namespace ros
 {
 namespace package
@@ -43,32 +59,32 @@ typedef std::map<std::string, std::string> M_string;
 /**
  * \brief Runs a rospack command of the form 'rospack <cmd>', returning the output as a single string
  */
-std::string command(const std::string& cmd);
+ROSLIB_DECL std::string command(const std::string& cmd);
 
 /**
  * \brief Runs a rospack command of the form 'rospack <cmd>', returning the output as a vector of strings, split by newlines
  */
-void command(const std::string& cmd, V_string& output);
+ROSLIB_DECL void command(const std::string& cmd, V_string& output);
 /**
  * \brief Returns the fully-qualified path to a package, or an empty string if the package is not found
  */
-std::string getPath(const std::string& package_name);
+ROSLIB_DECL std::string getPath(const std::string& package_name);
 /**
  * \brief Gets a list of all packages.  Returns false if it could not run the command.
  */
-bool getAll(V_string& packages);
+ROSLIB_DECL bool getAll(V_string& packages);
 
 /**
  * \brief Call the "rospack plugins" command, eg. "rospack plugins --attrib=<attribute> <package>".  Returns a vector of strings which
  * are export values
  */
-void getPlugins(const std::string& package, const std::string& attribute, V_string& plugins);
+ROSLIB_DECL void getPlugins(const std::string& package, const std::string& attribute, V_string& plugins);
 
 /**
  * \brief Call the "rospack plugins" command, eg. "rospack plugins --attrib=<attribute> <package>".  Returns a map of package name to
  * export value.
  */
-void getPlugins(const std::string& package, const std::string& attribute, M_string& plugins);
+ROSLIB_DECL void getPlugins(const std::string& package, const std::string& attribute, M_string& plugins);
 
 } // namespace package
 } // namespace ros

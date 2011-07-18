@@ -36,20 +36,33 @@
 #define ROS_TIME_H_INCLUDED
 
 /*********************************************************************
+ ** Pragmas
+ *********************************************************************/
+
+#ifdef _MSC_VER
+  // Rostime has some magic interface that doesn't directly include
+  // its implementation, this just disables those warnings.
+  #pragma warning(disable: 4244)
+  #pragma warning(disable: 4661)
+#endif
+
+/*********************************************************************
  ** Headers
  *********************************************************************/
 
+#include <ros/platform.h>
 #include <iostream>
 #include <cmath>
 #include <ros/exception.h>
 #include "duration.h"
+#include <boost/math/special_functions/round.hpp>
+#include "rostime_macros.h"
 
 /*********************************************************************
  ** Cross Platform Headers
  *********************************************************************/
 
 #ifdef WIN32
-#include <windows.h>
 #include <sys/timeb.h>
 #else
 #include <sys/time.h>
@@ -71,7 +84,7 @@ namespace ros
   /**
    * @brief Thrown if the ros subsystem hasn't been initialised before use.
    */
-  class TimeNotInitializedException : public Exception
+  class ROSTIME_DECL TimeNotInitializedException : public Exception
   {
   public:
     TimeNotInitializedException()
@@ -85,7 +98,7 @@ namespace ros
    *
    * @sa getWallTime
    */
-  class NoHighPerformanceTimersException : public Exception
+  class ROSTIME_DECL NoHighPerformanceTimersException : public Exception
   {
   public:
     NoHighPerformanceTimersException()
@@ -98,9 +111,9 @@ namespace ros
    ** Functions
    *********************************************************************/
 
-  void normalizeSecNSec(uint64_t& sec, uint64_t& nsec);
-  void normalizeSecNSec(uint32_t& sec, uint32_t& nsec);
-  void normalizeSecNSecUnsigned(int64_t& sec, int64_t& nsec);
+  ROSTIME_DECL void normalizeSecNSec(uint64_t& sec, uint64_t& nsec);
+  ROSTIME_DECL void normalizeSecNSec(uint32_t& sec, uint32_t& nsec);
+  ROSTIME_DECL void normalizeSecNSecUnsigned(int64_t& sec, int64_t& nsec);
 
   /*********************************************************************
    ** Time Classes
@@ -136,7 +149,7 @@ namespace ros
     bool operator<=(const T &rhs) const;
 
     double toSec()  const { return (double)sec + 1e-9*(double)nsec; };
-    T& fromSec(double t) { sec = (uint32_t)floor(t); nsec = (uint32_t)round((t-sec) * 1e9);  return *static_cast<T*>(this);}
+    T& fromSec(double t) { sec = (uint32_t)floor(t); nsec = (uint32_t)boost::math::round((t-sec) * 1e9);  return *static_cast<T*>(this);}
 
     uint64_t toNSec() const {return (uint64_t)sec*1000000000ull + (uint64_t)nsec;  }
     T& fromNSec(uint64_t t);
@@ -152,7 +165,7 @@ namespace ros
    *
    * ros::TimeBase provides most of its functionality.
    */
-  class Time : public TimeBase<Time, Duration>
+  class ROSTIME_DECL Time : public TimeBase<Time, Duration>
   {
   public:
     Time()
@@ -204,7 +217,7 @@ namespace ros
    *
    * ros::TimeBase provides most of its functionality.
    */
-  class WallTime : public TimeBase<WallTime, WallDuration>
+  class ROSTIME_DECL WallTime : public TimeBase<WallTime, WallDuration>
   {
   public:
     WallTime()
@@ -230,8 +243,8 @@ namespace ros
     static bool isSystemTime() { return true; }
   };
 
-  std::ostream &operator <<(std::ostream &os, const Time &rhs);
-  std::ostream &operator <<(std::ostream &os, const WallTime &rhs);
+  ROSTIME_DECL std::ostream &operator <<(std::ostream &os, const Time &rhs);
+  ROSTIME_DECL std::ostream &operator <<(std::ostream &os, const WallTime &rhs);
 }
 
 #endif // ROS_TIME_H

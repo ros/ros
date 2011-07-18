@@ -205,7 +205,11 @@ void ServiceServerLink::onResponseOkAndLength(const ConnectionPtr& conn, const b
 
   {
     boost::mutex::scoped_lock lock(call_queue_mutex_);
-    current_call_->success_ = ok;
+    if ( ok != 0 ) {
+    	current_call_->success_ = true;
+    } else {
+    	current_call_->success_ = false;
+    }
   }
 
   if (len > 0)

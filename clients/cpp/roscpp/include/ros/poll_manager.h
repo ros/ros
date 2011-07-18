@@ -30,7 +30,7 @@
 
 #include "forwards.h"
 #include "poll_set.h"
-
+#include "common.h"
 #include <boost/signals.hpp>
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/thread/thread.hpp>
@@ -43,7 +43,7 @@ typedef boost::shared_ptr<PollManager> PollManagerPtr;
 typedef boost::signal<void(void)> VoidSignal;
 typedef boost::function<void(void)> VoidFunc;
 
-class PollManager
+class ROSCPP_DECL PollManager
 {
 public:
   static const PollManagerPtr& instance();

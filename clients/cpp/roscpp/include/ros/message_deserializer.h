@@ -29,6 +29,8 @@
 #define ROSCPP_MESSAGE_DESERIALIZER_H
 
 #include "forwards.h"
+#include "common.h"
+
 #include <ros/serialized_message.h>
 
 #include <boost/thread/mutex.hpp>
@@ -40,7 +42,7 @@ namespace ros
 class SubscriptionCallbackHelper;
 typedef boost::shared_ptr<SubscriptionCallbackHelper> SubscriptionCallbackHelperPtr;
 
-class MessageDeserializer
+class ROSCPP_DECL MessageDeserializer
 {
 public:
   MessageDeserializer(const SubscriptionCallbackHelperPtr& helper, const SerializedMessage& m, const boost::shared_ptr<M_string>& connection_header);

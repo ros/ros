@@ -35,11 +35,23 @@
 #ifndef ROS_DURATION_H
 #define ROS_DURATION_H
 
+/*********************************************************************
+ ** Pragmas
+ *********************************************************************/
+
+#ifdef _MSC_VER
+  // Rostime has some magic interface that doesn't directly include
+  // its implementation, this just disbales those warnings.
+  #pragma warning(disable: 4244)
+  #pragma warning(disable: 4661)
+#endif
+
 #include <iostream>
 #include <math.h>
 #include <stdexcept>
 #include <climits>
 #include <stdint.h>
+#include "rostime_macros.h"
 
 namespace boost {
   namespace posix_time {
@@ -49,8 +61,8 @@ namespace boost {
 
 namespace ros
 {
-  void normalizeSecNSecSigned(int64_t& sec, int64_t& nsec);
-  void normalizeSecNSecSigned(int32_t& sec, int32_t& nsec);
+ROSTIME_DECL void normalizeSecNSecSigned(int64_t& sec, int64_t& nsec);
+ROSTIME_DECL void normalizeSecNSecSigned(int32_t& sec, int32_t& nsec);
 
 /**
  * \brief Base class for Duration implementations.  Provides storage, common functions and operator overloads.
@@ -86,14 +98,14 @@ public:
   boost::posix_time::time_duration toBoost() const;
 };
 
-struct Rate;
+class Rate;
 
 /**
  * \brief Duration representation for use with the Time class.
  *
  * ros::DurationBase provides most of its functionality.
  */
-class Duration : public DurationBase<Duration>
+class ROSTIME_DECL Duration : public DurationBase<Duration>
 {
 public:
   Duration()
@@ -120,7 +132,7 @@ extern const Duration DURATION_MIN;
  *
  * ros::DurationBase provides most of its functionality.
  */
-class WallDuration : public DurationBase<WallDuration>
+class ROSTIME_DECL WallDuration : public DurationBase<WallDuration>
 {
 public:
   WallDuration()

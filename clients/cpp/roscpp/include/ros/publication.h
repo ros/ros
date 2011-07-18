@@ -29,8 +29,8 @@
 #define ROSCPP_PUBLICATION_H
 
 #include "ros/forwards.h"
-#include "ros/common.h"
 #include "ros/advertise_options.h"
+#include "common.h"
 #include "XmlRpc.h"
 
 #include <boost/thread/mutex.hpp>
@@ -50,7 +50,7 @@ typedef std::vector<SubscriberLinkPtr> V_SubscriberLink;
 /**
  * \brief A Publication manages an advertised topic
  */
-class Publication
+class ROSCPP_DECL Publication
 {
 public:
   Publication(const std::string &name,

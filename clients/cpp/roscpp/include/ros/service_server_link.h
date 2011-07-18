@@ -55,7 +55,7 @@ typedef boost::shared_ptr<Connection> ConnectionPtr;
  * \brief Handles a connection to a service.  If it's a non-persistent client, automatically disconnects
  * when its first service call has finished.
  */
-class ServiceServerLink : public boost::enable_shared_from_this<ServiceServerLink>
+class ROSCPP_DECL ServiceServerLink : public boost::enable_shared_from_this<ServiceServerLink>
 {
 private:
   struct CallInfo

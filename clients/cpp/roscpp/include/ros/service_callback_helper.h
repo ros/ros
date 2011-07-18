@@ -30,6 +30,7 @@
 
 #include "ros/forwards.h"
 #include "ros/common.h"
+#include "ros/message.h"
 #include "ros/message_traits.h"
 #include "ros/service_traits.h"
 #include "ros/serialization.h"
@@ -39,7 +40,7 @@
 
 namespace ros
 {
-struct ServiceCallbackHelperCallParams
+struct ROSCPP_DECL ServiceCallbackHelperCallParams
 {
   SerializedMessage request;
   SerializedMessage response;
@@ -144,7 +145,7 @@ struct ServiceSpec
  * interface.  This is one part of the roscpp API that is \b not fully stable, so overloading this class
  * is not recommended
  */
-class ServiceCallbackHelper
+class ROSCPP_DECL ServiceCallbackHelper
 {
 public:
   virtual ~ServiceCallbackHelper() {}

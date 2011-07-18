@@ -30,6 +30,7 @@
 
 #include <string>
 #include "ros/common.h"
+#include "ros/message.h"
 #include "ros/forwards.h"
 #include "ros/node_handle.h"
 #include "ros/service_traits.h"
@@ -98,7 +99,7 @@ bool call(const std::string& service_name, Service& service)
  * waits until the node is shutdown
  * \return true on success, false otherwise
  */
-bool waitForService(const std::string& service_name, int32_t timeout);
+ROSCPP_DECL bool waitForService(const std::string& service_name, int32_t timeout);
 
 /**
  * \brief Wait for a service to be advertised and available.  Blocks until it is.
@@ -107,7 +108,7 @@ bool waitForService(const std::string& service_name, int32_t timeout);
  * waits until the node is shutdown
  * \return true on success, false otherwise
  */
-bool waitForService(const std::string& service_name, ros::Duration timeout = ros::Duration(-1));
+ROSCPP_DECL bool waitForService(const std::string& service_name, ros::Duration timeout = ros::Duration(-1));
 
 /**
  * \brief Checks if a service is both advertised and available.
@@ -116,7 +117,7 @@ bool waitForService(const std::string& service_name, ros::Duration timeout = ros
  * could not connect to the advertised host)
  * \return true if the service is up and available, false otherwise
  */
-bool exists(const std::string& service_name, bool print_failure_reason);
+ROSCPP_DECL bool exists(const std::string& service_name, bool print_failure_reason);
 
 /** @brief Create a client for a service.
  *

@@ -36,6 +36,7 @@
 #define ROSCPP_ROSOUT_APPENDER_H
 
 #include <ros/message_forward.h>
+#include "common.h"
 
 #include "log4cxx/appenderskeleton.h"
 
@@ -56,7 +57,7 @@ class Publication;
 typedef boost::shared_ptr<Publication> PublicationPtr;
 typedef boost::weak_ptr<Publication> PublicationWPtr;
 
-class ROSOutAppender : public log4cxx::AppenderSkeleton
+class ROSCPP_DECL ROSOutAppender : public log4cxx::AppenderSkeleton
 {
 public:
   ROSOutAppender();
@@ -83,7 +84,8 @@ protected:
   boost::thread publish_thread_;
 };
 
-LOG4CXX_PTR_DEF(ROSOutAppender);
+//LOG4CXX_PTR_DEF(ROSOutAppender);
+typedef log4cxx::helpers::ObjectPtrT<ROSOutAppender> ROSOutAppenderPtr;
 
 } // namespace ros
 

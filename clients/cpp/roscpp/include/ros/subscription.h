@@ -61,7 +61,7 @@ typedef boost::shared_ptr<SubscriptionCallbackHelper> SubscriptionCallbackHelper
 /**
  * \brief Manages a subscription on a single topic.
  */
-class Subscription : public boost::enable_shared_from_this<Subscription>
+class ROSCPP_DECL Subscription : public boost::enable_shared_from_this<Subscription>
 {
 public:
   Subscription(const std::string &name, const std::string& md5sum, const std::string& datatype, const TransportHints& transport_hints);
@@ -120,7 +120,7 @@ public:
 
   // We'll keep a list of these objects, representing in-progress XMLRPC 
   // connections to other nodes.
-  class PendingConnection : public ASyncXMLRPCConnection
+  class ROSCPP_DECL PendingConnection : public ASyncXMLRPCConnection
   {
     public:
       PendingConnection(XmlRpc::XmlRpcClient* client, TransportUDPPtr udp_transport, const SubscriptionWPtr& parent, const std::string& remote_uri)

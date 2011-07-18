@@ -28,6 +28,7 @@
 #ifndef ROSCPP_TIMER_H
 #define ROSCPP_TIMER_H
 
+#include "common.h"
 #include "forwards.h"
 #include "timer_options.h"
 
@@ -42,7 +43,7 @@ namespace ros
  * Timer go out of scope, the callback associated with that handle will stop
  * being called.
  */
-class Timer
+class ROSCPP_DECL Timer
 {
 public:
   Timer() {}

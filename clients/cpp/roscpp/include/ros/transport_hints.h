@@ -28,6 +28,7 @@
 #ifndef ROSCPP_TRANSPORT_HINTS_H
 #define ROSCPP_TRANSPORT_HINTS_H
 
+#include "common.h"
 #include "ros/forwards.h"
 
 #include <boost/lexical_cast.hpp>
@@ -50,7 +51,7 @@ ros::TransportHints()
  * Hints for the transport type are used in the order they are specified, i.e. TransportHints().unreliable().reliable()
  * specifies that you would prefer an unreliable transport, followed by a reliable one.
  */
-class TransportHints
+class ROSCPP_DECL TransportHints
 {
 public:
   /**

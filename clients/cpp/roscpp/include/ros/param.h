@@ -29,6 +29,7 @@
 #define ROSCPP_PARAM_H
 
 #include "forwards.h"
+#include "common.h"
 #include "XmlRpcValue.h"
 
 namespace ros
@@ -46,42 +47,42 @@ namespace param
  * \param v The value to be inserted.
  * \throws InvalidNameException if the key is not a valid graph resource name
  */
-void set(const std::string& key, const XmlRpc::XmlRpcValue& v);
+ROSCPP_DECL void set(const std::string& key, const XmlRpc::XmlRpcValue& v);
 /** \brief Set a string value on the parameter server.
  *
  * \param key The key to be used in the parameter server's dictionary
  * \param s The value to be inserted.
  * \throws InvalidNameException if the key is not a valid graph resource name
  */
-void set(const std::string& key, const std::string& s);
+ROSCPP_DECL void set(const std::string& key, const std::string& s);
 /** \brief Set a string value on the parameter server.
  *
  * \param key The key to be used in the parameter server's dictionary
  * \param s The value to be inserted.
  * \throws InvalidNameException if the key is not a valid graph resource name
  */
-void set(const std::string& key, const char* s);
+ROSCPP_DECL void set(const std::string& key, const char* s);
 /** \brief Set a double value on the parameter server.
  *
  * \param key The key to be used in the parameter server's dictionary
  * \param d The value to be inserted.
  * \throws InvalidNameException if the key is not a valid graph resource name
  */
-void set(const std::string& key, double d);
+ROSCPP_DECL void set(const std::string& key, double d);
 /** \brief Set a integer value on the parameter server.
  *
  * \param key The key to be used in the parameter server's dictionary
  * \param i The value to be inserted.
  * \throws InvalidNameException if the key is not a valid graph resource name
  */
-void set(const std::string& key, int i);
+ROSCPP_DECL void set(const std::string& key, int i);
 /** \brief Set a integer value on the parameter server.
  *
  * \param key The key to be used in the parameter server's dictionary
  * \param b The value to be inserted.
  * \throws InvalidNameException if the key is not a valid graph resource name
  */
-void set(const std::string& key, bool b);
+ROSCPP_DECL void set(const std::string& key, bool b);
 
 /** \brief Get a string value from the parameter server.
  *
@@ -91,7 +92,7 @@ void set(const std::string& key, bool b);
  * \return true if the parameter value was retrieved, false otherwise
  * \throws InvalidNameException if the key is not a valid graph resource name
  */
-bool get(const std::string& key, std::string& s);
+ROSCPP_DECL bool get(const std::string& key, std::string& s);
 /** \brief Get a double value from the parameter server.
  *
  * \param key The key to be used in the parameter server's dictionary
@@ -100,7 +101,7 @@ bool get(const std::string& key, std::string& s);
  * \return true if the parameter value was retrieved, false otherwise
  * \throws InvalidNameException if the key is not a valid graph resource name
  */
-bool get(const std::string& key, double& d);
+ROSCPP_DECL bool get(const std::string& key, double& d);
 /** \brief Get a integer value from the parameter server.
  *
  * \param key The key to be used in the parameter server's dictionary
@@ -109,7 +110,7 @@ bool get(const std::string& key, double& d);
  * \return true if the parameter value was retrieved, false otherwise
  * \throws InvalidNameException if the key is not a valid graph resource name
  */
-bool get(const std::string& key, int& i);
+ROSCPP_DECL bool get(const std::string& key, int& i);
 /** \brief Get a boolean value from the parameter server.
  *
  * \param key The key to be used in the parameter server's dictionary
@@ -118,7 +119,7 @@ bool get(const std::string& key, int& i);
  * \return true if the parameter value was retrieved, false otherwise
  * \throws InvalidNameException if the key is not a valid graph resource name
  */
-bool get(const std::string& key, bool& b);
+ROSCPP_DECL bool get(const std::string& key, bool& b);
 /** \brief Get an arbitrary XML/RPC value from the parameter server.
  *
  * \param key The key to be used in the parameter server's dictionary
@@ -127,7 +128,7 @@ bool get(const std::string& key, bool& b);
  * \return true if the parameter value was retrieved, false otherwise
  * \throws InvalidNameException if the key is not a valid graph resource name
  */
-bool get(const std::string& key, XmlRpc::XmlRpcValue& v);
+ROSCPP_DECL bool get(const std::string& key, XmlRpc::XmlRpcValue& v);
 
 /** \brief Get a string value from the parameter server, with local caching
  *
@@ -142,7 +143,7 @@ bool get(const std::string& key, XmlRpc::XmlRpcValue& v);
  * \return true if the parameter value was retrieved, false otherwise
  * \throws InvalidNameException if the key is not a valid graph resource name
  */
-bool getCached(const std::string& key, std::string& s);
+ROSCPP_DECL bool getCached(const std::string& key, std::string& s);
 /** \brief Get a double value from the parameter server, with local caching
  *
  * This function will cache parameters locally, and subscribe for updates from
@@ -156,7 +157,7 @@ bool getCached(const std::string& key, std::string& s);
  * \return true if the parameter value was retrieved, false otherwise
  * \throws InvalidNameException if the key is not a valid graph resource name
  */
-bool getCached(const std::string& key, double& d);
+ROSCPP_DECL bool getCached(const std::string& key, double& d);
 /** \brief Get a integer value from the parameter server, with local caching
  *
  * This function will cache parameters locally, and subscribe for updates from
@@ -170,7 +171,7 @@ bool getCached(const std::string& key, double& d);
  * \return true if the parameter value was retrieved, false otherwise
  * \throws InvalidNameException if the key is not a valid graph resource name
  */
-bool getCached(const std::string& key, int& i);
+ROSCPP_DECL bool getCached(const std::string& key, int& i);
 /** \brief Get a boolean value from the parameter server, with local caching
  *
  * This function will cache parameters locally, and subscribe for updates from
@@ -184,7 +185,7 @@ bool getCached(const std::string& key, int& i);
  * \return true if the parameter value was retrieved, false otherwise
  * \throws InvalidNameException if the key is not a valid graph resource name
  */
-bool getCached(const std::string& key, bool& b);
+ROSCPP_DECL bool getCached(const std::string& key, bool& b);
 /** \brief Get an arbitrary XML/RPC value from the parameter server, with local caching
  *
  * This function will cache parameters locally, and subscribe for updates from
@@ -198,7 +199,7 @@ bool getCached(const std::string& key, bool& b);
  * \return true if the parameter value was retrieved, false otherwise
  * \throws InvalidNameException if the key is not a valid graph resource name
  */
-bool getCached(const std::string& key, XmlRpc::XmlRpcValue& v);
+ROSCPP_DECL bool getCached(const std::string& key, XmlRpc::XmlRpcValue& v);
 
 /** \brief Check whether a parameter exists on the parameter server.
  *
@@ -207,7 +208,7 @@ bool getCached(const std::string& key, XmlRpc::XmlRpcValue& v);
  * \return true if the parameter exists, false otherwise
  * \throws InvalidNameException if the key is not a valid graph resource name
  */
-bool has(const std::string& key);
+ROSCPP_DECL bool has(const std::string& key);
 /** \brief Delete a parameter from the parameter server.
  *
  * \param key The key to delete.
@@ -215,7 +216,7 @@ bool has(const std::string& key);
  * \return true if the deletion succeeded, false otherwise.
  * \throws InvalidNameException if the key is not a valid graph resource name
  */
-bool del(const std::string& key);
+ROSCPP_DECL bool del(const std::string& key);
 
 /** \brief Search up the tree for a parameter with a given key
  *
@@ -231,7 +232,7 @@ bool del(const std::string& key);
  * \return true if the parameter was found, false otherwise.
  * \throws InvalidNameException if the key is not a valid graph resource name
  */
-bool search(const std::string& ns, const std::string& key, std::string& result);
+ROSCPP_DECL bool search(const std::string& ns, const std::string& key, std::string& result);
 
 /** \brief Search up the tree for a parameter with a given key.  This version defaults to starting in
  * the current node's name
@@ -247,7 +248,7 @@ bool search(const std::string& ns, const std::string& key, std::string& result);
  * \return true if the parameter was found, false otherwise.
  * \throws InvalidNameException if the key is not a valid graph resource name
  */
-bool search(const std::string& key, std::string& result);
+ROSCPP_DECL bool search(const std::string& key, std::string& result);
 
 /** \brief Assign value from parameter server, with default.
  *

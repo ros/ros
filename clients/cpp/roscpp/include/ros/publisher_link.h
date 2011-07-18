@@ -31,7 +31,7 @@
 #include "ros/common.h"
 #include "ros/transport_hints.h"
 #include "ros/header.h"
-
+#include "common.h"
 #include <boost/thread/mutex.hpp>
 #include <boost/shared_array.hpp>
 #include <boost/weak_ptr.hpp>
@@ -53,7 +53,7 @@ typedef boost::shared_ptr<Connection> ConnectionPtr;
  * \brief Handles a connection to a single publisher on a given topic.  Receives messages from a publisher
  * and hands them off to its parent Subscription
  */
-class PublisherLink : public boost::enable_shared_from_this<PublisherLink>
+class ROSCPP_DECL PublisherLink : public boost::enable_shared_from_this<PublisherLink>
 {
 public:
   class Stats

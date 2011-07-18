@@ -40,6 +40,7 @@
 
 #include <boost/thread/recursive_mutex.hpp>
 #include "ros/io.h"
+#include "../common.h"
 
 namespace ros
 {
@@ -52,7 +53,7 @@ class PollSet;
 /**
  * \brief TCPROS transport
  */
-class TransportTCP : public Transport
+class ROSCPP_DECL TransportTCP : public Transport
 {
 public:
   static bool s_use_keepalive_;

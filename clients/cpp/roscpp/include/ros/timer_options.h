@@ -28,6 +28,7 @@
 #ifndef ROSCPP_TIMER_OPTIONS_H
 #define ROSCPP_TIMER_OPTIONS_H
 
+#include "common.h"
 #include "ros/forwards.h"
 
 namespace ros
@@ -36,7 +37,7 @@ namespace ros
 /**
  * \brief Encapsulates all options available for starting a timer
  */
-struct TimerOptions
+struct ROSCPP_DECL TimerOptions
 {
   TimerOptions()
   : period(0.1)

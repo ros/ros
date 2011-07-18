@@ -39,6 +39,7 @@
 
 #include <boost/shared_array.hpp>
 #include <boost/shared_ptr.hpp>
+#include "common.h"
 
 #include <map>
 
@@ -54,7 +55,7 @@ typedef boost::shared_ptr<Transport> TransportPtr;
 /**
  * \brief Provides functionality to parse a connection header and retrieve values from it
  */
-class Header
+class ROSCPP_DECL Header
 {
 public:
   Header();

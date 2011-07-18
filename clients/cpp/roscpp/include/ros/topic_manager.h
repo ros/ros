@@ -60,7 +60,7 @@ typedef boost::shared_ptr<ConnectionManager> ConnectionManagerPtr;
 class SubscriptionCallbackHelper;
 typedef boost::shared_ptr<SubscriptionCallbackHelper> SubscriptionCallbackHelperPtr;
 
-class TopicManager
+class ROSCPP_DECL TopicManager
 {
 public:
   static const TopicManagerPtr& instance();

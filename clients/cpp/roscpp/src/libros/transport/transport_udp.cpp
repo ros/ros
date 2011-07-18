@@ -40,7 +40,6 @@
 #include <boost/bind.hpp>
 
 #include <fcntl.h>
-#include <sys/uio.h>
 
 namespace ros
 {
@@ -324,7 +323,7 @@ int32_t TransportUDP::read(uint8_t* buffer, uint32_t size)
   {
     TransportUDPHeader header;
 
-    ssize_t num_bytes = 0;
+    uint32_t copy_bytes = 0;
     bool from_previous = false;
     if (reorder_bytes_)
     {
@@ -333,26 +332,33 @@ int32_t TransportUDP::read(uint8_t* buffer, uint32_t size)
         from_previous = true;
       }
 
-      num_bytes = std::min(size - bytes_read, reorder_bytes_);
+      copy_bytes = std::min(size - bytes_read, reorder_bytes_);
       header = reorder_header_;
-      memcpy(buffer + bytes_read, reorder_start_, num_bytes);
-      reorder_bytes_ -= num_bytes;
-      reorder_start_ += num_bytes;
+      memcpy(buffer + bytes_read, reorder_start_, copy_bytes);
+      reorder_bytes_ -= copy_bytes;
+      reorder_start_ += copy_bytes;
     }
     else
     {
       if (data_filled_ == 0)
       {
 #if defined(WIN32)
-		WSABUF iov[2];
-		iov[0].buf = reinterpret_cast<char*>(&header);
-		iov[0].len = sizeof(header);
-		iov[1].buf = reinterpret_cast<char*>(data_buffer_);
-		iov[1].len = max_datagram_size_ - sizeof(header);
-	    if (WSARecv(sock_, iov, 2, reinterpret_cast<LPDWORD>(&num_bytes), 0, NULL, NULL) == SOCKET_ERROR) {
-	          num_bytes = -1;
-	    }
+    	SSIZE_T num_bytes = 0;
+        DWORD received_bytes = 0;
+        DWORD flags = 0;
+        WSABUF iov[2];
+        iov[0].buf = reinterpret_cast<char*>(&header);
+        iov[0].len = sizeof(header);
+        iov[1].buf = reinterpret_cast<char*>(data_buffer_);
+        iov[1].len = max_datagram_size_ - sizeof(header);
+		int rc  = WSARecv(sock_, iov, 2, &received_bytes, &flags, NULL, NULL);
+		if ( rc == SOCKET_ERROR) {
+		  num_bytes = -1;
+		} else {
+			num_bytes = received_bytes;
+		}
 #else
+        ssize_t num_bytes;
         struct iovec iov[2];
         iov[0].iov_base = &header;
         iov[0].iov_len = sizeof(header);
@@ -381,14 +387,14 @@ int32_t TransportUDP::read(uint8_t* buffer, uint32_t size)
           close();
           return -1;
         }
-        else if (num_bytes < (ssize_t)sizeof(header))
+        else if (num_bytes < sizeof(header))
         {
           ROS_ERROR("Socket [%d] received short header (%d bytes): %s", sock_, int(num_bytes),  last_socket_error_string());
           close();
           return -1;
         }
 
-        num_bytes -= sizeof(header);
+		num_bytes -= sizeof(header);
         data_filled_ = num_bytes;
         data_start_ = data_buffer_;
       }
@@ -397,18 +403,18 @@ int32_t TransportUDP::read(uint8_t* buffer, uint32_t size)
         from_previous = true;
       }
 
-      num_bytes = std::min(size - bytes_read, data_filled_);
+      copy_bytes = std::min(size - bytes_read, data_filled_);
       // Copy from the data buffer, whether it has data left in it from a previous datagram or
       // was just filled by readv()
-      memcpy(buffer + bytes_read, data_start_, num_bytes);
+      memcpy(buffer + bytes_read, data_start_, copy_bytes);
       data_filled_ = std::max((int64_t)0, (int64_t)data_filled_ - (int64_t)size);
-      data_start_ += num_bytes;
+      data_start_ += copy_bytes;
     }
 
 
     if (from_previous)
     {
-      bytes_read += num_bytes;
+      bytes_read += copy_bytes;
     }
     else
     {
@@ -420,8 +426,8 @@ int32_t TransportUDP::read(uint8_t* buffer, uint32_t size)
           {
             ROS_DEBUG("Received new message [%d:%d], while still working on [%d] (block %d of %d)", header.message_id_, header.block_, current_message_id_, last_block_ + 1, total_blocks_);
             reorder_header_ = header;
-            reorder_bytes_ = num_bytes;
-            memcpy(reorder_buffer_, buffer + bytes_read, num_bytes);
+            reorder_bytes_ = copy_bytes;
+            memcpy(reorder_buffer_, buffer + bytes_read, copy_bytes);
             reorder_start_ = reorder_buffer_;
             current_message_id_ = 0;
             total_blocks_ = 0;
@@ -454,7 +460,7 @@ int32_t TransportUDP::read(uint8_t* buffer, uint32_t size)
           return -1;
       }
 
-      bytes_read += num_bytes;
+      bytes_read += copy_bytes;
 
       if (last_block_ == (total_blocks_ - 1))
       {
@@ -505,15 +511,19 @@ int32_t TransportUDP::write(uint8_t* buffer, uint32_t size)
     ++this_block;
 #if defined(WIN32)
     WSABUF iov[2];
-    iov[0].buf = reinterpret_cast<char*>(&header);
-    iov[0].len = sizeof(header);
-    iov[1].buf = reinterpret_cast<char*>(buffer + bytes_sent);
-    iov[1].len = std::min(max_payload_size, size - bytes_sent);
-    ssize_t num_bytes;
-    if (WSASend(sock_, iov, 2, reinterpret_cast<LPDWORD>(&num_bytes), 0, NULL,
-                NULL) == SOCKET_ERROR) {
-        num_bytes = -1;
-    }
+	DWORD sent_bytes;
+	SSIZE_T num_bytes = 0;
+	DWORD flags = 0;
+	int rc;
+	iov[0].buf = reinterpret_cast<char*>(&header);
+	iov[0].len = sizeof(header);
+	iov[1].buf = reinterpret_cast<char*>(buffer + bytes_sent);
+	iov[1].len = std::min(max_payload_size, size - bytes_sent);
+	rc = WSASend(sock_, iov, 2, &sent_bytes, flags, NULL, NULL);
+	num_bytes = sent_bytes;
+	if (rc == SOCKET_ERROR) {
+	    num_bytes = -1;
+	}
 #else
     struct iovec iov[2];
     iov[0].iov_base = &header;
@@ -525,7 +535,7 @@ int32_t TransportUDP::write(uint8_t* buffer, uint32_t size)
     //usleep(100);
     if (num_bytes < 0)
     {
-      if( last_socket_error_is_would_block() )
+      if( !last_socket_error_is_would_block() ) // Actually EAGAIN or EWOULDBLOCK on posix
       {
         ROSCPP_LOG_DEBUG("writev() failed with error [%s]", last_socket_error_string());
         close();
@@ -536,7 +546,7 @@ int32_t TransportUDP::write(uint8_t* buffer, uint32_t size)
         num_bytes = 0;
       }
     }
-    else if (num_bytes < ssize_t(sizeof(header)))
+    else if (num_bytes < sizeof(header))
     {
       ROSCPP_LOG_DEBUG("Socket [%d] short write (%d bytes), closing", sock_, int(num_bytes));
       close();

@@ -28,6 +28,7 @@
 #ifndef ROSCPP_INTRAPROCESS_SUBSCRIBER_LINK_H
 #define ROSCPP_INTRAPROCESS_SUBSCRIBER_LINK_H
 #include "subscriber_link.h"
+#include "common.h"
 
 #include <boost/thread/recursive_mutex.hpp>
 
@@ -40,7 +41,7 @@ typedef boost::shared_ptr<IntraProcessPublisherLink> IntraProcessPublisherLinkPt
 /**
  * \brief SubscriberLink handles broadcasting messages to a single subscriber on a single topic
  */
-class IntraProcessSubscriberLink : public SubscriberLink
+class ROSCPP_DECL IntraProcessSubscriberLink : public SubscriberLink
 {
 public:
   IntraProcessSubscriberLink(const PublicationPtr& parent);

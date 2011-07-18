@@ -29,6 +29,7 @@
 #define ROSCPP_SUBSCRIBE_OPTIONS_H
 
 #include "ros/forwards.h"
+#include "common.h"
 #include "ros/transport_hints.h"
 #include "ros/message_traits.h"
 #include "subscription_callback_helper.h"
@@ -39,7 +40,7 @@ namespace ros
 /**
  * \brief Encapsulates all options available for creating a Subscriber
  */
-struct SubscribeOptions
+struct ROSCPP_DECL SubscribeOptions
 {
   /**
    *

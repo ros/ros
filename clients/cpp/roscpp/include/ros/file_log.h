@@ -30,6 +30,7 @@
 
 #include "forwards.h"
 #include <ros/console.h>
+#include "common.h"
 
 namespace log4cxx
 {
@@ -55,7 +56,7 @@ namespace ros
 namespace file_log
 {
   // 20110418 TDS: this appears to be used only by rosout.
-  const std::string& getLogDirectory();
+  ROSCPP_DECL const std::string& getLogDirectory();
 }
 
 }

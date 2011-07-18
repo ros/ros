@@ -30,6 +30,7 @@
 
 #include "ros/forwards.h"
 #include "ros/serialization.h"
+#include "common.h"
 
 #include <boost/utility.hpp>
 
@@ -39,7 +40,7 @@ namespace ros
 /**
  * \brief Allows publication of a message to a single subscriber. Only available inside subscriber connection callbacks
  */
-class SingleSubscriberPublisher : public boost::noncopyable
+class ROSCPP_DECL SingleSubscriberPublisher : public boost::noncopyable
 {
 public:
   SingleSubscriberPublisher(const SubscriberLinkPtr& link);

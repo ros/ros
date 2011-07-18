@@ -28,6 +28,7 @@
 #ifndef ROSCPP_WALL_TIMER_H
 #define ROSCPP_WALL_TIMER_H
 
+#include "common.h"
 #include "forwards.h"
 #include "wall_timer_options.h"
 
@@ -42,7 +43,7 @@ namespace ros
  * WallTimer go out of scope, the callback associated with that handle will stop
  * being called.
  */
-class WallTimer
+class ROSCPP_DECL WallTimer
 {
 public:
   WallTimer() {}

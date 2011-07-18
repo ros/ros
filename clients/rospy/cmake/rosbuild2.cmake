@@ -1,5 +1,11 @@
 set(genmsg_py_exe ${rospy_SOURCE_DIR}/scripts/rosbuild2/genmsg_py.py)
 
+find_package(PythonInterp)
+if (NOT PYTHONINTERP_FOUND)
+  message(FATAL_ERROR "could not find python interpreter")
+endif()
+
+
 # Message-generation support.
 macro(genmsg_py TYPE)
   set(_inlist "") # accumulator for __init__.py generation step
@@ -33,8 +39,7 @@ macro(genmsg_py TYPE)
 
     # Add the rule to build the .py from the .msg.
     add_custom_command(OUTPUT ${_output_py} 
-      COMMAND ${ROSBUILD_SUBSHELL}
-      ${genmsg_py_exe} 
+      COMMAND ${ROSBUILD_SUBSHELL} ${PYTHON_EXECUTABLE} ${genmsg_py_exe} 
       ${_input}
       -o ${_outdir}
       -p ${PROJECT_NAME}
@@ -56,7 +61,7 @@ macro(genmsg_py TYPE)
     set(_output_py ${_outdir}/__init__.py)
     add_custom_command(OUTPUT ${_output_py}
       COMMAND 
-      ${ROSBUILD_SUBSHELL} ${genmsg_py_exe} --initpy 
+      ${ROSBUILD_SUBSHELL} ${PYTHON_EXECUTABLE} ${genmsg_py_exe} --initpy 
       -p ${PROJECT_NAME}
       -s ${CMAKE_CURRENT_SOURCE_DIR}/src
       -o ${_outdir}
@@ -98,7 +103,7 @@ macro(gensrv_py TYPE)
 
     # Add the rule to build the .py from the .srv
     add_custom_command(OUTPUT ${_output_py} 
-      COMMAND ${ROSBUILD_SUBSHELL}
+      COMMAND ${ROSBUILD_SUBSHELL} ${PYTHON_EXECUTABLE}
       ${gensrv_py_exe} 
       ${_input}
       -p ${PROJECT_NAME}
@@ -118,7 +123,7 @@ macro(gensrv_py TYPE)
     # generated, so it depends on them.
     set(_output_py ${_outdir}/__init__.py)
     add_custom_command(OUTPUT ${_output_py}
-      COMMAND ${ROSBUILD_SUBSHELL} ${gensrv_py_exe} --initpy 
+      COMMAND ${ROSBUILD_SUBSHELL} ${PYTHON_EXECUTABLE} ${gensrv_py_exe} --initpy
       -p ${PROJECT_NAME}
       -o ${_outdir}
       ${_inlist}

@@ -186,12 +186,12 @@ namespace ros {
 #endif
   }
 
-  Duration::Duration(const Rate& r) 
+  inline Duration::Duration(const Rate& r) 
   {
     fromSec(r.expectedCycleTime().toSec());
   }
 
-  WallDuration::WallDuration(const Rate& r) 
+  inline WallDuration::WallDuration(const Rate& r) 
   {
     fromSec(r.expectedCycleTime().toSec());
   }

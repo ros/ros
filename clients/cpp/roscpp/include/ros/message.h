@@ -28,7 +28,7 @@
 #ifndef ROSCPP_MESSAGE_H
 #define ROSCPP_MESSAGE_H
 
-#warning You shouldn't be using this file
+// #warning You should not be using this file
 
 #include "ros/macros.h"
 #include "ros/assert.h"

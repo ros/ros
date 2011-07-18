@@ -35,6 +35,7 @@
 #include <boost/thread/thread.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
+#include "common.h"
 #include "XmlRpc.h"
 
 #include <ros/time.h>
@@ -56,7 +57,7 @@ XmlRpc::XmlRpcValue responseBool(int code, const std::string& msg, bool response
 class XMLRPCCallWrapper;
 typedef boost::shared_ptr<XMLRPCCallWrapper> XMLRPCCallWrapperPtr;
 
-class ASyncXMLRPCConnection : public boost::enable_shared_from_this<ASyncXMLRPCConnection>
+class ROSCPP_DECL ASyncXMLRPCConnection : public boost::enable_shared_from_this<ASyncXMLRPCConnection>
 {
 public:
   virtual ~ASyncXMLRPCConnection() {}
@@ -69,7 +70,7 @@ public:
 typedef boost::shared_ptr<ASyncXMLRPCConnection> ASyncXMLRPCConnectionPtr;
 typedef std::set<ASyncXMLRPCConnectionPtr> S_ASyncXMLRPCConnection;
 
-class CachedXmlRpcClient
+class ROSCPP_DECL CachedXmlRpcClient
 {
 public:
   CachedXmlRpcClient(XmlRpc::XmlRpcClient *c)
@@ -90,7 +91,7 @@ typedef boost::shared_ptr<XMLRPCManager> XMLRPCManagerPtr;
 
 typedef boost::function<void(XmlRpc::XmlRpcValue&, XmlRpc::XmlRpcValue&)> XMLRPCFunc;
 
-class XMLRPCManager
+class ROSCPP_DECL XMLRPCManager
 {
 public:
   static const XMLRPCManagerPtr& instance();

@@ -29,6 +29,7 @@
 #define ROSCPP_SERVICE_HANDLE_H
 
 #include "ros/forwards.h"
+#include "common.h"
 
 namespace ros
 {
@@ -41,7 +42,7 @@ namespace ros
  * ServiceServer go out of scope, the service associated with it will be unadvertised and the service callback
  * will stop being called.
  */
-class ServiceServer
+class ROSCPP_DECL ServiceServer
 {
 public:
   ServiceServer() {}

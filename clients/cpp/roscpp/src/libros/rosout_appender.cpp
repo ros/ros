@@ -40,6 +40,9 @@
 #include "ros/names.h"
 
 #include <log4cxx/spi/loggingevent.h>
+#ifdef _MSC_VER
+  #include "log4cxx/helpers/transcoder.h" // Have to be able to encode wchar LogStrings on windows.
+#endif
 
 #ifdef WIN32
   #ifdef ERROR
@@ -90,12 +93,23 @@ void ROSOutAppender::append(const log4cxx::spi::LoggingEventPtr& event, log4cxx:
   if (event->getLevel() == log4cxx::Level::getFatal())
   {
     msg->level = rosgraph_msgs::Log::FATAL;
+    #ifdef _MSC_VER
+      LOG4CXX_ENCODE_CHAR(tmpstr, event->getMessage()); // has to handle LogString with wchar types.
+      last_error_ = tmpstr; // tmpstr gets instantiated inside the LOG4CXX_ENCODE_CHAR macro
+    #else
     last_error_ = event->getMessage();
+    #endif
+
   }
   else if (event->getLevel() == log4cxx::Level::getError())
   {
     msg->level = rosgraph_msgs::Log::ERROR;
+    #ifdef _MSC_VER
+      LOG4CXX_ENCODE_CHAR(tmpstr, event->getMessage()); // has to handle LogString with wchar types.
+      last_error_ = tmpstr; // tmpstr gets instantiated inside the LOG4CXX_ENCODE_CHAR macro
+    #else
     last_error_ = event->getMessage();
+    #endif
   }
   else if (event->getLevel() == log4cxx::Level::getWarn())
   {
@@ -111,7 +125,12 @@ void ROSOutAppender::append(const log4cxx::spi::LoggingEventPtr& event, log4cxx:
   }
 
   msg->name = this_node::getName();
+  #ifdef _MSC_VER
+    LOG4CXX_ENCODE_CHAR(tmpstr, event->getMessage()); // has to handle LogString with wchar types.
+    msg->msg = tmpstr; // tmpstr gets instantiated inside the LOG4CXX_ENCODE_CHAR macro
+  #else
   msg->msg = event->getMessage();
+  #endif
 
   const log4cxx::spi::LocationInfo& info = event->getLocationInformation();
   msg->file = info.getFileName();

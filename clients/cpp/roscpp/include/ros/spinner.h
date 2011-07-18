@@ -29,6 +29,7 @@
 #define ROSCPP_SPINNER_H
 
 #include "ros/types.h"
+#include "common.h"
 
 #include <boost/shared_ptr.hpp>
 
@@ -40,7 +41,7 @@ class CallbackQueue;
 /**
  * \brief Abstract interface for classes which spin on a callback queue.
  */
-class Spinner
+class ROSCPP_DECL Spinner
 {
 public:
   virtual ~Spinner() {}
@@ -63,7 +64,7 @@ public:
 /**
  * \brief Spinner which spins in multiple threads.
  */
-class MultiThreadedSpinner : public Spinner
+class ROSCPP_DECL MultiThreadedSpinner : public Spinner
 {
 public:
   /**
@@ -89,7 +90,7 @@ typedef boost::shared_ptr<AsyncSpinnerImpl> AsyncSpinnerImplPtr;
  * AsyncSpinner is reference counted internally, so if you copy one it will continue spinning until all
  * copies have destructed (or stop() has been called on one of them)
  */
-class AsyncSpinner
+class ROSCPP_DECL AsyncSpinner
 {
 public:
   /**

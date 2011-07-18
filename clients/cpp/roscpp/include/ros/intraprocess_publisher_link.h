@@ -29,6 +29,7 @@
 #define ROSCPP_INTRAPROCESS_PUBLISHER_LINK_H
 
 #include "publisher_link.h"
+#include "common.h"
 
 #include <boost/thread/recursive_mutex.hpp>
 
@@ -45,7 +46,7 @@ typedef boost::shared_ptr<IntraProcessSubscriberLink> IntraProcessSubscriberLink
  * \brief Handles a connection to a single publisher on a given topic.  Receives messages from a publisher
  * and hands them off to its parent Subscription
  */
-class IntraProcessPublisherLink : public PublisherLink
+class ROSCPP_DECL IntraProcessPublisherLink : public PublisherLink
 {
 public:
   IntraProcessPublisherLink(const SubscriptionPtr& parent, const std::string& xmlrpc_uri, const TransportHints& transport_hints);

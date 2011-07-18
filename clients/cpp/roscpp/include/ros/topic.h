@@ -35,6 +35,7 @@
 #ifndef ROSCPP_TOPIC_H
 #define ROSCPP_TOPIC_H
 
+#include "common.h"
 #include "node_handle.h"
 #include <boost/shared_ptr.hpp>
 
@@ -46,7 +47,7 @@ namespace topic
 /**
  * \brief Internal method, do not use
  */
-void waitForMessageImpl(SubscribeOptions& ops, const boost::function<bool(void)>& ready_pred, NodeHandle& nh, ros::Duration timeout);
+ROSCPP_DECL void waitForMessageImpl(SubscribeOptions& ops, const boost::function<bool(void)>& ready_pred, NodeHandle& nh, ros::Duration timeout);
 
 template<class M>
 class SubscribeHelper

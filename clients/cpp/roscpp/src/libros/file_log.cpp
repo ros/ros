@@ -36,6 +36,14 @@
 
 #include <boost/filesystem.hpp>
 
+#ifdef _MSC_VER
+  #ifdef snprintf
+    #undef snprintf
+  #endif
+  #define snprintf _snprintf_s
+#endif
+
+
 namespace fs = boost::filesystem;
 
 namespace ros
@@ -69,24 +77,21 @@ void init(const M_string& remappings)
       // Setup the logfile appender
       // Can't do this in rosconsole because the node name is not known
       pid_t pid = getpid();
-      char* ros_log_env = getenv("ROS_LOG_DIR");
-      if (ros_log_env)
+      std::string ros_log_env;
+      if ( get_environment_variable(ros_log_env, "ROS_LOG_DIR"))
       {
         log_file_name = ros_log_env + std::string("/");
       }
       else
       {
-        ros_log_env = getenv("ROS_HOME");
-
-        if (ros_log_env)
+        if ( get_environment_variable(ros_log_env, "ROS_HOME"))
         {
           log_file_name = ros_log_env + std::string("/log/");
         }
         else
         {
           // Not cross-platform?
-          ros_log_env = getenv("HOME");
-          if (ros_log_env)
+          if( get_environment_variable(ros_log_env, "HOME") )
           {
             std::string dotros = ros_log_env + std::string("/.ros/");
             fs::create_directory(dotros);

@@ -27,6 +27,7 @@
 
 #ifndef ROSCPP_TRANSPORT_SUBSCRIBER_LINK_H
 #define ROSCPP_TRANSPORT_SUBSCRIBER_LINK_H
+#include "common.h"
 #include "subscriber_link.h"
 
 #include <boost/signals/connection.hpp>
@@ -37,7 +38,7 @@ namespace ros
 /**
  * \brief SubscriberLink handles broadcasting messages to a single subscriber on a single topic
  */
-class TransportSubscriberLink : public SubscriberLink
+class ROSCPP_DECL TransportSubscriberLink : public SubscriberLink
 {
 public:
   TransportSubscriberLink();

@@ -30,6 +30,7 @@
 
 #include "forwards.h"
 #include "XmlRpcValue.h"
+#include "common.h"
 
 namespace ros
 {
@@ -50,22 +51,22 @@ namespace master
  *
  * @return true if call succeeds, false otherwise.
  */
-bool execute(const std::string& method, const XmlRpc::XmlRpcValue& request, XmlRpc::XmlRpcValue& response, XmlRpc::XmlRpcValue& payload, bool wait_for_master);
+ROSCPP_DECL bool execute(const std::string& method, const XmlRpc::XmlRpcValue& request, XmlRpc::XmlRpcValue& response, XmlRpc::XmlRpcValue& payload, bool wait_for_master);
 
 /** @brief Get the hostname where the master runs.
  *
  * @return The master's hostname, as a string
  */
-const std::string& getHost();
+ROSCPP_DECL const std::string& getHost();
 /** @brief Get the port where the master runs.
  *
  * @return The master's port.
  */
-uint32_t getPort();
+ROSCPP_DECL uint32_t getPort();
 /**
  * \brief Get the full URI to the master (eg. http://host:port/)
  */
-const std::string& getURI();
+ROSCPP_DECL const std::string& getURI();
 
 /** @brief Check whether the master is up
  *
@@ -76,12 +77,12 @@ const std::string& getURI();
  *
  * @returns true if the master is available, false otherwise.
  */
-bool check();
+ROSCPP_DECL bool check();
 
 /**
  * \brief Contains information retrieved from the master about a topic
  */
-struct TopicInfo
+struct ROSCPP_DECL TopicInfo
 {
   TopicInfo() {}
   TopicInfo(const std::string& _name, const std::string& _datatype /*, const std::string& _md5sum*/)
@@ -109,18 +110,18 @@ typedef std::vector<TopicInfo> V_TopicInfo;
  *
  * @return true on success, false otherwise (topics not filled in)
  */
-bool getTopics(V_TopicInfo& topics);
+ROSCPP_DECL bool getTopics(V_TopicInfo& topics);
 
 /**
  * \brief Retreives the currently-known list of nodes from the master
  */
-bool getNodes(V_string& nodes);
+ROSCPP_DECL bool getNodes(V_string& nodes);
 
 /**
  * @brief Set the max time this node should spend looping trying to connect to the master
  * @param The timeout.  A negative value means infinite
  */
-void setRetryTimeout(ros::WallDuration timeout);
+ROSCPP_DECL void setRetryTimeout(ros::WallDuration timeout);
 
 } // namespace master
 

@@ -37,6 +37,7 @@
 
 #include <vector>
 #include "io.h"
+#include "common.h"
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
 #include <boost/thread/mutex.hpp>
@@ -53,7 +54,7 @@ typedef boost::shared_ptr<Transport> TransportPtr;
  * PollSet provides thread-safe ways of adding and deleting sockets, as well as adding
  * and deleting events.
  */
-class PollSet
+class ROSCPP_DECL PollSet
 {
 public:
   PollSet();

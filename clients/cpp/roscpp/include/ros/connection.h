@@ -36,6 +36,7 @@
 #define ROSCPP_CONNECTION_H
 
 #include "ros/header.h"
+#include "common.h"
 
 #include <boost/signals.hpp>
 #include <boost/function.hpp>
@@ -65,7 +66,7 @@ typedef boost::function<bool(const ConnectionPtr&, const Header&)> HeaderReceive
  * Connection provides automatic header negotiation, as well as easy ways of reading and writing
  * arbitrary amounts of data without having to set up your own state machines.
  */
-class Connection : public boost::enable_shared_from_this<Connection>
+class ROSCPP_DECL Connection : public boost::enable_shared_from_this<Connection>
 {
 public:
   enum DropReason

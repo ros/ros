@@ -358,7 +358,7 @@ void TimerManager<T, D, E>::remove(int32_t handle)
 }
 
 template<class T, class D, class E>
-void TimerManager<T, D, E>::schedule(const TimerManager<T, D, E>::TimerInfoPtr& info)
+void TimerManager<T, D, E>::schedule(const TimerInfoPtr& info)
 {
   {
     boost::mutex::scoped_lock lock(waiting_mutex_);
@@ -381,7 +381,7 @@ void TimerManager<T, D, E>::schedule(const TimerManager<T, D, E>::TimerInfoPtr& 
 }
 
 template<class T, class D, class E>
-void TimerManager<T, D, E>::updateNext(const TimerManager<T, D, E>::TimerInfoPtr& info, const T& current_time)
+void TimerManager<T, D, E>::updateNext(const TimerInfoPtr& info, const T& current_time)
 {
   if (info->oneshot)
   {

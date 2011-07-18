@@ -29,6 +29,7 @@
 #define ROSCPP_SERVICE_CLIENT_OPTIONS_H
 
 #include "ros/forwards.h"
+#include "common.h"
 #include "ros/service_traits.h"
 
 namespace ros
@@ -37,7 +38,7 @@ namespace ros
 /**
  * \brief Encapsulates all options available for creating a ServiceClient
  */
-struct ServiceClientOptions
+struct ROSCPP_DECL ServiceClientOptions
 {
   ServiceClientOptions()
   {

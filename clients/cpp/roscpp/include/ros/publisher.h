@@ -30,6 +30,7 @@
 
 #include "ros/forwards.h"
 #include "ros/common.h"
+#include "ros/message.h"
 #include "ros/serialization.h"
 #include <boost/bind.hpp>
 
@@ -44,7 +45,7 @@ namespace ros
  * Publisher go out of scope, any subscriber status callbacks associated with that handle will stop
  * being called.  Once all Publishers for a given topic go out of scope the topic will be unadvertised.
  */
-class Publisher
+class ROSCPP_DECL Publisher
 {
 public:
   Publisher() {}
@@ -164,7 +165,7 @@ private:
   void publish(const boost::function<SerializedMessage(void)>& serfunc, SerializedMessage& m) const;
   void incrementSequence() const;
 
-  class Impl
+  class ROSCPP_DECL Impl
   {
   public:
     Impl();

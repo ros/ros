@@ -63,6 +63,10 @@
 
 #include <cstdlib>
 
+#ifdef _MSC_VER
+  #include "log4cxx/helpers/transcoder.h" // Have to be able to encode wchar LogStrings on windows.
+#endif
+
 namespace ros
 {
 
@@ -177,11 +181,21 @@ bool getLoggers(roscpp::GetLoggers::Request&, roscpp::GetLoggers::Response& resp
   for (; it != end; ++it)
   {
     roscpp::Logger logger;
+    #ifdef _MSC_VER
+      LOG4CXX_ENCODE_CHAR(tmp_name_str, (*it)->getName()); // has to handle LogString with wchar types.
+      logger.name = tmp_name_str; // tmpstr gets instantiated inside the LOG4CXX_ENCODE_CHAR macro
+    #else
     logger.name = (*it)->getName();
+    #endif
     const log4cxx::LevelPtr& level = (*it)->getEffectiveLevel();
     if (level)
     {
+	  #ifdef _MSC_VER
+	    LOG4CXX_ENCODE_CHAR(tmp_level_str, level->toString()); // has to handle LogString with wchar types.
+	    logger.level = tmp_level_str;   // tmpstr gets instantiated inside the LOG4CXX_ENCODE_CHAR macro
+	  #else
       logger.level = level->toString();
+      #endif
     }
     resp.loggers.push_back(logger);
   }
@@ -285,12 +299,12 @@ void start()
   g_ok = true;
 
   bool enable_debug = false;
-  const char* enable_debug_env = getenv("ROSCPP_ENABLE_DEBUG");
-  if (enable_debug_env)
+  std::string enable_debug_env;
+  if ( get_environment_variable(enable_debug_env,"ROSCPP_ENABLE_DEBUG") )
   {
     try
     {
-      enable_debug = boost::lexical_cast<bool>(enable_debug_env);
+      enable_debug = boost::lexical_cast<bool>(enable_debug_env.c_str());
     }
     catch (boost::bad_lexical_cast&)
     {

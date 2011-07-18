@@ -30,6 +30,7 @@
 
 #include <string>
 #include <vector>
+#include "macros.h"
 
 namespace ros
 {
@@ -39,13 +40,13 @@ namespace debug
 typedef std::vector<void*> V_void;
 typedef std::vector<std::string> V_string;
 
-std::string getBacktrace();
-std::string backtraceToString(const V_void& addresses);
-void getBacktrace(V_void& addresses);
-void translateAddresses(const V_void& addresses, V_string& lines);
-void demangleBacktrace(const V_string& names, V_string& demangled);
-std::string demangleBacktrace(const V_string& names);
-std::string demangleName(const std::string& name);
+CPP_COMMON_DECL std::string getBacktrace();
+CPP_COMMON_DECL std::string backtraceToString(const V_void& addresses);
+CPP_COMMON_DECL void getBacktrace(V_void& addresses);
+CPP_COMMON_DECL void translateAddresses(const V_void& addresses, V_string& lines);
+CPP_COMMON_DECL void demangleBacktrace(const V_string& names, V_string& demangled);
+CPP_COMMON_DECL std::string demangleBacktrace(const V_string& names);
+CPP_COMMON_DECL std::string demangleName(const std::string& name);
 }
 
 }

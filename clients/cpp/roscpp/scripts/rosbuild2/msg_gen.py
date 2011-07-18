@@ -143,12 +143,14 @@ def write_generic_includes(s):
     """
     s.write('#include <string>\n')
     s.write('#include <vector>\n')
+    s.write('#include <map>\n')
     s.write('#include <ostream>\n')
     s.write('#include "ros/serialization.h"\n')
     s.write('#include "ros/builtin_message_traits.h"\n')
     s.write('#include "ros/message_operations.h"\n')
-    s.write('#include "ros/message.h"\n')
     s.write('#include "ros/time.h"\n\n')
+    s.write('#include "ros/macros.h"\n\n')
+    s.write('#include "ros/assert.h"\n\n')
     
 def write_includes(s, spec):
     """
@@ -200,6 +202,8 @@ def write_struct(s, spec, cpp_name_prefix, extra_deprecated_traits = {}):
     (cpp_msg_unqualified, cpp_msg_with_alloc, cpp_msg_base) = cpp_message_declarations(cpp_name_prefix, msg)
     s.write('  typedef boost::shared_ptr<%s> Ptr;\n'%(cpp_msg_with_alloc))
     s.write('  typedef boost::shared_ptr<%s const> ConstPtr;\n'%(cpp_msg_with_alloc))
+    s.write('  boost::shared_ptr<std::map<std::string, std::string> > __connection_header;\n')
+
     s.write('}; // struct %s\n'%(msg))
     
     s.write('typedef %s_<std::allocator<void> > %s;\n\n'%(cpp_msg_base, msg))
@@ -586,12 +590,17 @@ def write_traits(s, spec, cpp_name_prefix, datatype = None):
     (cpp_msg_unqualified, cpp_msg_with_alloc, _) = cpp_message_declarations(cpp_name_prefix, spec.short_name)
     s.write('namespace ros\n{\n')
     s.write('namespace message_traits\n{\n')
+
+    write_trait_true_class(s, 'IsMessage', cpp_msg_with_alloc)
+    write_trait_true_class(s, 'IsMessage', cpp_msg_with_alloc + " const")
+
     write_trait_char_class(s, 'MD5Sum', cpp_msg_with_alloc, md5sum, True)
     write_trait_char_class(s, 'DataType', cpp_msg_with_alloc, datatype)
     write_trait_char_class(s, 'Definition', cpp_msg_with_alloc, full_text)
     
     if (spec.has_header()):
         write_trait_true_class(s, 'HasHeader', cpp_msg_with_alloc)
+        write_trait_true_class(s, 'HasHeader', ' const' + cpp_msg_with_alloc)
         
     if (is_fixed_length(spec)):
         write_trait_true_class(s, 'IsFixedSize', cpp_msg_with_alloc)

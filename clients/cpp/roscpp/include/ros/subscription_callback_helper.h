@@ -30,6 +30,7 @@
 
 #include <typeinfo>
 
+#include "common.h"
 #include "ros/forwards.h"
 #include "ros/parameter_adapter.h"
 #include "ros/message_traits.h"
@@ -92,7 +93,7 @@ struct SubscriptionCallbackHelperDeserializeParams
   boost::shared_ptr<M_string> connection_header;
 };
 
-struct SubscriptionCallbackHelperCallParams
+struct ROSCPP_DECL SubscriptionCallbackHelperCallParams
 {
   MessageEvent<void const> event;
 };
@@ -102,7 +103,7 @@ struct SubscriptionCallbackHelperCallParams
  * interface.  This is one part of the roscpp API that is \b not fully stable, so overloading this class
  * is not recommended.
  */
-class SubscriptionCallbackHelper
+class ROSCPP_DECL SubscriptionCallbackHelper
 {
 public:
   virtual ~SubscriptionCallbackHelper() {}

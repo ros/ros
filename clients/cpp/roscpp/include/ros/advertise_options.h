@@ -30,6 +30,7 @@
 
 #include "ros/forwards.h"
 #include "ros/message_traits.h"
+#include "common.h"
 
 namespace ros
 {
@@ -37,7 +38,7 @@ namespace ros
 /**
  * \brief Encapsulates all options available for creating a Publisher
  */
-struct AdvertiseOptions
+struct ROSCPP_DECL AdvertiseOptions
 {
   AdvertiseOptions()
   : callback_queue(0)

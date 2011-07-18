@@ -32,6 +32,7 @@
 #include "ros/service_callback_helper.h"
 #include "ros/service_traits.h"
 #include "ros/message_traits.h"
+#include "common.h"
 
 namespace ros
 {
@@ -39,7 +40,7 @@ namespace ros
 /**
  * \brief Encapsulates all options available for creating a ServiceServer
  */
-struct AdvertiseServiceOptions
+struct ROSCPP_DECL AdvertiseServiceOptions
 {
   AdvertiseServiceOptions()
   : callback_queue(0)

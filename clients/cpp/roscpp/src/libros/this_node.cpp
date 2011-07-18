@@ -31,6 +31,13 @@
 #include "ros/topic_manager.h"
 #include "ros/init.h"
 
+#ifdef _MSC_VER
+  #ifdef snprintf
+    #undef snprintf
+  #endif
+  #define snprintf _snprintf_s
+#endif
+
 namespace ros
 {
 
@@ -67,10 +74,19 @@ void getSubscribedTopics(V_string& topics)
 
 void init(const std::string& name, const M_string& remappings, uint32_t options)
 {
-  char *ns_env = getenv("ROS_NAMESPACE");
+  char *ns_env = NULL;
+#ifdef _MSC_VER
+  _dupenv_s(&ns_env, NULL, "ROS_NAMESPACE");
+#else
+  ns_env = getenv("ROS_NAMESPACE");
+#endif
+
   if (ns_env)
   {
     g_namespace = ns_env;
+#ifdef _MSC_VER
+  	free(ns_env);
+#endif
   }
 
   g_name = name;

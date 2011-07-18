@@ -1,5 +1,11 @@
 set(genmsg_cpp_exe ${roscpp_SOURCE_DIR}/scripts/rosbuild2/genmsg_cpp.py)
 
+find_package(PythonInterp)
+if (NOT PYTHONINTERP_FOUND)
+  message(FATAL_ERROR "could not find python interpreter")
+endif()
+
+
 # Message-generation support.
 macro(genmsg_cpp TYPE)
 
@@ -31,8 +37,8 @@ macro(genmsg_cpp TYPE)
     # Add the rule to build the .h the .msg
     add_custom_command(
       OUTPUT ${_output_cpp} 
-      COMMAND ${ROSBUILD_SUBSHELL} 
-      ${genmsg_cpp_exe} 
+      COMMAND ${ROSBUILD_SUBSHELL}
+      ${PYTHON_EXECUTABLE} ${genmsg_cpp_exe}
       ${_input}
       -p ${PROJECT_NAME}
       -o ${_outdir}
@@ -45,7 +51,7 @@ macro(genmsg_cpp TYPE)
 endmacro(genmsg_cpp)
 
 
-set(gensrv_cpp_exe 
+set(gensrv_cpp_exe
   ${CMAKE_SOURCE_DIR}/ros_comm/clients/cpp/roscpp/scripts/rosbuild2/gensrv_cpp.py)
 # Service-generation support.
 macro(gensrv_cpp TYPE)
@@ -79,7 +85,7 @@ macro(gensrv_cpp TYPE)
     add_custom_command(
       OUTPUT ${_output_cpp} 
       COMMAND ${ROSBUILD_SUBSHELL} 
-      ${gensrv_cpp_exe} 
+      ${PYTHON_EXECUTABLE} ${gensrv_cpp_exe} 
       ${_input}
       -p ${PROJECT_NAME}
       -o ${_outdir}

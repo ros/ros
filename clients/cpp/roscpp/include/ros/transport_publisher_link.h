@@ -28,6 +28,7 @@
 #ifndef ROSCPP_TRANSPORT_PUBLISHER_LINK_H
 #define ROSCPP_TRANSPORT_PUBLISHER_LINK_H
 
+#include "common.h"
 #include "publisher_link.h"
 #include "connection.h"
 
@@ -47,7 +48,7 @@ class WallTimerEvent;
  * \brief Handles a connection to a single publisher on a given topic.  Receives messages from a publisher
  * and hands them off to its parent Subscription
  */
-class TransportPublisherLink : public PublisherLink
+class ROSCPP_DECL TransportPublisherLink : public PublisherLink
 {
 public:
   TransportPublisherLink(const SubscriptionPtr& parent, const std::string& xmlrpc_uri, const TransportHints& transport_hints);

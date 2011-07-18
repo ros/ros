@@ -37,6 +37,7 @@
 
 #include "ros/callback_queue_interface.h"
 #include "ros/time.h"
+#include "common.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/mutex.hpp>
@@ -53,7 +54,7 @@ namespace ros
 /**
  * \brief This is the default implementation of the ros::CallbackQueueInterface
  */
-class CallbackQueue : public CallbackQueueInterface
+class ROSCPP_DECL CallbackQueue : public CallbackQueueInterface
 {
 public:
   CallbackQueue(bool enabled = true);

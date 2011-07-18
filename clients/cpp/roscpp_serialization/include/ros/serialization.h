@@ -28,6 +28,8 @@
 #ifndef ROSCPP_SERIALIZATION_H
 #define ROSCPP_SERIALIZATION_H
 
+#include "roscpp_serialization_macros.h"
+
 #include <ros/types.h>
 #include <ros/time.h>
 
@@ -35,7 +37,6 @@
 #include "ros/message_traits.h"
 #include "ros/builtin_message_traits.h"
 #include "ros/exception.h"
-#include "ros/macros.h"
 
 #include <vector>
 
@@ -95,7 +96,7 @@ namespace serialization
 namespace mt = message_traits;
 namespace mpl = boost::mpl;
 
-class StreamOverrunException : public ros::Exception
+class ROSCPP_SERIALIZATION_DECL StreamOverrunException : public ros::Exception
 {
 public:
   StreamOverrunException(const std::string& what)
@@ -103,7 +104,7 @@ public:
   {}
 };
 
-void throwStreamOverrun();
+ROSCPP_SERIALIZATION_DECL void throwStreamOverrun();
 
 /**
  * \brief Templated serialization class.  Default implementation provides backwards compatibility with
@@ -655,7 +656,7 @@ typedef stream_types::StreamType StreamType;
 /**
  * \brief Stream base-class, provides common functionality for IStream and OStream
  */
-struct Stream
+struct ROSCPP_SERIALIZATION_DECL Stream
 {
   /*
    * \brief Returns a pointer to the current position of the stream
@@ -698,7 +699,7 @@ private:
 /**
  * \brief Input stream
  */
-struct IStream : public Stream
+struct ROSCPP_SERIALIZATION_DECL IStream : public Stream
 {
   static const StreamType stream_type = stream_types::Input;
 
@@ -726,7 +727,7 @@ struct IStream : public Stream
 /**
  * \brief Output stream
  */
-struct OStream : public Stream
+struct ROSCPP_SERIALIZATION_DECL OStream : public Stream
 {
   static const StreamType stream_type = stream_types::Output;
 
@@ -758,7 +759,7 @@ struct OStream : public Stream
  * LStream is not what you would normally think of as a stream, but it is used in order to support
  * allinone serializers.
  */
-struct LStream
+struct ROSCPP_SERIALIZATION_DECL LStream
 {
   static const StreamType stream_type = stream_types::Length;
 

@@ -51,7 +51,7 @@ typedef boost::shared_ptr<XMLRPCManager> XMLRPCManagerPtr;
 class ConnectionManager;
 typedef boost::shared_ptr<ConnectionManager> ConnectionManagerPtr;
 
-class ServiceManager
+class ROSCPP_DECL ServiceManager
 {
 public:
   static const ServiceManagerPtr& instance();

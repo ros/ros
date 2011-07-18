@@ -49,7 +49,7 @@ typedef boost::shared_ptr<Connection> ConnectionPtr;
 /**
  * \brief Handles a connection to a single incoming service client.
  */
-class ServiceClientLink : public boost::enable_shared_from_this<ServiceClientLink>
+class ROSCPP_DECL ServiceClientLink : public boost::enable_shared_from_this<ServiceClientLink>
 {
 public:
   ServiceClientLink();

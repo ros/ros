@@ -59,8 +59,7 @@ PollSet::PollSet()
 
 PollSet::~PollSet()
 {
-  ::close(signal_pipe_[0]);
-  ::close(signal_pipe_[1]);
+  close_signal_pair(signal_pipe_);
 }
 
 bool PollSet::addSocket(int fd, const SocketUpdateFunc& update_func, const TransportPtr& transport)
@@ -165,7 +164,7 @@ void PollSet::signal()
   if (lock.owns_lock())
   {
     char b = 0;
-    if (write(signal_pipe_[1], &b, 1) < 0)
+    if (write_signal(signal_pipe_[1], &b, 1) < 0)
     {
       // do nothing... this prevents warnings on gcc 4.3
     }
@@ -280,7 +279,7 @@ void PollSet::onLocalPipeEvents(int events)
   if(events & POLLIN)
   {
     char b;
-    while(read(signal_pipe_[0], &b, 1) > 0)
+    while(read_signal(signal_pipe_[0], &b, 1) > 0)
     {
       //do nothing keep draining
     };

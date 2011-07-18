@@ -36,7 +36,7 @@
 #define ROSCPP_CALLBACK_QUEUE_INTERFACE_H
 
 #include <boost/shared_ptr.hpp>
-
+#include "common.h"
 #include "ros/types.h"
 
 namespace ros
@@ -45,7 +45,7 @@ namespace ros
 /**
  * \brief Abstract interface for items which can be added to a CallbackQueueInterface
  */
-class CallbackInterface
+class ROSCPP_DECL CallbackInterface
 {
 public:
   /**

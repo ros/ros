@@ -27,6 +27,7 @@
 
 #include "forwards.h"
 #include "connection.h"
+#include "common.h"
 
 #include <boost/thread/mutex.hpp>
 #include <boost/signals/connection.hpp>
@@ -40,7 +41,7 @@ typedef boost::shared_ptr<PollManager> PollManagerPtr;
 class ConnectionManager;
 typedef boost::shared_ptr<ConnectionManager> ConnectionManagerPtr;
 
-class ConnectionManager
+class ROSCPP_DECL ConnectionManager
 {
 public:
   static const ConnectionManagerPtr& instance();

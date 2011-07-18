@@ -29,6 +29,7 @@
 #define ROSCPP_NETWORK_H
 
 #include "forwards.h"
+#include "common.h"
 
 namespace ros
 {
@@ -39,9 +40,9 @@ namespace ros
 namespace network
 {
 
-bool splitURI(const std::string& uri, std::string& host, uint32_t& port);
-const std::string& getHost();
-uint16_t getTCPROSPort();
+ROSCPP_DECL bool splitURI(const std::string& uri, std::string& host, uint32_t& port);
+ROSCPP_DECL const std::string& getHost();
+ROSCPP_DECL uint16_t getTCPROSPort();
 
 } // namespace network
 

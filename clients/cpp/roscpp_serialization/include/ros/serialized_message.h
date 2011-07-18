@@ -28,7 +28,7 @@
 #ifndef ROSLIB_SERIALIZED_MESSAGE_H
 #define ROSLIB_SERIALIZED_MESSAGE_H
 
-#include "ros/types.h"
+#include "roscpp_serialization_macros.h"
 
 #include <boost/shared_array.hpp>
 #include <boost/shared_ptr.hpp>
@@ -36,7 +36,7 @@
 namespace ros
 {
 
-class SerializedMessage
+class ROSCPP_SERIALIZATION_DECL SerializedMessage
 {
 public:
   boost::shared_array<uint8_t> buf;

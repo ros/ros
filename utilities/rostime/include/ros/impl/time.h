@@ -39,6 +39,7 @@
 ** Headers
 *********************************************************************/
 
+#include <ros/platform.h>
 #include <iostream>
 #include <cmath>
 #include <ros/exception.h>
@@ -50,7 +51,6 @@
 *********************************************************************/
 
 #ifdef WIN32
-  #include <windows.h>
   #include <sys/timeb.h>
 #else
   #include <sys/time.h>

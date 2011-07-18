@@ -37,6 +37,7 @@
 
 #include "ros/forwards.h"
 #include "ros/spinner.h"
+#include "common.h"
 
 namespace ros
 {
@@ -79,7 +80,7 @@ typedef init_options::InitOption InitOption;
  * \throws InvalidNodeNameException If the name passed in is not a valid "base" name
  *
  */
-void init(int &argc, char **argv, const std::string& name, uint32_t options = 0);
+ROSCPP_DECL void init(int &argc, char **argv, const std::string& name, uint32_t options = 0);
 
 /**
  * \brief alternate ROS initialization function.
@@ -89,7 +90,7 @@ void init(int &argc, char **argv, const std::string& name, uint32_t options = 0)
  * \param options [optional] Options to start the node with (a set of bit flags from \ref ros::init_options)
  * \throws InvalidNodeNameException If the name passed in is not a valid "base" name
  */
-void init(const M_string& remappings, const std::string& name, uint32_t options = 0);
+ROSCPP_DECL void init(const M_string& remappings, const std::string& name, uint32_t options = 0);
 
 /**
  * \brief alternate ROS initialization function.
@@ -99,16 +100,16 @@ void init(const M_string& remappings, const std::string& name, uint32_t options 
  * \param options [optional] Options to start the node with (a set of bit flags from \ref ros::init_options)
  * \throws InvalidNodeNameException If the name passed in is not a valid "base" name
  */
-void init(const VP_string& remapping_args, const std::string& name, uint32_t options = 0);
+ROSCPP_DECL void init(const VP_string& remapping_args, const std::string& name, uint32_t options = 0);
 
 /**
  * \brief Returns whether or not ros::init() has been called
  */
-bool isInitialized();
+ROSCPP_DECL bool isInitialized();
 /**
  * \brief Returns whether or not ros::shutdown() has been (or is being) called
  */
-bool isShuttingDown();
+ROSCPP_DECL bool isShuttingDown();
 
 /** \brief Enter simple event loop
  *
@@ -120,7 +121,7 @@ bool isShuttingDown();
  * custom queues.
  *
  */
-void spin();
+ROSCPP_DECL void spin();
 
 /** \brief Enter simple event loop
  *
@@ -134,7 +135,7 @@ void spin();
  * \param spinner a spinner to use to call callbacks.  Two default implementations are available,
  * SingleThreadedSpinner and MultiThreadedSpinner
  */
-void spin(Spinner& spinner);
+ROSCPP_DECL void spin(Spinner& spinner);
 /**
  * \brief Process a single round of callbacks.
  *
@@ -143,12 +144,12 @@ void spin(Spinner& spinner);
  * global CallbackQueue.  It will not process any callbacks that have been assigned to
  * custom queues.
  */
-void spinOnce();
+ROSCPP_DECL void spinOnce();
 
 /**
  * \brief Wait for this node to be shutdown, whether through Ctrl-C, ros::shutdown(), or similar.
  */
-void waitForShutdown();
+ROSCPP_DECL void waitForShutdown();
 
 /** \brief Check whether it's time to exit.
  *
@@ -156,21 +157,21 @@ void waitForShutdown();
  *
  * \return true if we're still OK, false if it's time to exit
  */
-bool ok();
+ROSCPP_DECL bool ok();
 /**
  * \brief Disconnects everything and unregisters from the master.  It is generally not
  * necessary to call this function, as the node will automatically shutdown when all
  * NodeHandles destruct.  However, if you want to break out of a spin() loop explicitly,
  * this function allows that.
  */
-void shutdown();
+ROSCPP_DECL void shutdown();
 
 /**
  * \brief Request that the node shut itself down from within a ROS thread
  *
  * This method signals a ROS thread to call shutdown().
  */
-void requestShutdown();
+ROSCPP_DECL void requestShutdown();
 
 /**
  * \brief Actually starts the internals of the node (spins up threads, starts the network polling and xmlrpc loops,
@@ -180,11 +181,11 @@ void requestShutdown();
  * the node has not already been started.  If you would like to prevent the automatic shutdown caused by the last
  * NodeHandle going out of scope, call this before any NodeHandle has been created (e.g. immediately after init())
  */
-void start();
+ROSCPP_DECL void start();
 /**
  * \brief Returns whether or not the node has been started through ros::start()
  */
-bool isStarted();
+ROSCPP_DECL bool isStarted();
 
 /**
  * \brief Returns a pointer to the global default callback queue.
@@ -192,7 +193,7 @@ bool isStarted();
  * This is the queue that all callbacks get added to unless a different one is specified, either in the NodeHandle
  * or in the individual NodeHandle::subscribe()/NodeHandle::advertise()/etc. functions.
  */
-CallbackQueue* getGlobalCallbackQueue();
+ROSCPP_DECL CallbackQueue* getGlobalCallbackQueue();
 
 /**
  * \brief returns a vector of program arguments that do not include any ROS remapping arguments.  Useful if you need
@@ -202,7 +203,7 @@ CallbackQueue* getGlobalCallbackQueue();
  * \param argv the command-line arguments
  * \param [out] args_out Output args, stripped of any ROS args
  */
-void removeROSArgs(int argc, const char* const* argv, V_string& args_out);
+ROSCPP_DECL void removeROSArgs(int argc, const char* const* argv, V_string& args_out);
 
 }
 

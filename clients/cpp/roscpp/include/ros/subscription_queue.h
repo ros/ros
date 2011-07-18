@@ -29,7 +29,7 @@
 #define ROSCPP_SUBSCRIPTION_QUEUE_H
 
 #include "forwards.h"
-
+#include "common.h"
 #include "message_event.h"
 #include "callback_queue_interface.h"
 
@@ -47,7 +47,7 @@ typedef boost::shared_ptr<MessageDeserializer> MessageDeserializerPtr;
 class SubscriptionCallbackHelper;
 typedef boost::shared_ptr<SubscriptionCallbackHelper> SubscriptionCallbackHelperPtr;
 
-class SubscriptionQueue : public CallbackInterface, public boost::enable_shared_from_this<SubscriptionQueue>
+class ROSCPP_DECL SubscriptionQueue : public CallbackInterface, public boost::enable_shared_from_this<SubscriptionQueue>
 {
 private:
   struct Item

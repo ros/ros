@@ -86,20 +86,17 @@ static bool isPrivateIP(const char *ip)
 
 std::string determineHost()
 {
+  std::string ip_env;
   // First, did the user set ROS_HOSTNAME?
-  char *ip_env = getenv("ROS_HOSTNAME");
-  if (ip_env)
-  {
-    ROSCPP_LOG_DEBUG( "determineIP: using value of ROS_HOSTNAME:%s:", ip_env);
-    return std::string(ip_env);
+  if ( get_environment_variable(ip_env, "ROS_HOSTNAME")) {
+    ROSCPP_LOG_DEBUG( "determineIP: using value of ROS_HOSTNAME:%s:", ip_env.c_str());
+    return ip_env;
   }
 
   // Second, did the user set ROS_IP?
-  ip_env = getenv("ROS_IP");
-  if (ip_env)
-  {
-    ROSCPP_LOG_DEBUG( "determineIP: using value of ROS_IP:%s:", ip_env);
-    return std::string(ip_env);
+  if ( get_environment_variable(ip_env, "ROS_IP")) {
+    ROSCPP_LOG_DEBUG( "determineIP: using value of ROS_IP:%s:", ip_env.c_str());
+    return ip_env;
   }
 
   // Third, try the hostname

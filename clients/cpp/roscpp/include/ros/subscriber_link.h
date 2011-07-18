@@ -47,7 +47,7 @@ typedef boost::weak_ptr<Publication> PublicationWPtr;
 class Connection;
 typedef boost::shared_ptr<Connection> ConnectionPtr;
 
-class SubscriberLink : public boost::enable_shared_from_this<SubscriberLink>
+class ROSCPP_DECL SubscriberLink : public boost::enable_shared_from_this<SubscriberLink>
 {
 public:
   class Stats

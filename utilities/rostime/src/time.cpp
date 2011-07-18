@@ -31,6 +31,11 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
+#ifdef _MSC_VER
+  #ifndef NOMINMAX
+    #define NOMINMAX
+  #endif
+#endif
 
 #include "ros/time.h"
 #include "ros/impl/time.h"
@@ -112,8 +117,8 @@ namespace ros
     // problems in Windows Vista, and this API is by far the most accurate that
     // I know of in Windows, so I'll use it here despite all these caveats
     static LARGE_INTEGER cpu_freq, init_cpu_time;
-    uint32_t start_sec = 0;
-    uint32_t start_nsec = 0;
+    static uint32_t start_sec = 0;
+    static uint32_t start_nsec = 0;
     if ( ( start_sec == 0 ) && ( start_nsec == 0 ) )
       {
         QueryPerformanceFrequency(&cpu_freq);
@@ -145,7 +150,7 @@ namespace ros
     // also, think about clock wraparound. seems extremely unlikey, but possible
     double d_delta_cpu_time = delta_cpu_time.QuadPart / (double) cpu_freq.QuadPart;
     uint32_t delta_sec = (uint32_t) floor(d_delta_cpu_time);
-    uint32_t delta_nsec = (uint32_t) round((d_delta_cpu_time-delta_sec) * 1e9);
+    uint32_t delta_nsec = (uint32_t) boost::math::round((d_delta_cpu_time-delta_sec) * 1e9);
 
     int64_t sec_sum  = (int64_t)start_sec  + (int64_t)delta_sec;
     int64_t nsec_sum = (int64_t)start_nsec + (int64_t)delta_nsec;
@@ -166,8 +171,8 @@ namespace ros
     HANDLE timer = NULL;
     LARGE_INTEGER sleepTime;
     sleepTime.QuadPart = -
-      static_cast<uint64_t>(sec)*10000000LL -
-      static_cast<uint64_t>(nsec) / 100LL;
+      static_cast<int64_t>(sec)*10000000LL -
+      static_cast<int64_t>(nsec) / 100LL;
 
     timer = CreateWaitableTimer(NULL, TRUE, NULL);
     if (timer == NULL)

@@ -29,7 +29,7 @@
 #define ROSCPP_SERVICE_PUBLICATION_H
 
 #include "ros/service_callback_helper.h"
-
+#include "common.h"
 #include "XmlRpc.h"
 
 #include <boost/thread/mutex.hpp>
@@ -58,7 +58,7 @@ class Message;
  * ServicePublication manages all incoming service requests.  If its thread pool size is not 0, it will queue the requests
  * into a number of threads, calling the callback from within those threads.  Otherwise it immediately calls the callback
  */
-class ServicePublication : public boost::enable_shared_from_this<ServicePublication>
+class ROSCPP_DECL ServicePublication : public boost::enable_shared_from_this<ServicePublication>
 {
 public:
   ServicePublication(const std::string& name, const std::string &md5sum, const std::string& data_type, const std::string& request_data_type,

@@ -34,14 +34,15 @@
 /*****************************************************************************
 ** Ifdefs
 *****************************************************************************/
-#ifndef ROSCPP_POLL_H_
-#define ROSCPP_POLL_H_
+#ifndef ROSCPP_IO_H_
+#define ROSCPP_IO_H_
 
 /*****************************************************************************
 ** Includes
 *****************************************************************************/
 
 #include <string>
+#include "common.h"
 
 #ifdef WIN32
 	#include <winsock2.h> // For struct timeval
@@ -129,6 +130,9 @@ namespace ros {
   } socket_pollfd;
 
   typedef unsigned long int nfds_t;
+  #ifdef _MSC_VER
+    typedef int pid_t; /* return type for windows' _getpid */
+  #endif
 #else
   typedef int socket_fd_t;
   typedef int signal_fd_t;
@@ -139,15 +143,67 @@ namespace ros {
 ** Functions
 *****************************************************************************/
 
-int last_socket_error();
-const char* last_socket_error_string();
-bool last_socket_error_is_would_block();
-int poll_sockets(socket_pollfd *fds, nfds_t nfds, int timeout);
-int set_non_blocking(socket_fd_t &socket);
-int close_socket(socket_fd_t &socket);
-int create_signal_pair(signal_fd_t signal_pair[2]);
+ROSCPP_DECL int last_socket_error();
+ROSCPP_DECL const char* last_socket_error_string();
+ROSCPP_DECL bool last_socket_error_is_would_block();
+ROSCPP_DECL int poll_sockets(socket_pollfd *fds, nfds_t nfds, int timeout);
+ROSCPP_DECL int set_non_blocking(socket_fd_t &socket);
+ROSCPP_DECL int close_socket(socket_fd_t &socket);
+ROSCPP_DECL int create_signal_pair(signal_fd_t signal_pair[2]);
+
+/*****************************************************************************
+** Inlines - almost direct api replacements, should stay fast.
+*****************************************************************************/
+
+/**
+ * Closes the signal pair - on windows we're using sockets (because windows
+ * select() function cant handle pipes). On linux, we're just using the pipes.
+ * @param signal_pair : the signal pair type.
+ */
+inline void close_signal_pair(signal_fd_t signal_pair[2]) {
+#ifdef WIN32 // use a socket pair
+	::closesocket(signal_pair[0]);
+	::closesocket(signal_pair[1]);
+#else // use a socket pair on mingw or pipe pair on linux, either way, close works
+	::close(signal_pair[0]);
+	::close(signal_pair[1]);
+#endif
+}
+
+/**
+ * Write to a signal_fd_t device. On windows we're using sockets (because windows
+ * select() function cant handle pipes) so we have to use socket functions.
+ * On linux, we're just using the pipes.
+ */
+#ifdef _MSC_VER
+	inline int write_signal(const signal_fd_t &signal, const char *buffer, const unsigned int &nbyte) {
+		return ::send(signal, buffer, nbyte, 0);
+//		return write(signal, buffer, nbyte);
+	}
+#else
+	inline ssize_t write_signal(const signal_fd_t &signal, const void *buffer, const size_t &nbyte) {
+		return write(signal, buffer, nbyte);
+	}
+#endif
+
+
+/**
+ * Read from a signal_fd_t device. On windows we're using sockets (because windows
+ * select() function cant handle pipes) so we have to use socket functions.
+ * On linux, we're just using the pipes.
+ */
+#ifdef _MSC_VER
+	inline int read_signal(const signal_fd_t &signal, char *buffer, const unsigned int &nbyte) {
+		return ::recv(signal, buffer, nbyte, 0);
+//		return _read(signal, buffer, nbyte);
+	}
+#else
+	inline ssize_t read_signal(const signal_fd_t &signal, void *buffer, const size_t &nbyte) {
+		return read(signal, buffer, nbyte);
+	}
+#endif
 
 } // namespace ros
 
-#endif /* ROSCPP_POLL_H_ */
+#endif /* ROSCPP_IO_H_ */
 

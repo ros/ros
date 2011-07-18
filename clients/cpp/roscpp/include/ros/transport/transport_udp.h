@@ -40,6 +40,7 @@
 
 #include <boost/thread/mutex.hpp>
 #include "ros/io.h"
+#include "../common.h"
 
 namespace ros
 {
@@ -63,7 +64,7 @@ typedef struct TransportUDPHeader {
 /**
  * \brief UDPROS transport
  */
-class TransportUDP : public Transport
+class ROSCPP_DECL TransportUDP : public Transport
 {
 public:
   enum Flags

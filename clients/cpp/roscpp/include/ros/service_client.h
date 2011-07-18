@@ -39,7 +39,7 @@ namespace ros
 /**
  * @brief Provides a handle-based interface to service client connections
  */
-class ServiceClient
+class ROSCPP_DECL ServiceClient
 {
 public:
   ServiceClient() {}

@@ -32,20 +32,47 @@
 #include <vector>
 #include <map>
 
-/*****************************************************************************
- * Library Export Macros
- ****************************************************************************/
+#if defined(__GNUC__)
+#  define ROS_DEPRECATED __attribute__((deprecated))
+#  define ROS_FORCE_INLINE __attribute__((always_inline))
+#elif defined(MSVC)
+#  define ROS_DEPRECATED
+#  define ROS_FORCE_INLINE __forceinline
+#else
+#  define ROS_DEPRECATED
+#  define ROS_FORCE_INLINE inline
+#endif
 
-#include <ros/macros.h>
+/*
+  Windows import/export and gnu http://gcc.gnu.org/wiki/Visibility
+  macros.
+ */
+
+#if defined(_MSC_VER)
+#  define ROS_HELPER_IMPORT __declspec(dllimport)
+#  define ROS_HELPER_EXPORT __declspec(dllexport)
+#elif __GNUC__ >= 4
+#  define ROS_HELPER_IMPORT __attribute__ ((visibility("default")))
+#  define ROS_HELPER_EXPORT __attribute__ ((visibility("default")))
+#else
+#  define ROS_HELPER_IMPORT
+#  define ROS_HELPER_EXPORT
+#endif
+
+// Ignore warnings about import/exports when deriving from std classes.
+#ifdef _MSC_VER
+#  pragma warning(disable: 4251)
+#  pragma warning(disable: 4275)
+#endif
 
 #ifdef ROS_BUILD_SHARED_LIBS // ros is being built around shared libraries
-  #ifdef roslib_EXPORTS // we are building a shared lib/dll
-    #define ROSLIB_DECL ROS_HELPER_EXPORT
-  #else // we are using shared lib/dll
-    #define ROSLIB_DECL ROS_HELPER_IMPORT
-  #endif
+#  ifdef roslib_EXPORTS // we are building a shared lib/dll
+#    define ROSLIB_DECL ROS_HELPER_EXPORT
+#  else // we are using shared lib/dll
+#    define ROSLIB_DECL ROS_HELPER_IMPORT
+#  endif
 #else // ros is being built around static libraries
-  #define ROSLIB_DECL
+#  define ROSLIB_DECL
 #endif
 
 namespace ros

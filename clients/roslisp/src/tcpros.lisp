@@ -306,14 +306,20 @@
 
 
 
-
+(define-condition service-error (simple-error) ())
 
 (defun handle-single-service-request (stream request-class-name callback)
   ;; Read length
   (dotimes (i 4)
     (read-byte stream))
+  (flet ((write-service-error (msg)
+           (assert (stringp msg))
+           (write-byte 0 stream)
+           (serialize-string msg stream)
+           (finish-output stream)))
   (let ((msg (deserialize request-class-name stream)))
     (ros-debug (roslisp service tcp) "Deserialized service request of type ~a" request-class-name)
+      (handler-case
     (let ((response (funcall callback msg)))
       (ros-debug (roslisp service tcp) "Callback returned")
       (write-byte 1 stream)
@@ -322,7 +328,19 @@
       (serialize response stream)
       (ros-debug (roslisp service tcp) "Wrote response; flushing stream.")
       (finish-output stream)
-      (ros-debug (roslisp service tcp) "Finished handling service request"))))
+            (ros-debug (roslisp service tcp) "Finished handling service request"))
+        (service-error (e)
+          (let ((msg (apply #'format nil
+                            (simple-condition-format-control e)
+                            (simple-condition-format-arguments e))))
+            (ros-debug (roslisp service tcp) "Service-error during request ~a:~% ~a" e msg)
+            (write-service-error
+             (concatenate 'string "service cannot process request: " msg))))
+        (error (e)
+          (let ((msg (format nil "~a" e)))
+            (ros-error (roslisp service tcp) "Error processing request ~a:~% ~a" e msg)
+            (write-service-error
+             (concatenate 'string "error processing request: " msg))))))))
 
 
 (defun tcpros-call-service (hostname port service-name req response-type)
@@ -347,7 +365,15 @@
            (tcpros-write req str)
            (let ((ok-byte (read-byte str)))
              (unless (eq ok-byte 1)
-               (roslisp-error "service-call to ~a:~a with request ~a failed" hostname port req))
+               (let (message )
+                 (handler-case
+                     (setf message (deserialize-string str))
+                   (error nil))
+                 (when (null message)
+                   (setf message ""))
+                 (unless (string= message "")
+                   (setf message (concatenate 'string " with message: " message)))
+                 (roslisp-error "service-call to ~a:~a with request ~a failed~a" hostname port req message)))
              (let ((len (deserialize-int str)))
                (declare (ignore len))
                (deserialize response-type str))))

@@ -86,6 +86,7 @@
    :register-service
    :register-service-fn
 
+   :service-error
    :def-service-callback
    :call-service
    :wait-for-service

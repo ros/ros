@@ -47,7 +47,10 @@
 (defun fully-qualified-name (name)
   "Do the translation from a client-code-specified name to a fully qualified one.  Handles already-fully-qualified names, tilde for private namespace, unqualified names, and remapped names."
   (let ((global-name (compute-global-name *namespace* *ros-node-name* name)))
-    (gethash global-name *remapped-names* global-name)))
+    (if *remapped-names*
+        (gethash global-name *remapped-names* global-name)
+        global-name
+        )))
   
 (defun compute-global-name (ns node-global-name name)
   (case (char name 0)

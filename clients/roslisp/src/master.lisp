@@ -64,7 +64,7 @@
     (dbind (code msg vals)
 	(xml-rpc-call 
 	 (apply #'encode-xml-rpc-call name 
-		*ros-node-name*
+		(or *ros-node-name* "uninitialized-roslisp-node")
 		args) 
 	 :host address :port port)
       (when (<= code 0) (cerror "Ignore and continue" 'ros-rpc-error

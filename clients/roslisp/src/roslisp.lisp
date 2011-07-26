@@ -91,7 +91,6 @@
    :wait-for-service
    :def-service-call
 
-   :publish-on-topic
    :publish
    :publish-msg
 

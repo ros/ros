@@ -129,6 +129,8 @@ class SourceInstaller(InstallerAPI):
 
 
         if not contents: # try the backup url
+            if not self.alt_url:
+                raise rosdep.core.RosdepException("Failed to load a rdmanifest from %s, and no alternate URI given"%(self.url))
             try:
                 contents = fetch_file(self.alt_url, self.md5sum)
             except rosdep.core.RosdepException, ex:
@@ -186,7 +188,7 @@ class SourceInstaller(InstallerAPI):
                     if self.tarball_md5sum != hash2:
                         raise rosdep.core.RosdepException("md5sum check on %s and %s failed.  Expected %s got %s and %s"%(self.tarball, self.alternate_tarball, self.tarball_md5sum, hash1, hash2))
                 else:
-                    raise rosdep.core.RosdepException("md5sum check on %sfailed.  Expected %s got %s "%(self.tarball, self.tarball_md5sum, hash1))
+                    raise rosdep.core.RosdepException("md5sum check on %s failed.  Expected %s got %s "%(self.tarball, self.tarball_md5sum, hash1))
             
         else:
             if "ROSDEP_DEBUG" in os.environ:

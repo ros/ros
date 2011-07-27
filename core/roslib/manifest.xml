@@ -26,6 +26,7 @@
   <platform os="macports" version="macports"/>
   <rosbuild2> 
     <depend package="rospack"/>
+    <depend package="cpp_common"/>
     <export>
       <include_dir>${roslib_SOURCE_DIR}/include</include_dir>
       <lib>roslib</lib>

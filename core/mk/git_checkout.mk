@@ -13,7 +13,7 @@ $(GIT_DIR):
 	cd $(GIT_DIR) && git checkout $(GIT_REVISION)
 	touch rospack_nosubdirs
 
-patched: $(GIT_PATCH) Makefile
+patched: $(GIT_DIR) $(GIT_PATCH) Makefile
 	cd $(GIT_DIR) && git reset --hard
 ifneq ($(strip $(GIT_PATCH)),)
 	$(foreach PATCH, $(GIT_PATCH), patch -d $(GIT_DIR) -p1 < $(PATCH) && ) echo patched

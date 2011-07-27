@@ -159,6 +159,7 @@
 
 (defvar *ros-node-name* nil "String holding node global name")
 (defvar *node-status* :shutdown)
+(defvar *event-loop-thread* nil "Handle to thread for killing")
 (defvar *master-uri* nil "URI of ROS master")
 (defvar *default-master-uri* nil "Default master URI.  Is nil (intended for convenience during interactive use).")
 (defvar *xml-server* nil "String holding name of XML-RPC server (needed by s-xml-rpc")

@@ -59,8 +59,7 @@ CMD-LINE-ARGS is the list of command line arguments (defaults to argv minus its 
   (assert (not pub-port-supp) nil "start-ros-node no longer accepts the pub-server-port argument")
   (unless (eq *node-status* :shutdown)
     (warn "Before starting node, node-status equalled ~a instead of :shutdown.  Shutting the previous node invocation down now." *node-status*)
-    (shutdown-ros-node)
-    (sleep 3))
+    (shutdown-ros-node))
   
   (when anonymous
     (mvbind (success s ms) (sb-unix:unix-gettimeofday)
@@ -110,6 +109,7 @@ CMD-LINE-ARGS is the list of command line arguments (defaults to argv minus its 
 
     ;; Spawn a thread that will start up the listeners, then run the event loop
     (with-recursive-lock (*ros-lock*)
+      (setf *event-loop-thread*
       (sb-thread:make-thread 
        #'(lambda ()
 
@@ -144,7 +144,7 @@ CMD-LINE-ARGS is the list of command line arguments (defaults to argv minus its 
 
            ;; Finally, start the serve-event loop
            (event-loop))
-       :name "ROSLisp event loop")
+       :name "ROSLisp event loop"))
 
       ;; There's no race condition - if this test and the following advertise call all happen before the event-loop starts,
       ;; things will just queue up
@@ -234,6 +234,20 @@ Assuming spin is not true, this call will return the return value of the final s
       ;; Unset variables that will be used upon next startup
       (setq *ros-log-location* nil)
 
+      ;; wait nicely for end of event loop, which was notified by setting *node-status* to shutdown
+      (dotimes (wait-it 6)
+        (when (sb-thread:thread-alive-p *event-loop-thread*)
+          (sleep 0.5)))
+      (when (sb-thread:thread-alive-p *event-loop-thread*)
+        ;; try killing event-loop thread (may take time)
+        (sb-thread:terminate-thread *event-loop-thread*)
+        (dotimes (wait-it 6)
+          (when (sb-thread:thread-alive-p *event-loop-thread*)
+            (sleep 0.5))))
+      (when (sb-thread:thread-alive-p *event-loop-thread*)
+        (error "Event-loop thread cannot be terminated"))
+      (setf *event-loop-thread* nil)
+      
       (ros-info (roslisp top) "Shutdown complete")
       (close *ros-log-stream*)
       (when *running-from-command-line* (sb-ext:quit)))))

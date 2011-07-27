@@ -3,8 +3,8 @@ tinyxml:
   debian: libtinyxml-dev
   osx:
     source:
-      uri: 'http://kforge.ros.org/rosrelease/viewvc/sourcedeps/tinyxml/tinyxml-2.6.2-0.rdmanifest'
-      md5sum: ebd671735473b80900e164aa6188a7cb
+      uri: 'http://kforge.ros.org/rosrelease/viewvc/sourcedeps/tinyxml/tinyxml-2.6.2-1.rdmanifest'
+      md5sum: 13760e61e08c9004493c302a16966c42
 python:
   ubuntu: python-dev
   debian: python-dev

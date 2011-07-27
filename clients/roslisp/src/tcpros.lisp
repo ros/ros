@@ -340,7 +340,7 @@
           (let ((msg (format nil "~a" e)))
             (ros-error (roslisp service tcp) "Error processing request ~a:~% ~a" e msg)
             (write-service-error
-             (concatenate 'string "error processing request: " msg))))))))
+             (concatenate 'string "Error processing request: " msg))))))))
 
 
 (defun tcpros-call-service (hostname port service-name req response-type)

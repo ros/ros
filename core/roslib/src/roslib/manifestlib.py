@@ -82,7 +82,7 @@ def check_required(name, allowXHTML=False):
     def check(n, filename):
         n = get_nodes_by_name(n, name)
         if not n:
-            print >> sys.stderr, "Invalid manifest file[%s]: missing required '%s' element"%(filename, name)
+            #print >> sys.stderr, "Invalid manifest file[%s]: missing required '%s' element"%(filename, name)
             return ''
         if len(n) != 1:
             raise ManifestException("Invalid manifest file: must have only one '%s' element"%name)
@@ -482,14 +482,11 @@ def parse_file(m, file):
         raise ValueError("Missing manifest file argument")
     if not os.path.isfile(file):
         raise ValueError("Invalid/non-existent manifest file: %s"%file)
-    f = open(file, 'r')
-    try:
+    with open(file, 'r') as f:
         text = f.read()
-    finally:
-        f.close()
     try:
         return parse(m, text, file)
-    except ManifestException, e:
+    except ManifestException as e:
         raise ManifestException("Invalid manifest file [%s]: %s"%(os.path.abspath(file), e))
 
 def parse(m, string, filename='string'):

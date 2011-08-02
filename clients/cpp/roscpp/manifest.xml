@@ -14,7 +14,7 @@
     be the high-performance library for ROS.
 </p>
   </description>
-  <author>Morgan Quigley mquigley@cs.stanford.edu, Josh Faust jfaust@willowgarage.com, Brian Gerkey gerkey@willowgarage.com</author>
+  <author>Morgan Quigley mquigley@cs.stanford.edu, Josh Faust jfaust@willowgarage.com, Brian Gerkey gerkey@willowgarage.com, Troy Straszheim straszheim@willowgarage.com</author>
   <license>BSD</license>
   <review status="Doc reviewed"/>
   <url>http://ros.org/wiki/roscpp</url>

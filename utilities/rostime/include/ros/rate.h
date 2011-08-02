@@ -38,6 +38,7 @@
 #define ROSLIB_RATE_H
 
 #include "ros/time.h"
+#include "rostime_decl.h"
 
 namespace ros
 {
@@ -47,7 +48,7 @@ class Duration;
  * @class Rate
  * @brief Class to help run loops at a desired frequency
  */
-class Rate
+class ROSTIME_DECL Rate
 {
 public:
   /**
@@ -88,7 +89,7 @@ private:
  * @class WallRate
  * @brief Class to help run loops at a desired frequency.  This version always uses wall-clock time.
  */
-class WallRate
+class ROSTIME_DECL WallRate
 {
 public:
   /**

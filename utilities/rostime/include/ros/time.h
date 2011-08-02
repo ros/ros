@@ -56,16 +56,16 @@
 #include <ros/exception.h>
 #include "duration.h"
 #include <boost/math/special_functions/round.hpp>
-#include "rostime_macros.h"
+#include "rostime_decl.h"
 
 /*********************************************************************
  ** Cross Platform Headers
  *********************************************************************/
 
 #ifdef WIN32
-#include <sys/timeb.h>
+  #include <sys/timeb.h>
 #else
-#include <sys/time.h>
+  #include <sys/time.h>
 #endif
 
 namespace boost {

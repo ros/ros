@@ -91,7 +91,10 @@ namespace ros
    * These have only internal linkage to this translation unit.
    * (i.e. not exposed to users of the time classes)
    */
-  void ros_walltime(uint32_t& sec, uint32_t& nsec) throw(NoHighPerformanceTimersException)
+  void ros_walltime(uint32_t& sec, uint32_t& nsec) 
+#ifndef WIN32    
+    throw(NoHighPerformanceTimersException)
+#endif
   {
 #ifndef WIN32
 #if HAS_CLOCK_GETTIME
@@ -117,8 +120,8 @@ namespace ros
     // problems in Windows Vista, and this API is by far the most accurate that
     // I know of in Windows, so I'll use it here despite all these caveats
     static LARGE_INTEGER cpu_freq, init_cpu_time;
-    static uint32_t start_sec = 0;
-    static uint32_t start_nsec = 0;
+    uint32_t start_sec = 0;
+    uint32_t start_nsec = 0;
     if ( ( start_sec == 0 ) && ( start_nsec == 0 ) )
       {
         QueryPerformanceFrequency(&cpu_freq);

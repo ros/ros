@@ -175,7 +175,7 @@ namespace ros {
   }
 
   template <class T>
-  boost::posix_time::time_duration 
+  boost::posix_time::time_duration
   DurationBase<T>::toBoost() const
   {
     namespace bt = boost::posix_time;
@@ -186,12 +186,12 @@ namespace ros {
 #endif
   }
 
-  inline Duration::Duration(const Rate& r) 
+  inline Duration::Duration(const Rate& r)
   {
     fromSec(r.expectedCycleTime().toSec());
   }
 
-  inline WallDuration::WallDuration(const Rate& r) 
+  inline WallDuration::WallDuration(const Rate& r)
   {
     fromSec(r.expectedCycleTime().toSec());
   }

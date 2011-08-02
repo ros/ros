@@ -78,8 +78,8 @@ void init(const M_string& remappings)
     g_uri = master_uri_env;
 
 #ifdef _MSC_VER
-#pragma message ("do we really want to free this?")
-    // free(master_uri_env);
+    // http://msdn.microsoft.com/en-us/library/ms175774(v=vs.80).aspx
+    free(master_uri_env);
 #endif
     std::cout << "URI=" << g_uri << "\n";
   }

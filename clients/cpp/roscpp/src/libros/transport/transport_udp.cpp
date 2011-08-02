@@ -197,6 +197,13 @@ bool TransportUDP::connect(const std::string& host, int port, int connection_id)
     return false;
   }
 
+  // from daniel stonier:
+#ifdef WIN32
+  // This is hackish, but windows fails at recv() if its slow to connect (e.g. happens with wireless)
+  // recv() needs to check if its connected or not when its asynchronous?
+  Sleep(100);
+#endif
+
   if (!initializeSocket())
   {
     return false;

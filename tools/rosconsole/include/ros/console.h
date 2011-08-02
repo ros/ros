@@ -36,6 +36,19 @@
 #include <sstream>
 #include <ros/time.h>
 #include <cstdarg>
+#include <ros/macros.h>
+
+// Import/export for windows dll's and visibility for gcc shared libraries.
+
+#ifdef ROS_BUILD_SHARED_LIBS // ros is being built around shared libraries
+  #ifdef rosconsole_EXPORTS // we are building a shared lib/dll
+    #define ROSCONSOLE_DECL ROS_HELPER_EXPORT
+  #else // we are using shared lib/dll
+    #define ROSCONSOLE_DECL ROS_HELPER_IMPORT
+  #endif
+#else // ros is being built around static libraries
+  #define ROSCONSOLE_DECL
+#endif
 
 // TODO: this header is no longer needed to be included here, but removing it will break various code that incorrectly does not itself include log4cxx/logger.h
 // We should vet all the code using log4cxx directly and make sure the includes/link flags are used in those packages, and then we can remove this include
@@ -76,7 +89,7 @@ namespace ros
 namespace console
 {
 
-void shutdown();
+ROSCONSOLE_DECL void shutdown();
 
 namespace levels
 {
@@ -93,12 +106,12 @@ enum Level
 }
 typedef levels::Level Level;
 
-extern log4cxx::LevelPtr g_level_lookup[];
+extern ROSCONSOLE_DECL log4cxx::LevelPtr g_level_lookup[];
 
 /**
  * \brief Only exported because the macros need it.  Do not use directly.
  */
-extern bool g_initialized;
+extern ROSCONSOLE_DECL bool g_initialized;
 
 /**
  * \brief Don't call this directly.  Performs any required initialization/configuration.  Happens automatically when using the macro API.
@@ -106,7 +119,7 @@ extern bool g_initialized;
  * If you're going to be using log4cxx or any of the ::ros::console functions, and need the system to be initialized, use the
  * ROSCONSOLE_AUTOINIT macro.
  */
-void initialize();
+ROSCONSOLE_DECL void initialize();
 
 class FilterBase;
 /**
@@ -116,14 +129,14 @@ class FilterBase;
  * @param line Line of code this logging statement is from (usually generated with __LINE__)
  * @param fmt Format string
  */
-void print(FilterBase* filter, log4cxx::Logger* logger, Level level, 
+ROSCONSOLE_DECL void print(FilterBase* filter, log4cxx::Logger* logger, Level level,
 	   const char* file, int line, 
 	   const char* function, const char* fmt, ...) ROSCONSOLE_PRINTF_ATTRIBUTE(7, 8);
 
-void print(FilterBase* filter, log4cxx::Logger* logger, Level level, 
+ROSCONSOLE_DECL void print(FilterBase* filter, log4cxx::Logger* logger, Level level,
 	   const std::stringstream& str, const char* file, int line, const char* function);
 
-struct LogLocation;
+struct ROSCONSOLE_DECL LogLocation;
 
 /**
  * \brief Registers a logging location with the system.
@@ -132,7 +145,7 @@ struct LogLocation;
  * all the logging statements.
  * @param loc The location to add
  */
-void registerLogLocation(LogLocation* loc);
+ROSCONSOLE_DECL void registerLogLocation(LogLocation* loc);
 
 /**
  * \brief Tells the system that a logger's level has changed
@@ -142,9 +155,9 @@ void registerLogLocation(LogLocation* loc);
  * function is not called, only logging statements which are first hit *after* the change will be correct wrt
  * that logger.
  */
-void notifyLoggerLevelsChanged();
+ROSCONSOLE_DECL void notifyLoggerLevelsChanged();
 
-void setFixedFilterToken(const std::string& key, const std::string& val);
+ROSCONSOLE_DECL void setFixedFilterToken(const std::string& key, const std::string& val);
 
 /**
  * \brief Parameter structure passed to FilterBase::isEnabled(...);.  Includes both input and output parameters
@@ -202,19 +215,19 @@ public:
   inline virtual bool isEnabled(FilterParams& params) { return true; }
 };
 
-struct LogLocation;
+struct ROSCONSOLE_DECL LogLocation;
 /**
  * \brief Internal
  */
-void initializeLogLocation(LogLocation* loc, const std::string& name, Level level);
+ROSCONSOLE_DECL void initializeLogLocation(LogLocation* loc, const std::string& name, Level level);
 /**
  * \brief Internal
  */
-void setLogLocationLevel(LogLocation* loc, Level level);
+ROSCONSOLE_DECL void setLogLocationLevel(LogLocation* loc, Level level);
 /**
  * \brief Internal
  */
-void checkLogLocationEnabled(LogLocation* loc);
+ROSCONSOLE_DECL void checkLogLocationEnabled(LogLocation* loc);
 
 /**
  * \brief Internal
@@ -227,9 +240,9 @@ struct LogLocation
   log4cxx::Logger* logger_;
 };
 
-void vformatToBuffer(boost::shared_array<char>& buffer, size_t& buffer_size, const char* fmt, va_list args);
-void formatToBuffer(boost::shared_array<char>& buffer, size_t& buffer_size, const char* fmt, ...);
-std::string formatToString(const char* fmt, ...);
+ROSCONSOLE_DECL void vformatToBuffer(boost::shared_array<char>& buffer, size_t& buffer_size, const char* fmt, va_list args);
+ROSCONSOLE_DECL void formatToBuffer(boost::shared_array<char>& buffer, size_t& buffer_size, const char* fmt, ...);
+ROSCONSOLE_DECL std::string formatToString(const char* fmt, ...);
 
 } // namespace console
 } // namespace ros

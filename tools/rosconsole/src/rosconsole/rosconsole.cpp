@@ -36,6 +36,10 @@
 #include "log4cxx/spi/loggingevent.h"
 #include "log4cxx/level.h"
 #include "log4cxx/propertyconfigurator.h"
+#ifdef _MSC_VER
+  // Have to be able to encode wchar LogStrings on windows.
+  #include "log4cxx/helpers/transcoder.h"
+#endif
 
 #include <boost/thread.hpp>
 #include <boost/shared_array.hpp>
@@ -169,7 +173,13 @@ struct MessageToken : public Token
 {
   virtual std::string getString(const log4cxx::spi::LoggingEventPtr& event)
   {
-    return event->getMessage().c_str();
+	#ifdef _MSC_VER
+	  // has to handle LogString with wchar types.
+	  LOG4CXX_ENCODE_CHAR(ret, event->getMessage());
+	  return ret;
+	#else
+	  return event->getMessage();
+	#endif
   }
 };
 
@@ -204,7 +214,13 @@ struct LoggerToken : public Token
 {
   virtual std::string getString(const log4cxx::spi::LoggingEventPtr& event)
   {
-    return event->getLoggerName();
+	#ifdef _MSC_VER
+	  // has to handle LogString with wchar types.
+	  LOG4CXX_ENCODE_CHAR(ret, event->getLoggerName());
+	  return ret;
+	#else
+	  return event->getLoggerName();
+	#endif
   }
 };
 
@@ -390,7 +406,12 @@ protected:
 void do_initialize()
 {
   // First load the default config file from ROS_ROOT/config/rosconsole.config
-  const char* ros_root_cstr = getenv("ROS_ROOT");
+  char* ros_root_cstr = NULL;
+#ifdef _MSC_VER
+  _dupenv_s(&ros_root_cstr, NULL, "ROS_ROOT");
+#else
+  ros_root_cstr = getenv("ROS_ROOT");
+#endif
   if (!ros_root_cstr)
   {
     log4cxx::LoggerPtr ros_logger = log4cxx::Logger::getLogger(ROSCONSOLE_ROOT_LOGGER_NAME);
@@ -404,8 +425,12 @@ void do_initialize()
     std::string config_file = std::string(ros_root_cstr) + "/config/rosconsole.config";
     log4cxx::PropertyConfigurator::configure(config_file);
   }
-
-  const char* config_file_cstr = getenv("ROSCONSOLE_CONFIG_FILE");
+  char* config_file_cstr = NULL;
+#ifdef _MSC_VER
+  _dupenv_s(&config_file_cstr, NULL, "ROSCONSOLE_CONFIG_FILE");
+#else
+  config_file_cstr = getenv("ROSCONSOLE_CONFIG_FILE");
+#endif
   if ( config_file_cstr )
   {
     std::string config_file = config_file_cstr;
@@ -414,7 +439,12 @@ void do_initialize()
   }
 
   // Check for the format string environment variable
-  const char* format_string = getenv("ROSCONSOLE_FORMAT");
+  char* format_string = NULL;
+#ifdef _MSC_VER
+  _dupenv_s(&format_string, NULL, "ROSCONSOLE_FORMAT");
+#else
+  format_string =  getenv("ROSCONSOLE_FORMAT");
+#endif
   if (format_string)
   {
     g_format_string = format_string;
@@ -424,6 +454,18 @@ void do_initialize()
 
   log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger(ROSCONSOLE_ROOT_LOGGER_NAME);
   logger->addAppender(new ROSConsoleStdioAppender);
+#ifdef _MSC_VER
+  if ( ros_root_cstr != NULL ) {
+	  free(ros_root_cstr);
+  }
+  if ( config_file_cstr != NULL ) {
+	  free(config_file_cstr);
+  }
+  if ( format_string != NULL ) {
+	  free(format_string);
+  }
+  // getenv implementations don't need free'ing.
+#endif
 }
 
 void initialize()
@@ -439,15 +481,27 @@ void initialize()
 
 void vformatToBuffer(boost::shared_array<char>& buffer, size_t& buffer_size, const char* fmt, va_list args)
 {
+#ifdef _MSC_VER
+  va_list arg_copy = args; // dangerous?
+#else
   va_list arg_copy;
   va_copy(arg_copy, args);
+#endif
+#ifdef _MSC_VER
+  size_t total = vsnprintf_s(buffer.get(), buffer_size, buffer_size, fmt, args);
+#else
   size_t total = vsnprintf(buffer.get(), buffer_size, fmt, args);
+#endif
   if (total >= buffer_size)
   {
     buffer_size = total + 1;
     buffer.reset(new char[buffer_size]);
 
+#ifdef _MSC_VER
+    vsnprintf_s(buffer.get(), buffer_size, buffer_size, fmt, arg_copy);
+#else
     vsnprintf(buffer.get(), buffer_size, fmt, arg_copy);
+#endif
     va_end(arg_copy);
   }
 }

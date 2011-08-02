@@ -81,7 +81,6 @@ void init(const M_string& remappings)
     // http://msdn.microsoft.com/en-us/library/ms175774(v=vs.80).aspx
     free(master_uri_env);
 #endif
-    std::cout << "URI=" << g_uri << "\n";
   }
 
   // Split URI into

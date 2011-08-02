@@ -15,6 +15,7 @@
 
 #include "XmlRpcDispatch.h"
 #include "XmlRpcSource.h"
+#include "XmlRpcDecl.h"
 
 namespace XmlRpc {
 
@@ -22,7 +23,7 @@ namespace XmlRpc {
   class XmlRpcValue;
 
   //! A class to send XML RPC requests to a server and return the results.
-  class XmlRpcClient : public XmlRpcSource {
+  class XMLRPCPP_DECL XmlRpcClient : public XmlRpcSource {
   public:
     // Static data
     static const char REQUEST_BEGIN[];

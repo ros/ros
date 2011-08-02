@@ -8,6 +8,8 @@
 # pragma warning(disable:4786)    // identifier was truncated in debug info
 #endif
 
+#include "XmlRpcDecl.h"
+
 #ifndef MAKEDEPEND
 # include <map>
 # include <string>
@@ -19,7 +21,7 @@ namespace XmlRpc {
 
   //! RPC method arguments and results are represented by Values
   //   should probably refcount them...
-  class XmlRpcValue {
+  class XMLRPCPP_DECL XmlRpcValue {
   public:
 
 

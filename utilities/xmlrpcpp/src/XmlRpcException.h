@@ -12,13 +12,15 @@
 # include <string>
 #endif
 
+#include "XmlRpcDecl.h"
+
 
 namespace XmlRpc {
 
   //! A class representing an error.
   //! If server methods throw this exception, a fault response is returned
   //! to the client.
-  class XmlRpcException {
+  class XMLRPCPP_DECL XmlRpcException {
   public:
     //! Constructor
     //!   @param message  A descriptive error message

@@ -13,6 +13,7 @@
 
 #include "XmlRpcValue.h"
 #include "XmlRpcSource.h"
+#include "XmlRpcDecl.h"
 
 namespace XmlRpc {
 
@@ -22,7 +23,7 @@ namespace XmlRpc {
   class XmlRpcServerMethod;
 
   //! A class to handle XML RPC requests from a particular client
-  class XmlRpcServerConnection : public XmlRpcSource {
+  class XMLRPCPP_DECL XmlRpcServerConnection : public XmlRpcSource {
   public:
     // Static data
     static const char METHODNAME_TAG[];

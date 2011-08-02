@@ -13,6 +13,25 @@
 # include <ws2tcpip.h>
 //# pragma lib(WS2_32.lib)
 
+// MS VS10 actually has these definitions (as opposed to earlier versions),
+// so if present, temporarily disable them and reset to WSA codes for this file only.
+#ifdef EAGAIN
+  #undef EAGAIN
+#endif
+#ifdef EINTR
+  #undef EINTR
+#endif
+#ifdef EINPROGRESS
+  #undef EINPROGRESS
+#endif
+#ifdef  EWOULDBLOCK
+  #undef EWOULDBLOCK
+#endif
+#ifdef ETIMEDOUT
+  #undef ETIMEDOUT
+#endif
+# define EAGAIN		WSATRY_AGAIN
+# define EINTR			WSAEINTR
 # define EINPROGRESS	WSAEINPROGRESS
 # define EWOULDBLOCK	WSAEWOULDBLOCK
 # define ETIMEDOUT	    WSAETIMEDOUT
@@ -288,7 +307,11 @@ std::string
 XmlRpcSocket::getErrorMsg(int error)
 {
   char err[60];
+#ifdef _MSC_VER
+  strerror_s(err,60,error);
+#else
   snprintf(err,sizeof(err),"%s",strerror(error));
+#endif
   return std::string(err);
 }
 

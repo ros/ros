@@ -21,6 +21,7 @@ own fork.
   <platform os="ubuntu" version="10.04"/>
   <platform os="macports" version="macports"/>
   <rosbuild2>
+    <depend package="cpp_common"/>
     <export>
       <include_dir>${xmlrpcpp_SOURCE_DIR}/src</include_dir>
       <lib>XmlRpc</lib>

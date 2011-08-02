@@ -2,6 +2,7 @@ include(${CMAKE_CURRENT_BINARY_DIR}/package.cmake)
 
 if(WIN32)
   add_definitions(-D_WINDOWS)
+  
 endif()
 
 rosbuild_add_library(XmlRpc 
@@ -15,6 +16,11 @@ rosbuild_add_library(XmlRpc
   src/XmlRpcUtil.cpp 
   src/XmlRpcValue.cpp
   )
+
+if(WIN32)
+  target_link_libraries(XmlRpc ws2_32)
+endif()
+
 
 foreach(header
     src/base64.h	      

@@ -13,7 +13,7 @@
 # define USE_FTIME
 # if defined(_MSC_VER)
 #  define timeb _timeb
-#  define ftime _ftime
+#  define ftime _ftime_s
 # endif
 #else
 # include <sys/time.h>

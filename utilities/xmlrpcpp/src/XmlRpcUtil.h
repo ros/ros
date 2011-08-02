@@ -11,9 +11,11 @@
 # include <string>
 #endif
 
+#include "XmlRpcDecl.h"
+
 #if defined(_MSC_VER)
-# define snprintf	    _snprintf
-# define vsnprintf    _vsnprintf
+# define snprintf	    _snprintf_s
+# define vsnprintf    _vsnprintf_s
 # define strcasecmp	  _stricmp
 # define strncasecmp	_strnicmp
 #elif defined(__BORLANDC__)
@@ -24,7 +26,7 @@
 namespace XmlRpc {
 
   //! Utilities for XML parsing, encoding, and decoding and message handlers.
-  class XmlRpcUtil {
+  class XMLRPCPP_DECL XmlRpcUtil {
   public:
     // hokey xml parsing
     //! Returns contents between <tag> and </tag>, updates offset to char after </tag>

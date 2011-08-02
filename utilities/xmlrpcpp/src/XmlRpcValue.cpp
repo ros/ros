@@ -408,7 +408,11 @@ namespace XmlRpc {
     std::string stime = valueXml.substr(*offset, valueEnd-*offset);
 
     struct tm t;
+#ifdef _MSC_VER
+    if (sscanf_s(stime.c_str(),"%4d%2d%2dT%2d:%2d:%2d",&t.tm_year,&t.tm_mon,&t.tm_mday,&t.tm_hour,&t.tm_min,&t.tm_sec) != 6)
+#else
     if (sscanf(stime.c_str(),"%4d%2d%2dT%2d:%2d:%2d",&t.tm_year,&t.tm_mon,&t.tm_mday,&t.tm_hour,&t.tm_min,&t.tm_sec) != 6)
+#endif
       return false;
 
     t.tm_isdst = -1;

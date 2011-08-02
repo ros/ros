@@ -8,6 +8,8 @@
 # pragma warning(disable:4786)    // identifier was truncated in debug info
 #endif
 
+#include "XmlRpcDecl.h"
+
 #ifndef MAKEDEPEND
 # include <string>
 #endif
@@ -21,7 +23,7 @@ namespace XmlRpc {
   class XmlRpcServer;
 
   //! Abstract class representing a single RPC method
-  class XmlRpcServerMethod {
+  class XMLRPCPP_DECL XmlRpcServerMethod {
   public:
     //! Constructor
     XmlRpcServerMethod(std::string const& name, XmlRpcServer* server = 0);

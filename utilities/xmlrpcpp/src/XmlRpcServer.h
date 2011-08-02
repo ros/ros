@@ -18,6 +18,7 @@
 
 #include "XmlRpcDispatch.h"
 #include "XmlRpcSource.h"
+#include "XmlRpcDecl.h"
 
 namespace XmlRpc {
 
@@ -33,7 +34,7 @@ namespace XmlRpc {
 
 
   //! A class to handle XML RPC requests
-  class XmlRpcServer : public XmlRpcSource {
+  class XMLRPCPP_DECL XmlRpcServer : public XmlRpcSource {
   public:
     //! Create a server object.
     XmlRpcServer();

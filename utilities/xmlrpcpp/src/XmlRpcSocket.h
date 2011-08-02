@@ -15,10 +15,12 @@
 # include <string>
 #endif
 
+#include "XmlRpcDecl.h"
+
 namespace XmlRpc {
 
   //! A platform-independent socket API.
-  class XmlRpcSocket {
+  class XMLRPCPP_DECL XmlRpcSocket {
   public:
 
     //! Creates a stream (TCP) socket. Returns -1 on failure.

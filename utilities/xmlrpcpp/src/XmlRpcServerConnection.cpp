@@ -6,7 +6,9 @@
 #ifndef MAKEDEPEND
 # include <stdio.h>
 # include <stdlib.h>
-# include <strings.h>
+#ifndef _WINDOWS
+	# include <strings.h>
+#endif
 # include <string.h>
 #endif
 
@@ -347,7 +349,11 @@ XmlRpcServerConnection::generateHeader(std::string const& body)
     "Content-length: ";
 
   char buffLen[40];
+#ifdef _MSC_VER
+  sprintf_s(buffLen,40,"%d\r\n\r\n", (int)body.size());
+#else
   sprintf(buffLen,"%d\r\n\r\n", (int)body.size());
+#endif
 
   return header + buffLen;
 }

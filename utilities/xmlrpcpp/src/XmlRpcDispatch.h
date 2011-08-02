@@ -8,6 +8,8 @@
 # pragma warning(disable:4786)    // identifier was truncated in debug info
 #endif
 
+#include "XmlRpcDecl.h"
+
 #ifndef MAKEDEPEND
 # include <list>
 #endif
@@ -19,7 +21,7 @@ namespace XmlRpc {
 
   //! An object which monitors file descriptors for events and performs
   //! callbacks when interesting events happen.
-  class XmlRpcDispatch {
+  class XMLRPCPP_DECL XmlRpcDispatch {
   public:
     //! Constructor
     XmlRpcDispatch();

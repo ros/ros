@@ -1,4 +1,4 @@
-m/*
+/*
  * Copyright (C) 2010, Willow Garage, Inc.
  *
  * Redistribution and use in source and binary forms, with or without

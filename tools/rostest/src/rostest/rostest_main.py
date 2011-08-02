@@ -90,7 +90,7 @@ def rostestmain():
     roslaunch.core.add_printerrlog_handler(logger.error)        
     
     from optparse import OptionParser
-    parser = OptionParser(usage="usage: %prog [options] file", prog=_NAME)
+    parser = OptionParser(usage="usage: %prog [options] [package] <filename>", prog=_NAME)
     parser.add_option("-t", "--text",
                       action="store_true", dest="text_mode", default=False,
                       help="Run with stdout output instead of XML output")

@@ -105,8 +105,7 @@ macro(gensrv_py TYPE)
 
     # Add the rule to build the .py from the .srv
     add_custom_command(OUTPUT ${_output_py} 
-      COMMAND ${ROSBUILD_SUBSHELL}
-      ${PYTHON_EXECTUABLE} ${gensrv_py_exe} 
+      COMMAND ${ROSBUILD_SUBSHELL} ${PYTHON_EXECUTABLE} ${gensrv_py_exe} 
       ${_input}
       -p ${PROJECT_NAME}
       -s ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -125,7 +124,7 @@ macro(gensrv_py TYPE)
     # generated, so it depends on them.
     set(_output_py ${_outdir}/__init__.py)
     add_custom_command(OUTPUT ${_output_py}
-      COMMAND ${ROSBUILD_SUBSHELL} ${gensrv_py_exe} --initpy 
+      COMMAND ${ROSBUILD_SUBSHELL} ${PYTHON_EXECUTABLE} ${gensrv_py_exe} --initpy 
       -p ${PROJECT_NAME}
       -o ${_outdir}
       ${_inlist}

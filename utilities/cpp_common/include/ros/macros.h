@@ -1,4 +1,4 @@
-/*
+m/*
  * Copyright (C) 2010, Willow Garage, Inc.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,8 +25,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef ROSLIB_MACROS_H
-#define ROSLIB_MACROS_H
+#ifndef ROSLIB_MACROS_H_INCLUDED
+#define ROSLIB_MACROS_H_INCLUDED
 
 #if defined(__GNUC__)
 #define ROS_DEPRECATED __attribute__((deprecated))
@@ -43,8 +43,6 @@
   Windows import/export and gnu http://gcc.gnu.org/wiki/Visibility
   macros.
  */
-#define ROS_BUILD_SHARED_LIBS 1
-
 #if defined(_MSC_VER)
     #define ROS_HELPER_IMPORT __declspec(dllimport)
     #define ROS_HELPER_EXPORT __declspec(dllexport)
@@ -57,16 +55,6 @@
     #define ROS_HELPER_IMPORT
     #define ROS_HELPER_EXPORT
     #define ROS_HELPER_LOCAL
-#endif
-
-#ifdef ROS_BUILD_SHARED_LIBS // ros is being built around shared libraries
-  #ifdef cpp_common_EXPORTS // we are building a shared lib/dll
-    #define CPP_COMMON_DECL ROS_HELPER_EXPORT
-  #else // we are using shared lib/dll
-    #define CPP_COMMON_DECL ROS_HELPER_IMPORT
-  #endif 
-#else // ros is being built around static libraries
-  #define CPP_COMMON_DECL
 #endif
 
 // Ignore warnings about import/exports when deriving from std classes.

@@ -30,7 +30,7 @@
 
 #include <string>
 #include <vector>
-#include "macros.h"
+#include "cpp_common_decl.h"
 
 namespace ros
 {

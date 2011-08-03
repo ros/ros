@@ -650,8 +650,7 @@ yaml.add_constructor(u'!degrees', construct_angle_degrees)
 
 # allow both !degrees 180, !radians 2*pi
 pattern = re.compile(r'^deg\([^\)]*\)$')
-yaml.add_implicit_resolver(u'!degrees', pattern)
+yaml.add_implicit_resolver(u'!degrees', pattern, first="deg(")
 pattern = re.compile(r'^rad\([^\)]*\)$')
-yaml.add_implicit_resolver(u'!radians', pattern)
-
+yaml.add_implicit_resolver(u'!radians', pattern, first="rad(")
 

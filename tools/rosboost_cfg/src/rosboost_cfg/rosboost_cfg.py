@@ -222,7 +222,7 @@ def find_lib(ver, name, full_lib = link_static):
         
     # Boost.Python needs some special handling on some systems (Karmic), since it may have per-python-version libs
     if (name == "python"):
-        python_ver = [int(v) for v in platform.python_version().split('.')]
+        python_ver = platform.python_version().split('.')
         dynamic_search_paths = ["libboost_%s-mt-py%s%s.%s"%(name, python_ver[0], python_ver[1], lib_suffix),
                                 "libboost_%s-py%s%s.%s"%(name, python_ver[0], python_ver[1], lib_suffix)] + dynamic_search_paths
         static_search_paths = ["libboost_%s-mt-py%s%s.a"%(name, python_ver[0], python_ver[1]),

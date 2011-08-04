@@ -312,39 +312,43 @@ def read(test_file, test_name):
         if not xml_str.strip():
             print "WARN: test result file is empty [%s]"%(test_file)
             return Result(test_name, 0, 0, 0)
-        test_suite = parseString(xml_str).getElementsByTagName('testsuite')
+        test_suites = parseString(xml_str).getElementsByTagName('testsuite')
     except Exception as e:
         print "WARN: cannot read test result file [%s]: %s"%(test_file, str(e))
         return Result(test_name, 0, 0, 0)
-    if not test_suite:
-        print "WARN: test result file [%s] contains no results"%test_file
+    if not test_suites:
+        print "WARN: test result file [%s] contains no results"%(test_file)
         return Result(test_name, 0, 0, 0)
-    test_suite = test_suite[0]
-    vals = [test_suite.getAttribute(attr) for attr in ['errors', 'failures', 'tests']]
-    vals = [v or 0 for v in vals]
-    err, fail, tests = [string.atoi(val) for val in vals]
 
-    result = Result(test_name, err, fail, tests)
-    result.time = test_suite.getAttribute('time') or 0.0    
+    results = Result(test_name, 0, 0, 0)
+    for test_suite in test_suites:
+        #test_suite = test_suite[0]
+        vals = [test_suite.getAttribute(attr) for attr in ['errors', 'failures', 'tests']]
+        vals = [v or 0 for v in vals]
+        err, fail, tests = [string.atoi(val) for val in vals]
 
-    # Create a prefix based on the test result filename. The idea is to
-    # disambiguate the case when tests of the same name are provided in
-    # different .xml files.  We use the name of the parent directory
-    test_file_base = os.path.basename(os.path.dirname(test_file))
-    fname = os.path.basename(test_file)
-    if fname.startswith('TEST-'):
-        fname = fname[5:]
-    if fname.endswith('.xml'):
-        fname = fname[:-4]
-    test_file_base = "%s.%s"%(test_file_base, fname)
-    _load_suite_results(test_file_base, test_suite, result)
-    return result
+        result = Result(test_name, err, fail, tests)
+        result.time = test_suite.getAttribute('time') or 0.0    
 
-def read_all(filter=[]):
+        # Create a prefix based on the test result filename. The idea is to
+        # disambiguate the case when tests of the same name are provided in
+        # different .xml files.  We use the name of the parent directory
+        test_file_base = os.path.basename(os.path.dirname(os.path.abspath(test_file)))
+        fname = os.path.basename(test_file)
+        if fname.startswith('TEST-'):
+            fname = fname[5:]
+        if fname.endswith('.xml'):
+            fname = fname[:-4]
+        test_file_base = "%s.%s"%(test_file_base, fname)
+        _load_suite_results(test_file_base, test_suite, result)
+        results.accumulate(result)
+    return results
+
+def read_all(filter_=[]):
     """
     Read in the test_results and aggregate into a single Result object
-    @param filter: list of packages that should be processed
-    @type filter: [str]
+    @param filter_: list of packages that should be processed
+    @type filter_: [str]
     @return: aggregated result
     @rtype: L{Result}
     """
@@ -353,14 +357,14 @@ def read_all(filter=[]):
     if not os.path.exists(dir_):
         return root_result
     for d in os.listdir(dir_):
-        if filter and not d in filter:
+        if filter_ and not d in filter_:
             continue
         subdir = os.path.join(dir_, d)
         if os.path.isdir(subdir):
-            for file in os.listdir(subdir):
-                if file.endswith('.xml'):
-                    file = os.path.join(subdir, file)
-                    result = read(file, os.path.basename(subdir))
+            for filename in os.listdir(subdir):
+                if filename.endswith('.xml'):
+                    filename = os.path.join(subdir, filename)
+                    result = read(filename, os.path.basename(subdir))
                     root_result.accumulate(result)
     return root_result
 

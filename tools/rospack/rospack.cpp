@@ -410,6 +410,12 @@ const vector<Package *> &Package::direct_deps(bool missing_package_as_warning)
               manifest_path().c_str());
       throw runtime_error(string("invalid manifest"));
     }
+    else if(dep_pkgname == name)
+    {
+      fprintf(stderr,"[rospack] package [%s] depends on itself (%s).\n",
+              name.c_str(), manifest_path().c_str());
+      throw runtime_error(string("self-dependency"));
+    }
     // Must make a copy here, because the call to g_get_pkg() below might
     // cause a recrawl, which blows aways the accumulated data structure.
     char* dep_pkgname_copy = strdup(dep_pkgname);

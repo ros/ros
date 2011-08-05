@@ -32,7 +32,7 @@
 #
 # Revision $Id$
 
-from __future__ import print_statement
+from __future__ import print_function
 
 """
 Common XML-RPC for higher-level libraries running XML-RPC libraries in

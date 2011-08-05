@@ -43,6 +43,7 @@ import math
 import itertools
 import traceback
 import struct
+import sys
 
 import roslib.exceptions
 from roslib.rostime import Time, Duration, TVal
@@ -50,8 +51,21 @@ from roslib.rostime import Time, Duration, TVal
 # common struct pattern singletons for msgs to use. Although this
 # would better placed in a generator-specific module, we don't want to
 # add another import to messages (which incurs higher import cost)
+
+if sys.version > '3':
+	long = int
+
 struct_I = struct.Struct('<I')
 
+def isstring(s):
+    """Small helper version to check an object is a string in a way that works
+    for both Python 2 and 3
+    """
+    try:
+        return isinstance(s, basestring)
+    except NameError:
+        return isinstance(s, str)
+    
 class ROSMessageException(roslib.exceptions.ROSLibException):
     """
     Exception type for errors in roslib.message routines
@@ -166,10 +180,11 @@ def strify_message(val, indent='', time_offset=None, current_time=None, field_fi
     @return: string (YAML) representation of message
     @rtype: str
     """
+
     type_ = type(val)
     if type_ in (int, long, float, bool):
         return str(val)
-    elif type_ in (str, unicode):
+    elif isstring(val):
         #TODO: need to escape strings correctly
         if not val:
             return "''"
@@ -201,8 +216,12 @@ def strify_message(val, indent='', time_offset=None, current_time=None, field_fi
 
         p = '%s%%s: %%s'%(indent)
         ni = '  '+indent
-        vals = '\n'.join([p%(f,
-                             strify_message(_convert_getattr(val, f, t), ni, time_offset, current_time, field_filter)) for f,t in itertools.izip(val.__slots__, val._slot_types) if f in fields])
+        if sys.hexversion > 0x03000000: #Python3
+            vals = '\n'.join([p%(f,
+                                 strify_message(_convert_getattr(val, f, t), ni, time_offset, current_time, field_filter)) for f,t in zip(val.__slots__, val._slot_types) if f in fields])			
+        else: #Python2
+            vals = '\n'.join([p%(f,
+                                 strify_message(_convert_getattr(val, f, t), ni, time_offset, current_time, field_filter)) for f,t in itertools.izip(val.__slots__, val._slot_types) if f in fields])
         if indent:
             return '\n'+vals
         else:
@@ -217,7 +236,7 @@ def _convert_getattr(val, f, t):
     to convert uint8[] fields back to an array type.
     """
     attr = getattr(val, f)
-    if type(attr) in (str, unicode) and 'uint8[' in t:
+    if isstring(attr) and 'uint8[' in t:
         return [ord(x) for x in attr]
     else:
         return attr
@@ -271,10 +290,15 @@ def check_type(field_name, field_type, field_val):
             if field_val not in [True, False, 0, 1]:
                 raise SerializationError('field %s is not a bool'%(field_name))
     elif field_type == 'string':
-        if type(field_val) == unicode:
-            raise SerializationError('field %s is a unicode string instead of an ascii string'%field_name)
-        elif type(field_val) != str:
-            raise SerializationError('field %s must be of type str'%field_name)
+        if sys.hexversion > 0x03000000:
+            if type(field_val) == str:
+                raise SerializationError('field %s is a unicode string instead of an ascii string'%field_name)	
+        else:		
+            if type(field_val) == unicode:
+                raise SerializationError('field %s is a unicode string instead of an ascii string'%field_name)
+        
+    elif type(field_val) != str:
+                raise SerializationError('field %s must be of type str'%field_name)
     elif field_type == 'time':
         if not isinstance(field_val, Time):
             raise SerializationError('field %s must be of type Time'%field_name)
@@ -336,12 +360,12 @@ class Message(object):
             raise TypeError("Message constructor may only use args OR keywords, not both")
         if args:
             if len(args) != len(self.__slots__):
-                raise TypeError, "Invalid number of arguments, args should be %s"%str(self.__slots__)+" args are"+str(args)
+                raise TypeError("Invalid number of arguments, args should be %s"%str(self.__slots__)+" args are"+str(args))
             for i, k in enumerate(self.__slots__):
                 setattr(self, k, args[i])
         else:
             # validate kwds
-            for k,v in kwds.iteritems():
+            for k,v in kwds.items():
                 if not k in self.__slots__:
                     raise AttributeError("%s is not an attribute of %s"%(k, self.__class__.__name__))
             # iterate through slots so all fields are initialized.
@@ -363,7 +387,7 @@ class Message(object):
         """
         support for Python pickling
         """
-        for x, val in itertools.izip(self.__slots__, state):
+        for x, val in zip(self.__slots__, state):
             setattr(self, x, val)
 
     def _get_types(self):
@@ -440,9 +464,18 @@ def get_printable_message_args(msg, buff=None, prefix=''):
     @return: printable representation of  msg args
     @rtype: str
     """
-    import cStringIO
+    try:
+        from cStringIO import StringIO # Python 2.x
+        python3 = 0
+    except ImportError:
+        from io import BytesIO # Python 3.x
+        python3 = 1
+
     if buff is None:
-        buff = cStringIO.StringIO()
+        if python3 == 1:
+            buff = BytesIO()
+        else: 
+            buff = StringIO()
     for f in msg.__slots__:
         if isinstance(getattr(msg, f), Message):
             get_printable_message_args(getattr(msg, f), buff=buff, prefix=(prefix+f+'.'))
@@ -529,7 +562,7 @@ def _fill_message_args(msg, msg_args, keys, prefix=''):
         #print "DICT ARGS", msg_args
         #print "ACTIVE SLOTS",msg.__slots__
         
-        for f, v in msg_args.iteritems():
+        for f, v in msg_args.items():
             # assume that an empty key is actually an empty string
             if v == None:
                 v = ''
@@ -544,7 +577,7 @@ def _fill_message_args(msg, msg_args, keys, prefix=''):
         elif len(msg_args) < len(msg.__slots__):
             raise ROSMessageException("Not enough arguments:\n * Given: %s\n * Expected: %s"%(msg_args, msg.__slots__))
         
-        for f, v in itertools.izip(msg.__slots__, msg_args):
+        for f, v in zip(msg.__slots__, msg_args):
             _fill_val(msg, f, v, keys, prefix)
     else:
         raise ValueError("invalid msg_args type: %s"%str(msg_args))

@@ -733,9 +733,9 @@ def array_serializer_generator(package, type_, name, serialize, is_numpy):
             else:
                 yield '%s = []'%var
                 if var_length:
-                    yield 'for i in xrange(0, length):'
+                    yield 'for i in range(0, length):'
                 else:
-                    yield 'for i in xrange(0, %s):'%length
+                    yield 'for i in range(0, %s):'%length
                 if base_type != 'string':
                     yield INDENT + '%s = %s'%(loop_var, compute_constructor(package, base_type))
             for y in factory:

@@ -32,6 +32,8 @@
 #
 # Revision $Id$
 
+from __future__ import print_statement
+
 """
 Common XML-RPC for higher-level libraries running XML-RPC libraries in
 ROS. In particular, this library provides common handling for URI
@@ -43,21 +45,43 @@ The common entry point for most libraries is the L{XmlRpcNode} class.
 import logging
 import socket
 import string
-import thread
+
+try:
+    import _thread
+except ImportError:
+    import thread as _thread
+
 import traceback
-from SimpleXMLRPCServer import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler
-import SocketServer
-import select
+
+try:
+    from xmlrpc.server import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler #Python 3.x
+except ImportError:
+    from SimpleXMLRPCServer import SimpleXMLRPCServer #Python 2.x
+    from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler #Python 2.x
+
+try:
+    import socketserver
+except ImportError:
+    import SocketServer as socketserver
 
 import roslib.network
 import roslib.exceptions
+
+def isstring(s):
+    """Small helper version to check an object is a string in a way that works
+    for both Python 2 and 3
+    """
+    try:
+        return isinstance(s, basestring)
+    except NameError:
+        return isinstance(s, str)
 
 class SilenceableXMLRPCRequestHandler(SimpleXMLRPCRequestHandler):
     def log_message(self, format, *args):
         if 0:
             SimpleXMLRPCRequestHandler.log_message(self, format, *args)
     
-class ThreadingXMLRPCServer(SocketServer.ThreadingMixIn, SimpleXMLRPCServer):
+class ThreadingXMLRPCServer(socketserver.ThreadingMixIn, SimpleXMLRPCServer):
     """
     Adds ThreadingMixin to SimpleXMLRPCServer to support multiple concurrent
     requests via threading. Also makes logging toggleable.
@@ -81,7 +105,7 @@ class ThreadingXMLRPCServer(SocketServer.ThreadingMixIn, SimpleXMLRPCServer):
             if logger:
                 logger.error(traceback.format_exc())
     
-class ForkingXMLRPCServer(SocketServer.ForkingMixIn, SimpleXMLRPCServer):
+class ForkingXMLRPCServer(socketserver.ForkingMixIn, SimpleXMLRPCServer):
     """
     Adds ThreadingMixin to SimpleXMLRPCServer to support multiple concurrent
     requests via forking. Also makes logging toggleable.      
@@ -127,8 +151,8 @@ class XmlRpcNode(object):
         self.handler = rpc_handler
         self.uri = None # initialize the property now so it can be tested against, will be filled in later
         self.server = None
-        if port and isinstance(port, basestring):
-            port = string.atoi(port)
+        if port and isstring(port):
+            port = int(port)
         self.port = port
         self.is_shutdown = False
         self.on_run_error = on_run_error
@@ -154,7 +178,7 @@ class XmlRpcNode(object):
         """
         Initiate a thread to run the XML RPC server. Uses thread.start_new_thread.
         """
-        thread.start_new_thread(self.run, ())
+        _thread.start_new_thread(self.run, ())
 
     def set_uri(self, uri):
         """
@@ -168,7 +192,7 @@ class XmlRpcNode(object):
     def run(self):
         try:
             self._run()
-        except Exception, e:
+        except Exception as e:
             if self.is_shutdown:
                 pass
             elif self.on_run_error is not None:
@@ -222,13 +246,14 @@ class XmlRpcNode(object):
             self.server.register_multicall_functions()
             self.server.register_instance(self.handler)
 
-        except socket.error, (n, errstr):
+        except socket.error as e:
+            (n, errstr) = e
             if n == 98:
                 msg = "ERROR: Unable to start XML-RPC server, port %s is already in use"%self.port
             else:
                 msg = "ERROR: Unable to start XML-RPC server: %s"%errstr                
             logger.error(msg)
-            print msg
+            print(msg)
             raise #let higher level catch this
 
         if self.handler is not None:
@@ -237,7 +262,8 @@ class XmlRpcNode(object):
         while not self.is_shutdown:
             try:
                 self.server.serve_forever()
-            except (IOError,select.error) as (errno, errstr):
+            except (IOError, select.error) as e:
+                (errno, errstr) = e
                 # check for interrupted call, which can occur if we're
                 # embedded in a program using signals.  All other
                 # exceptions break _run.

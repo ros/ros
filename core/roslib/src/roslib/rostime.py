@@ -38,6 +38,10 @@ ROS Time representation, including Duration
 
 import itertools
 import time
+import sys
+
+if sys.version > '3':
+	long = int
 
 def _canon(secs, nsecs):
     #canonical form: nsecs is always positive, nsecs < 1 second

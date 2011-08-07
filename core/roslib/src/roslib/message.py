@@ -296,8 +296,7 @@ def check_type(field_name, field_type, field_val):
         else:		
             if type(field_val) == unicode:
                 raise SerializationError('field %s is a unicode string instead of an ascii string'%field_name)
-        
-    elif type(field_val) != str:
+            elif not isstring(field_val):
                 raise SerializationError('field %s must be of type str'%field_name)
     elif field_type == 'time':
         if not isinstance(field_val, Time):

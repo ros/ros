@@ -224,7 +224,7 @@ class Export(object):
         @return: export instance represented as manifest XML
         @rtype: str
         """        
-        attrs = ' '.join([' %s="%s"'%(k,v) for k,v in self.attrs.iteritems()])
+        attrs = ' '.join([' %s="%s"'%(k,v) for k,v in self.attrs.items()]) #py3k
         if self.str:
             return '<%s%s>%s</%s>'%(self.tag, attrs, self.str, self.tag)
         else:
@@ -246,12 +246,10 @@ class Platform(object):
         @param notes: (optional) notes about platform support
         @type  notes: str
         """
-        if not os or not isinstance(os, basestring):
+        if not os:
             raise ValueError("bad 'os' attribute")
-        if not version or not isinstance(version, basestring):
+        if not version:
             raise ValueError("bad 'version' attribute")
-        if notes and not isinstance(notes, basestring):
-            raise ValueError("bad 'notes' attribute")            
         self.os = os
         self.version = version
         self.notes = notes
@@ -289,7 +287,7 @@ class Depend(object):
         @param package: package name. must be non-empty
         @type  package: str
         """
-        if not package or not isinstance(package, basestring):
+        if not package:
             raise ValueError("bad 'package' attribute")
         self.package = package
     def __str__(self):
@@ -318,7 +316,7 @@ class StackDepend(object):
         @param stack: stack name. must be non-empty
         @type  stack: str
         """
-        if not stack or not isinstance(stack, basestring):
+        if not stack:
             raise ValueError("bad 'stack' attribute")
         self.stack = stack
         self.annotation = None

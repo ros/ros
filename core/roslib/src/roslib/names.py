@@ -55,6 +55,17 @@ PRIV_NAME = '~'
 REMAP = ":="
 ANYTYPE = '*'
 
+if sys.hexversion > 0x03000000: #Python3
+    def isstring(s):
+        return isinstance(s, str) #Python 3.x
+else:
+    def isstring(s):
+        """
+        Small helper version to check an object is a string in a way that works
+        for both Python 2 and 3
+        """
+        return isinstance(s, basestring) #Python 2.x
+
 def get_ros_namespace(env=None, argv=None):
     """
     @param env: environment dictionary (defaults to os.environ)
@@ -142,7 +153,7 @@ def namespace(name):
     "map name to its namespace"
     if name is None: 
         raise ValueError('name')
-    if not isinstance(name, basestring):
+    if not isstring(name):
         raise TypeError('name')
     if not name:
         return SEP
@@ -194,7 +205,7 @@ def load_mappings(argv):
                     else:
                         mappings[src] = dst
             except:
-                print >> sys.stderr, "ERROR: Invalid remapping argument '%s'"%arg
+                sys.stderr.write("ERROR: Invalid remapping argument '%s'\n"%arg)
     return mappings
 
 #######################################################################
@@ -268,7 +279,7 @@ def package_resource_name(name):
 
 def _is_safe_name(name, type_name):
     #windows long-file name length is 255
-    if not isinstance(name, basestring) or not name or len(name) > 255:
+    if not isstring(name) or not name or len(name) > 255:
         return False
     return is_legal_resource_name(name)
 
@@ -289,7 +300,7 @@ def is_legal_resource_name(name):
     @type  name: str
     """
     # resource names can be unicode due to filesystem
-    if name is None or not isinstance(name, basestring):
+    if name is None:
         return False
     m = RESOURCE_NAME_LEGAL_CHARS_P.match(name)
     # '//' check makes sure there isn't double-slashes
@@ -308,7 +319,7 @@ def is_legal_name(name):
     @type  name: str
     """    
     # should we enforce unicode checks?
-    if name is None or not isinstance(name, basestring):
+    if name is None:
         return False
     # empty string is a legal name as it resolves to namespace
     if name == '':
@@ -322,7 +333,7 @@ def is_legal_base_name(name):
     Validates that name is a legal base name for a graph resource. A base name has
     no namespace context, e.g. "node_name".
     """
-    if name is None or not isinstance(name, basestring):
+    if name is None:
         return False
     m = BASE_NAME_LEGAL_CHARS_P.match(name)
     return m is not None and m.group(0) == name
@@ -334,7 +345,7 @@ def is_legal_resource_base_name(name):
     no package context, e.g. "String".
     """
     # resource names can be unicode due to filesystem
-    if name is None or not isinstance(name, basestring):
+    if name is None:
         return False
     m = BASE_NAME_LEGAL_CHARS_P.match(name)
     return m is not None and m.group(0) == name
@@ -395,7 +406,7 @@ def anonymous_name(id):
     @type  id: str
     """
     import socket, random
-    name = "%s_%s_%s_%s"%(id, socket.gethostname(), os.getpid(), random.randint(0, sys.maxint))
+    name = "%s_%s_%s_%s"%(id, socket.gethostname(), os.getpid(), random.randint(0, sys.maxsize))
     # RFC 952 allows hyphens, IP addrs can have '.'s, both
     # of which are illegal for ROS names. For good
     # measure, screen ipv6 ':'. 

@@ -100,7 +100,7 @@ def check_platform(name):
         platforms = get_nodes_by_name(n, name)
         try:
             vals = [(p.attributes['os'].value, p.attributes['version'].value, p.getAttribute('notes')) for p in platforms]
-        except KeyError, e:
+        except KeyError as e:
             raise ManifestException("<platform> tag is missing required '%s' attribute"%str(e))
         return [Platform(*v) for v in vals]
     return check
@@ -351,7 +351,7 @@ class ROSDep(object):
         @param name: dependency name. Must be non-empty.
         @type  name: str
         """
-        if not name or not isinstance(name, basestring):
+        if not name:
             raise ValueError("bad 'name' attribute")
         self.name = name
     def xml(self):

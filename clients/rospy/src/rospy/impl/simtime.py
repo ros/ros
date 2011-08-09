@@ -88,6 +88,6 @@ def init_simtime():
                 _set_rostime(rospy.rostime.Time(0, 0))
         rospy.rostime.set_rostime_initialized(True)
         return True
-    except Exception, e:
+    except Exception as e:
         logger.error("Unable to initialize %s: %s\n%s", _ROSCLOCK, e, traceback.format_exc())
         return False

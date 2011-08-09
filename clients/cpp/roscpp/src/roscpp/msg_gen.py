@@ -46,7 +46,10 @@ import roslib.msgs
 import roslib.packages
 import roslib.gentools
 
-from cStringIO import StringIO
+try:
+    from cStringIO import StringIO #Python 2.x
+except ImportError:
+    from io import StringIO #Python 3.x
 
 MSG_TYPE_TO_CPP = {'byte': 'int8_t', 'char': 'uint8_t',
                    'bool': 'uint8_t',
@@ -199,7 +202,7 @@ def write_struct(s, spec, cpp_name_prefix, extra_deprecated_traits = {}):
     md5sum = roslib.gentools.compute_md5(gendeps_dict)
     full_text = compute_full_text_escaped(gendeps_dict)
     
-    write_deprecated_member_functions(s, spec, dict({'MD5Sum': md5sum, 'DataType': '%s/%s'%(spec.package, spec.short_name), 'MessageDefinition': full_text}.items() + extra_deprecated_traits.items()))
+    write_deprecated_member_functions(s, spec, dict(list({'MD5Sum': md5sum, 'DataType': '%s/%s'%(spec.package, spec.short_name), 'MessageDefinition': full_text}.items()) + list(extra_deprecated_traits.items())))
     
     (cpp_msg_unqualified, cpp_msg_with_alloc, cpp_msg_base) = cpp_message_declarations(cpp_name_prefix, msg)
     s.write('  typedef boost::shared_ptr<%s> Ptr;\n'%(cpp_msg_with_alloc))
@@ -464,7 +467,7 @@ def write_deprecated_member_functions(s, spec, traits):
                 s.write('  ROS_DEPRECATED void get_%s_vec(%s& vec) const { vec = this->%s; }\n'%(field.name, msg_type_to_cpp(field.type), field.name))
                 s.write('  ROS_DEPRECATED void set_%s_vec(const %s& vec) { this->%s = vec; }\n'%(field.name, msg_type_to_cpp(field.type), field.name))
     
-    for k, v in traits.iteritems():
+    for k, v in traits.items():
         s.write('private:\n')
         s.write('  static const char* __s_get%s_() { return "%s"; }\n'%(k, v))
         s.write('public:\n')
@@ -550,7 +553,7 @@ def write_trait_char_class(s, class_name, cpp_msg_with_alloc, value, write_stati
             raise ValueError('%s is not a hex value'%(value))
         
         iter_count = len(value) / 16
-        for i in xrange(0, iter_count):
+        for i in range(0, int(iter_count)):
             start = i*16
             s.write('  static const uint64_t static_value%s = 0x%sULL;\n'%((i+1), value[start:start+16]))
     s.write('};\n\n')
@@ -723,11 +726,11 @@ def generate(msg_path):
         # another copy just created the directory
         try:
             os.makedirs(output_dir)
-        except OSError, e:
+        except OSError as e:
             pass
          
     f = open('%s/%s.h'%(output_dir, spec.short_name), 'w')
-    print >> f, s.getvalue()
+    f.write(s.getvalue() + "\n")
     
     s.close()
 

@@ -77,7 +77,7 @@ class UDPROSHandler(rospy.transport.ProtocolHandler):
         try:
             while not rospy.core.is_shutdown():
                 data = self.server.recvfrom(self.buff_size)
-                print "received packet"
+                print("received packet")
                 #TODO
         except:
             #TODO: log

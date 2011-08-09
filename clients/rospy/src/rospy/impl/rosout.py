@@ -62,7 +62,7 @@ def init_rosout():
             _rosout_pub = Publisher(_ROSOUT, Log, latch=True)
             logger.info("connected to core topic %s"%_ROSOUT)
         return True
-    except Exception, e:
+    except Exception as e:
         logger.error("Unable to initialize %s: %s\n%s", _ROSOUT, e, traceback.format_exc())
         return False
 
@@ -83,7 +83,7 @@ def _rosout(level, msg):
                     _rosout_pub.publish(l)
                 finally:
                     _in_rosout = False
-    except Exception, e:
+    except Exception as e:
         #traceback.print_exc()
         # don't use logerr in this case as that is recursive here
         logger = logging.getLogger("rospy.rosout")        

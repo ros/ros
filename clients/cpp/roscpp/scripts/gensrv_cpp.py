@@ -48,7 +48,10 @@ import roslib.srvs
 import roslib.packages
 import roslib.gentools
 
-from cStringIO import StringIO
+try:
+    from cStringIO import StringIO #Python 2.x
+except ImportError:
+    from io import StringIO #Python 3.x
 
 def write_begin(s, spec, file):
     """
@@ -196,11 +199,11 @@ def generate(srv_path):
         # another copy just created the directory
         try:
             os.makedirs(output_dir)
-        except OSError, e:
+        except OSError as e:
             pass
         
     f = open('%s/%s.h'%(output_dir, spec.short_name), 'w')
-    print >> f, s.getvalue()
+    f.write(s.getvalue() + "\n")
     
     s.close()
 

@@ -34,7 +34,7 @@
 # Revision $Id$
 
 # make sure we aren't using floor division
-from __future__ import division, with_statement
+from __future__ import division, print_function
 
 NAME='rostopic'
 
@@ -122,7 +122,7 @@ class ROSTopicHz(object):
             # time reset
             if curr_rostime.is_zero():
                 if len(self.times) > 0:
-                    print "time has reset, resetting counters"
+                    print("time has reset, resetting counters")
                     self.times = []
                 return
             
@@ -146,7 +146,7 @@ class ROSTopicHz(object):
         if not self.times:
             return
         elif self.msg_tn == self.last_printed_tn:
-            print "no new messages"
+            print("no new messages")
             return
         with self.lock:
             #frequency
@@ -171,7 +171,7 @@ class ROSTopicHz(object):
             min_delta = min(self.times)
 
             self.last_printed_tn = self.msg_tn
-        print "average rate: %.3f\n\tmin: %.3fs max: %.3fs std dev: %.5fs window: %s"%(rate, min_delta, max_delta, std_dev, n+1)
+        print("average rate: %.3f\n\tmin: %.3fs max: %.3fs std dev: %.5fs window: %s"%(rate, min_delta, max_delta, std_dev, n+1))
     
 def _rostopic_hz(topic, window_size=-1, filter_expr=None):
     """
@@ -195,7 +195,7 @@ def _rostopic_hz(topic, window_size=-1, filter_expr=None):
         sub = rospy.Subscriber(real_topic, msg_class, rt.callback_hz)
     else:
         sub = rospy.Subscriber(real_topic, rospy.AnyMsg, rt.callback_hz)        
-    print "subscribed to [%s]"%real_topic
+    print("subscribed to [%s]"%real_topic)
     while not rospy.is_shutdown():
         time.sleep(1.0)
         rt.print_hz()
@@ -251,7 +251,7 @@ class ROSTopicBandwidth(object):
         else:
             bw, mean, min_s, max_s = ["%.2fMB"%(v/1000000) for v in [bytes_per_s, mean, min_s, max_s]]
             
-        print "average: %s/s\n\tmean: %s min: %s max: %s window: %s"%(bw, mean, min_s, max_s, n)
+        print("average: %s/s\n\tmean: %s min: %s max: %s window: %s"%(bw, mean, min_s, max_s, n))
 
 def _rostopic_bw(topic, window_size=-1):
     """
@@ -268,7 +268,7 @@ def _rostopic_bw(topic, window_size=-1):
     # we use a large buffer size as we don't know what sort of messages we're dealing with.
     # may parameterize this in the future
     sub = rospy.Subscriber(real_topic, rospy.AnyMsg, rt.callback)
-    print "subscribed to [%s]"%real_topic
+    print("subscribed to [%s]"%real_topic)
     while not rospy.is_shutdown():
         time.sleep(1.0)
         rt.print_bw()
@@ -365,8 +365,6 @@ def get_topic_class(topic, blocking=False):
         raise ROSTopicException("Cannot load message class for [%s]. Are your messages built?"%topic_type)
     return msg_class, real_topic, msg_eval
 
-from itertools import izip
-
 def _str_plot_fields(val, f, field_filter):
     """
     get CSV representation of fields used by _str_plot
@@ -391,7 +389,7 @@ def _sub_str_plot_fields(val, f, field_filter):
             fields = list(field_filter(val))
         else:
             fields = val.__slots__
-        sub = (_sub_str_plot_fields(_convert_getattr(val, a, t), f+"."+a, field_filter) for a,t in itertools.izip(val.__slots__, val._slot_types) if a in fields)
+        sub = (_sub_str_plot_fields(_convert_getattr(val, a, t), f+"."+a, field_filter) for a,t in zip(val.__slots__, val._slot_types) if a in fields)
         sub = [s for s in sub if s is not None]
         if sub:
             return ','.join([s for s in sub])
@@ -411,7 +409,7 @@ def _sub_str_plot_fields(val, f, field_filter):
             return ','.join(["%s%s"%(f,x) for x in xrange(0,len(val))])
         elif isinstance(val0, rospy.Message):
             labels = ["%s%s"%(f,x) for x in xrange(0,len(val))]
-            sub = [s for s in [_sub_str_plot_fields(v, sf, field_filter) for v,sf in izip(val, labels)] if s]
+            sub = [s for s in [_sub_str_plot_fields(v, sf, field_filter) for v,sf in zip(val, labels)] if s]
             if sub:
                 return ','.join([s for s in sub])
     return None
@@ -465,7 +463,7 @@ def _sub_str_plot(val, time_offset, field_filter):
         else:
             fields = val.__slots__            
 
-        sub = (_sub_str_plot(_convert_getattr(val, f, t), time_offset, field_filter) for f,t in itertools.izip(val.__slots__, val._slot_types) if f in fields)
+        sub = (_sub_str_plot(_convert_getattr(val, f, t), time_offset, field_filter) for f,t in zip(val.__slots__, val._slot_types) if f in fields)
         sub = [s for s in sub if s is not None]
         if sub:
             return ','.join(sub)
@@ -645,7 +643,7 @@ def _rostopic_type(topic):
     """
     t, _, _ = get_topic_type(topic, blocking=False)
     if t:
-        print t
+        print(t)
     else:
         sys.stderr.write('unknown topic type [%s]\n'%topic)
         sys.exit(1)
@@ -771,12 +769,12 @@ def _rostopic_list_bag(bag_file, topic=None):
                     break
             import time
             earliest, latest = [time.strftime("%d %b %Y %H:%M:%S", time.localtime(t.to_time())) for t in (earliest, latest)]
-            print "%s message(s) from %s to %s"%(count, earliest, latest)
+            print("%s message(s) from %s to %s"%(count, earliest, latest))
         else:
             topics = set()
             for top, msg, _ in b.read_messages(raw=True):
                 if top not in topics:
-                    print top
+                    print(top)
                     topics.add(top)
                 if rospy.is_shutdown():
                     break
@@ -792,22 +790,22 @@ def _sub_rostopic_list(master, pubs, subs, publishers_only, subscribers_only, ve
         topic_types = _master_get_topic_types(master)
 
         if not subscribers_only:
-            print "\n%sPublished topics:"%indent
+            print("\n%sPublished topics:"%indent)
             for t, l in pubs:
                 if len(l) > 1:
-                    print indent+" * %s [%s] %s publishers"%(t, topic_type(t, topic_types), len(l))
+                    print(indent+" * %s [%s] %s publishers"%(t, topic_type(t, topic_types), len(l)))
                 else:
-                    print indent+" * %s [%s] 1 publisher"%(t, topic_type(t, topic_types))                    
+                    print(indent+" * %s [%s] 1 publisher"%(t, topic_type(t, topic_types)))                    
 
         if not publishers_only:
-            print indent
-            print indent+"Subscribed topics:"
+            print(indent)
+            print(indent+"Subscribed topics:")
             for t,l in subs:
                 if len(l) > 1:
-                    print indent+" * %s [%s] %s subscribers"%(t, topic_type(t, topic_types), len(l))
+                    print(indent+" * %s [%s] %s subscribers"%(t, topic_type(t, topic_types), len(l)))
                 else:
-                    print indent+" * %s [%s] 1 subscriber"%(t, topic_type(t, topic_types))
-        print ''
+                    print(indent+" * %s [%s] 1 subscriber"%(t, topic_type(t, topic_types)))
+        print('')
     else:
         if publishers_only:
             topics = [t for t,_ in pubs]
@@ -816,7 +814,7 @@ def _sub_rostopic_list(master, pubs, subs, publishers_only, subscribers_only, ve
         else:
             topics = list(set([t for t,_ in pubs] + [t for t,_ in subs]))                
         topics.sort()
-        print '\n'.join(["%s%s"%(indent, t) for t in topics])
+        print('\n'.join(["%s%s"%(indent, t) for t in topics]))
 
 # #3145
 def _rostopic_list_group_by_host(master, pubs, subs):
@@ -886,7 +884,7 @@ def _rostopic_list(topic, verbose=False,
     if group_by_host:
         # #3145
         host_pub_topics, host_sub_topics  = _rostopic_list_group_by_host(master, pubs, subs)
-        for hostname in set(host_pub_topics.keys() + host_sub_topics.keys()):
+        for hostname in set(list(host_pub_topics.keys()) + list(host_sub_topics.keys())): #py3k
             pubs, subs = host_pub_topics.get(hostname,[]), host_sub_topics.get(hostname, []),
             if (pubs and not subscribers_only) or (subs and not publishers_only):
                 print("Host [%s]:" % hostname)
@@ -956,7 +954,7 @@ def _rostopic_info(topic):
     @param topic: topic name 
     @type  topic: str
     """
-    print get_info_text(topic)
+    print(get_info_text(topic))
             
 ##########################################################################################
 # COMMAND PROCESSING #####################################################################
@@ -1046,7 +1044,7 @@ def create_field_filter(echo_nostr, echo_noarr):
     def field_filter(val):
         fields = val.__slots__
         field_types = val._slot_types
-        for f, t in itertools.izip(val.__slots__, val._slot_types):
+        for f, t in zip(val.__slots__, val._slot_types):
             if echo_noarr and '[' in t:
                 continue
             elif echo_nostr and 'string' in t:
@@ -1157,7 +1155,7 @@ def _rostopic_cmd_find(argv=sys.argv):
         parser.error("please specify a message type")
     if len(args) > 1:
         parser.error("you may only specify one message type")
-    print '\n'.join(find_by_type(args[0]))
+    print('\n'.join(find_by_type(args[0])))
     
 
 def create_publisher(topic_name, topic_type, latch):
@@ -1208,7 +1206,7 @@ def _publish_at_rate(pub, msg, rate, verbose=False):
         raise ROSTopicException("Rate must be a number")
     while not rospy.is_shutdown():
         if verbose:
-            print "publishing %s"%msg
+            print("publishing %s"%msg)
         pub.publish(msg)
         r.sleep()
 
@@ -1279,7 +1277,7 @@ def publish_message(pub, msg_class, pub_args, rate=None, once=False, verbose=Fal
                 s = s + " for %s seconds"%_ONCE_DELAY
             else:
                 s = s + ". Press ctrl-C to terminate"
-            print s
+            print(s)
         
         if rate is None:
             _publish_latched(pub, msg, once, verbose)
@@ -1665,7 +1663,7 @@ def _rostopic_cmd_info(argv):
         sys.exit(exitval)
             
 def _fullusage():
-    print """rostopic is a command-line tool for printing information about ROS Topics.
+    print("""rostopic is a command-line tool for printing information about ROS Topics.
 
 Commands:
 \trostopic bw\tdisplay bandwidth used by topic
@@ -1678,7 +1676,7 @@ Commands:
 \trostopic type\tprint topic type
 
 Type rostopic <command> -h for more detailed usage, e.g. 'rostopic echo -h'
-"""
+""")
     sys.exit(os.EX_USAGE)
 
 def rostopicmain(argv=None):

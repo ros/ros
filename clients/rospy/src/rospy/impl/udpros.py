@@ -31,6 +31,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 # Revision $Id$
+
+from __future__ import print_function
+
 """
 UDPROS connection protocol.
 """

@@ -97,7 +97,7 @@ class Generator(object):
         if not os.path.exists(outdir):
             try:
                 os.makedirs(outdir)
-            except Exception, e:
+            except Exception as e:
                 # It's not a problem if the directory already exists,
                 # because this can happen during a parallel build
                 if e.errno != errno.EEXIST:
@@ -112,7 +112,7 @@ class Generator(object):
 
     ## reindex files as a dictionary keyed by package
     def generate_package_files(self, package_files, files, ext):
-        files = filter(lambda f: f.endswith(ext), files)
+        files = [f for f in files if f.endswith(ext)]
         retcode = 0
         for f in files:
             try:
@@ -124,13 +124,13 @@ class Generator(object):
                 if not package in package_files:
                     package_files[package] = []
                 package_files[package].append(f)
-            except Exception, e:
-                print "\nERROR[%s]: Unable to load %s file '%s': %s\n"%(self.name, self.ext, f, e)
+            except Exception as e:
+                print("\nERROR[%s]: Unable to load %s file '%s': %s\n"%(self.name, self.ext, f, e))
                 retcode = 1 #flag error
         return retcode
 
     def write_modules(self, package_files):
-        for package, pfiles in package_files.iteritems():
+        for package, pfiles in package_files.items():
             mfiles = [self.resource_name(f) for f in pfiles]
             package_dir = roslib.packages.get_pkg_dir(package, True)
             outdir = self.outdir(package_dir)
@@ -162,7 +162,7 @@ class Generator(object):
             raise self.exception("file preventing the creating of module directory: %s"%dir)
         p = os.path.join(dir, '__init__.py')
         if roslib.msgs.is_verbose():
-            print "... creating module file", p
+            print("... creating module file", p)
         f = open(p, 'w')
         try:
             #this causes more problems than anticipated -- for pure python
@@ -170,7 +170,7 @@ class Generator(object):
             #f.write('## \mainpage\n') #doxygen
             #f.write('# \htmlinclude manifest.html\n')
             for mod in generated_modules:
-                f.write('from %s import *\n'%mod)
+                f.write('from .%s import *\n'%mod)
         finally:
             f.close()
 
@@ -178,18 +178,18 @@ class Generator(object):
         p = os.path.join(parentInit, '__init__.py')
         if not os.path.exists(p):
             #touch __init__.py in the parent package
-            print "... also creating module file %s"%p
+            print("... also creating module file %s"%p)
             f = open(p, 'w')
             f.close()
 
     def generate_package(self, package, pfiles):
         if not roslib.names.is_legal_resource_base_name(package):
-            print "\nERROR[%s]: package name '%s' is illegal and cannot be used in message generation.\nPlease see http://ros.org/wiki/Names"%(self.name, package)
+            print("\nERROR[%s]: package name '%s' is illegal and cannot be used in message generation.\nPlease see http://ros.org/wiki/Names"%(self.name, package))
             return 1 # flag error
         
         package_dir = roslib.packages.get_pkg_dir(package, True)
         if package_dir is None:
-            print "\nERROR[%s]: Unable to locate package '%s'\n"%(self.name, package)
+            print("\nERROR[%s]: Unable to locate package '%s'\n"%(self.name, package))
             return 1 #flag error
 
         # package/src/package/msg for messages, packages/src/package/srv for services
@@ -200,14 +200,14 @@ class Generator(object):
             # require an overhaul of the message generator
             # infrastructure.
             roslib.msgs.load_package_dependencies(package, load_recursive=True)
-        except Exception, e:
+        except Exception as e:
             #traceback.print_exc()
-            print "\nERROR[%s]: Unable to load package dependencies for %s: %s\n"%(self.name, package, e)
+            print("\nERROR[%s]: Unable to load package dependencies for %s: %s\n"%(self.name, package, e))
             return 1 #flag error
         try:
             roslib.msgs.load_package(package)        
-        except Exception, e:
-            print "\nERROR[%s]: Unable to load package %s: %s\n"%(self.name, package, e)
+        except Exception as e:
+            print("\nERROR[%s]: Unable to load package %s: %s\n"%(self.name, package, e))
             return 1 #flag error
 
         #print "[%s]: [%s] generating %s for the following messages: %s"%(self.name, self.what, package, pfiles)
@@ -215,12 +215,12 @@ class Generator(object):
         for f in pfiles:
             try:
                 outfile = self.generate(package, f, outdir) #actual generation
-            except Exception, e:
+            except Exception as e:
                 if not isinstance(e, MsgGenerationException) and not isinstance(e, roslib.msgs.MsgSpecException):
                     traceback.print_exc()
-                print "\nERROR[%s]: Unable to generate %s for package '%s': while processing '%s': %s\n"%(self.name, self.what, package, f, e)
+                print("\nERROR[%s]: Unable to generate %s for package '%s': while processing '%s': %s\n"%(self.name, self.what, package, f, e))
                 retcode = 1 #flag error
-        print "%s: python messages for '%s' ==> %s"%(self.name, package, outdir)
+        print("%s: python messages for '%s' ==> %s"%(self.name, package, outdir))
         return retcode
         
     def generate_all_by_package(self, package_files):
@@ -229,7 +229,7 @@ class Generator(object):
         @rtype: int
         """
         retcode = 0
-        for package, pfiles in package_files.iteritems():
+        for package, pfiles in package_files.items():
             retcode = self.generate_package(package, pfiles) or retcode
         return retcode
 
@@ -262,7 +262,7 @@ class Generator(object):
         package_files = {}
         # pass 1: collect list of files for each package
         retcode = self.generate_package_files(package_files, files, self.ext)
-        print "[%s]: generating %s for the following packages: %s"%(self.name, self.what, package_files.keys())
+        print("[%s]: generating %s for the following packages: %s"%(self.name, self.what, list(package_files.keys())))
 
         # pass 2: roslib.msgs.load_package(), generate messages
         retcode = retcode or self.generate_all_by_package(package_files)
@@ -275,7 +275,7 @@ class Generator(object):
 
     def write_gen(self, outfile, gen, verbose):
         if verbose:
-            print  "... generating %s"%outfile
+            print("... generating %s"%outfile)
         f = open(outfile, 'w')
         try:
             for l in gen:
@@ -284,7 +284,7 @@ class Generator(object):
             f.close()
 
 def usage(progname):
-    print "%(progname)s file(s)"%vars()
+    print("%(progname)s file(s)"%vars())
 
 def get_files(argv, usage_fn, ext):
     if not argv[1:]:
@@ -307,17 +307,17 @@ def genmain(argv, gen, usage_fn=usage):
         else:
             files = get_files(argv, usage_fn, gen.ext)
             if not files:
-                print "No matching files found"
+                print("No matching files found")
                 return
             retcode = gen.generate_messages(files, no_gen_initpy)
-    except roslib.msgs.MsgSpecException, e:
-        print >> sys.stderr, "ERROR: ", e
+    except roslib.msgs.MsgSpecException as e:
+        sys.stderr.write("ERROR: " + e + "\n")
         retcode = 1
-    except MsgGenerationException, e:
-        print sys.stderr, "ERROR: ",e
+    except MsgGenerationException as e:
+        sys.stderr.write("ERROR: " + e + "\n")
         retcode = 2
-    except Exception, e:
+    except Exception as e:
         traceback.print_exc()
-        print "ERROR: ",e
+        sys.stderr.write("ERROR: " + e + "\n")
         retcode = 3
     sys.exit(retcode or 0)

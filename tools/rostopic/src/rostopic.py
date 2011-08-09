@@ -45,6 +45,7 @@ import math
 import socket
 import time
 import traceback
+import yaml
 import xmlrpclib
 
 from urlparse import urlparse
@@ -83,7 +84,8 @@ def _master_get_topic_types(master):
     try:
         val = master.getTopicTypes()
     except xmlrpclib.Fault:
-        print >> sys.stderr, "WARNING: rostopic is being used against an older version of ROS/roscore"
+        #TODO: remove, this is for 1.1
+        sys.stderr.write("WARNING: rostopic is being used against an older version of ROS/roscore\n")
         val = master.getPublishedTopics('/')
     return val
 
@@ -220,7 +222,6 @@ class ROSTopicBandwidth(object):
                     self.times.pop(0)
                     self.sizes.pop(0)
             except:
-                import traceback
                 traceback.print_exc()
 
     def print_bw(self):
@@ -288,7 +289,7 @@ def msgevalgen(pattern):
         # I will probably replace this with some less beautiful but more efficient
         try:
             return eval('msg'+'.'.join(pattern.split('/')))
-        except AttributeError, e:
+        except AttributeError as e:
             sys.stdout.write("no field named [%s]"%pattern+"\n")
             return None
     return msgeval
@@ -338,7 +339,7 @@ def get_topic_type(topic, blocking=False):
     if topic_type:
         return topic_type, real_topic, msg_eval
     elif blocking:
-        print >> sys.stderr, "WARNING: topic [%s] does not appear to be published yet"%topic
+        sys.stderr.write("WARNING: topic [%s] does not appear to be published yet\n"%topic)
         while not rospy.is_shutdown():
             topic_type, real_topic, msg_eval = _get_topic_type(topic)
             if topic_type:
@@ -646,7 +647,7 @@ def _rostopic_type(topic):
     if t:
         print t
     else:
-        print >> sys.stderr, 'unknown topic type [%s]'%topic
+        sys.stderr.write('unknown topic type [%s]\n'%topic)
         sys.exit(1)
 
 def _rostopic_echo_bag(callback_echo, bag_file):
@@ -711,7 +712,7 @@ def _rostopic_echo(topic, callback_echo, bag_file=None, echo_all_topics=False):
             if callback_echo.count == 0 and \
                     not rospy.is_shutdown() and \
                     not callback_echo.done:
-                print >> sys.stderr, "WARNING: no messages received and simulated time is active.\nIs /clock being published?"
+                sys.stderr.write("WARNING: no messages received and simulated time is active.\nIs /clock being published?\n")
 
         while not rospy.is_shutdown() and not callback_echo.done:
             time.sleep(0.1)
@@ -1039,7 +1040,7 @@ def _rostopic_cmd_echo(argv):
     try:
         _rostopic_echo(topic, callback_echo, bag_file=options.bag)
     except socket.error:
-        print >> sys.stderr, "Network communication failed. Most likely failed to communicate with master."
+        sys.stderr.write("Network communication failed. Most likely failed to communicate with master.\n")
 
 def create_field_filter(echo_nostr, echo_noarr):
     def field_filter(val):
@@ -1227,7 +1228,7 @@ def _publish_latched(pub, msg, once=False, verbose=False):
     """
     try:
         pub.publish(msg)
-    except TypeError, e:
+    except TypeError as e:
         raise ROSTopicException(str(e))
 
     if not once:
@@ -1268,7 +1269,7 @@ def publish_message(pub, msg_class, pub_args, rate=None, once=False, verbose=Fal
         import std_msgs.msg
         keys = { 'now': now, 'auto': std_msgs.msg.Header(stamp=now) }
         roslib.message.fill_message_args(msg, pub_args, keys=keys)
-    except roslib.message.ROSMessageException, e:
+    except roslib.message.ROSMessageException as e:
         raise ROSTopicException(str(e)+"\n\nArgs are: [%s]"%roslib.message.get_printable_message_args(msg))
     try:
         
@@ -1285,7 +1286,7 @@ def publish_message(pub, msg_class, pub_args, rate=None, once=False, verbose=Fal
         else:
             _publish_at_rate(pub, msg, rate, verbose)
             
-    except rospy.ROSSerializationException, e:
+    except rospy.ROSSerializationException as e:
         import rosmsg
         # we could just print the message definition, but rosmsg is more readable
         raise ROSTopicException("Unable to publish message. One of the fields has an incorrect type:\n"+\
@@ -1299,11 +1300,6 @@ def _rostopic_cmd_pub(argv):
     @param argv: [str]
     @raise ROSTopicException: if call command cannot be executed
     """
-    try:
-        import yaml
-    except ImportError, e:
-        raise ROSTopicException("Cannot import yaml. Please make sure the pyyaml system dependency is installed")
-
     args = argv[2:]
     from optparse import OptionParser
     parser = OptionParser(usage="usage: %prog pub /topic type [args...]", prog=NAME)
@@ -1352,7 +1348,7 @@ def _rostopic_cmd_pub(argv):
         pub_args = []
         for arg in args[2:]:
             pub_args.append(yaml.load(arg))
-    except Exception, e:
+    except Exception as e:
         parser.error("Argument error: "+str(e))
 
     # make sure master is online. we wait until after we've parsed the
@@ -1399,7 +1395,7 @@ def file_yaml_arg(filename):
                 data = yaml.load_all(f)
                 for d in data:
                     yield [d]
-        except yaml.YAMLError, e:
+        except yaml.YAMLError as e:
             raise ROSTopicException("invalid YAML in file: %s"%(str(e)))
     return bagy_iter
     
@@ -1488,8 +1484,8 @@ def param_publish(pub, msg_class, param_name, rate, verbose):
         try:
             if publish:
                 publish_message(pub, msg_class, pub_args, None, True, verbose=verbose)
-        except ValueError, e:
-            print >> sys.stderr, str(e)
+        except ValueError as e:
+            sys.stderr.write("%s\n"%str(e))
             break
         if r is not None:
             r.sleep()
@@ -1545,8 +1541,8 @@ def stdin_publish(pub, msg_class, rate, once, filename, verbose):
                 # but, for now, this is the best re-use of the
                 # underlying methods.
                 publish_message(pub, msg_class, pub_args, None, bool(r) or once, verbose=verbose)
-            except ValueError, e:
-                print >> sys.stderr, str(e)
+            except ValueError as e:
+                sys.stderr.write("%s\n"%str(e))
                 break
         if r is not None:
             r.sleep()
@@ -1560,7 +1556,7 @@ def stdin_publish(pub, msg_class, rate, once, filename, verbose):
                 publish_message(pub, msg_class, pub_args, None, True, verbose=verbose)
                 if r is not None:
                     r.sleep()
-            except ValueError, e:
+            except ValueError as e:
                 break
 
 def stdin_yaml_arg():
@@ -1590,8 +1586,8 @@ def stdin_yaml_arg():
             if arg.strip() == '---': # End of document
                 try:
                     loaded = yaml.load(buff.rstrip())
-                except Exception, e:
-                    print >> sys.stderr, "Invalid YAML: %s"%str(e)
+                except Exception as e:
+                    sys.stderr.write("Invalid YAML: %s\n"%str(e))
                 if loaded is not None:
                     yield loaded
             elif arg == '': #EOF
@@ -1715,17 +1711,17 @@ def rostopicmain(argv=None):
         else:
             _fullusage()
     except socket.error:
-        print >> sys.stderr, "Network communication failed. Most likely failed to communicate with master."
+        sys.stderr.write("Network communication failed. Most likely failed to communicate with master.\n")
         sys.exit(1)
-    except rosbag.ROSBagException, e:
-        print >> sys.stderr, "ERROR: unable to use bag file: "+str(e)
+    except rosbag.ROSBagException as e:
+        sys.stderr.write("ERROR: unable to use bag file: %s\n"%str(e))
         sys.exit(1)
     except roslib.exceptions.ROSLibException, e:
         # mainly for invalid master URI or rosgraph.masterapi.ROSMasterException
-        print >> sys.stderr, "ERROR: "+str(e)
+        sys.stderr.write("ERROR: %s\n"%str(e))
         sys.exit(1)
     except ROSTopicException, e:
-        print >> sys.stderr, "ERROR: "+str(e)
+        sys.stderr.write("ERROR: %s\n"%str(e))
         sys.exit(1)
     except KeyboardInterrupt: pass
     except rospy.ROSInterruptException: pass

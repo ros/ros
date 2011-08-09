@@ -35,7 +35,7 @@
 """Base-classes and management of ROS services.
 See L{rospy.tcpros_service} for actual implementation."""
 
-from __future__ import with_statement
+
 
 import logging
 import traceback
@@ -87,9 +87,9 @@ class ServiceManager(object):
         """
         with self.lock:
             ret_val = []
-            for name, service in self.map.iteritems():
+            for name, service in self.map.items():
                 ret_val.append((name, service.uri))
-            services = self.map.values()
+            services = list(self.map.values())
         return ret_val
     
     def unregister_all(self):

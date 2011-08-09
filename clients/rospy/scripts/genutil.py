@@ -34,6 +34,8 @@
 
 ## Common generation tools for Python ROS message and service generators
 
+from __future__ import print_function
+
 import os
 import errno  # for smart handling of exceptions for os.makedirs()
 import sys

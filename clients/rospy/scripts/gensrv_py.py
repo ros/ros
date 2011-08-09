@@ -33,6 +33,8 @@
 #
 # Revision $Id: gensrv_py.py 1030 2008-05-22 22:11:12Z sfkwc $
 
+from __future__ import print_function
+
 """
 ROS message source code generation for rospy.
 

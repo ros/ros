@@ -56,7 +56,10 @@ import roslib.gentools
 from roslib.msgs import MsgSpec
 from roslib.srvs import SrvSpec
 
-from cStringIO import StringIO
+try:
+    from cStringIO import StringIO #Python 2.x
+except ImportError:
+    from io import StringIO #Python 3.x
 
 ############################################################
 # Built in types
@@ -175,7 +178,7 @@ class IndentedWriter():
             if newline:
                 self.str.write('\n')
             if indent:
-                for i in xrange(self.indentation):
+                for i in range(self.indentation):
                     self.str.write(' ')
         self.str.write(s)
 
@@ -752,11 +755,11 @@ def generate_msg(msg_path):
         # another copy just created the directory
         try:
             os.makedirs(output_dir)
-        except OSError, e:
+        except OSError as e:
             pass
 
     with open('%s/%s.lisp'%(output_dir, spec.short_name), 'w') as f:
-        print >> f, io.getvalue()
+        f.write(io.getvalue() + "\n")
     io.close()
 
     ########################################
@@ -808,7 +811,7 @@ def generate_srv(srv_path):
         # another copy just created the directory
         try:
             os.makedirs(output_dir)
-        except OSError, e:
+        except OSError as e:
             pass
 
     ########################################
@@ -826,7 +829,7 @@ def generate_srv(srv_path):
     write_service_specific_methods(s, spec)
     
     with open('%s/%s.lisp'%(output_dir, spec.short_name), 'w') as f:
-        print >> f, io.getvalue()
+        f.write(io.getvalue())
     io.close()
 
     ########################################

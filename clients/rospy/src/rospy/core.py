@@ -34,7 +34,7 @@
 
 """rospy internal core implementation library"""
 
-from __future__ import with_statement
+
 
 import atexit
 import logging
@@ -45,8 +45,17 @@ import threading
 import time
 import traceback
 import types
-import urlparse
-import xmlrpclib
+
+try:
+    import urllib.parse as urlparse #Python 3.x
+except ImportError:
+    import urlparse
+
+try:
+    import xmlrpc.client as xmlrpcclient #Python 3.x
+except ImportError:
+    import xmlrpclib as xmlrpcclient #Python 2.x
+
 
 import roslib.rosenv 
 import roslib.roslogging
@@ -466,8 +475,8 @@ def signal_shutdown(reason):
         for h in _shutdown_hooks:
             try:
                 h(reason)
-            except Exception, e:
-                print >> sys.stderr, "signal_shutdown hook error[%s]"%e
+            except Exception as e:
+                sys.stderr.write("signal_shutdown hook error[%s]\n"%e)
         del _shutdown_hooks[:]
 
         threads = _shutdown_threads[:]
@@ -524,5 +533,5 @@ def xmlrpcapi(uri):
     uriValidate = urlparse.urlparse(uri)
     if not uriValidate[0] or not uriValidate[1]:
         return None
-    return xmlrpclib.ServerProxy(uri)
+    return xmlrpcclient.ServerProxy(uri)
 

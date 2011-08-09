@@ -36,7 +36,7 @@
 Additional ROS client API methods.
 """
 
-from __future__ import with_statement
+
 
 import logging
 import os
@@ -122,7 +122,7 @@ def _init_node_params(argv, node_name):
     # #1027: load in param name mappings
     import roslib.params
     params = roslib.params.load_command_line_node_params(argv)
-    for param_name, param_value in params.iteritems():
+    for param_name, param_value in params.items():
         logdebug("setting param %s to %s"%(param_name, param_value))
         set_param(roslib.names.PRIV_NAME + param_name, param_value)
 

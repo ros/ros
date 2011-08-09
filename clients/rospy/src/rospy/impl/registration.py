@@ -34,16 +34,22 @@
 
 """Internal use: handles maintaining registrations with master via internal listener APIs"""
 
-from __future__ import with_statement
+
 
 import socket
 import sys
 import logging
-import thread
+try:
+	import _thread
+except ImportError:
+    import thread as _thread
 import threading
 import time
 import traceback
-import xmlrpclib
+try:
+    import xmlrpc.client as xmlrpcclient
+except ImportError:
+    import xmlrpclib as xmlrpcclient
 
 from rospy.core import is_shutdown, xmlrpcapi, \
     logfatal, logwarn, loginfo, logerr, logdebug, \
@@ -133,7 +139,7 @@ class RegistrationListeners(object):
             for l in self.listeners:
                 try:
                     l.reg_removed(resolved_name, data_type_or_uri, reg_type)
-                except Exception, e:
+                except Exception as e:
                     logerr("error notifying listener of removal: %s"%traceback.format_exc(e))
             
     def notify_added(self, resolved_name, data_type, reg_type):
@@ -149,7 +155,7 @@ class RegistrationListeners(object):
             for l in self.listeners:
                 try:
                     l.reg_added(resolved_name, data_type, reg_type)
-                except Exception, e:
+                except Exception as e:
                     logerr(traceback.format_exc(e))
                     
     def clear(self):
@@ -254,7 +260,7 @@ class RegManager(RegistrationListener):
                 else:
                     logdebug("No topics to register with master node %s", master_uri)
                     
-            except Exception, e:
+            except Exception as e:
                 if first:
                     # this use to print to console always, arguable whether or not this should be subjected to same configuration options as logging
                     logerr("Unable to immediately register with master node [%s]: master may not be running yet. Will keep trying."%master_uri)
@@ -300,14 +306,14 @@ class RegManager(RegistrationListener):
             if uris and not self.handler.done:
                 for uri in uris:
                     # #1141: have to multithread this to prevent a bad publisher from hanging us
-                    thread.start_new_thread(self._connect_topic_thread, (topic, uri))
+                    _thread.start_new_thread(self._connect_topic_thread, (topic, uri))
 
     def _connect_topic_thread(self, topic, uri):
         try:
             code, msg, _ = self.handler._connect_topic(topic, uri)
             if code != 1:
                 logdebug("Unable to connect subscriber to publisher [%s] for topic [%s]: %s", uri, topic, msg)
-        except Exception, e:
+        except Exception as e:
             if not is_shutdown():
                 logdebug("Unable to connect to publisher [%s] for topic [%s]: %s"%(uri, topic, traceback.format_exc()))
         
@@ -343,7 +349,7 @@ class RegManager(RegistrationListener):
         tm = get_topic_manager()
         sm = get_service_manager()
         try:
-            multi = xmlrpclib.MultiCall(master)
+            multi = xmlrpcclient.MultiCall(master)
             if tm is not None:
                 for resolved_name, _ in tm.get_subscriptions():
                     self.logger.debug("unregisterSubscriber [%s]"%resolved_name)
@@ -357,7 +363,8 @@ class RegManager(RegistrationListener):
                     self.logger.debug("unregisterService [%s]"%resolved_name) 
                     multi.unregisterService(caller_id, resolved_name, service_uri)
             multi()
-        except socket.error, (errno, msg):
+        except socket.error as se:
+            (errno, msg) = se.args
             if errno == 111 or errno == 61: #can't talk to master, nothing we can do about it
                 self.logger.warn("cannot unregister with master due to network issues")
             else:
@@ -445,11 +452,11 @@ class RegManager(RegistrationListener):
                             logfatal("unable to register service [%s] with master: %s"%(resolved_name, msg))
                         
                     registered = True
-                except Exception, e:
+                except Exception as e:
                     if first:
                         msg = "Unable to register with master node [%s]: master may not be running yet. Will keep trying."%master_uri
                         self.logger.error(str(e)+"\n"+msg)
-                        print msg
+                        print(msg)
                         first = False
                     time.sleep(0.2)
 

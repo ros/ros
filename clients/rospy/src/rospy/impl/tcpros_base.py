@@ -34,16 +34,25 @@
 
 """Internal use: common TCPROS libraries"""
 
-from __future__ import with_statement
 
-import cStringIO
-import select
+try:
+    from cStringIO import StringIO #Python 2.x
+    python3 = 0
+except ImportError:
+    from io import StringIO, BytesIO #Python 3.x
+    python3 = 1
 import socket
 import logging
-import thread
+
+try:
+    import _thread
+except ImportError:
+    import thread as _thread
+    
 import threading
 import time
 import traceback
+import select
 
 import roslib.rosenv
 from roslib.message import DeserializationError, Message
@@ -131,7 +140,7 @@ class TCPServer(object):
 
     def start(self):
         """Runs the run() loop in a separate thread"""
-        thread.start_new_thread(self.run, ())
+        _thread.start_new_thread(self.run, ())
         
     def run(self):
         """
@@ -146,7 +155,8 @@ class TCPServer(object):
                 (client_sock, client_addr) = self.server_sock.accept()
             except socket.timeout:
                 continue
-            except IOError, (errno, msg):
+            except IOError as e:
+                (errno, msg) = e.args
                 if errno == 4: #interrupted system call
                     continue
                 raise
@@ -155,7 +165,7 @@ class TCPServer(object):
             try:
                 #leave threading decisions up to inbound_handler
                 self.inbound_handler(client_sock, client_addr)
-            except socket.error, e:
+            except socket.error as e:
                 if not self.is_shutdown:
                     traceback.print_exc()
                     logwarn("Failed to handle inbound connection due to socket error: %s"%e)
@@ -261,7 +271,7 @@ class TCPROSServer(object):
                 if not self.tcp_ros_server:
                     self.tcp_ros_server = TCPServer(self._tcp_server_callback, port) 
                     self.tcp_ros_server.start()
-            except Exception, e:
+            except Exception as e:
                 self.tcp_ros_server = None
                 logerr("unable to start TCPROS server: %s\n%s"%(e, traceback.format_exc()))
                 return 0, "unable to establish TCPROS server: %s"%e, []
@@ -295,7 +305,12 @@ class TCPROSServer(object):
         #and then use that to do the writing
         try:
             buff_size = 4096 # size of read buffer
-            header = read_ros_handshake_header(sock, cStringIO.StringIO(), buff_size)
+            if python3 == 0:
+                #initialize read_ros_handshake_header with BytesIO for Python 3 (instead of bytesarray())    
+                header = read_ros_handshake_header(sock, StringIO(), buff_size)
+            else:
+                header = read_ros_handshake_header(sock, BytesIO(), buff_size)
+            
             if 'topic' in header:
                 err_msg = self.topic_connection_handler(sock, client_addr, header)
             elif 'service' in header:
@@ -410,9 +425,15 @@ class TCPROSTransport(Transport):
         self.socket = None
         self.endpoint_id = 'unknown'
         self.dest_address = None # for reconnection
-        self.read_buff = cStringIO.StringIO()
-        self.write_buff = cStringIO.StringIO()
-            
+        
+        if python3 == 0: # Python 2.x
+            self.read_buff = StringIO()
+            self.write_buff = StringIO()
+        else: # Python 3.x
+            self.read_buff = BytesIO()
+            self.write_buff = BytesIO()
+                    	    
+        #self.write_buff = StringIO()
         self.header = header
 
         # #1852 have to hold onto latched messages on subscriber side
@@ -478,11 +499,10 @@ class TCPROSTransport(Transport):
             self.socket.connect((dest_addr, dest_port))
             self.write_header()
             self.read_header()
-
-        except TransportInitError, tie:
+        except TransportInitError as tie:
             rospyerr("Unable to initiate TCP/IP socket to %s:%s (%s): %s"%(dest_addr, dest_port, endpoint_id, traceback.format_exc()))            
             raise
-        except Exception, e:
+        except Exception as e:
             # FATAL: no reconnection as error is unknown
             self.done = True
             if self.socket:
@@ -563,15 +583,17 @@ class TCPROSTransport(Transport):
             self.socket.sendall(data)
             self.stat_bytes  += len(data)
             self.stat_num_msg += 1
-        except IOError, (errno, msg):
+        except IOError as ioe:
             #for now, just document common errno's in code
+            (errno, msg) = ioe.args
             if errno == 32: #broken pipe
                 logdebug("ERROR: Broken Pipe")
                 self.close()
                 raise TransportTerminated(str(errno)+msg)
             raise #re-raise
-        except socket.error, (errno, msg):
+        except socket.error as se:
             #for now, just document common errno's in code
+            (errno, msg) = se.args
             if errno == 32: #broken pipe
                 logdebug("[%s]: Closing connection [%s] due to broken pipe", self.name, self.endpoint_id)
                 self.close()
@@ -585,9 +607,6 @@ class TCPROSTransport(Transport):
                 logdebug("[%s]: closing connection [%s] due to unknown socket error: %s", self.name, self.endpoint_id, msg) 
                 self.close()
                 raise TransportTerminated(str(errno)+' '+msg)                
-        except:
-            #TODO: try to figure out common errors here
-            raise
         return True
     
     def receive_once(self):
@@ -621,14 +640,14 @@ class TCPROSTransport(Transport):
             
             return msg_queue
 
-        except DeserializationError, e:
+        except DeserializationError as e:
             rospyerr(traceback.format_exc())            
             raise TransportException("receive_once[%s]: DeserializationError %s"%(self.name, str(e)))
-        except TransportTerminated, e:
+        except TransportTerminated as e:
             raise #reraise
-        except ServiceException, e:
+        except ServiceException as e:
             raise
-        except Exception, e:
+        except Exception as e:
             rospyerr(traceback.format_exc())
             raise TransportException("receive_once[%s]: unexpected error %s"%(self.name, str(e)))
         return retval
@@ -675,7 +694,7 @@ class TCPROSTransport(Transport):
                     else:
                         self._reconnect()
 
-                except TransportException, e:
+                except TransportException as e:
                     # set socket to None so we reconnect
                     try:
                         if self.socket is not None:
@@ -684,12 +703,11 @@ class TCPROSTransport(Transport):
                         pass
                     self.socket = None
 
-                except DeserializationError, e:
+                except DeserializationError as e:
                     #TODO: how should we handle reconnect in this case?
                     
                     logerr("[%s] error deserializing incoming request: %s"%self.name, str(e))
                     rospyerr("[%s] error deserializing incoming request: %s"%self.name, traceback.format_exc())
-                    
                 except:
                     # in many cases this will be a normal hangup, but log internally
                     try:

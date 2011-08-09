@@ -32,7 +32,7 @@
 
 """Parameter Server Cache"""
 
-from __future__ import with_statement
+
 import threading
 
 #TODO: get rid of this routine entirely. It doesn't work with the current PS representation.

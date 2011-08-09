@@ -149,7 +149,7 @@ def serialize_message(b, seq, msg):
     #serialize the message data
     try:
         msg.serialize(b)
-    except struct.error, e:
+    except struct.error as e:
         raise rospy.exceptions.ROSSerializationException(e)
 
     #write 4-byte packet length
@@ -159,7 +159,7 @@ def serialize_message(b, seq, msg):
     b.seek(start)
     b.write(struct.pack('<I', size))
     b.seek(end)
-
+   
 def deserialize_messages(b, msg_queue, data_class, queue_size=None, max_msgs=None, start=0):
     """
     Read all messages off the buffer 
@@ -239,7 +239,7 @@ def deserialize_messages(b, msg_queue, data_class, queue_size=None, max_msgs=Non
                 b.write(leftovers)
             else:
                 b.seek(btell)
-    except Exception, e:
+    except Exception as e:
         logging.getLogger('rospy.msg').error("cannot deserialize message: EXCEPTION %s", traceback.format_exc())
         raise roslib.message.DeserializationError("cannot deserialize: %s"%str(e))
 

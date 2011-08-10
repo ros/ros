@@ -63,8 +63,25 @@ Common parent classes for all rospy topics. The rospy topic autogenerators
 create classes that are children of these implementations.
 """
 
-from __future__ import with_statement
-import struct, cStringIO, thread, threading, logging, time
+
+import struct
+try:
+    from cStringIO import StringIO #Python 2.x
+    import thread as _thread # Python 2
+    python3 = 0
+    def isstring(s):
+        return isinstance(s, basestring) #Python 2.x
+except ImportError:
+    python3 = 1
+    from io import StringIO, BytesIO #Python 3.x
+    import _thread 
+    def isstring(s):
+        return isinstance(s, str) #Python 3.x
+    		
+import threading
+import logging
+import time
+
 from itertools import chain
 import traceback
 
@@ -104,10 +121,12 @@ class Topic(object):
         @raise ValueError: if parameters are invalid
         """
         
-        if not name or not isinstance(name, basestring):
+        if not name or not isstring(name):
             raise ValueError("topic name is not a non-empty string")
-        if isinstance(name, unicode):
-            raise ValueError("topic name cannot be unicode")
+        try:
+            name = name.encode("utf-8")
+        except UnicodeError:
+            raise ValueError("topic name must be ascii/utf-8 compatible")
         if data_class is None:
             raise ValueError("topic parameter 'data_class' is not initialized")
         if not type(data_class) == type:
@@ -415,7 +434,6 @@ class _SubscriberImpl(_TopicImpl):
     """
     Underyling L{_TopicImpl} implementation for subscriptions.
     """
-
     def __init__(self, name, data_class):
         """
         ctor.
@@ -558,7 +576,7 @@ class _SubscriberImpl(_TopicImpl):
                 cb(msg, cb_args)
             else:
                 cb(msg)
-        except Exception, e:
+        except Exception as e:
             if not is_shutdown():
                 logerr("bad callback: %s\n%s"%(cb, traceback.format_exc()))
             else:
@@ -672,7 +690,7 @@ class Publisher(Topic):
         try:
             self.impl.acquire()
             self.impl.publish(data)
-        except roslib.message.SerializationError, e:
+        except roslib.message.SerializationError as e:
             # can't go to rospy.logerr(), b/c this could potentially recurse
             _logger.error(traceback.format_exc(e))
             raise ROSSerializationException(str(e))
@@ -692,7 +710,10 @@ class _PublisherImpl(_TopicImpl):
         @type  data_class: L{Message} class
         """
         super(_PublisherImpl, self).__init__(name, data_class)
-        self.buff = cStringIO.StringIO()
+        if python3 == 0:
+            self.buff = StringIO()
+        else:
+            self.buff = BytesIO()
         self.publock = threading.RLock() #for acquire()/release
         self.subscriber_listeners = []
 
@@ -855,10 +876,10 @@ class _PublisherImpl(_TopicImpl):
                 try:
                     if not is_shutdown():
                         c.write_data(data)
-                except TransportTerminated, e:
+                except TransportTerminated as e:
                     logdebug("publisher connection to [%s] terminated, see errorlog for details:\n%s"%(c.endpoint_id, traceback.format_exc()))
                     err_con.append(c)
-                except Exception, e:
+                except Exception as e:
                     # greater severity level
                     logdebug("publisher connection to [%s] terminated, see errorlog for details:\n%s"%(c.endpoint_id, traceback.format_exc()))
                     err_con.append(c)
@@ -922,7 +943,7 @@ class _TopicManager(object):
         """
         with self.lock:
             info = []
-            for s in chain(self.pubs.itervalues(), self.subs.itervalues()):
+            for s in chain(iter(self.pubs.values()), iter(self.subs.values())):
                 info.extend(s.get_stats_info())
             return info
             
@@ -934,8 +955,8 @@ class _TopicManager(object):
         @rtype: list
         """
         with self.lock:
-            return [s.get_stats() for s in self.pubs.itervalues()],\
-                   [s.get_stats() for s in self.subs.itervalues()]
+            return [s.get_stats() for s in self.pubs.values()],\
+                   [s.get_stats() for s in self.subs.values()]
             
     def close_all(self):
         """
@@ -944,7 +965,7 @@ class _TopicManager(object):
         """
         self.closed = True
         with self.lock:
-            for t in chain(self.pubs.itervalues(), self.subs.itervalues()):
+            for t in chain(iter(self.pubs.values()), iter(self.subs.values())):
                 t.close()
             self.pubs.clear()
             self.subs.clear()        
@@ -971,8 +992,8 @@ class _TopicManager(object):
 
     def _recalculate_topics(self):
         """recalculate self.topics. expensive"""
-        self.topics = set([x.resolved_name for x in self.pubs.itervalues()] +
-                          [x.resolved_name for x in self.subs.itervalues()])
+        self.topics = set([x.resolved_name for x in self.pubs.values()] +
+                          [x.resolved_name for x in self.subs.values()])
     
     def _remove(self, ps, rmap, reg_type):
         """
@@ -1124,7 +1145,7 @@ class _TopicManager(object):
         return self.topics
     
     def _get_list(self, rmap):
-        return [[k, v.type] for k, v in rmap.iteritems()]
+        return [[k, v.type] for k, v in rmap.items()]
 
     ## @return [[str,str],]: list of topics subscribed to by this node, [ [topic1, topicType1]...[topicN, topicTypeN]]
     def get_subscriptions(self):

@@ -40,7 +40,7 @@ See: U{http://www.ros.org/wiki/Names}
 
 import sys
 import os
-from itertools import ifilter
+
 
 from roslib.names import namespace, get_ros_namespace, ns_join, make_global_ns, load_mappings, \
      SEP, GLOBALNS, TYPE_SEPARATOR, REMAP, ANYTYPE, \
@@ -52,6 +52,15 @@ from rospy.impl.validators import ParameterInvalid
 
 TOPIC_ANYTYPE = ANYTYPE #indicates that a subscriber will connect any datatype given to it
 SERVICE_ANYTYPE = ANYTYPE #indicates that a service client does not have a fixed type
+
+import struct
+
+if sys.hexversion > 0x03000000: #Python3
+    def isstring(s):
+        return isinstance(s, str) #Python 3.x
+else:
+    def isstring(s):
+        return isinstance(s, basestring) #Python 2.x
 
 def canonicalize_name(name):
     """
@@ -99,7 +108,7 @@ def initialize_mappings(node_name):
     """
     global _resolved_mappings
     _resolved_mappings = {}
-    for m,v in _mappings.iteritems():
+    for m,v in _mappings.items():
         # resolve both parts of the mappings. use the roslib.names
         # version of resolve_name to avoid circular mapping.
         if m.startswith('__'): # __name, __log, etc...
@@ -125,7 +134,7 @@ def resolve_name_without_node_name(name):
     fake_caller_id = ns_join(get_namespace(), 'node')
     fake_resolved = roslib.names.resolve_name(name, fake_caller_id)
 
-    for m, v in _mappings.iteritems():
+    for m, v in _mappings.items():
         if roslib.names.resolve_name(m, fake_caller_id) == fake_resolved:
             if is_private(name):
                 raise ROSInitException("due to the way this node is written, %s cannot be remapped to a ~name. \nThe declaration of topics/services must be moved after the call to init_node()"%name)
@@ -235,7 +244,7 @@ def scoped_name(caller_id, name):
 #XML-RPC specific in this way.
 
 def valid_name_validator_resolved(param_name, param_value, caller_id):
-    if not param_value or not isinstance(param_value, basestring):
+    if not param_value or not isstring(param_value):
         raise ParameterInvalid("ERROR: parameter [%s] must be a non-empty string"%param_name)            
     #TODO: actual validation of chars
     # I added the colon check as the common error will be to send an URI instead of name
@@ -244,7 +253,7 @@ def valid_name_validator_resolved(param_name, param_value, caller_id):
     #don't use our own resolve_name because we do not want to remap
     return roslib.names.resolve_name(param_value, caller_id, remappings=None)
 def valid_name_validator_unresolved(param_name, param_value, caller_id):
-    if not param_value or not isinstance(param_value, basestring):
+    if not param_value or not isstring(param_value):
         raise ParameterInvalid("ERROR: parameter [%s] must be a non-empty string"%param_name)            
     #TODO: actual validation of chars        
     # I added the colon check as the common error will be to send an URI instead of name
@@ -276,7 +285,7 @@ def global_name(param_name):
     @rtype: str
     """
     def validator(param_value, caller_id):
-        if not param_value or not isinstance(param_value, basestring):
+        if not param_value or not isstring(param_value):
             raise ParameterInvalid("ERROR: parameter [%s] must be a non-empty string"%param_name)
         #TODO: actual validation of chars
         if not is_global(param_value):

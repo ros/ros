@@ -59,7 +59,12 @@ import socket
 import threading
 import traceback
 import time
-import urlparse
+
+try:
+    #py3k
+    import urllib.parse as urlparse
+except ImportError:
+    import urlparse
 
 from roslib.xmlrpc import XmlRpcHandler
 
@@ -103,26 +108,26 @@ def apivalidate(error_return_value, validators=()):
     @type  validators: sequence
     """
     def check_validates(f):
-        assert len(validators) == f.func_code.co_argcount - 2, "%s failed arg check"%f #ignore self and caller_id
+        assert len(validators) == f.__code__.co_argcount - 2, "%s failed arg check"%f #ignore self and caller_id
         def validated_f(*args, **kwds):
             if LOG_API:
-                _logger.debug("%s%s", f.func_name, str(args[1:]))
+                _logger.debug("%s%s", f.__name__, str(args[1:]))
                 #print "%s%s"%(f.func_name, str(args[1:]))
             if len(args) == 1:
-                _logger.error("%s invoked without caller_id paramter"%f.func_name)
+                _logger.error("%s invoked without caller_id paramter"%f.__name__)
                 return -1, "missing required caller_id parameter", error_return_value
-            elif len(args) != f.func_code.co_argcount:
+            elif len(args) != f.__code__.co_argcount:
                 return -1, "Error: bad call arity", error_return_value
 
             instance = args[0]
             caller_id = args[1]
-            if not isinstance(caller_id, basestring):
-                _logger.error("%s: invalid caller_id param type", f.func_name)
+            if not isinstance(caller_id, str):
+                _logger.error("%s: invalid caller_id param type", f.__name__)
                 return -1, "caller_id must be a string", error_return_value
             
             newArgs = [instance, caller_id] #canonicalized args
             try:
-                for (v, a) in itertools.izip(validators, args[2:]):
+                for (v, a) in zip(validators, args[2:]):
                     if v:
                         try:
                             #simultaneously validate + canonicalized args
@@ -130,28 +135,28 @@ def apivalidate(error_return_value, validators=()):
                                 newArgs.append(instance._custom_validate(v[0], v[1], a, caller_id))
                             else:
                                 newArgs.append(v(a, caller_id)) 
-                        except ParameterInvalid, e:
-                            _logger.error("%s: invalid parameter: %s", f.func_name, str(e) or 'error')
+                        except ParameterInvalid as e:
+                            _logger.error("%s: invalid parameter: %s", f.__name__, str(e) or 'error')
                             return -1, str(e) or 'error', error_return_value
                     else:
                         newArgs.append(a)
 
                 if LOG_API:
                     retval = f(*newArgs, **kwds)
-                    _logger.debug("%s%s returns %s", f.func_name, args[1:], retval)
+                    _logger.debug("%s%s returns %s", f.__name__, args[1:], retval)
                     return retval
                 else:
                     code, msg, val = f(*newArgs, **kwds)
                     if val is None:
                         return -1, "Internal error (None value returned)", error_return_value
                     return code, msg, val
-            except TypeError, te: #most likely wrong arg number
+            except TypeError as te: #most likely wrong arg number
                 _logger.error(traceback.format_exc())
                 return -1, "Error: invalid arguments: %s"%te, error_return_value
-            except Exception, e: #internal failure
+            except Exception as e: #internal failure
                 _logger.error(traceback.format_exc())
                 return 0, "Internal failure: %s"%e, error_return_value
-        validated_f.func_name = f.func_name
+        validated_f.__name__ = f.__name__
         validated_f.__doc__ = f.__doc__ #preserve doc
         return validated_f
     return check_validates
@@ -235,7 +240,7 @@ class ROSHandler(XmlRpcHandler):
             if not type(param_value) == list:
                 raise ParameterInvalid("ERROR: param [%s] must be a list"%param_name)
             for v in param_value:
-                if not isinstance(v, basestring):
+                if not isinstance(v, str):
                     raise ParameterInvalid("ERROR: param [%s] must be a list of strings"%param_name)
                 parsed = urlparse.urlparse(v)
                 if not parsed[0] or not parsed[1]: #protocol and host
@@ -353,9 +358,9 @@ class ROSHandler(XmlRpcHandler):
         @rtype: [int, str, int]
         """
         if msg:
-            print >> sys.stdout, "shutdown request: %s"%msg
+            print("shutdown request: %s"%msg)
         else:
-            print >> sys.stdout, "shutdown requst"
+            print("shutdown requst")
         if self._shutdown('external shutdown request from [%s]: %s'%(caller_id, msg)):
             signal_shutdown('external shutdown request from [%s]: [%s]'%(caller_id, msg))
         return 1, "shutdown", 0
@@ -441,7 +446,7 @@ class ROSHandler(XmlRpcHandler):
                 code, msg, result = \
                       xmlrpcapi(pub_uri).requestTopic(caller_id, topic, protocols)
                 success = True
-            except Exception, e:
+            except Exception as e:
                 if tries >= max_num_tries:
                     return 0, "unable to requestTopic: %s"%str(e), 0
                 else:

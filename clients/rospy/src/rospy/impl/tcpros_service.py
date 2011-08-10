@@ -34,12 +34,12 @@
 
 """Internal use: Service-specific extensions for TCPROS support"""
 
-import cStringIO
+import io
 import socket
 import struct
 import sys
 import logging
-import thread
+
 import time
 import traceback
 
@@ -59,6 +59,18 @@ import rospy.msg
 import rospy.names
 
 import rospy.impl.validators
+
+try:
+	import _thread #py3k
+except ImportError:
+    import thread as _thread
+
+if sys.hexversion > 0x03000000: #Python3
+    def isstring(s):
+        return isinstance(s, str) #Python 3.x
+else:
+    def isstring(s):
+        return isinstance(s, basestring) #Python 2.x
 
 logger = logging.getLogger('rospy.service')
 
@@ -172,7 +184,7 @@ def convert_return_to_response(response, response_class):
         # kwds response
         try:
             return response_class(**response)
-        except AttributeError, e:
+        except AttributeError as e:
             raise ServiceException("handler returned invalid value: %s"%str(e))
     elif response == None:
         raise ServiceException("service handler returned None")
@@ -180,14 +192,14 @@ def convert_return_to_response(response, response_class):
         # single, non-list arg
         try:
             return response_class(response)
-        except TypeError, e:
+        except TypeError as e:
             raise ServiceException("handler returned invalid value: %s"%str(e))
     else:
         # user returned a list, which has some ambiguous cases. Our resolution is that
         # all list/tuples are converted to *args
         try:
             return response_class(*response)
-        except TypeError, e:
+        except TypeError as e:
             raise ServiceException("handler returned wrong number of values: %s"%str(e))
 
 def service_connection_handler(sock, client_addr, header):
@@ -229,7 +241,7 @@ def service_connection_handler(sock, client_addr, header):
             transport.write_header()
             # using threadpool reduced performance by an order of
             # magnitude, need to investigate better
-            thread.start_new_thread(service.handle, (transport, header))
+            _thread.start_new_thread(service.handle, (transport, header))
                 
         
 class TCPService(TCPROSTransportProtocol):
@@ -288,7 +300,7 @@ class TCPROSServiceClient(TCPROSTransportProtocol):
         # The current implementation allows user-supplied headers to
         # override protocol-specific headers.  We may want to
         # eliminate this in the future if it is abused too severely.
-        for k, v in self.headers.iteritems():
+        for k, v in self.headers.items():
             headers[k] = v
         return headers
     
@@ -449,7 +461,7 @@ class ServiceProxy(_Service):
                     rospy.core.parse_rosrpc_uri(self.uri)
                 except rospy.impl.validators.ParameterInvalid:
                     raise ServiceException("master returned invalid ROSRPC URI: %s"%self.uri)
-            except socket.error, e:
+            except socket.error as e:
                 logger.error("[%s]: socket error contacting service, master is probably unavailable",self.resolved_name)
         return self.uri
 
@@ -482,7 +494,7 @@ class ServiceProxy(_Service):
             transport.buff_size = self.buff_size
             try:
                 transport.connect(dest_addr, dest_port, service_uri)
-            except TransportInitError, e:
+            except TransportInitError as e:
                 # can be a connection or md5sum mismatch
                 raise ServiceException("unable to connect to service: %s"%e)
             self.transport = transport
@@ -499,7 +511,7 @@ class ServiceProxy(_Service):
                 raise ServiceException("service [%s] returned no response"%self.resolved_name)
             elif len(responses) > 1:
                 raise ServiceException("service [%s] returned multiple responses: %s"%(self.resolved_name, len(responses)))
-        except rospy.exceptions.TransportException, e:
+        except rospy.exceptions.TransportException as e:
             # convert lower-level exception to exposed type
             if rospy.core.is_shutdown():
                 raise rospy.exceptions.ROSInterruptException("node shutdown interrupted service call")
@@ -525,7 +537,7 @@ class ServiceImpl(_Service):
     def __init__(self, name, service_class, handler, buff_size=DEFAULT_BUFF_SIZE):
         super(ServiceImpl, self).__init__(name, service_class)
 
-        if not name or not isinstance(name, basestring):
+        if not name or not isstring(name):
             raise ValueError("service name is not a non-empty string")
         # #2202
         if not roslib.names.is_legal_name(name):
@@ -561,7 +573,7 @@ class ServiceImpl(_Service):
         try:
             #TODO: make service manager configurable            
             get_service_manager().unregister(self.resolved_name, self)
-        except Exception, e:
+        except Exception as e:
             logerr("Unable to unregister with master: "+traceback.format_exc())
             raise ServiceException("Unable to connect to master: %s"%e)
 
@@ -602,10 +614,10 @@ class ServiceImpl(_Service):
             # ok byte
             transport.write_buff.write(struct.pack('<B', 1))
             transport.send_message(response, self.seq)
-        except ServiceException, e:
+        except ServiceException as e:
             rospy.core.rospydebug("handler raised ServiceException: %s"%(e))
             self._write_service_error(transport, "service cannot process request: %s"%e)
-        except Exception, e:
+        except Exception as e:
             logerr("Error processing request: %s\n%s"%(e,traceback.print_exc()))
             self._write_service_error(transport, "error processing request: %s"%e)
     
@@ -636,7 +648,7 @@ class ServiceImpl(_Service):
                     self._handle_request(transport, request)
                 if not persistent:
                     handle_done = True
-            except rospy.exceptions.TransportTerminated, e:
+            except rospy.exceptions.TransportTerminated as e:
                 if not persistent:
                     logerr("incoming connection failed: %s"%e)
                 logdebug("service[%s]: transport terminated"%self.resolved_name)

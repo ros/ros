@@ -40,7 +40,7 @@
 
 (in-package :roslisp)
 
-(defparameter *tcp-timeout* 1.0 "How many seconds to wait until giving up")
+(defparameter *tcp-timeout* 5.0 "How many seconds to wait until giving up")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Utility

@@ -200,11 +200,10 @@ def ask_and_call(cmds, cwd=None):
         return '"%s"'%s if ' ' in s else s
     sys.stdout.write("Okay to execute:\n\n%s\n(y/n)?\n"%('\n'.join([' '.join([quote(s) for s in c]) for c in cmds])))
     while 1:
-        input = sys.stdin.readline().strip()
+        input = sys.stdin.readline().strip().lower()
         if input in ['y', 'n']:
             break
     accepted = input == 'y'
-    import subprocess
     if accepted:
         for c in cmds:
             if cwd:

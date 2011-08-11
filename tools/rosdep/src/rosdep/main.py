@@ -32,6 +32,8 @@
 #Library and command-line tool for calculating rosdeps.
 #"""
 
+from __future__ import print_function
+
 import roslib; roslib.load_manifest("rosdep")
 import roslib.stacks
 
@@ -111,7 +113,7 @@ def main():
         valid_stacks = [s for s in roslib.stacks.list_stacks() if s in rdargs]
     
         if len(rejected_packages) > 0:
-            print "Warning: could not identify %s as a package"%rejected_packages
+            print("Warning: could not identify %s as a package"%rejected_packages)
         if len(verified_packages) == 0 and len(valid_stacks) == 0:
             parser.error("No Valid Packages or stacks listed as arguments")
                 
@@ -122,17 +124,17 @@ def main():
     ### Find all dependencies
     try:
         r = core.Rosdep(verified_packages, robust=options.robust)
-    except roslib.os_detect.OSDetectException, ex:
-        print "rosdep ABORTING.  Failed to detect OS: %s"%ex
+    except roslib.os_detect.OSDetectException as ex:
+        print("rosdep ABORTING.  Failed to detect OS: %s"%ex)
         return 1
 
-    except roslib.exceptions.ROSLibException, ex:
-        print "rosdep ABORTING: %s"%ex
+    except roslib.exceptions.ROSLibException as ex:
+        print("rosdep ABORTING: %s"%ex)
         return 1
 
     if options.verbose:
-        print "Detected OS: " + r.osi.get_name()
-        print "Detected Version: " + r.osi.get_version()
+        print("Detected OS: " + r.osi.get_name())
+        print("Detected Version: " + r.osi.get_version())
 
     try:
         if command == "generate_bash" or command == "satisfy":
@@ -140,47 +142,47 @@ def main():
             if not missing_packages:
                 return 0
             else:
-                print "The following rosdeps are not installed but are required", missing_packages
+                print("The following rosdeps are not installed but are required", missing_packages)
                 return 1
         
         elif command == "install":
             error = r.install(options.include_duplicates, options.default_yes)
             if error:
-                print >> sys.stderr, "rosdep install ERROR:\n%s"%error
+                print("rosdep install ERROR:\n%s"%error, file=sys.stderr)
                 return 1
             else:
-                print "All required rosdeps installed successfully"
+                print("All required rosdeps installed successfully")
                 return 0
-    except core.RosdepException, e:
-        print >> sys.stderr, "ERROR: %s"%e
+    except core.RosdepException as e:
+        print("ERROR: %s"%e, file=sys.stderr)
         return 1
 
     try:
         if command == "depdb":
-            print r.depdb(verified_packages)
+            print(r.depdb(verified_packages))
             return 0
 
         elif command == "what_needs":
-            print '\n'.join(r.what_needs(rdargs))
+            print('\n'.join(r.what_needs(rdargs)))
             return 0
 
         elif command == "where_defined":
-            print r.where_defined(rdargs)
+            print(r.where_defined(rdargs))
             return 0
 
         elif command == "check":
             return_val = 0
             missing_packages = r.check()
             if len(rejected_packages) > 0:
-                print >> sys.stderr, "Arguments %s are not packages"%rejected_packages
+                print("Arguments %s are not packages"%rejected_packages, file=sys.stderr)
                 return_val = 1
             if len(missing_packages) == 0:
-                print "All required rosdeps are installed" 
+                print("All required rosdeps are installed")
                 return 0
             else:
-                print "The following rosdeps were not installed", missing_packages
+                print("The following rosdeps were not installed", missing_packages)
                 return 1
 
-    except core.RosdepException, e:
-        print >> sys.stderr, str(e)
+    except core.RosdepException as e:
+        print(str(e), file=sys.stderr)
         return 1

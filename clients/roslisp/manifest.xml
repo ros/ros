@@ -1,6 +1,6 @@
 <package>
   <description brief="A Lisp client library for ROS">This package is a Lisp client library for ROS, the Robot Operating System.</description>
-  <author>Bhaskara Marthi, Brian Gerkey, Lorenz Mösenlechner</author>
+  <author>Bhaskara Marthi, Brian Gerkey, Lorenz Mösenlechner, Thibault Kruse</author>
   <license>BSD</license>
   <review status="experimental" notes=""/>
   <depend package="roslib"/>

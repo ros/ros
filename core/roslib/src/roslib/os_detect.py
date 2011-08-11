@@ -42,19 +42,28 @@ import sys
 import subprocess
 import types
 import tempfile
-import yaml
 import distutils.version # To parse version numbers
 
+if sys.hexversion > 0x03000000: #Python3
+    python3 = True
+else:
+    python3 = False
+
 ####### Linux Helper Functions #####
+def _read_stdout(cmd):
+    pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    (std_out, std_err) = pop.communicate()
+    if python3:
+        return std_out.decode()
+    else:
+        return std_out
+    
 def lsb_get_os():
     """
     Linux: wrapper around lsb_release to get the current OS
     """
     try:
-        cmd = ['lsb_release', '-si']
-        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (std_out, std_err) = pop.communicate()
-        return std_out.strip()
+        return _read_stdout(['lsb_release', '-si']).strip()
     except:
         return None
     
@@ -63,10 +72,7 @@ def lsb_get_codename():
     Linux: wrapper around lsb_release to get the current OS codename
     """
     try:
-        cmd = ['lsb_release', '-sc']
-        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (std_out, std_err) = pop.communicate()
-        return std_out.strip()
+        return _read_stdout(['lsb_release', '-sc']).strip()
     except:
         return None
     
@@ -75,10 +81,7 @@ def lsb_get_version():
     Linux: wrapper around lsb_release to get the current OS version
     """
     try:
-        cmd = ['lsb_release', '-sr']
-        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (std_out, std_err) = pop.communicate()
-        return std_out.strip()
+        return _read_stdout(['lsb_release', '-sr']).strip()
     except:
         return None
 
@@ -87,10 +90,7 @@ def uname_get_machine():
     Linux: wrapper around uname to determine if OS is 64-bit
     """
     try:
-        cmd = ['uname', '-m']
-        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (std_out, std_err) = pop.communicate()
-        return std_out.strip()
+        return _read_stdout(['uname', '-m']).strip()
     except:
         return None
 
@@ -334,10 +334,7 @@ def port_detect(p):
     """
     Detect presence of Macports by running "port installed" command.
     """
-    cmd = ['port', 'installed', p]
-    pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    (std_out, std_err) = pop.communicate()
-    
+    std_out = _read_stdout(['port', 'installed', p])
     return (std_out.count("(active)") > 0)
 
 class Osx(OSBase):
@@ -352,9 +349,7 @@ class Osx(OSBase):
     
     def get_version(self):
         # REP 111 this should be the code name (e.g., lion, snow, tiger) #3570
-        cmd = ['/usr/bin/sw_vers','-productVersion'];
-        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (std_out, std_err) = pop.communicate()
+        std_out = _read_stdout(['/usr/bin/sw_vers','-productVersion'])
         ver = distutils.version.StrictVersion(std_out).version
         if len(ver) < 2:
             raise OSDetectException("invalid version string: %s"%(std_out))
@@ -409,10 +404,7 @@ class Cygwin(OSBase):
         return False
     
     def get_version(self):
-        cmd = ['uname','-r'];
-        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (std_out, std_err) = pop.communicate()
-        return std_out.strip()
+        return _read_stdout(['uname','-r']).strip()
 
     def get_name(self):
         return "cygwin"
@@ -464,8 +456,7 @@ class FreeBSD(OSBase):
         try:
             filename = "/usr/bin/uname"
             if os.path.exists(filename):
-                pop = subprocess.Popen([filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                (std_out, std_err) = pop.communicate()
+                std_out = _read_stdout([filename])
                 if std_out.strip() == "FreeBSD":
                     return True
             else:
@@ -478,11 +469,9 @@ class FreeBSD(OSBase):
         try:
             filename = "/usr/bin/uname"
             if os.path.exists(filename):
-               pop = subprocess.Popen([filename, "-r"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-               (std_out, std_err) = pop.communicate()
-               return std_out.strip()
+                return _read_stdout([filename, "-r"]).strip()
             else:
-               return False
+                return False
         except:
             sys.stderr.write("FreeBSD failed to get version\n")
             return False

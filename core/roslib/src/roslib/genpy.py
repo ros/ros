@@ -639,7 +639,8 @@ def string_serializer_generator(package, type_, name, serialize):
                 yield "else:"
                 yield INDENT+pack('%ss'%array_len, var)
         else:
-            yield pack2("'<I%ss'%length", "length, %s"%var)
+            # py3k: struct.pack() now only allows bytes for the s string pack code. 
+            yield pack2("'<I%ss'%length", "length, %s.encode()"%var) #Py3k bugfix (see http://docs.python.org/dev/whatsnew/3.2.html#porting-to-python-3-2)
     else:
         yield "start = end"
         if array_len is not None:

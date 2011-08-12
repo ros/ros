@@ -29,7 +29,6 @@
 # Author Tully Foote/tfoote@willowgarage.com
 
 import subprocess
-import os.path 
 import roslib.os_detect
 import os 
 import shutil
@@ -49,14 +48,14 @@ class InstallerAPI():
         """
         Set all required fields here 
         """
-        raise NotImplementedError, "Base class __init__"
+        raise NotImplementedError("Base class __init__")
     
     def check_presence(self):
         """
         This script will return true if the rosdep is found on the
         system, otherwise false.
         """
-        raise NotImplementedError, "Base class check_presence"
+        raise NotImplementedError("Base class check_presence")
 
     def generate_package_install_command(self, default_yes, execute = True, display = True):
         """
@@ -64,7 +63,7 @@ class InstallerAPI():
         print the script it would have run to install.
         @param default_yes  Pass through -y or equivilant to package manager
         """
-        raise NotImplementedError, "Base class generate_package_install_command"
+        raise NotImplementedError("Base class generate_package_install_command")
 
     def get_depends(self): 
         """ 
@@ -82,7 +81,7 @@ def fetch_file(url, md5sum=None):
         filehash =  hashlib.md5(contents).hexdigest()
         if md5sum and filehash != md5sum:
             raise rosdep.core.RosdepException( "md5sum didn't match for %s.  Expected %s got %s"%(url, md5sum, filehash))
-    except urllib2.URLError, ex:
+    except urllib2.URLError as ex:
         raise rosdep.core.RosdepException(str(ex))
 
     return contents    
@@ -118,35 +117,30 @@ class SourceInstaller(InstallerAPI):
 
         error = ''
 
-
         contents = ''
         # fetch the manifest
         try:
             contents = fetch_file(self.url, self.md5sum)
-        except rosdep.core.RosdepException, ex:
+        except rosdep.core.RosdepException as ex:
             if "ROSDEP_DEBUG" in os.environ:
                 print "Failed to fetch file %s for reason %s"%(self.url, ex)
-
 
         if not contents: # try the backup url
             if not self.alt_url:
                 raise rosdep.core.RosdepException("Failed to load a rdmanifest from %s, and no alternate URI given"%(self.url))
             try:
                 contents = fetch_file(self.alt_url, self.md5sum)
-            except rosdep.core.RosdepException, ex:
+            except rosdep.core.RosdepException as ex:
                 if "ROSDEP_DEBUG" in os.environ:
                     print "Failed to fetch file %s for reason %s"%(self.alt_url, ex)
 
         if not contents:
             raise rosdep.core.RosdepException("Failed to load a rdmanifest from either %s or %s"%(self.url, self.alt_url))
-
                 
         try:
             self.manifest = yaml.load(contents)
-                    
-        except yaml.scanner.ScannerError, ex:
+        except yaml.scanner.ScannerError as ex:
             raise rosdep.core.RosdepException("Failed to parse yaml in %s:  Error: %s"%(contents, ex))
-        
                 
         if "ROSDEP_DEBUG" in os.environ:
             print "Downloaded manifest:\n{{{%s\n}}}\n"%self.manifest
@@ -228,8 +222,6 @@ class AptInstaller(InstallerAPI):
     systems.
     """
     def __init__(self, arg_dict):
-
-        
         packages = arg_dict.get("packages", "")
         if type(packages) == type("string"):
             packages = packages.split()
@@ -260,7 +252,6 @@ class AptInstaller(InstallerAPI):
         elif display:
             print "To install packages: %s would have executed script\n{{{\n%s\n}}}"%(packages_to_install, script)
         return False
-
 
 
     def dpkg_detect(self, pkgs):
@@ -297,21 +288,15 @@ class PipInstaller(InstallerAPI):
     systems.
     """
     def __init__(self, arg_dict):
-
         packages = arg_dict.get("packages", "")
         if type(packages) == type("string"):
             packages = packages.split()
 
-
         self.depends = arg_dict.get("depends", [])
-
         self.packages = packages
-
 
     def get_packages_to_install(self):
          return list(set(self.packages) - set(self.pip_detect(self.packages)))
-
-
 
     def check_presence(self):
         return len(self.get_packages_to_install()) == 0
@@ -335,10 +320,6 @@ class PipInstaller(InstallerAPI):
         elif display:
             print "To install packages: %s would have executed script\n{{{\n%s\n}}}"%(packages_to_install, script)
         return False
-
-
-
-
 
     def pip_detect(self, pkgs):
         """ 

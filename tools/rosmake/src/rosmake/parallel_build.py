@@ -68,7 +68,12 @@ class DependencyTracker:
   range of packages over which to track dependencies.  This is useful
   if you are only building a subset of the tree. For example with the
   --specified-only option. """
-  def __init__(self, valid_packages = roslib.rospack.rospackexec(["list-names"]).split()):
+  def __init__(self, valid_packages=None):
+    """
+    @param valid_packages: defaults to rospack list
+    """
+    if valid_packages is None:
+      valid_packages = roslib.rospack.rospackexec(["list-names"]).split()
     self.valid_packages = valid_packages
     self.deps_1 = {}
     self.deps = {}

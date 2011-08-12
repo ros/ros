@@ -31,5 +31,5 @@ class.  This class is for internal-use only within ROS tools. The API
 is very likely to change in future releases and is not stable.
 """
 
-from rosmake import RosMakeAll
+from .engine import RosMakeAll, Printer
 

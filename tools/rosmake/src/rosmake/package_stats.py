@@ -50,8 +50,8 @@ class PackageFlagTracker:
             osd = roslib.os_detect.OSDetect()
             self.os_name = osd.get_name()
             self.os_version = osd.get_version()
-        except roslib.os_detect.OSDetectException, ex:
-            print >> sys.stderr, "Could not detect OS. platform detection will not work"
+        except roslib.os_detect.OSDetectException as ex:
+            sys.stderr.write("Could not detect OS. platform detection will not work\n")
     else:
         self.os_name = os_name
         self.os_version = os_version
@@ -160,7 +160,6 @@ class PackageFlagTracker:
       return True
     return False
     
-
   def remove_nobuild(self, package):
     if not self.has_nobuild(package):
       return True
@@ -170,7 +169,6 @@ class PackageFlagTracker:
       return True  
     except:
       return False
-
 
   def mark_build_failed(self, package):
       self.build_failed.add(package)
@@ -185,9 +183,6 @@ class PackageFlagTracker:
     """
     Return (buildable, error, "reason why not")
     """
-
-
-        
     output_str = ""
     output_state = True
     buildable = True

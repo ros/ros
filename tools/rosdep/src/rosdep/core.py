@@ -81,7 +81,6 @@ class YamlCache:
         if path in self._yaml_cache:
             return self._yaml_cache[path]
         
-        #print "parsing path", path
         if os.path.exists(path):
             try:
                 f = open(path)
@@ -117,7 +116,6 @@ class YamlCache:
             rosdep_entry = self.get_os_from_yaml(key, yaml_dict[key], path)
             if not rosdep_entry: # if no match don't do anything
                 continue # matches for loop
-            #print "adding entry", rosdep_entry
             expanded_rosdeps[key] = rosdep_entry
         self._expanded_rosdeps[path] = expanded_rosdeps
         return expanded_rosdeps
@@ -134,7 +132,6 @@ class YamlCache:
                 return self.get_version_from_yaml(rosdep_name, yaml_map['macports'], source_path)
             
         else:
-            #print >> sys.stderr, "failed to resolve a rule for rosdep(%s) on OS(%s)"%(rosdep_name, self.os_name)
             return False
 
 
@@ -182,7 +179,6 @@ def create_tempfile_from_string_and_execute(string_script, path= tempfile.gettem
             result = subprocess.call(fh.name, cwd=path)
         except OSError as ex:
             print("Execution failed with OSError:", ex)
-        #print "Return code ", result
 
     finally:
         if os.path.exists(fh.name):
@@ -234,12 +230,10 @@ class RosdepLookupPackage:
 
         try:
             rosdep_dependent_packages = ros_package_proxy.depends([package])[package]
-            #print "package", package, "needs", rosdep_dependent_packages
         except KeyError as ex:
             print("Depends Failed on package", ex)
             print(" The errors was in ",  ros_package_proxy.depends([package]))
             rosdep_dependent_packages = []
-        #print "Dependents of", package, rosdep_dependent_packages
         rosdep_dependent_packages.append(package)
 
 
@@ -276,7 +270,6 @@ class RosdepLookupPackage:
             self._insert_map(yaml_in, path)
             if "ROSDEP_DEBUG" in os.environ:
                 print("rosdep loading from file: %s got"%path, yaml_in)
-        #print "built map", self.rosdep_map
 
         # Override with ros_home/rosdep.yaml if present
         ros_home = roslib.rosenv.get_ros_home()
@@ -300,7 +293,6 @@ class RosdepLookupPackage:
                 else:
                     if self.rosdep_map[key] == rosdep_entry:
                         self.rosdep_source[key].append(source_path)
-                        #print >> sys.stderr, "DEBUG: Same key found for %s: %s"%(key, self.rosdep_map[key])
                     else:
                         cache_p = self.yaml_cache.get_os_from_yaml(key, yaml_dict[key], source_path)
                         raise RosdepException("""QUITTING: due to conflicting rosdep definitions, please resolve this conflict.
@@ -311,7 +303,6 @@ Rules for %s do not match:
             else:
                 self.rosdep_source[key] = [source_path]
                 self.rosdep_map[key] = rosdep_entry
-                #print "rosdep_map[%s] = %s"%(key, self.rosdep_map[key])
 
 
     def parse_yaml(self, path):
@@ -398,9 +389,7 @@ class Rosdep:
             else:
                 rdlp = RosdepLookupPackage(self.osi.get_name(), self.osi.get_version(), p, self.yc)
                 rdlp_cache[p] = rdlp
-            #print "rosdep", r
             specific = rdlp.lookup_rosdep(r)
-            #print "specific", specific
             if specific:
                 if type(specific) == type({}):
                     if "ROSDEP_DEBUG" in os.environ:

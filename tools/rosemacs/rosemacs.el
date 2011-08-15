@@ -147,6 +147,7 @@
 (defvar rosemacs/nodes-vec (vector) "Vector of nodes")
 
 (defvar roslaunch/history-list nil)
+(defvar rosrun/history-list nil)
 
 (defvar ros-buffer-package nil "A buffer-local variable for caching the current buffer's ros package.")
 (make-variable-buffer-local 'ros-buffer-package)
@@ -1347,6 +1348,9 @@ q kills the buffer and process."
   :keymap ros-run-keymap
   (message "ros-run mode: k to stop, q to quit, r to restart"))
 
+(setq ros-run-mode-hook 'ansi-color-for-comint-mode-on)
+
+
 (defun rosemacs/contains-running-process (name)
   (let ((buf (get-buffer name)))
     (and buf
@@ -1354,21 +1358,36 @@ q kills the buffer and process."
            (and proc
                 (member (process-status proc) '(run stop)))))))
 
-(defun ros-run (pkg exec &rest args)
-  "pkg is a ros package name and exec is the executable name.  Tab completes package name.  Exec defaults to package name itself."
+(defun ros-run (pkg exec &optional edit-command)
   (interactive (list (setq ros-run-temp-var (ros-completing-read-package
                                              nil (get-buffer-ros-package)))
                      (funcall ros-completion-function (format "Enter executable (default %s): " ros-run-temp-var)
                               (map 'list #'identity (ros-find-executables ros-run-temp-var))
-                              nil nil nil nil ros-run-temp-var)))
+                              nil nil nil nil ros-run-temp-var)
+                     current-prefix-arg))
   (let* ((name (format "*rosrun:%s/%s" pkg exec))
          (buf (get-buffer-create name)))
-    (save-excursion
-      (set-buffer buf)
-      (setq ros-run-pkg pkg
-            ros-run-executable exec
-            ros-run-args args))
-    (rosrun/restart buf)))
+    (if (rosemacs/contains-running-process buf)
+        (warn "Buffer %s already contains running process: not creating new one" name)
+      (let* ((default-command (format "rosrun %s %s" pkg exec))
+             (rosrun-command
+              (split-string
+               (if edit-command
+                   (read-string "Enter rosrun command: " default-command
+                                'rosrun/history-list default-command)
+                 default-command)))
+             (prefix (subseq rosrun-command 0 3))
+             (expected-prefix (list "rosrun" pkg exec)))
+        (if (equal prefix expected-prefix)
+            (save-excursion
+              (set-buffer buf)
+              (comint-mode)
+              (setq ros-run-pkg pkg
+                    ros-run-executable exec
+                    ros-run-args (subseq rosrun-command 3))
+              (rosrun/restart buf))
+          (warn "prefix %s did not equal %s.  Not running."
+                prefix expected-prefix))))))
 
 (defun rosrun/restart (buf)
   (if (rosemacs/contains-running-process buf)

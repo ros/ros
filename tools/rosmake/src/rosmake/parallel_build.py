@@ -40,6 +40,19 @@ import roslib
 import roslib.rospack
 import threading
 
+if sys.hexversion > 0x03000000: #Python3
+    python3 = True
+else:
+    python3 = False
+
+def _read_stdout(cmd):
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    std_out, std_err = p.communicate()
+    if python3:
+        return std_out.decode()
+    else:
+        return std_out    
+
 def num_cpus():
   """
   Detects the number of CPUs on a system. Cribbed from pp.
@@ -52,7 +65,7 @@ def num_cpus():
       if isinstance(ncpus, int) and ncpus > 0:
         return ncpus
     else: # OSX:
-      return subprocess.call("sysctl -n hw.ncpu".split())
+      return int(_read_stdout(["sysctl", "-n", "hw.ncpu"])) or 1
   # Windows:
   if "NUMBER_OF_PROCESSORS" in os.environ:
     ncpus = int(os.environ["NUMBER_OF_PROCESSORS"]);

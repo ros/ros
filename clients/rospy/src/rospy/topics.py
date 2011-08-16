@@ -124,7 +124,10 @@ class Topic(object):
         if not name or not isstring(name):
             raise ValueError("topic name is not a non-empty string")
         try:
-            name = name.encode("utf-8")
+            if python3 == 1:
+                name.encode("utf-8")
+            else: 
+                name = name.encode("utf-8")
         except UnicodeError:
             raise ValueError("topic name must be ascii/utf-8 compatible")
         if data_class is None:

@@ -1,0 +1,9 @@
+return0: 
+  rosdep_test_os: |
+    #!/bin/bash
+    exit 0
+
+return1:
+  rosdep_test_os: |
+    #!/bin/bash
+    exit 1

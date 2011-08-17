@@ -497,9 +497,9 @@ class Rosdep:
             if "ROSDEP_DEBUG" in os.environ:
                 print("OLD TYPE BACKWARDS COMPATABILITY MODE", rosdep_dict)
                 
-
+            # Detect a script and execute it if desired
             if len(rosdep_dict.split('\n')) > 1:
-                raise RosdepException( "SCRIPT UNIMPLEMENTED AT THE MOMENT TODO")
+                return create_tempfile_from_string_and_execute(rosdep_dict)
 
             installer = self.osi.get_os().get_installer('default')
             packages = rosdep_dict.split()
@@ -515,6 +515,8 @@ class Rosdep:
                 return False
             else:
                 mode = modes[0]
+
+            
 
         if "ROSDEP_DEBUG" in os.environ:
             print("rosdep mode:", mode)

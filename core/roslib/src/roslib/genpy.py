@@ -639,7 +639,8 @@ def string_serializer_generator(package, type_, name, serialize):
                 yield "else:"
                 yield INDENT+pack('%ss'%array_len, var)
         else:
-            yield pack2("'<I%ss'%length", "length, %s"%var)
+            # py3k: struct.pack() now only allows bytes for the s string pack code. 
+            yield pack2("'<I%ss'%length", "length, %s.encode()"%var) #Py3k bugfix (see http://docs.python.org/dev/whatsnew/3.2.html#porting-to-python-3-2)
     else:
         yield "start = end"
         if array_len is not None:
@@ -883,8 +884,8 @@ def serialize_fn_generator(package, spec, is_numpy=False):
     for y in serializer_generator(package, flatten(spec), True, is_numpy):
         yield "  "+y 
     pop_context()
-    yield "except struct.error, se: self._check_types(se)"
-    yield "except TypeError, te: self._check_types(te)" 
+    yield "except struct.error as se: self._check_types(se)"
+    yield "except TypeError as te: self._check_types(te)" 
     # done w/ method-var context #
     
 def deserialize_fn_generator(package, spec, is_numpy=False):
@@ -918,7 +919,7 @@ def deserialize_fn_generator(package, spec, is_numpy=False):
             yield "  %s"%code
     
     yield "  return self"
-    yield "except struct.error, e:"
+    yield "except struct.error as e:"
     yield "  raise roslib.message.DeserializationError(e) #most likely buffer underfill"
 
 def msg_generator(package, name, spec):
@@ -942,7 +943,7 @@ def msg_generator(package, name, spec):
     # for older versions of msg files
     try:
         gendeps_dict = roslib.gentools.get_dependencies(spec, package, compute_files=False)
-    except roslib.msgs.MsgSpecException, e:
+    except roslib.msgs.MsgSpecException as e:
         raise MsgGenerationException("Cannot generate .msg for %s/%s: %s"%(package, name, str(e)))
     md5sum = roslib.gentools.compute_md5(gendeps_dict)
     

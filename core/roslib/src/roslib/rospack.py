@@ -38,9 +38,15 @@ Wrappers for calling an processing return values from rospack and rosstack
 """
 
 import os
+import sys
 import subprocess
 import roslib.exceptions
 import roslib.rosenv
+
+if sys.hexversion > 0x03000000: #Python3
+    python3 = True
+else:
+    python3 = False
 
 def rospackexec(args):
     """
@@ -49,7 +55,11 @@ def rospackexec(args):
     @raise roslib.exceptions.ROSLibException: if rospack command fails
     """
     rospack_bin = os.path.join(roslib.rosenv.get_ros_root(), 'bin', 'rospack')
-    val = (subprocess.Popen([rospack_bin] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0] or '').strip()
+    if python3:
+        val = subprocess.Popen([rospack_bin] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
+        val = val.decode().strip()
+    else:
+        val = (subprocess.Popen([rospack_bin] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0] or '').strip()        
     if val.startswith('rospack:'): #rospack error message
         raise roslib.exceptions.ROSLibException(val)
     return val
@@ -110,7 +120,11 @@ def rosstackexec(args):
     @raise roslib.exceptions.ROSLibException: if rosstack command fails
     """
     rosstack_bin = os.path.join(roslib.rosenv.get_ros_root(), 'bin', 'rosstack')
-    val = (subprocess.Popen([rosstack_bin] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0] or '').strip()
+    if python3:
+        val = subprocess.Popen([rosstack_bin] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
+        val = val.decode().strip()
+    else:
+        val = (subprocess.Popen([rosstack_bin] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0] or '').strip()
     if val.startswith('rosstack:'): #rospack error message
         raise roslib.exceptions.ROSLibException(val)
     return val

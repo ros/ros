@@ -29,7 +29,7 @@
 # Author Tully Foote/tfoote@willowgarage.com
 
 import subprocess
-import os.path 
+import os
 import roslib.os_detect
 import rosdep.core
 
@@ -43,9 +43,6 @@ class RosdepBaseOS(roslib.os_detect.OSBase):
     detection code and provides the interface to native package
     managers.
     """
-
-
-
     def get_installer(self, mode):
         """ 
         Return the correct installer for a given OS from the
@@ -55,5 +52,5 @@ class RosdepBaseOS(roslib.os_detect.OSBase):
             if not mode in self.installers:
                 raise rosdep.core.RosdepException("Invalid installation mode %s for %s"%(mode, self.get_name()))
             return self.installers[mode]
-        except NameError, ex:
+        except NameError as ex:
             raise rosdep.core.RosdepException("Invalid installation mode %s for %s"%(mode, self.get_name()))

@@ -55,16 +55,18 @@ def assert_rospack_built():
 if not assert_rospack_built():
     sys.exit(-1)
 
-from ros import rosmake
+import roslib
+roslib.load_manifest('rosmake')
+import rosmake
 result = 1
-with rosmake.rosmake.Printer():
+with rosmake.Printer():
     rma = rosmake.RosMakeAll()
     
     if rma.main():
         result = 0
 
 #make sure the thread is done
-rosmake.rosmake.Printer().join()
+rosmake.Printer().join()
 import threading
 for t in threading.enumerate():
     if t != threading.currentThread():

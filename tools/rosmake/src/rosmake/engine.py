@@ -86,7 +86,15 @@ class Printer:
     def __setattr__(self, attr, value):
         """ Delegate access to implementation """
         return setattr(self.__instance, attr, value)
-
+    
+    def __enter__(self):
+        """Pass through for the __enter__ function for the __instance"""
+        return self.__instance.__enter__()
+    
+    def __exit__(self, mtype, value, tb):
+        """Pass through for the __exit__ function for the __instance"""
+        return self.__instance.__exit__(mtype, value, tb)
+    
     class __impl(threading.Thread):
         def __init__(self):
             threading.Thread.__init__(self)

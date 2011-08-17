@@ -37,8 +37,12 @@ Utilities for accessing the Parameter Server
 """
 
 import sys
-import xmlrpclib
 import yaml
+
+try:
+    import xmlrpc.client as xmlrpcclient #Python 3.x
+except ImportError:
+    import xmlrpclib as xmlrpcclient #Python 2.x
 
 import roslib.rosenv
 from roslib.names import REMAP
@@ -78,7 +82,7 @@ def get_param(key):
     """
     global _param_server
     if _param_server is None:
-        _param_server = xmlrpclib.ServerProxy(roslib.rosenv.get_master_uri())
+        _param_server = xmlrpcclient.ServerProxy(roslib.rosenv.get_master_uri())
     code, status, value = _param_server.getParam('/roslib', key)
     if code != 1: #unwrap value with Python semantics
         raise KeyError(key)

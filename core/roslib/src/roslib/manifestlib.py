@@ -82,7 +82,7 @@ def check_required(name, allowXHTML=False):
     def check(n, filename):
         n = get_nodes_by_name(n, name)
         if not n:
-            print >> sys.stderr, "Invalid manifest file[%s]: missing required '%s' element"%(filename, name)
+            #print >> sys.stderr, "Invalid manifest file[%s]: missing required '%s' element"%(filename, name)
             return ''
         if len(n) != 1:
             raise ManifestException("Invalid manifest file: must have only one '%s' element"%name)
@@ -100,7 +100,7 @@ def check_platform(name):
         platforms = get_nodes_by_name(n, name)
         try:
             vals = [(p.attributes['os'].value, p.attributes['version'].value, p.getAttribute('notes')) for p in platforms]
-        except KeyError, e:
+        except KeyError as e:
             raise ManifestException("<platform> tag is missing required '%s' attribute"%str(e))
         return [Platform(*v) for v in vals]
     return check
@@ -224,7 +224,7 @@ class Export(object):
         @return: export instance represented as manifest XML
         @rtype: str
         """        
-        attrs = ' '.join([' %s="%s"'%(k,v) for k,v in self.attrs.iteritems()])
+        attrs = ' '.join([' %s="%s"'%(k,v) for k,v in self.attrs.items()]) #py3k
         if self.str:
             return '<%s%s>%s</%s>'%(self.tag, attrs, self.str, self.tag)
         else:
@@ -246,12 +246,10 @@ class Platform(object):
         @param notes: (optional) notes about platform support
         @type  notes: str
         """
-        if not os or not isinstance(os, basestring):
+        if not os:
             raise ValueError("bad 'os' attribute")
-        if not version or not isinstance(version, basestring):
+        if not version:
             raise ValueError("bad 'version' attribute")
-        if notes and not isinstance(notes, basestring):
-            raise ValueError("bad 'notes' attribute")            
         self.os = os
         self.version = version
         self.notes = notes
@@ -289,7 +287,7 @@ class Depend(object):
         @param package: package name. must be non-empty
         @type  package: str
         """
-        if not package or not isinstance(package, basestring):
+        if not package:
             raise ValueError("bad 'package' attribute")
         self.package = package
     def __str__(self):
@@ -318,7 +316,7 @@ class StackDepend(object):
         @param stack: stack name. must be non-empty
         @type  stack: str
         """
-        if not stack or not isinstance(stack, basestring):
+        if not stack:
             raise ValueError("bad 'stack' attribute")
         self.stack = stack
         self.annotation = None
@@ -353,7 +351,7 @@ class ROSDep(object):
         @param name: dependency name. Must be non-empty.
         @type  name: str
         """
-        if not name or not isinstance(name, basestring):
+        if not name:
             raise ValueError("bad 'name' attribute")
         self.name = name
     def xml(self):
@@ -482,14 +480,11 @@ def parse_file(m, file):
         raise ValueError("Missing manifest file argument")
     if not os.path.isfile(file):
         raise ValueError("Invalid/non-existent manifest file: %s"%file)
-    f = open(file, 'r')
-    try:
+    with open(file, 'r') as f:
         text = f.read()
-    finally:
-        f.close()
     try:
         return parse(m, text, file)
-    except ManifestException, e:
+    except ManifestException as e:
         raise ManifestException("Invalid manifest file [%s]: %s"%(os.path.abspath(file), e))
 
 def parse(m, string, filename='string'):

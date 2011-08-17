@@ -213,6 +213,9 @@ def get_pkg_dir(package, required=True, ros_root=None, ros_package_path=None):
                                  stdout=PIPE, stderr=PIPE, env=penv).communicate()
 
         pkg_dir = (rpout or '').strip()
+        #python3.1 popen returns as bytes
+        if (isinstance(pkg_dir, bytes)):
+            pkg_dir = pkg_dir.decode()
         if not pkg_dir:
             raise InvalidROSPkgException("Cannot locate installation of package %s: %s. ROS_ROOT[%s] ROS_PACKAGE_PATH[%s]"%(package, rperr.strip(), ros_root, ros_package_path))
 

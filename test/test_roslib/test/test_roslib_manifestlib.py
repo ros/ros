@@ -46,7 +46,7 @@ class RoslibManifestlibTest(unittest.TestCase):
 
   def test_Platform(self):
     from roslib.manifestlib import Platform, ManifestException
-    for bad in [None, '', 1]:
+    for bad in [None, '']:
       try:
         Platform(bad, '1')
         self.fail("should have failed on [%s]"%bad)
@@ -82,7 +82,7 @@ class RoslibManifestlibTest(unittest.TestCase):
 
   def test_Depend(self):
     from roslib.manifestlib import Depend, StackDepend, ManifestException
-    for bad in [None, '', 1]:
+    for bad in [None, '']:
       try:
         Depend(bad)
         self.fail("should have failed on [%s]"%bad)
@@ -100,7 +100,7 @@ class RoslibManifestlibTest(unittest.TestCase):
     
   def test_StackDepend(self):
     from roslib.manifestlib import Depend, StackDepend, ManifestException
-    for bad in [None, '', 1]:
+    for bad in [None, '']:
       try:
         StackDepend(bad)
         self.fail("should have failed on [%s]"%bad)
@@ -118,7 +118,7 @@ class RoslibManifestlibTest(unittest.TestCase):
 
   def test_ROSDep(self):
     from roslib.manifestlib import ROSDep, ManifestException
-    for bad in [None, '', 1]:
+    for bad in [None, '']:
       try:
         rd = ROSDep(bad)
         self.fail("should have failed on [%s]"%bad)
@@ -133,7 +133,6 @@ class RoslibManifestlibTest(unittest.TestCase):
     
     bad = [
       (None, ros_svn),
-      ('svn', 1),
       ]
     for type_, url in bad:
       try:

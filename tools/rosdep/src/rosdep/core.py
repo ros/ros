@@ -263,8 +263,7 @@ class RosdepLookupPackage:
                     if "ROSDEP_DEBUG" in os.environ:
                         print("Package fallback, no parent stack found for package %s: loading rosdeps from"%p, os.path.join(roslib.packages.get_pkg_dir(p), "rosdep.yaml"))
                 except roslib.packages.InvalidROSPkgException as ex:
-                    print >> sys.stderr, "Failed to load rosdep.yaml for package [%s]:%s"%(p, ex)
-                    pass
+                    print("Failed to load rosdep.yaml for package [%s]:%s"%(p, ex), file=sys.stderr)
         for path in paths:
             yaml_in = self.parse_yaml(path)
             self._insert_map(yaml_in, path)

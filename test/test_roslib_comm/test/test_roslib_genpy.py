@@ -478,7 +478,7 @@ end += 4
         # Test Serializers
         g = string_serializer_generator('foo', 'string', 'var_name', True)
         self.assertEquals("""length = len(var_name)
-buff.write(struct.pack('<I%ss'%length, length, var_name))""", '\n'.join(g))
+buff.write(struct.pack('<I%ss'%length, length, var_name.encode()))""", '\n'.join(g))
 
         for t in ['uint8[]', 'byte[]', 'uint8[10]', 'byte[20]']:
             g = string_serializer_generator('foo', 'uint8[]', 'b_name', True)

@@ -97,6 +97,7 @@ def configure_logging(logname, level=logging.INFO, filename=None, env=None):
     
     # pass in log_filename as argument to pylogging.conf
     os.environ['ROS_LOG_FILENAME'] = log_filename
-    logging.config.fileConfig(config_file)
+    # #3625: disabling_existing_loggers=False
+    logging.config.fileConfig(config_file, disable_existing_loggers=False)
     return log_filename
 

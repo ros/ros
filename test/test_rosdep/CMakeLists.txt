@@ -42,5 +42,5 @@ rosbuild_add_pyunit(test/test_rosdep_script.py)
 # protecting against failures on OSX.
 if(NOT APPLE)
   rosbuild_add_pyunit(test/test_rosdep_source.py)
-  rosbuild_add_pyunit(test/test_rosdep_commandline.py)
+  rosbuild_add_pyunit(test/test_rosdep_commandline.py TIMEOUT 300)
 endif()

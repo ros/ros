@@ -40,18 +40,24 @@ library for retrieving ROS Node information.
 
 from __future__ import print_function
 
-NAME='rosnode'
-ID = '/rosnode'
-
 import os
+import errno
 import sys
 import socket
 import time
 import xmlrpclib
 
+try: #py3k
+    import urllib.parse as urlparse
+except ImportError:
+    import urlparse
+
 from optparse import OptionParser
 
 import roslib.scriptutil as scriptutil 
+
+NAME='rosnode'
+ID = '/rosnode'
 
 class ROSNodeException(Exception):
     """
@@ -281,8 +287,17 @@ def rosnode_ping(node_name, max_count=None, verbose=False):
                 if verbose:
                     print("xmlrpc reply from %s\ttime=%fms"%(node_api, dur))
                 # 1s between pings
-            except socket.error:
-                print("connection to [%s] timed out"%node_name, file=sys.stderr)
+            except socket.error as e:
+                # #3659
+                errnum, msg = e
+                if errnum == -2: #name/service unknown
+                    p = urlparse.urlparse(node_api)
+                    print("ERROR: Unknown host [%s] for node [%s]"%(p.hostname, node_name), file=sys.stderr)
+                elif errnum == errno.ECONNREFUSED:
+                    p = urlparse.urlparse(node_api)
+                    print("ERROR: connection refused to [%s]"%(node_api), file=sys.stderr)
+                else:
+                    print("connection to [%s] timed out"%node_name, file=sys.stderr)
                 return False
             if max_count and count >= max_count:
                 break

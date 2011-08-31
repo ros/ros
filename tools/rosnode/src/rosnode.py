@@ -38,6 +38,8 @@ rosnode implements the rosnode command-line tool and also provides a
 library for retrieving ROS Node information.
 """
 
+from __future__ import print_function
+
 NAME='rosnode'
 ID = '/rosnode'
 
@@ -236,7 +238,7 @@ def rosnode_listnodes(namespace=None, list_uri=False, list_all=False):
     @param list_all: print node names and uris
     @param list_all: bool    
     """
-    print _sub_rosnode_listnodes(namespace=namespace, list_uri=list_uri, list_all=list_all)
+    print(_sub_rosnode_listnodes(namespace=namespace, list_uri=list_uri, list_all=list_all))
     
 def rosnode_ping(node_name, max_count=None, verbose=False):
     """
@@ -253,13 +255,13 @@ def rosnode_ping(node_name, max_count=None, verbose=False):
     master = scriptutil.get_master()
     node_api = get_api_uri(master,node_name)
     if not node_api:
-        print >> sys.stderr, "cannot ping [%s]: unknown node"%node_name
+        print("cannot ping [%s]: unknown node"%node_name, file=sys.stderr)
         return False
 
     timeout = 3.
 
     if verbose:
-        print "pinging %s with a timeout of %ss"%(node_name, timeout)
+        print("pinging %s with a timeout of %ss"%(node_name, timeout))
     socket.setdefaulttimeout(timeout)
     node = xmlrpclib.ServerProxy(node_api)
     lastcall = 0.
@@ -277,10 +279,10 @@ def rosnode_ping(node_name, max_count=None, verbose=False):
                 count += 1
 
                 if verbose:
-                    print "xmlrpc reply from %s\ttime=%fms"%(node_api, dur)
+                    print("xmlrpc reply from %s\ttime=%fms"%(node_api, dur))
                 # 1s between pings
             except socket.error:
-                print >> sys.stderr, "connection to [%s] timed out"%node_name
+                print("connection to [%s] timed out"%node_name, file=sys.stderr)
                 return False
             if max_count and count >= max_count:
                 break
@@ -289,7 +291,7 @@ def rosnode_ping(node_name, max_count=None, verbose=False):
         pass
             
     if verbose and count > 1:
-        print "ping average: %fms"%(acc/count)
+        print("ping average: %fms"%(acc/count))
     return True
 
 def rosnode_ping_all(verbose=False):
@@ -311,7 +313,7 @@ def rosnode_ping_all(verbose=False):
             nodes.extend(l)
     nodes = list(set(nodes)) #uniq
     if verbose:
-        print "Will ping the following nodes: \n"+''.join([" * %s\n"%n for n in nodes])
+        print("Will ping the following nodes: \n"+''.join([" * %s\n"%n for n in nodes]))
     pinged = []
     unpinged = []
     for node in nodes:
@@ -331,7 +333,7 @@ def cleanup_master_blacklist(master, blacklist):
     """
     pubs, subs, srvs = _succeed(master.getSystemState(ID))
     for n in blacklist:
-        print "Unregistering", n
+        print("Unregistering", n)
         node_api = get_api_uri(master, n)
         for t, l in pubs:
             if n in l:
@@ -378,20 +380,20 @@ def rosnode_cleanup():
     pinged, unpinged = rosnode_ping_all()
     if unpinged:
         master = scriptutil.get_master()
-        print "Unable to contact the following nodes:"
-        print '\n'.join(' * %s'%n for n in unpinged)
-        print "cleanup will purge all information about these nodes from the master"
-        print "Please type y or n to continue"
+        print("Unable to contact the following nodes:")
+        print('\n'.join(' * %s'%n for n in unpinged))
+        print("cleanup will purge all information about these nodes from the master")
+        print("Please type y or n to continue")
         input = sys.stdin.readline()
         while not input.strip() in ['y', 'n']:
             input = sys.stdin.readline()
         if input.strip() == 'n':
-            print 'aborting'
+            print('aborting')
             return
         
         cleanup_master_blacklist(master, unpinged)
 
-        print "done"
+        print("done")
 
 def get_node_info_description(node_name):
     def topic_type(t, pub_topics):
@@ -486,17 +488,17 @@ def rosnode_info(node_name):
     master = scriptutil.get_master()
     node_name = scriptutil.script_resolve_name('rosnode', node_name)
 
-    print '-'*80
-    print get_node_info_description(node_name)
+    print('-'*80)
+    print(get_node_info_description(node_name))
         
     node_api = get_api_uri(master, node_name)
     if not node_api:
-        print >> sys.stderr, "cannot contact [%s]: unknown node"%node_name
+        print("cannot contact [%s]: unknown node"%node_name, file=sys.stderr)
         return
     
-    print "\ncontacting node %s ..."%node_api
+    print("\ncontacting node %s ..."%node_api)
 
-    print get_node_connection_info_description(node_api)
+    print(get_node_connection_info_description(node_api))
 
 # backwards compatibility (deprecated)
 rosnode_debugnode = rosnode_info
@@ -550,7 +552,7 @@ def _rosnode_cmd_machine(argv):
         parser.error("please enter only one machine name")
     nodes = get_nodes_by_machine(args[0])
     nodes.sort()
-    print '\n'.join(nodes)
+    print('\n'.join(nodes))
         
 def _rosnode_cmd_kill(argv):
     """
@@ -575,7 +577,7 @@ def _rosnode_cmd_kill(argv):
         node_list = get_node_names()
         node_list.sort()
         if not node_list:
-            print >> sys.stderr, "No nodes running"
+            print("No nodes running", file=sys.stderr)
             return 0
         
         sys.stdout.write('\n'.join(["%s. %s"%(i+1, n) for i,n in enumerate(node_list)]))
@@ -586,9 +588,9 @@ def _rosnode_cmd_kill(argv):
             try:
                 selection = int(selection) 
                 if selection <= 0:
-                    print "ERROR: invalid selection. Please enter a number (ctrl-C to cancel)"                    
+                    print("ERROR: invalid selection. Please enter a number (ctrl-C to cancel)")
             except:
-                print "ERROR: please enter a number (ctrl-C to cancel)"
+                print("ERROR: please enter a number (ctrl-C to cancel)")
                 sys.stdout.flush()
                 selection = ''
         args = [node_list[selection - 1]]
@@ -600,15 +602,15 @@ def _rosnode_cmd_kill(argv):
         if unknown:
             raise ROSNodeException("Unknown node(s):\n"+'\n'.join([" * %s"%n for n in unknown]))
     if len(args) > 1:
-        print "killing:\n"+'\n'.join([" * %s"%n for n in args])
+        print("killing:\n"+'\n'.join([" * %s"%n for n in args]))
     else:
-        print "killing %s"%(args[0])
+        print("killing %s"%(args[0]))
             
     success, fail = kill_nodes(args)
     if fail:
-        print >> sys.stderr, "ERROR: Failed to kill:\n"+'\n'.join([" * %s"%n for n in fail])
+        print("ERROR: Failed to kill:\n"+'\n'.join([" * %s"%n for n in fail]), file=sys.stderr)
         return 1
-    print "killed"
+    print("killed")
     return 0
         
 def _rosnode_cmd_cleanup(argv):
@@ -651,7 +653,7 @@ def _rosnode_cmd_ping(argv):
             parser.error("you may only specify one input node")
         elif len(args) == 1:
             node_name = scriptutil.script_resolve_name('rosnode', args[0])
-            print "rosnode: node is [%s]"%node_name
+            print("rosnode: node is [%s]"%node_name)
     else:
         if args:
             parser.error("Invalid arguments '%s' used with --all"%(' '.join(args)))
@@ -667,7 +669,7 @@ def _fullusage():
     """
     Prints rosnode usage information.
     """
-    print """rosnode is a command-line tool for printing information about ROS Nodes.
+    print("""rosnode is a command-line tool for printing information about ROS Nodes.
 
 Commands:
 \trosnode ping\ttest connectivity to node
@@ -677,7 +679,7 @@ Commands:
 \trosnode kill\tkill a running node
 
 Type rosnode <command> -h for more detailed usage, e.g. 'rosnode ping -h'
-"""
+""")
     sys.exit(os.EX_USAGE)
 
 def rosnodemain(argv=None):
@@ -707,8 +709,8 @@ def rosnodemain(argv=None):
         else:
             _fullusage()
     except socket.error:
-        print >> sys.stderr, "Network communication failed. Most likely failed to communicate with master."
-    except ROSNodeException, e:
-        print >> sys.stderr, "ERROR: "+str(e)
+        print("Network communication failed. Most likely failed to communicate with master.", file=sys.stderr)
+    except ROSNodeException as e:
+        print("ERROR: "+str(e), file=sys.stderr)
     except KeyboardInterrupt:
         pass

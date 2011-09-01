@@ -29,8 +29,8 @@
 
 // Author: Josh Faust
 
-#if defined(__APPLE__) && defined(__GNUC__) && defined(__llvm__) && !defined(__clang__) && (__GNUC__ == 4) && (__GNUC_MINOR__ == 2)
-#error This code is known to provoke a compiler crash with llvm-gcc 4.2. You will have better luck with clang++. See https://code.ros.org/trac/ros/ticket/3626
+#if 1 || defined(__APPLE__) && defined(__GNUC__) && defined(__llvm__) && !defined(__clang__) && (__GNUC__ == 4) && (__GNUC_MINOR__ == 2)
+#error This code is known to provoke a compiler crash with llvm-gcc 4.2. You will have better luck with clang++. See code.ros.org/trac/ros/ticket/3626
 #endif
 
 #include "ros/console.h"

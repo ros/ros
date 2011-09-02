@@ -255,47 +255,39 @@ class RospackTestCase(unittest.TestCase):
         # Make sure we write to ROS_HOME, #2812.
         d = tempfile.mkdtemp()
         os.environ['ROS_HOME'] = d
+        cache_path = os.path.join(d,'rospack_cache')
         self.rospack_succeed(None, "profile")
-        self.assertEquals(True, os.path.exists(os.path.join(d,'rospack_cache')))
+        self.assertEquals(True, os.path.exists(cache_path))
         # Make sure we auto-create ROS_HOME
         shutil.rmtree(d)
         self.rospack_succeed(None, "profile")
-        self.assertEquals(True, os.path.exists(os.path.join(d,'rospack_cache')))
-        # Make sure we write to HOME, auto-creating HOME/.ros
-        del os.environ['ROS_HOME']
-        os.environ['HOME'] = d
-        self.rospack_succeed(None, "profile")
-        cache_path = os.path.join(d,'.ros','rospack_cache')
         self.assertEquals(True, os.path.exists(cache_path))
         # Test with a corrupted cache
         f = open(cache_path, 'w')
         f.write('#SOMETHING\n')
         f.close()
         self.rospack_succeed(None, "list")
-        # Make sure we write to HOME, not creating HOME/.ros
-        os.unlink(cache_path)
-        self.rospack_succeed(None, "profile")
-        self.assertEquals(True, os.path.exists(cache_path))
-        # Make sure we proceed when we can't create HOME/.ros
-        shutil.rmtree(os.path.join(d,'.ros'))
+        # Make sure we proceed when we can't write to ROS_HOME
         os.chmod(d, 0000)
         self.rospack_succeed(None, "profile")
         # Delete the .ros directory, just in case this test is being run as
         # root, in which case the above call will cause .ros to be created,
         # despite the restrictive permissions that were set.
-        if os.path.exists(os.path.join(d,'.ros')):
-            shutil.rmtree(os.path.join(d,'.ros'))
+        if os.path.exists(d):
+            os.chmod(d, 0700)
+            shutil.rmtree(d)
         # Make sure we proceed when we HOME/.ros isn't a directory
-        os.chmod(d, 0700)
-        f = open(os.path.join(d,'.ros'), 'w')
+        f = open(d, 'w')
         f.close()
+        os.chmod(d, 0700)
         self.rospack_succeed(None, "profile")
-        # Make sure we proceed when HOME isn't set
+        # Make sure we proceed when neither HOME nor ROS_HOME is set
+        del os.environ['ROS_HOME']
         del os.environ['HOME']
         self.rospack_succeed(None, "profile")
 
         # Clean up
-        shutil.rmtree(d)
+        os.unlink(d)
         os.environ = env
 
     def test_no_package_allowed(self):

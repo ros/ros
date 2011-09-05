@@ -297,7 +297,7 @@ libxml2:
   macports: libxml2
   gentoo: dev-libs/libxml2
   freebsd: libxml2
-  fedora: libxml2
+  fedora: libxml2-devel
 scons:
   ubuntu: scons
   debian: scons

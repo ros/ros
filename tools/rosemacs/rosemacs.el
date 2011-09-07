@@ -1359,6 +1359,9 @@ q kills the buffer and process."
                 (member (process-status proc) '(run stop)))))))
 
 (defun ros-run (pkg exec &optional edit-command)
+  "Execute a ros-run in a separate buffer, which is started in ros-run-mode.
+
+Prefix argument allows you to edit the rosrun command before executing it."
   (interactive (list (setq ros-run-temp-var (ros-completing-read-package
                                              nil (get-buffer-ros-package)))
                      (funcall ros-completion-function (format "Enter executable (default %s): " ros-run-temp-var)

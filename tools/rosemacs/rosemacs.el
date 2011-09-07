@@ -1365,6 +1365,7 @@ q kills the buffer and process."
                               (map 'list #'identity (ros-find-executables ros-run-temp-var))
                               nil nil nil nil ros-run-temp-var)
                      current-prefix-arg))
+  (message "Edit command is %s" edit-command)
   (let* ((name (format "*rosrun:%s/%s" pkg exec))
          (buf (get-buffer-create name)))
     (if (rosemacs/contains-running-process buf)
@@ -1396,7 +1397,11 @@ q kills the buffer and process."
       (save-excursion
         (set-buffer buf)
         (ros-run-mode 1)
-        (apply 'start-process (buffer-name buf) buf "rosrun" ros-run-pkg ros-run-executable ros-run-args))
+        (let ((proc 
+               (apply 'start-process (buffer-name buf) buf "rosrun"
+                      ros-run-pkg ros-run-executable ros-run-args)))
+          (set-process-filter proc 'comint-output-filter)
+          ))
       (switch-to-buffer buf))))
 
 (defun rosrun/restart-current ()

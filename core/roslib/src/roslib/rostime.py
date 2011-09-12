@@ -449,7 +449,8 @@ class Duration(TVal):
         @return: Duration multiplied by val
         @rtype:  L{Duration}
         """
-        # unlike __floordiv__, this uses true div for float arg
+        # unlike __floordiv__, this uses true div for float arg.
+        # PEP 238
         t = type(val)
         if t in (int, long):
             return Duration(self.secs // val, self.nsecs // val)
@@ -466,10 +467,7 @@ class Duration(TVal):
         @return: Duration multiplied by val
         @rtype:  L{Duration}
         """
-        t = type(val)
-        if t in (int, long):
-            return Duration(self.secs / val, self.nsecs / val)
-        elif t == float:
+        if type(val) in (int, long, float):
             return Duration.from_sec(self.to_sec() / val)
         else:
             return NotImplemented

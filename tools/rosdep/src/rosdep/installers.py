@@ -282,6 +282,63 @@ class AptInstaller(InstallerAPI):
         return [version_lock_map[r] for r in ret_list]
         
 
+class YumInstaller(InstallerAPI):
+    """ 
+    An implementation of the InstallerAPI for use on yum/fedora style
+    systems.
+    """
+    def __init__(self, arg_dict):
+        packages = arg_dict.get("packages", "")
+        if type(packages) == type("string"):
+            packages = packages.split()
+
+        self.packages = packages
+
+
+    def get_packages_to_install(self):
+         return list(set(self.packages) - set(self.dpkg_detect(self.packages)))
+
+
+    def check_presence(self):
+       return len(self.get_packages_to_install()) == 0
+
+
+    def generate_package_install_command(self, default_yes = False, execute = True, display = True):
+        script = '!#/bin/bash\n#no script'
+        packages_to_install = self.get_packages_to_install()
+        if not packages_to_install:
+            script = "#!/bin/bash\n#No Packages to install"
+        elif default_yes:
+            script = "#!/bin/bash\n#Packages %s\nsudo yum install -y "%packages_to_install + ' '.join(packages_to_install)        
+        else:
+            script = "#!/bin/bash\n#Packages %s\nsudo yum install "%packages_to_install + ' '.join(packages_to_install)
+
+        if execute:
+            return rosdep.core.create_tempfile_from_string_and_execute(script)
+        elif display:
+            print "To install packages: %s would have executed script\n{{{\n%s\n}}}"%(packages_to_install, script)
+        return False
+
+
+    def dpkg_detect(self, pkgs):
+        """ 
+        Given a list of packages, return the list of installed packages.
+        """
+        ret_list = []
+        #cmd = ['rpm', '-q', '--qf ""']  # suppress output for installed packages
+        cmd = ['rpm', '-q', '--qf', '%{NAME}\n']  # output: "pkg_name" for installed, error text for not installed packages
+        cmd.extend(pkgs)
+        
+        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (std_out, std_err) = pop.communicate()
+        out_lines = std_out.split('\n')
+        for line in out_lines:
+            # if there is no space, it's not an error text -> it's installed
+            if line and ' ' not in line:
+                ret_list.append(line)
+        return ret_list
+        
+
 class PipInstaller(InstallerAPI):
     """ 
     An implementation of the InstallerAPI for use on debian style

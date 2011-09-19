@@ -97,8 +97,12 @@ if __name__ == '__main__':
     import rostest.rostestutil
     if options.output_file:
         test_file = options.output_file
+        # If we were given a test file name to write, then construct the
+        # test name from it, to ensure uniqueness
+        test_name = os.path.basename(test_file)
     else:
         test_file = rostest.rostestutil.xmlResultsFile(pkg, "roslaunch_check_"+outname, is_rostest=False)    
+        test_name = roslaunch_path
 
     print("...writing test results to", test_file)
 
@@ -106,7 +110,6 @@ if __name__ == '__main__':
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
 
-    test_name = roslaunch_path
     if error_msg:
         print("FAILURE:\n%s"%error_msg, file=sys.stderr)
         with open(test_file, 'w') as f:

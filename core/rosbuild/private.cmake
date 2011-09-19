@@ -261,8 +261,8 @@ macro(_rosbuild_add_pyunit file)
 endmacro(_rosbuild_add_pyunit)
 
 # Actual signature:
-#  _rosbuild_add_roslaunch_check file var=val var=val...
-macro(_rosbuild_add_roslaunch_check file)
+#  _rosbuild_add_roslaunch_check targetname file var=val var=val...
+macro(_rosbuild_add_roslaunch_check targetname file)
   # Check that the file exists, #1621
   set(_file_name _file_name-NOTFOUND)
   find_file(_file_name ${file} ${CMAKE_CURRENT_SOURCE_DIR} /)
@@ -273,20 +273,31 @@ macro(_rosbuild_add_roslaunch_check file)
   # Find rostest
   rosbuild_invoke_rospack("" rostest path find rostest)
 
-  # Create a legal target name, in case the target name has slashes it
-  string(REPLACE "/" "_" _testname ${file})
-  
-  # Create target for this test
-  add_custom_target(roslaunch_check_${_testname}
-                    COMMAND ${rostest_path}/bin/roslaunch-check.py ${file} ${ARGN}
-                    DEPENDS ${file}
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                    VERBATIM)
+  # Create target for this test.
+  # First check version on ros_comm to see whether we can give
+  # roslaunch-check.py an output file name (first appears in 1.6.3/1.7.0)
+  # Related to #3674.
+  rosbuild_get_stack_version(ros_comm_version "ros_comm")
+  if(ros_comm_version VERSION_LESS "1.6.3")
+    add_custom_target(${targetname}
+                      COMMAND ${rostest_path}/bin/roslaunch-check.py ${file} ${ARGN}
+                      DEPENDS ${file}
+                      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                      VERBATIM)
+  else()
+    # It's the newer roslaunch-check.py, so we can pass the full path to
+    # the test result file.
+    add_custom_target(${targetname}
+                      COMMAND ${rostest_path}/bin/roslaunch-check.py -o ${rosbuild_test_results_dir}/${PROJECT_NAME}/TEST-${targetname}.xml ${file} ${ARGN}
+                      DEPENDS ${file}
+                      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                      VERBATIM)
+  endif()
   
   # Make sure all test programs are built before running this test
   # but not if rosbuild_test_nobuild is set, #3008
   if(NOT rosbuild_test_nobuild)
-    add_dependencies(roslaunch_check_${_testname} tests)
+    add_dependencies(${targetname} tests)
   endif(NOT rosbuild_test_nobuild)
   
 endmacro(_rosbuild_add_roslaunch_check)

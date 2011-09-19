@@ -274,11 +274,25 @@ macro(_rosbuild_add_roslaunch_check targetname file)
   rosbuild_invoke_rospack("" rostest path find rostest)
 
   # Create target for this test.
-  add_custom_target(${targetname}
-                    COMMAND ${rostest_path}/bin/roslaunch-check.py ${file} ${ARGN}
-                    DEPENDS ${file}
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                    VERBATIM)
+  # First check version on ros_comm to see whether we can give
+  # roslaunch-check.py an output file name (first appears in 1.6.3/1.7.0)
+  # Related to #3674.
+  rosbuild_get_stack_version(ros_comm_version "ros_comm")
+  if(ros_comm_version VERSION_LESS "1.6.3")
+    add_custom_target(${targetname}
+                      COMMAND ${rostest_path}/bin/roslaunch-check.py ${file} ${ARGN}
+                      DEPENDS ${file}
+                      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                      VERBATIM)
+  else()
+    # It's the newer roslaunch-check.py, so we can pass the full path to
+    # the test result file.
+    add_custom_target(${targetname}
+                      COMMAND ${rostest_path}/bin/roslaunch-check.py -o ${rosbuild_test_results_dir}/${PROJECT_NAME}/TEST-${targetname}.xml ${file} ${ARGN}
+                      DEPENDS ${file}
+                      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                      VERBATIM)
+  endif()
   
   # Make sure all test programs are built before running this test
   # but not if rosbuild_test_nobuild is set, #3008

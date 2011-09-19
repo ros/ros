@@ -102,12 +102,13 @@ if __name__ == '__main__':
 
     print("...writing test results to", test_file)
 
+    dir_path = os.path.abspath(os.path.dirname(test_file))
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
+
     test_name = roslaunch_path
     if error_msg:
         print("FAILURE:\n%s"%error_msg, file=sys.stderr)
-        dir_path = os.path.abspath(os.path.dirname(test_file))
-        if not os.path.exists(dir_path):
-            os.makedirs(dir_path)
         with open(test_file, 'w') as f:
             message = "roslaunch check [%s] failed"%(roslaunch_path)
             f.write(rostest.rostestutil.test_failure_junit_xml(test_name, message, stdout=error_msg))

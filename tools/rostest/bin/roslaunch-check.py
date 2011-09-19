@@ -33,7 +33,7 @@
 #
 # Revision $Id$
 
-from __future__ import with_statement
+from __future__ import print_function
 import roslib; roslib.load_manifest('rostest')
 
 import os
@@ -43,15 +43,8 @@ import roslib.packages
 
 import roslaunch.rlutil
 
-def usage():
-    print >> sys.stderr, """Usage:
-\troslaunch-check <file|directory> [env=value...]
-"""
-    print sys.argv
-    sys.exit(os.EX_USAGE)
-
 def check_roslaunch_file(roslaunch_file):
-    print "checking", roslaunch_file
+    print("checking", roslaunch_file)
     error_msg = roslaunch.rlutil.check_roslaunch(roslaunch_file)
     # error message has to be XML attr safe
     if error_msg:
@@ -69,12 +62,20 @@ def check_roslaunch_dir(roslaunch_dir):
 
 ## run check and output test result file
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
+    from optparse import OptionParser
+    parser = OptionParser(usage="usage: \troslaunch-check [options] <file|directory> [env=value...]")
+    # #3674
+    parser.add_option("-o", "--output-file",
+                      dest="output_file", default=None,
+                      help="file to store test results in", metavar="FILE")
+
+    options, args = parser.parse_args()
+    if not args:
         usage()
-    roslaunch_path = sys.argv[1]
+    roslaunch_path = args[0]
 
     # #2590: implementing this quick and dirty as this script should only be used by higher level tools
-    env_vars = sys.argv[2:]
+    env_vars = args[1:]
     for e in env_vars:
         var, val = e.split('=')
         os.environ[var] = val
@@ -85,7 +86,7 @@ if __name__ == '__main__':
         error_msg = check_roslaunch_file(roslaunch_path)
         outname = os.path.basename(roslaunch_path).replace('.', '_')
     else:
-        print "checking *.launch in directory", roslaunch_path        
+        print("checking *.launch in directory", roslaunch_path)
         error_msg = check_roslaunch_dir(roslaunch_path)
         abspath = os.path.abspath
         relpath = abspath(roslaunch_path)[len(abspath(pkg_dir))+1:]
@@ -94,22 +95,26 @@ if __name__ == '__main__':
             outname = '_pkg'
 
     import rostest.rostestutil
-    test_file = rostest.rostestutil.xmlResultsFile(pkg, "roslaunch_check_"+outname, is_rostest=False)    
+    if options.output_file:
+        test_file = options.output_file
+    else:
+        test_file = rostest.rostestutil.xmlResultsFile(pkg, "roslaunch_check_"+outname, is_rostest=False)    
 
-    print "...writing test results to", test_file
+    print("...writing test results to", test_file)
 
     test_name = roslaunch_path
     if error_msg:
-        print>> sys.stderr, "FAILURE:\n%s"%error_msg
-        if not os.path.exists(os.path.dirname(test_file)):
-            os.makedirs(os.path.dirname(test_file))
+        print("FAILURE:\n%s"%error_msg, file=sys.stderr)
+        dir_path = os.path.abspath(os.path.dirname(test_file))
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
         with open(test_file, 'w') as f:
             message = "roslaunch check [%s] failed"%(roslaunch_path)
             f.write(rostest.rostestutil.test_failure_junit_xml(test_name, message, stdout=error_msg))
             f.close()
-        print "wrote test file to [%s]"%test_file
+        print("wrote test file to [%s]"%test_file)
         sys.exit(1)
     else:
-        print "passed"
+        print("passed")
         with open(test_file, 'w') as f:
             f.write(rostest.rostestutil.test_success_junit_xml(test_name))            

@@ -10,13 +10,13 @@
 #	BZR_REVISION: a bzr revisionspec string
 
 ifneq ($(BZR_REVISION),)
-  BZR_REV='-r $(BZR_REVISION)'
+  BZR_REV=-r $(BZR_REVISION)
 else
   BZR_REV=
 endif
 
 $(BZR_DIR):
-	bzr branch $(BZR_REV) $(BZR_URL) $(BZR_DIR)
+	bzr branch $(BZR_URL) $(BZR_REV) $(BZR_DIR)
 	touch rospack_nosubdirs
 
 patched: $(BZR_DIR) $(BZR_PATCH) Makefile

@@ -71,7 +71,7 @@ if __name__ == '__main__':
 
     options, args = parser.parse_args()
     if not args:
-        usage()
+        parser.error('please specify a file or directory for roslaunch files to test')
     roslaunch_path = args[0]
 
     # #2590: implementing this quick and dirty as this script should only be used by higher level tools
@@ -111,7 +111,6 @@ if __name__ == '__main__':
         with open(test_file, 'w') as f:
             message = "roslaunch check [%s] failed"%(roslaunch_path)
             f.write(rostest.rostestutil.test_failure_junit_xml(test_name, message, stdout=error_msg))
-            f.close()
         print("wrote test file to [%s]"%test_file)
         sys.exit(1)
     else:

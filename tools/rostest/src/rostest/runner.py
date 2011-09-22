@@ -11,13 +11,13 @@ import roslib.packages
 from rostest.rostestutil import createXMLRunner, printSummary, printRostestSummary, \
     xmlResultsFile, printlog, printlogerr
 from rostest.rostest_parent import ROSTestLaunchParent
-import rostest.xmlresults
+import rosunit.junitxml
 
 _DEFAULT_TEST_PORT = 22422
 
 # NOTE: ignoring Python style guide as unittest is sadly written with Java-like camel casing
 
-_results = rostest.xmlresults.Result('rostest', 0, 0, 0)
+_results = rosunit.junitxml.Result('rostest', 0, 0, 0)
 def _accumulateResults(results):
     _results.accumulate(results)
 
@@ -127,7 +127,7 @@ def rostestRunner(test, test_pkg):
                 if not timeout_failure:
                     self.assert_(os.path.isfile(test_file), "test [%s] did not generate test results"%test_name)
                     printlog("test [%s] results are in [%s]", test_name, test_file)
-                    results = rostest.xmlresults.read(test_file, test_name)
+                    results = rosunit.junitxml.read(test_file, test_name)
                     test_fail = results.num_errors or results.num_failures
                 else:
                     test_fail = True

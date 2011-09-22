@@ -47,7 +47,7 @@ import roslaunch.pmon
 
 from rostest.rostestutil import createXMLRunner, printSummary, printRostestSummary, \
     xmlResultsFile, rostest_name_from_path, printlog, printlogerr
-import rostest.xmlresults
+import rosunit.junitxml
 
 BARE_TIME_LIMIT = 60.
 
@@ -144,7 +144,7 @@ class BareTestCase(unittest.TestCase):
             if not timeout_failure:
                 self.assert_(os.path.isfile(test_file), "test [%s] did not generate test results"%test_name)
                 printlog("test [%s] results are in [%s]", test_name, test_file)
-                results = rostest.xmlresults.read(test_file, test_name)
+                results = rosunit.junitxml.read(test_file, test_name)
                 test_fail = results.num_errors or results.num_failures
             else:
                 test_fail = True

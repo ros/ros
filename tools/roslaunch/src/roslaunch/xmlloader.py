@@ -200,13 +200,13 @@ class XmlLoader(roslaunch.loader.Loader):
     @ifunless
     def _rosparam_tag(self, tag, context, ros_config, verbose=True):
         try:
+            self._check_attrs(tag, context, ros_config, XmlLoader.ROSPARAM_OPT_ATTRS)
             cmd, ns, file, param = self.opt_attrs(tag, context, (XmlLoader.ROSPARAM_OPT_ATTRS))
             # ns atribute is a bit out-moded and is only left in for backwards compatibility
             param = ns_join(ns or '', param or '')
             
             # load is the default command            
             cmd = cmd or 'load'
-            
             self.load_rosparam(context, ros_config, cmd, param, file, _get_text(tag), verbose=verbose)
 
         except ValueError, e:

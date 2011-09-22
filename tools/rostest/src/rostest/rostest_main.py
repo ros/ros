@@ -52,7 +52,6 @@ from rostest.rostestutil import createXMLRunner, printRostestSummary, \
 from rostest.rostest_parent import ROSTestLaunchParent
 
 import rostest.baretest
-import rostest.xmlresults
 import rostest.runner
 
 _NAME = 'rostest'
@@ -171,7 +170,6 @@ def rostestmain():
                                              results_file=results_file, \
                                              is_rostest=is_rostest)
             result = xml_runner.run(suite)
-            #_accumulateResults(xmlresults.read(results_file))
     finally:
         # really make sure that all of our processes have been killed
         test_parents = rostest.runner.getRostestParents()

@@ -68,13 +68,18 @@
 (defun make-queue (&key (sequence nil) (max-size 'infty))
   "make-queue &key (SEQUENCE nil) (MAX-SIZE 'infty)
 
-Makes a queue out of SEQUENCE where (elt SEQUENCE 0) is the head (i.e., the first to be dequeued)."
-  
-  (let* ((head (etypecase sequence (list sequence) (vector (map 'list #'identity sequence))))
-	 (tail (last head)))
-    (create-queue :head head :tail tail :lock (make-mutex :name "queue lock")
-		  :max-size max-size :queue-size (length sequence)
-		  :read-cv (make-waitqueue :name "queue reader waitqueue"))))
+Makes a queue out of SEQUENCE as if enqueueing the elements in sequence."
+  (let* ((headlist (etypecase sequence (list (copy-list sequence)) (vector (map 'list #'identity sequence))))
+         (head (if (and (numberp max-size) (> (length sequence) max-size)) (subseq headlist (- (length sequence) max-size)) headlist))
+         (tail (last head))
+         (queue
+           (create-queue :head head
+                         :tail tail
+                         :lock (make-mutex :name "queue lock")
+                         :max-size max-size
+                         :queue-size (length head)
+                         :read-cv (make-waitqueue :name "queue reader waitqueue"))))
+    queue))
 
 (defun queue-empty (queue)
   "queue-empty QUEUE.  Return t iff the queue has no elements."

@@ -48,30 +48,19 @@
 
 ;(declaim (inline ext+ ext- ext>))
 (defun ext+ (&rest args)
-  (if args
-      (let ((x (first args))
-	    (y (apply #'ext+ (rest args))))
-	(cond
-	  ((symbolp x)
-	   (cond
-	     ((numberp y) x)
-	     ((eq x y) x)
-	     (t (assert nil nil "Can't add infty and -infty"))))
-	  ((symbolp y) y)
-	  (t (+ x y))))))
+  (reduce 'add-ext args))
 
 (defun ext- (a &rest args)
   (if args
-      (if (rest args)
-	  (apply #'ext- (subtract a (first args)) (rest args))
-	  (subtract a (first args)))
-      (negate a)))
+    (reduce 'subtract (cons a args))
+    (negate a)))
 
 (defun extmax (&rest args)
-  (let ((m '-infty))
-    (dolist (x args m)
-      (when (ext> x m)
-	(setf m x)))))
+  (when args
+    (let ((m '-infty))
+      (dolist (x args m)
+        (when (ext> x m)
+          (setf m x))))))
 
 (defun ext> (a b)
   (cond
@@ -88,14 +77,22 @@
 
 ;(declaim (inline subtract negate))
 
+(defun add-ext (a b)
+  (cond ((symbolp a)
+          (cond ((numberp b) a)
+                ((eq a b) a)
+                (t (assert nil nil "Can't add infty and -infty"))))
+        ((symbolp b) b)
+        (t (+ a b))))
+
 (defun subtract (a b)
   (cond ((symbolp a)
-	 (cond ((numberp b) a)
-	       ((eq a b) (assert nil nil "Can't subtract infty or -infty from themselves."))
-	       (t a)))
-	((eql b 'infty) '-infty)
-	((eql b '-infty) 'infty)
-	(t (- a b))))
+          (cond ((numberp b) a)
+                ((eq a b) (assert nil nil "Can't subtract infty or -infty from themselves."))
+                (t a)))
+        ((eql b 'infty) '-infty)
+        ((eql b '-infty) 'infty)
+        (t (- a b))))
 	 
 
 (defun negate (a)

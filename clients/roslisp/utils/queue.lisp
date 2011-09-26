@@ -69,8 +69,8 @@
   "make-queue &key (SEQUENCE nil) (MAX-SIZE 'infty)
 
 Makes a queue out of SEQUENCE as if enqueueing the elements in sequence."
-  (let* ((headlist (etypecase sequence (list (copy-list sequence)) (vector (map 'list #'identity sequence))))
-         (head (if (and (numberp max-size) (> (length sequence) max-size)) (subseq headlist (- (length sequence) max-size)) headlist))
+  (assert (or (eql max-size 'infty) (< (length sequence) max-size)))
+  (let* ((head (etypecase sequence (list (copy-list sequence)) (vector (map 'list #'identity sequence))))
          (tail (last head))
          (queue
            (create-queue :head head

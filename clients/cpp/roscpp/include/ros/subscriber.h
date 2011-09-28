@@ -103,7 +103,6 @@ private:
     NodeHandlePtr node_handle_;
     SubscriptionCallbackHelperPtr helper_;
     bool unsubscribed_;
-    double constructed_;
   };
   typedef boost::shared_ptr<Impl> ImplPtr;
   typedef boost::weak_ptr<Impl> ImplWPtr;

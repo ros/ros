@@ -194,7 +194,6 @@ private:
     M_string header_values_;
     std::string service_md5sum_;
     bool is_shutdown_;
-    double constructed_;
   };
   typedef boost::shared_ptr<Impl> ImplPtr;
   typedef boost::weak_ptr<Impl> ImplWPtr;

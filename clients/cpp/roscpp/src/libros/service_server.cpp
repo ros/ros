@@ -32,15 +32,11 @@
 namespace ros
 {
 
-ServiceServer::Impl::Impl()
-: unadvertised_(false), constructed_(WallTime::now().toSec())
-{
-}
+ServiceServer::Impl::Impl() : unadvertised_(false) { }
 
 ServiceServer::Impl::~Impl()
 {
-  if (WallTime::now().toSec() - constructed_ < 0.001)
-    ROS_WARN("ServiceServer on '%s' destroyed immediately after creation.  Did you forget to store the handle?", service_.c_str());
+  ROS_DEBUG("ServiceServer on '%s' deregistering callbacks.", service_.c_str());
   unadvertise();
 }
 

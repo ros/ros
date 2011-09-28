@@ -33,14 +33,12 @@ namespace ros
 {
 
   Subscriber::Impl::Impl()
-  : unsubscribed_(false), constructed_(WallTime::now().toSec())
+  : unsubscribed_(false)
   { }
 
   Subscriber::Impl::~Impl()
   {
-    if (!unsubscribed_ && WallTime::now().toSec() - constructed_ < 0.001)
-      ROS_WARN("Subscriber on '%s' destroyed immediately after creation.  Did you forget to store the handle?", 
-	       topic_.c_str());
+    ROS_DEBUG("Subscriber on '%s' deregistering callbacks.", topic_.c_str());
     unsubscribe();
   }
 

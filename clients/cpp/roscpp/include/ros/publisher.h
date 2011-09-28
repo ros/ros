@@ -180,7 +180,6 @@ private:
     NodeHandlePtr node_handle_;
     SubscriberCallbacksPtr callbacks_;
     bool unadvertised_;
-    double constructed_;
   };
   typedef boost::shared_ptr<Impl> ImplPtr;
   typedef boost::weak_ptr<Impl> ImplWPtr;

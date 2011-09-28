@@ -32,16 +32,13 @@ namespace ros
 {
 
 Timer::Impl::Impl()
-: started_(false)
-, timer_handle_(-1)
-, constructed_(WallTime::now().toSec())
-{
-}
+  : started_(false)
+  , timer_handle_(-1)
+{ }
 
 Timer::Impl::~Impl()
 {
-  if (WallTime::now().toSec() - constructed_ < 0.001)
-    ROS_WARN("Timer destroyed immediately after creation.  Did you forget to store the handle?");
+  ROS_DEBUG("Timer deregistering callbacks.");
   stop();
 }
 

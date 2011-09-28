@@ -112,7 +112,6 @@ private:
     CallbackQueueInterface* callback_queue_;
     VoidConstWPtr tracked_object_;
     bool has_tracked_object_;
-    double constructed_;
     bool oneshot_;
   };
   typedef boost::shared_ptr<Impl> ImplPtr;

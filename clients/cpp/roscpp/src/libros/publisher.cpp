@@ -32,15 +32,11 @@
 namespace ros
 {
 
-Publisher::Impl::Impl()
-: unadvertised_(false), constructed_(WallTime::now().toSec())
-{
-}
+Publisher::Impl::Impl() : unadvertised_(false) { }
 
 Publisher::Impl::~Impl()
 {
-  if (WallTime::now().toSec() - constructed_ < 0.001)
-    ROS_WARN("Publisher on '%s' destroyed immediately after creation.  Did you forget to store the handle?", topic_.c_str());
+  ROS_DEBUG("Publisher on '%s' deregistering callbacks.", topic_.c_str());
   unadvertise();
 }
 

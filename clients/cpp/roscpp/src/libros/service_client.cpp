@@ -34,10 +34,9 @@
 namespace ros
 {
 
-ServiceClient::Impl::Impl()
-: is_shutdown_(false), constructed_(WallTime::now().toSec())
-{
-}
+ServiceClient::Impl::Impl() 
+  : is_shutdown_(false)
+{ }
 
 ServiceClient::Impl::~Impl()
 {

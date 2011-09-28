@@ -219,6 +219,18 @@ TEST(Time, SecNSecConstructor)
   EXPECT_EQ(t.nsec, 3000UL);
 }
 
+TEST(Time, DontMungeStreamState)
+{
+  std::ostringstream oss;
+  Time t(100, 2000003000UL);
+  oss << std::setfill('N');
+  oss << std::setw(13);
+  oss << t;
+  
+  EXPECT_EQ(oss.width(), 13);
+  EXPECT_EQ(oss.fill(), 'N');
+}
+
 /************************************* Duration Tests *****************/
 
 TEST(Duration, Comparitors)

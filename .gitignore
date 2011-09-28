@@ -3,6 +3,17 @@
 build/
 msg_gen/
 srv_gen/
+test/test_roscpp/bin/intraprocess_subscriptions
+test/test_roscpp/bin/nonconst_subscriptions
+test/test_roscpp/bin/param_locale_avoidance_test
+test/test_roscpp/bin/parameter_validation
+test/test_roscpp/bin/publisher_for_star_subscriber
+test/test_roscpp/bin/service_callback_types
+test/test_roscpp/bin/subscribe_retry_tcp
+test/test_roscpp/bin/subscribe_star
+test/test_roscpp/bin/test_ns_node_remapping
+test/test_roscpp/bin/test_remapping
+test/test_roscpp/bin/test_search_param
 messages/rosgraph_msgs/src/rosgraph_msgs/msg/_Clock.py
 messages/rosgraph_msgs/src/rosgraph_msgs/msg/_Log.py
 messages/rosgraph_msgs/src/rosgraph_msgs/msg/__init__.py

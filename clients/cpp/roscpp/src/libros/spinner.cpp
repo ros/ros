@@ -31,11 +31,22 @@
 
 #include <boost/thread/thread.hpp>
 
+namespace {
+  boost::mutex spinmutex;
+}
+
 namespace ros
 {
 
+
 void SingleThreadedSpinner::spin(CallbackQueue* queue)
 {
+  boost::mutex::scoped_try_lock spinlock(spinmutex);
+  if(not spinlock.owns_lock()) {
+    ROS_ERROR("Attempt to call spin from multiple threads.  Use a MultiThreadedSpinner instead.");
+    return;
+  }
+
   ros::WallDuration timeout(0.1f);
 
   if (!queue)
@@ -57,6 +68,11 @@ MultiThreadedSpinner::MultiThreadedSpinner(uint32_t thread_count)
 
 void MultiThreadedSpinner::spin(CallbackQueue* queue)
 {
+  boost::mutex::scoped_try_lock spinlock(spinmutex);
+  if (not spinlock.owns_lock()) {
+    ROS_ERROR("Attempt to call ros::spin from multiple threads.  Use a MultiThreadedSpinner instead.");
+    return;
+  }
   AsyncSpinner s(thread_count_, queue);
   s.start();
 
@@ -75,6 +91,7 @@ private:
   void threadFunc();
 
   boost::mutex mutex_;
+  boost::mutex::scoped_try_lock member_spinlock;
   boost::thread_group threads_;
 
   uint32_t thread_count_;
@@ -114,10 +131,16 @@ AsyncSpinnerImpl::~AsyncSpinnerImpl()
 void AsyncSpinnerImpl::start()
 {
   boost::mutex::scoped_lock lock(mutex_);
+
   if (continue_)
-  {
+    return;
+
+  boost::mutex::scoped_try_lock spinlock(spinmutex);
+  if (not spinlock.owns_lock()) {
+    ROS_ERROR("Attempt to call spin from multiple threads.  Use a MultiThreadedSpinner instead.");
     return;
   }
+  spinlock.swap(member_spinlock);
 
   continue_ = true;
 
@@ -131,9 +154,13 @@ void AsyncSpinnerImpl::stop()
 {
   boost::mutex::scoped_lock lock(mutex_);
   if (!continue_)
-  {
     return;
-  }
+
+  ROS_ASSERT_MSG(member_spinlock.owns_lock(), 
+                 "Async spinner's member lock doesn't own the global spinlock, hrm.");
+  ROS_ASSERT_MSG(member_spinlock.mutex() == &spinmutex, 
+                 "Async spinner's member lock owns a lock on the wrong mutex?!?!?");
+  member_spinlock.unlock();
 
   continue_ = false;
   threads_.join_all();

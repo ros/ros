@@ -1,6 +1,16 @@
 rosbuild_add_gtest(test/test_version test_version.cpp)
 target_link_libraries(test/test_version)
 
+# WARNING test_spinners is not actually run.  This is because this
+# infrastructure won't let me pass arguments from here through to
+# these test units.  otherwise one would have to build ten executables.
+# also the output of test_spinners has to be visually inspected
+# because there is no automatic way to ensure that an error condition
+# provokes a particular message.
+rosbuild_add_executable(test/test_spinners test_spinners.cpp)
+rosbuild_add_gtest_build_flags(test/test_spinners)
+target_link_libraries(test/test_spinners ros)
+
 rosbuild_add_gtest(test/test_header test_header.cpp)
 target_link_libraries(test/test_header ros)
 

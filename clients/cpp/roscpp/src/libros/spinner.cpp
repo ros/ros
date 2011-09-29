@@ -30,9 +30,10 @@
 #include "ros/callback_queue.h"
 
 #include <boost/thread/thread.hpp>
+#include <boost/thread/recursive_mutex.hpp>
 
 namespace {
-  boost::mutex spinmutex;
+  boost::recursive_mutex spinmutex;
 }
 
 namespace ros
@@ -41,9 +42,10 @@ namespace ros
 
 void SingleThreadedSpinner::spin(CallbackQueue* queue)
 {
-  boost::mutex::scoped_try_lock spinlock(spinmutex);
+  boost::recursive_mutex::scoped_try_lock spinlock(spinmutex);
   if(not spinlock.owns_lock()) {
-    ROS_ERROR("Attempt to call spin from multiple threads.  Use a MultiThreadedSpinner instead.");
+    ROS_ERROR("SingleThreadedSpinner: You've attempted to call spin "
+              "from multiple threads.  Use a MultiThreadedSpinner instead.");
     return;
   }
 
@@ -68,9 +70,11 @@ MultiThreadedSpinner::MultiThreadedSpinner(uint32_t thread_count)
 
 void MultiThreadedSpinner::spin(CallbackQueue* queue)
 {
-  boost::mutex::scoped_try_lock spinlock(spinmutex);
+  boost::recursive_mutex::scoped_try_lock spinlock(spinmutex);
   if (not spinlock.owns_lock()) {
-    ROS_ERROR("Attempt to call ros::spin from multiple threads.  Use a MultiThreadedSpinner instead.");
+    ROS_ERROR("MultiThreadeSpinner: You've attempted to call ros::spin "
+              "from multiple threads... "
+              "but this spinner is already multithreaded.");
     return;
   }
   AsyncSpinner s(thread_count_, queue);
@@ -91,7 +95,7 @@ private:
   void threadFunc();
 
   boost::mutex mutex_;
-  boost::mutex::scoped_try_lock member_spinlock;
+  boost::recursive_mutex::scoped_try_lock member_spinlock;
   boost::thread_group threads_;
 
   uint32_t thread_count_;
@@ -135,9 +139,10 @@ void AsyncSpinnerImpl::start()
   if (continue_)
     return;
 
-  boost::mutex::scoped_try_lock spinlock(spinmutex);
+  boost::recursive_mutex::scoped_try_lock spinlock(spinmutex);
   if (not spinlock.owns_lock()) {
-    ROS_ERROR("Attempt to call spin from multiple threads.  Use a MultiThreadedSpinner instead.");
+    ROS_ERROR("AsyncSpinnerImpl: Attempt to call spin from multiple "
+              "threads.  We already spin multithreaded.");
     return;
   }
   spinlock.swap(member_spinlock);

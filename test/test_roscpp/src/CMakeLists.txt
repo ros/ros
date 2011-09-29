@@ -49,7 +49,7 @@ rosbuild_declare_test(publish_constantly)
 rosbuild_add_executable(param_update_test EXCLUDE_FROM_ALL param_update_test.cpp)
 rosbuild_declare_test(param_update_test)
 
- 
+
 rosbuild_add_executable(real_time_test EXCLUDE_FROM_ALL real_time_test.cpp)
 rosbuild_declare_test(real_time_test)
 rosbuild_add_gtest_build_flags(real_time_test)
@@ -68,6 +68,9 @@ rosbuild_add_gtest_build_flags(service_adv_unadv)
 
 rosbuild_add_executable(service_call EXCLUDE_FROM_ALL service_call.cpp)
 rosbuild_add_gtest_build_flags(service_call)
+
+rosbuild_add_executable(service_deadlock EXCLUDE_FROM_ALL service_deadlock.cpp)
+rosbuild_add_gtest_build_flags(service_deadlock)
 
 rosbuild_add_executable(service_call_repeatedly EXCLUDE_FROM_ALL service_call_repeatedly.cpp)
 rosbuild_declare_test(service_call_repeatedly)

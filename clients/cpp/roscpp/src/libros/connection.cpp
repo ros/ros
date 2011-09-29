@@ -321,6 +321,7 @@ void Connection::onDisconnect(const TransportPtr& transport)
 
 void Connection::drop(DropReason reason)
 {
+  ROSCPP_LOG_DEBUG("Connection::drop(%u)", reason);
   bool did_drop = false;
   {
     boost::recursive_mutex::scoped_lock lock(drop_mutex_);

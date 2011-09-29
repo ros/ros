@@ -335,7 +335,8 @@ bool ServiceServerLink::call(const SerializedMessage& req, SerializedMessage& re
 
     if (connection_->isDropped())
     {
-      //ROSCPP_LOG_DEBUG("ServiceServerLink::call called on dropped connection for service [%s]", service_name_.c_str());
+      ROSCPP_LOG_DEBUG("ServiceServerLink::call called on dropped connection for service [%s]", service_name_.c_str());
+      info->call_finished_ = true;
       return false;
     }
 

@@ -381,6 +381,7 @@ int32_t TransportTCP::read(uint8_t* buffer, uint32_t size)
 {
   {
     boost::recursive_mutex::scoped_lock lock(close_mutex_);
+
     if (closed_)
     {
       ROSCPP_LOG_DEBUG("Tried to read on a closed socket [%d]", sock_);
@@ -553,11 +554,13 @@ TransportTCPPtr TransportTCP::accept()
 
 void TransportTCP::socketUpdate(int events)
 {
-  boost::recursive_mutex::scoped_lock lock(close_mutex_);
-
-  if (closed_)
   {
-    return;
+    boost::recursive_mutex::scoped_lock lock(close_mutex_);
+
+    if (closed_)
+    {
+      return;
+    }
   }
 
   // Handle read events before err/hup/nval, since there may be data left on the wire
@@ -583,9 +586,13 @@ void TransportTCP::socketUpdate(int events)
     }
   }
 
-  if (closed_)
   {
-    return;
+    boost::recursive_mutex::scoped_lock lock(close_mutex_);
+
+    if (closed_)
+    {
+      return;
+    }
   }
 
   if ((events & POLLOUT) && expecting_write_)
@@ -596,9 +603,13 @@ void TransportTCP::socketUpdate(int events)
     }
   }
 
-  if (closed_)
   {
-    return;
+    boost::recursive_mutex::scoped_lock lock(close_mutex_);
+
+    if (closed_)
+    {
+      return;
+    }
   }
 
   if((events & POLLERR) ||
@@ -618,6 +629,7 @@ void TransportTCP::socketUpdate(int events)
   #else
     ROSCPP_LOG_DEBUG("Socket %d closed with (ERR|HUP|NVAL) events %d: %s", sock_, events, strerror(error));
   #endif
+
     close();
   }
 }

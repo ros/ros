@@ -48,11 +48,11 @@ XmlRpcLogHandler* XmlRpcLogHandler::_logHandler = &defaultLogHandler;
 static class DefaultErrorHandler : public XmlRpcErrorHandler {
 public:
 
-  void error(const char* msg) {
 #ifdef USE_WINDOWS_DEBUG
+  void error(const char* msg) {
     OutputDebugString(msg); OutputDebugString("\n");
 #else
-//    std::cerr << msg << std::endl; 
+  void error(const char*) {
 #endif  
     // As far as I can tell, throwing an exception here is a bug, unless
     // the intention is that the program should exit.  Throughout the code,

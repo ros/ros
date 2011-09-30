@@ -40,7 +40,7 @@ void print(ros::console::Level level, const std::string& s)
   ROS_LOG(level, ROSCONSOLE_DEFAULT_NAME, "%s", s.c_str());
 }
 
-int main(int argc, char** argv)
+int main(int /*argc*/, char** /*argv*/)
 {
   // This needs to happen before we start fooling around with logger levels.  Otherwise the level we set may be overwritten by
   // a configuration file

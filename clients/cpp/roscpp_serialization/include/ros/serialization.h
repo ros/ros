@@ -183,7 +183,7 @@ inline uint32_t serializationLength(const T& t)
       v = *reinterpret_cast<Type*>(stream.advance(sizeof(v))); \
     } \
     \
-    inline static uint32_t serializedLength(const Type t) \
+    inline static uint32_t serializedLength(const Type&) \
     { \
       return sizeof(Type); \
     } \
@@ -217,7 +217,7 @@ template<> struct Serializer<bool>
     v = (bool)b;
   }
 
-  inline static uint32_t serializedLength(const bool t)
+  inline static uint32_t serializedLength(bool)
   {
     return 1;
   }
@@ -284,7 +284,7 @@ struct Serializer<ros::Time>
     stream.next(v.nsec);
   }
 
-  inline static uint32_t serializedLength(const ros::Time& v)
+  inline static uint32_t serializedLength(const ros::Time&)
   {
     return 8;
   }
@@ -310,7 +310,7 @@ struct Serializer<ros::Duration>
     stream.next(v.nsec);
   }
 
-  inline static uint32_t serializedLength(const ros::Duration& v)
+  inline static uint32_t serializedLength(const ros::Duration&)
   {
     return 8;
   }

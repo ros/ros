@@ -212,7 +212,7 @@ public:
    * \brief Returns whether or not the log statement should be printed.  Called once the message has been formatted,
    * and allows you to change the message, logger and severity level if necessary.
    */
-  inline virtual bool isEnabled(FilterParams& params) { return true; }
+  inline virtual bool isEnabled(FilterParams&) { return true; }
 };
 
 struct ROSCONSOLE_DECL LogLocation;

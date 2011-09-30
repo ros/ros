@@ -400,7 +400,7 @@ int32_t TransportUDP::read(uint8_t* buffer, uint32_t size)
           close();
           return -1;
         }
-        else if (num_bytes < sizeof(header))
+        else if (num_bytes < (unsigned) sizeof(header))
         {
           ROS_ERROR("Socket [%d] received short header (%d bytes): %s", sock_, int(num_bytes),  last_socket_error_string());
           close();
@@ -559,7 +559,7 @@ int32_t TransportUDP::write(uint8_t* buffer, uint32_t size)
         num_bytes = 0;
       }
     }
-    else if (num_bytes < sizeof(header))
+    else if (num_bytes < (unsigned) sizeof(header))
     {
       ROSCPP_LOG_DEBUG("Socket [%d] short write (%d bytes), closing", sock_, int(num_bytes));
       close();

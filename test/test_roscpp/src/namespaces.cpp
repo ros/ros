@@ -86,7 +86,7 @@ TEST(namespaces, name)
   std::string name = ros::this_node::getName();
   ASSERT_EQ(name, "/ROS_NAMESPACE/NODE_NAME");
   std::string nspace = ros::this_node::getNamespace();
-  ASSERT_EQ(nspace, "ROS_NAMESPACE");
+  ASSERT_EQ(nspace, "/ROS_NAMESPACE");
 }
 
 int

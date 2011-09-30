@@ -49,11 +49,11 @@
 TEST(roscpp, parameterRemapping)
 {
   std::string param;
-  ASSERT_TRUE(ros::param::get("test", param));
-  ASSERT_STREQ(ros::names::resolve("test").c_str(), "/test_remap");
+  ASSERT_TRUE(ros::param::get("mapfrom", param));
+  ASSERT_STREQ(ros::names::resolve("mapfrom").c_str(), "/mapto");
 
-  ASSERT_TRUE(ros::param::get("/test", param));
-  ASSERT_STREQ(ros::names::resolve("/test").c_str(), "/test_remap");
+  ASSERT_TRUE(ros::param::get("/mapto", param));
+  ASSERT_STREQ(ros::names::resolve("/mapfrom").c_str(), "/mapto");
 }
 
 TEST(roscpp, nodeNameRemapping)

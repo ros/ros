@@ -49,15 +49,15 @@ rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/service_adv_multiple.xml)
 # Test that the second node to advertise a service "wins"
 rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/service_multiple_providers.xml)
 
+# Test namespaces
+rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/namespaces.xml)
+
 # Test command-line name remapping
 rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/name_remapping.xml)
 
 # Test command-line name remapping
 rosbuild_add_rostest(
   ${CMAKE_CURRENT_SOURCE_DIR}/name_remapping_ROS_NAMESPACE.xml)
-
-# Test namespaces
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/namespaces.xml)
 
 # Test params
 rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/params.xml)

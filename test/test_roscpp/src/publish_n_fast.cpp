@@ -50,9 +50,9 @@ void connectCallback(const ros::SingleSubscriberPublisher &pub, int msg_count, i
   {
     msg.counter = i;
     int j = min_size + (int) ((max_size - min_size) * (rand() / (RAND_MAX + 1.0)));
-    msg.set_float_arr_size(j);
+    msg.float_arr.resize(j);
     ROS_INFO("published message %d (%d bytes)\n",
-           msg.counter, msg.serializationLength());
+             msg.counter, ros::serialization::Serializer<test_roscpp::TestArray>::serializedLength(msg));
     pub.publish(msg);
   }
 }

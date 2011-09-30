@@ -41,7 +41,7 @@ int main(int argc, char **argv)
   ros::Publisher pub = nh.advertise<test_roscpp::TestArray>("test_roscpp/pubsub_test", 100);
 
   test_roscpp::TestArray msg;
-  msg.set_float_arr_size(100);
+  msg.float_arr.resize(100);
 
   ros::WallDuration d(0.01);
   while(ros::ok())

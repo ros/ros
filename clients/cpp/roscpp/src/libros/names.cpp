@@ -192,7 +192,8 @@ void init(const M_string& remappings)
   {
     const std::string& left = it->first;
     const std::string& right = it->second;
-    if (!left.empty() && left[0] != '_')
+
+    if (!left.empty() && left[0] != '_' && left != this_node::getName())
     {
       std::string resolved_left = resolve(left, false);
       std::string resolved_right = resolve(right, false);

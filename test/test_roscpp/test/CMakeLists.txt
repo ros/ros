@@ -55,6 +55,8 @@ rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/namespaces.xml)
 # Test command-line name remapping
 rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/name_remapping.xml)
 
+rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/name_not_remappable.xml)
+
 # Test command-line name remapping
 rosbuild_add_rostest(
   ${CMAKE_CURRENT_SOURCE_DIR}/name_remapping_ROS_NAMESPACE.xml)

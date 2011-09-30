@@ -509,7 +509,7 @@ void Bag::readTopicIndexRecord102() {
 
     uint32_t index_version;
     string topic;
-    uint32_t count;
+    uint32_t count = 0;
     readField(fields, VER_FIELD_NAME,   true, &index_version);
     readField(fields, TOPIC_FIELD_NAME, true, topic);
     readField(fields, COUNT_FIELD_NAME, true, &count);
@@ -571,7 +571,7 @@ void Bag::readConnectionIndexRecord200() {
     
     uint32_t index_version;
     uint32_t connection_id;
-    uint32_t count;
+    uint32_t count = 0;
     readField(fields, VER_FIELD_NAME,        true, &index_version);
     readField(fields, CONNECTION_FIELD_NAME, true, &connection_id);
     readField(fields, COUNT_FIELD_NAME,      true, &count);
@@ -891,7 +891,7 @@ void Bag::readChunkInfoRecord() {
     readField(fields, CHUNK_POS_FIELD_NAME,  true, &chunk_info.pos);
     readField(fields, START_TIME_FIELD_NAME, true,  chunk_info.start_time);
     readField(fields, END_TIME_FIELD_NAME,   true,  chunk_info.end_time);
-    uint32_t chunk_connection_count;
+    uint32_t chunk_connection_count = 0;
     readField(fields, COUNT_FIELD_NAME,      true, &chunk_connection_count);
 
     ROS_DEBUG("Read CHUNK_INFO: chunk_pos=%llu connection_count=%d start=%d.%d end=%d.%d",
@@ -916,7 +916,7 @@ void Bag::readChunkInfoRecord() {
 // Record I/O
 
 bool Bag::isOp(M_string& fields, uint8_t reqOp) const {
-    uint8_t op;
+    uint8_t op = 0xFF; // nonexistent op
     readField(fields, OP_FIELD_NAME, true, &op);
     return op == reqOp;
 }
@@ -984,7 +984,7 @@ void Bag::readHeaderFromBuffer(Buffer& buffer, uint32_t offset, ros::Header& hea
 
 void Bag::readMessageDataHeaderFromBuffer(Buffer& buffer, uint32_t offset, ros::Header& header, uint32_t& data_size, uint32_t& total_bytes_read) const {
     total_bytes_read = 0;
-    uint8_t op;
+    uint8_t op = 0xFF;
     do {
         ROS_DEBUG("reading header from buffer: offset=%d", offset);
         uint32_t bytes_read;

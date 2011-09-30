@@ -109,7 +109,7 @@ void ThroughputTest::callback(const ThroughputMessageConstPtr& msg)
 {
   ReceiveThreadResult& r = *receive_thread_result_;
 
-  r.bytes_received += msg->serializationLength() + 4; // 4 byte message length field
+  r.bytes_received += ros::serialization::Serializer<ThroughputMessage>::serializedLength(*msg) + 4; // 4 byte message length field
   ++r.messages_received;
 
   r.last_recv_time = ros::WallTime::now();
@@ -200,7 +200,7 @@ void ThroughputTest::sendThread(boost::barrier* all_connected)
         pubs[j].publish(msg);
 
         ++r.messages_sent;
-        r.bytes_sent += msg->serializationLength() + 4;
+        r.bytes_sent += ros::serialization::Serializer<ThroughputMessage>::serializedLength(*msg) + 4;
       }
 
       boost::this_thread::yield();

@@ -129,6 +129,7 @@ void XMLRPCManager::start()
   bind("getPid", getPid);
 
   bool bound = server_.bindAndListen(0);
+  (void) bound;
   ROS_ASSERT(bound);
   port_ = server_.get_port();
   ROS_ASSERT(port_ != 0);

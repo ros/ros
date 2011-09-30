@@ -52,6 +52,10 @@ rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/service_multiple_providers.xml)
 # Test command-line name remapping
 rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/name_remapping.xml)
 
+# Test command-line name remapping
+rosbuild_add_rostest(
+  ${CMAKE_CURRENT_SOURCE_DIR}/name_remapping_ROS_NAMESPACE.xml)
+
 # Test namespaces
 rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/namespaces.xml)
 

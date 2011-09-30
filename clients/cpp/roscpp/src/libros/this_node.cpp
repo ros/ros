@@ -85,7 +85,7 @@ void init(const std::string& name, const M_string& remappings, uint32_t options)
   {
     g_namespace = ns_env;
 #ifdef _MSC_VER
-  	free(ns_env);
+    free(ns_env);
 #endif
   }
 
@@ -109,6 +109,12 @@ void init(const std::string& name, const M_string& remappings, uint32_t options)
   {
     g_namespace = "/";
   }
+
+  g_namespace = (g_namespace == "/")
+    ? std::string("/") 
+    : ("/" + g_namespace)
+    ;
+
 
   std::string error;
   if (!names::validate(g_namespace, error))

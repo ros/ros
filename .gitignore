@@ -328,3 +328,4 @@ utilities/message_filters/test/test_subscriber
 utilities/message_filters/test/test_synchronizer
 utilities/message_filters/test/time_sequencer_unittest
 utilities/message_filters/test/time_synchronizer_unittest
+setup.sh

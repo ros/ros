@@ -67,7 +67,7 @@ struct PreDeserializeParams
 template<typename M>
 struct PreDeserialize
 {
-  static void notify(const PreDeserializeParams<M>& params) { }
+  static void notify(const PreDeserializeParams<M>&) { }
 };
 
 }
@@ -77,6 +77,7 @@ void
 assignSubscriptionConnectionHeader(T* t, const boost::shared_ptr<M_string>& connection_header,
                                    typename boost::enable_if<ros::message_traits::IsMessage<T> >::type*_=0)
 {
+  (void)_; // warning stopper
   t->__connection_header = connection_header;
 }
 
@@ -84,7 +85,9 @@ template<typename T>
 void
 assignSubscriptionConnectionHeader(T* t, const boost::shared_ptr<M_string>& connection_header,
                                    typename boost::disable_if<ros::message_traits::IsMessage<T> >::type*_=0)
-{ }
+{ 
+  (void)_; // warning stopper
+}
 
 struct SubscriptionCallbackHelperDeserializeParams
 {

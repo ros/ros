@@ -40,22 +40,24 @@ namespace ros
 struct ROSCPP_DECL TimerOptions
 {
   TimerOptions()
-  : period(0.1)
-  , callback_queue(0)
-  , oneshot(false)
-  {
-  }
+    : period(0.1)
+    , callback_queue(0)
+    , oneshot(false)
+    , autostart(true)
+  { }
 
   /*
    * \brief Constructor
    * \param
    */
-  TimerOptions(Duration _period, const TimerCallback& _callback, CallbackQueueInterface* _queue, bool oneshot = false)
-  : period(_period)
-  , callback(_callback)
-  , callback_queue(_queue)
-  , oneshot(oneshot)
-  {}
+  TimerOptions(Duration _period, const TimerCallback& _callback, 
+               CallbackQueueInterface* _queue, bool oneshot = false, bool autostart = true)
+    : period(_period)
+    , callback(_callback)
+    , callback_queue(_queue)
+    , oneshot(oneshot)
+    , autostart(autostart)
+  { }
 
   Duration period;                                                  ///< The period to call the callback at
   TimerCallback callback;                                           ///< The callback to call
@@ -73,6 +75,7 @@ struct ROSCPP_DECL TimerOptions
   VoidConstPtr tracked_object;
 
   bool oneshot;
+  bool autostart;
 };
 
 

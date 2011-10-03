@@ -43,6 +43,7 @@ struct ROSCPP_DECL WallTimerOptions
   : period(0.1)
   , callback_queue(0)
   , oneshot(false)
+  , autostart(true)
   {
   }
 
@@ -50,11 +51,13 @@ struct ROSCPP_DECL WallTimerOptions
    * \brief Constructor
    * \param
    */
-  WallTimerOptions(WallDuration _period, const WallTimerCallback& _callback, CallbackQueueInterface* _queue, bool oneshot = false)
+  WallTimerOptions(WallDuration _period, const WallTimerCallback& _callback, CallbackQueueInterface* _queue, 
+                   bool oneshot = false, bool autostart = true)
   : period(_period)
   , callback(_callback)
   , callback_queue(_queue)
   , oneshot(oneshot)
+  , autostart(autostart)
   {}
 
   WallDuration period;                                              ///< The period to call the callback at
@@ -73,6 +76,7 @@ struct ROSCPP_DECL WallTimerOptions
   VoidConstPtr tracked_object;
 
   bool oneshot;
+  bool autostart;
 };
 
 

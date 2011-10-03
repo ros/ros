@@ -32,6 +32,7 @@
 #include "ros/timer_manager.h"
 
 #include "ros/time.h"
+#include "ros/rate.h"
 
 #include "ros/xmlrpc_manager.h"
 #include "ros/topic_manager.h"
@@ -386,12 +387,14 @@ ServiceClient NodeHandle::serviceClient(ServiceClientOptions& ops)
   return client;
 }
 
-Timer NodeHandle::createTimer(Duration period, const TimerCallback& callback, bool oneshot) const
+Timer NodeHandle::createTimer(Duration period, const TimerCallback& callback, 
+                              bool oneshot, bool autostart) const
 {
   TimerOptions ops;
   ops.period = period;
   ops.callback = callback;
   ops.oneshot = oneshot;
+  ops.autostart = autostart;
   return createTimer(ops);
 }
 
@@ -410,16 +413,19 @@ Timer NodeHandle::createTimer(TimerOptions& ops) const
   }
 
   Timer timer(ops);
-  timer.start();
+  if (ops.autostart)
+    timer.start();
   return timer;
 }
 
-WallTimer NodeHandle::createWallTimer(WallDuration period, const WallTimerCallback& callback, bool oneshot) const
+WallTimer NodeHandle::createWallTimer(WallDuration period, const WallTimerCallback& callback, 
+                                      bool oneshot, bool autostart) const
 {
   WallTimerOptions ops;
   ops.period = period;
   ops.callback = callback;
   ops.oneshot = oneshot;
+  ops.autostart = autostart;
   return createWallTimer(ops);
 }
 
@@ -438,7 +444,8 @@ WallTimer NodeHandle::createWallTimer(WallTimerOptions& ops) const
   }
 
   WallTimer timer(ops);
-  timer.start();
+  if (ops.autostart)
+    timer.start();
   return timer;
 }
 

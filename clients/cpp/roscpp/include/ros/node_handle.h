@@ -1172,6 +1172,24 @@ if (handle)
    * When the Timer (and all copies of it) returned goes out of scope, the timer will automatically
    * be stopped, and the callback will no longer be called.
    *
+   * \param r The rate at which to call the callback
+   * \param callback The method to call
+   * \param obj The object to call the method on
+   * \param oneshot If true, this timer will only fire once
+   */
+  template<class Handler, class Obj>
+  Timer createTimer(Rate r, Handler h, Obj o, bool oneshot = false) const
+  {
+    return createTimer(r.expectedCycleTime(), h, o, oneshot);
+  }
+
+  /**
+   * \brief Create a timer which will call a callback at the specified rate.  This variant takes
+   * a class member function, and a bare pointer to the object to call the method on.
+   *
+   * When the Timer (and all copies of it) returned goes out of scope, the timer will automatically
+   * be stopped, and the callback will no longer be called.
+   *
    * \param period The period at which to call the callback
    * \param callback The method to call
    * \param obj The object to call the method on

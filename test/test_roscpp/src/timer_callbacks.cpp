@@ -223,12 +223,21 @@ class TimerHelper
 {
 public:
   TimerHelper(Duration period, bool oneshot = false)
-  : failed_(false)
-  , expected_period_(period)
-  , total_calls_(0)
+    : failed_(false)
+    , expected_period_(period)
+    , total_calls_(0)
   {
     NodeHandle n;
     timer_ = n.createTimer(expected_period_, &TimerHelper::callback, this, oneshot);
+  }
+
+  TimerHelper(Rate r, bool oneshot = false)
+    : failed_(false)
+    , expected_period_(r.expectedCycleTime())
+    , total_calls_(0)
+  {
+    NodeHandle n;
+    timer_ = n.createTimer(r, &TimerHelper::callback, this, oneshot);
   }
 
   void callback(const TimerEvent& e)
@@ -262,6 +271,40 @@ TEST(RoscppTimerCallbacks, singleROSTimeCallback)
     while (helper.timer_.hasPending())
     {
       WallDuration(0.001).sleep();
+      spinOnce();
+    }
+  }
+
+  if (helper.failed_)
+  {
+    FAIL();
+  }
+
+  if (helper.total_calls_ != 100)
+  {
+    ROS_ERROR("Total calls: %d (expected 100)", helper.total_calls_);
+    FAIL();
+  }
+}
+
+TEST(RoscppTimerCallbacks, singleROSTimeCallbackFromRate)
+{
+  NodeHandle n;
+
+  Time now(1, 0);
+  Time::setNow(now);
+
+  TimerHelper helper(Rate(100));
+
+  Duration d(0, 1000000);
+  for (int32_t i = 0; i < 1000 && n.ok(); ++i)
+  {
+    now += d;
+    Time::setNow(now);
+
+    while (helper.timer_.hasPending())
+    {
+      WallDuration(0.00025).sleep();
       spinOnce();
     }
   }

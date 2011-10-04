@@ -82,6 +82,9 @@ def represent_xml_binary(loader, data):
     data = base64.b64encode(data.data)
     return loader.represent_scalar(u'tag:yaml.org,2002:binary', data, style='|')
 
+def represent_foo(loader, data):
+    return loader.represent_scalar(u'#', data)
+    
 def construct_yaml_binary(loader, node):
     """
     Overrides pyaml's constructor for binary data. Wraps binary data in

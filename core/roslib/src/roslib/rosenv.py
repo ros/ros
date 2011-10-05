@@ -41,8 +41,6 @@ configuration values that have environment overrides
 import os
 import sys
 
-import roslib.exceptions
-
 # Global, usually set in setup
 ROS_ROOT         = "ROS_ROOT"
 ROS_MASTER_URI   = "ROS_MASTER_URI"
@@ -63,7 +61,7 @@ ROS_LOG_DIR      ="ROS_LOG_DIR"
 ## directory in which test result files are written
 ROS_TEST_RESULTS_DIR = "ROS_TEST_RESULTS_DIR"
 
-class ROSEnvException(roslib.exceptions.ROSLibException):
+class ROSEnvException(Exception):
     """Base class of roslib.rosenv errors."""
     pass
 

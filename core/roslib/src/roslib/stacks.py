@@ -44,7 +44,6 @@ import os
 import sys
 import re
 
-import roslib.exceptions
 import roslib.packages
 import roslib.stack_manifest
 from roslib.rosenv import ROS_ROOT, ROS_PACKAGE_PATH
@@ -52,7 +51,7 @@ from roslib.rosenv import ROS_ROOT, ROS_PACKAGE_PATH
 STACK_FILE = 'stack.xml'
 ROS_STACK = 'ros'
 
-class ROSStackException(roslib.exceptions.ROSLibException): pass
+class ROSStackException(Exception): pass
 class InvalidROSStackException(ROSStackException): pass
 
 def stack_of(pkg, env=None):

@@ -119,6 +119,21 @@ def script_resolve_name(script_name, name):
         return ns_join(roslib.names.make_caller_id(script_name), name[1:])
     return roslib.names.get_ros_namespace() + name
 
+import warnings
+def deprecated(func):
+    """This is a decorator which can be used to mark functions
+    as deprecated. It will result in a warning being emmitted
+    when the function is used."""
+    def newFunc(*args, **kwargs):
+        warnings.warn("Call to deprecated function %s." % func.__name__,
+                      category=DeprecationWarning, stacklevel=2)
+        return func(*args, **kwargs)
+    newFunc.__name__ = func.__name__
+    newFunc.__doc__ = func.__doc__
+    newFunc.__dict__.update(func.__dict__)
+    return newFunc
+
+@deprecated
 def get_master():
     """
     Get an XMLRPC handle to the Master. It is recommended to use the
@@ -141,50 +156,13 @@ def get_master():
         raise roslib.exceptions.ROSLibException("invalid master URI: %s"%uri)
     return xmlrpcclient.ServerProxy(uri)
 
-
+@deprecated
 def get_param_server():
     """
     @return: ServerProxy XML-RPC proxy to ROS parameter server
     @rtype: xmlrpclib.ServerProxy
     """
     return get_master()
-
-def is_subscriber(topic, subscriber_id):
-    """
-    Check whether or not master think subscriber_id subscribes to topic
-    @return: True if still register as a subscriber
-    @rtype: bool
-    @raise roslib.exceptions.ROSLibException: if communication with master fails
-    """
-    m = get_master()
-    code, msg, state = m.getSystemState(_GLOBAL_CALLER_ID)
-    if code != 1:
-        raise roslib.exceptions.ROSLibException("Unable to retrieve master state: %s"%msg)
-    _, subscribers, _ = state
-    for t, l in subscribers:
-        if t == topic:
-            return subscriber_id in l
-    else:
-        return False
-
-def is_publisher(topic, publisher_id):
-    """
-    Predicate to check whether or not master think publisher_id
-    publishes topic
-    @return: True if still register as a publisher
-    @rtype: bool
-    @raise roslib.exceptions.ROSLibException: if communication with master fails
-    """
-    m = get_master()
-    code, msg, state = m.getSystemState(_GLOBAL_CALLER_ID)
-    if code != 1:
-        raise roslib.exceptions.ROSLibException("Unable to retrieve master state: %s"%msg)
-    pubs, _, _ = state
-    for t, l in pubs:
-        if t == topic:
-            return publisher_id in l
-    else:
-        return False
 
 def ask_and_call(cmds, cwd=None):
     """

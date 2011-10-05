@@ -67,6 +67,9 @@ class ROSEnvException(roslib.exceptions.ROSLibException):
     """Base class of roslib.rosenv errors."""
     pass
 
+import warnings
+warnings.warn("roslib.rosenv is deprecated, please use rospkg or rosgraph.rosenv")
+
 def get_ros_root(required=True, env=None):
     """
     @param required: (default True). If True, ROS_ROOT must be set and point to a valid directory.
@@ -285,7 +288,7 @@ def on_ros_path(p):
     @type  p: str
     @return: True if p is on the ROS path (ROS_ROOT, ROS_PACKAGE_PATH)
     """
-    pkg = os.path.realpath(roslib.rosenv.resolve_path(p))
+    pkg = os.path.realpath(resolve_path(p))
     paths = [p for p in roslib.packages.get_package_paths()]
-    paths = [os.path.realpath(roslib.rosenv.resolve_path(x)) for x in paths]
+    paths = [os.path.realpath(resolve_path(x)) for x in paths]
     return bool([x for x in paths if pkg == x or pkg.startswith(x + os.sep)])

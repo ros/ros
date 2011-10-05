@@ -45,8 +45,6 @@ import logging
 
 import roslib.rosenv 
 
-import rostest.xmlrunner
-
 def printlog(msg, *args):
     if args:
         msg = msg%args

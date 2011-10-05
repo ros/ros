@@ -32,7 +32,7 @@
 #
 # Revision $Id$
 
-from __future__ import with_statement
+from __future__ import print_function
 
 # NOTE: this has not survived the many refactorings and roslaunch changes well. There are too many ugly globals and bad
 # code organizational choices at this point, but it's not a high priority to cleanup.
@@ -51,7 +51,6 @@ from rostest.rostestutil import createXMLRunner, printRostestSummary, \
     xmlResultsFile, rostest_name_from_path
 from rostest.rostest_parent import ROSTestLaunchParent
 
-import rostest.baretest
 import rostest.runner
 
 _NAME = 'rostest'
@@ -61,7 +60,7 @@ def configure_logging():
     logfile_basename = 'rostest-%s-%s.log'%(socket.gethostname(), os.getpid())
     logfile_name = roslib.roslogging.configure_logging('rostest', filename=logfile_basename)
     if logfile_name:
-        print "... logging to %s"%logfile_name
+        print("... logging to %s"%logfile_name)
     return logfile_name
 
 def write_bad_filename_failure(test_file, results_file, outname):
@@ -93,15 +92,6 @@ def rostestmain():
     parser.add_option("-t", "--text",
                       action="store_true", dest="text_mode", default=False,
                       help="Run with stdout output instead of XML output")
-    parser.add_option("--bare",
-                      action="store_true", dest="bare", default=False,
-                      help="Run bare gtest-compatible executable instead of rostest")
-    parser.add_option("--bare-limit", metavar="TIME_LIMIT",
-                      dest="bare_limit", default=60,
-                      help="Set time limit for --bare executable")
-    parser.add_option("--bare-name", metavar="TEST_NAME",
-                      dest="bare_name", default=None,
-                      help="Test name for --bare executable")
     parser.add_option("--pkgdir", metavar="PKG_DIR",
                       dest="pkg_dir", default=None,
                       help="package dir")
@@ -110,19 +100,15 @@ def rostestmain():
                       help="package")
     (options, args) = parser.parse_args()
     try:
-        if options.bare:
-            # no need to resolve arguments in this case
-            pass
-        else:
-            args = roslaunch.rlutil.resolve_launch_arguments(args)
-    except roslaunch.core.RLException, e:
-        print >> sys.stderr, str(e)
+        args = roslaunch.rlutil.resolve_launch_arguments(args)
+    except roslaunch.core.RLException as e:
+        print(str(e), file=sys.stderr)
         sys.exit(1)
 
     logger.info('rostest starting with options %s, args %s'%(options, args))
     if len(args) == 0:
         parser.error("You must supply a test file argument to rostest.")
-    if len(args) != 1 and not options.bare:
+    if len(args) != 1:
         parser.error("rostest only accepts a single test file")
 
     # compute some common names we'll be using to generate test names and files
@@ -137,28 +123,14 @@ def rostestmain():
     outname = rostest_name_from_path(pkg_dir, test_file)
 
     # #1140
-    if not options.bare and not os.path.isfile(test_file):
+    if not os.path.isfile(test_file):
         results_file = xmlResultsFile(pkg, outname, True)
         write_bad_filename_failure(test_file, results_file, outname)
         parser.error("test file is invalid. Generated failure case result file in %s"%results_file)
         
     try:
-        if options.bare:
-            # TODO: does bare-retry make sense?
-            time_limit = float(options.bare_limit) if options.bare_limit else None
-            testCase = rostest.baretest.BareTestCase(test_file, args[1:], 
-                                                     rostest.runner.getResults(), retry=0, 
-                                                     time_limit=time_limit, test_name=options.bare_name,
-                                                     package=pkg)
-            suite = unittest.TestSuite()
-            suite.addTest(testCase)
-
-            # override outname
-            if options.bare_name:
-                outname = options.bare_name
-        else:
-            testCase = rostest.runner.createUnitTest(pkg, test_file)
-            suite = unittest.TestLoader().loadTestsFromTestCase(testCase)
+        testCase = rostest.runner.createUnitTest(pkg, test_file)
+        suite = unittest.TestLoader().loadTestsFromTestCase(testCase)
 
         if options.text_mode:
             rostest.runner.setTextMode(True)
@@ -186,20 +158,20 @@ def rostestmain():
     config = rostest.runner.getConfig()
     if config:
         if config.config_errors:
-            print >> sys.stderr, "\n[ROSTEST WARNINGS]"+'-'*62+'\n'
+            print("\n[ROSTEST WARNINGS]"+'-'*62+'\n', file=sys.stderr)
         for err in config.config_errors:
-            print >> sys.stderr, " * %s"%err
-        print ''
+            print(" * %s"%err, file=sys.stderr)
+        print('')
 
     # summary is worthless if textMode is on as we cannot scrape .xml results
     subtest_results = rostest.runner.getResults()
     if not options.text_mode:
         printRostestSummary(result, subtest_results)
     else:
-        print "WARNING: overall test result is not accurate when --text is enabled"
+        print("WARNING: overall test result is not accurate when --text is enabled")
 
     if logfile_name:
-        print "rostest log file is in %s"%logfile_name
+        print("rostest log file is in %s"%logfile_name)
         
     if not result.wasSuccessful():
         sys.exit(1)

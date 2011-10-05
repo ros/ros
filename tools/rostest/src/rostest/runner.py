@@ -1,4 +1,37 @@
-from __future__ import with_statement
+# Software License Agreement (BSD License)
+#
+# Copyright (c) 2008, Willow Garage, Inc.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+#  * Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#  * Redistributions in binary form must reproduce the above
+#    copyright notice, this list of conditions and the following
+#    disclaimer in the documentation and/or other materials provided
+#    with the distribution.
+#  * Neither the name of Willow Garage, Inc. nor the names of its
+#    contributors may be used to endorse or promote products derived
+#    from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
+from __future__ import print_function
+
 import os
 import sys
 import logging
@@ -50,13 +83,13 @@ def getRostestParents():
 ## generate test failure if tests with same name in launch file
 def failDuplicateRunner(testName):
     def fn(self):
-        print "Duplicate tests named [%s] in rostest suite"%testName
+        print("Duplicate tests named [%s] in rostest suite"%testName)
         self.fail("Duplicate tests named [%s] in rostest suite"%testName)
     return fn
 
 def failRunner(testName, message):
     def fn(self):
-        print >> sys.stderr, message
+        print(message, file=sys.stderr)
         self.fail(message)
     return fn
     
@@ -110,7 +143,7 @@ def rostestRunner(test, test_pkg):
             timeout_failure = False
             try:
                 self.test_parent.run_test(test)
-            except roslaunch.launch.RLTestTimeoutException, e:
+            except roslaunch.launch.RLTestTimeoutException as e:
                 if test.retry:
                     timeout_failure = True
                 else:
@@ -206,7 +239,7 @@ def createUnitTest(pkg, test_file):
                                             test.machine.ros_root, test.machine.ros_package_path)
             if not cmd:
                 err_msg = "Test node [%s/%s] does not exist or is not executable"%(test.package, test.type)
-        except roslib.packages.ROSPkgException, e:
+        except roslib.packages.ROSPkgException as e:
             err_msg = "Package [%s] for test node [%s/%s] does not exist"%(test.package, test.package, test.type)
 
         testName = 'test%s'%(test.test_name)

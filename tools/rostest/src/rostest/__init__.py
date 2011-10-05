@@ -32,8 +32,6 @@
 #
 # Revision $Id$
 
-from __future__ import with_statement
-
 """
 Interface for using rostest from other Python code as well as running
 Python unittests with additional reporting mechanisms and rosbuild
@@ -41,28 +39,62 @@ Python unittests with additional reporting mechanisms and rosbuild
 """
 
 import sys
+import rosunit
 
 XML_OUTPUT_FLAG = '--gtest_output=xml:' #use gtest-compatible flag
 
+#TODO: replace with rosgraph.masterapi
+def get_master():
+    """
+    Get an XMLRPC handle to the Master. It is recommended to use the
+    `rosgraph.masterapi` library instead, as it provides many
+    conveniences.
+    
+    @return: XML-RPC proxy to ROS master
+    @rtype: xmlrpclib.ServerProxy
+    """
+    try:
+        import xmlrpc.client as xmlrpcclient  #Python 3.x
+    except ImportError:
+        import xmlrpclib as xmlrpcclient #Python 2.x
+    return xmlrpcclient.ServerProxy(uri)
+
 def is_subscriber(topic, subscriber_id):
     """
-    Predicate to check whether or not master think subscriber_id
-    subscribes to topic.
+    Check whether or not master think subscriber_id subscribes to topic
     @return: True if still register as a subscriber
     @rtype: bool
+    @raise roslib.exceptions.ROSLibException: if communication with master fails
     """
-    import roslib.scriptutil as scriptutil
-    return scriptutil.is_subscriber(topic, subscriber_id)
+    m = get_master()
+    code, msg, state = m.getSystemState(_GLOBAL_CALLER_ID)
+    if code != 1:
+        raise roslib.exceptions.ROSLibException("Unable to retrieve master state: %s"%msg)
+    _, subscribers, _ = state
+    for t, l in subscribers:
+        if t == topic:
+            return subscriber_id in l
+    else:
+        return False
 
 def is_publisher(topic, publisher_id):
     """
     Predicate to check whether or not master think publisher_id
-    publishes topic.
+    publishes topic
     @return: True if still register as a publisher
     @rtype: bool
-    """    
-    import roslib.scriptutil as scriptutil
-    return scriptutil.is_publisher(topic, publisher_id)
+    @raise roslib.exceptions.ROSLibException: if communication with master fails
+    """
+    m = get_master()
+    code, msg, state = m.getSystemState(_GLOBAL_CALLER_ID)
+    if code != 1:
+        raise roslib.exceptions.ROSLibException("Unable to retrieve master state: %s"%msg)
+    pubs, _, _ = state
+    for t, l in pubs:
+        if t == topic:
+            return publisher_id in l
+    else:
+        return False
 
 def rosrun(package, test_name, test, sysargs=None):
     """
@@ -93,8 +125,6 @@ def rosrun(package, test_name, test, sysargs=None):
     if coverage_mode:
         _start_coverage(package)
 
-    # lazy-import so that these don't affect coverage tests
-    from rostestutil import createXMLRunner, printSummary
     import unittest
     import rospy
     
@@ -102,10 +132,10 @@ def rosrun(package, test_name, test, sysargs=None):
     if text_mode:
         result = unittest.TextTestRunner(verbosity=2).run(suite)
     else:
-        result = createXMLRunner(package, test_name, result_file).run(suite)
+        result = rosunit.create_xml_runner(package, test_name, result_file).run(suite)
     if coverage_mode:
         _stop_coverage(package)
-    printSummary(result)
+    rosunit.print_unittest_summary(result)
     
     # shutdown any node resources in case test forgets to
     rospy.signal_shutdown('test complete')
@@ -116,6 +146,21 @@ def rosrun(package, test_name, test, sysargs=None):
 # TODO: rename to rosrun -- migrating name to avoid confusion and enable easy xmlrunner use 
 run = rosrun
 
+import warnings
+def deprecated(func):
+    """This is a decorator which can be used to mark functions
+    as deprecated. It will result in a warning being emmitted
+    when the function is used."""
+    def newFunc(*args, **kwargs):
+        warnings.warn("Call to deprecated function %s." % func.__name__,
+                      category=DeprecationWarning, stacklevel=2)
+        return func(*args, **kwargs)
+    newFunc.__name__ = func.__name__
+    newFunc.__doc__ = func.__doc__
+    newFunc.__dict__.update(func.__dict__)
+    return newFunc
+
+@deprecated
 def unitrun(package, test_name, test, sysargs=None, coverage_packages=None):
     """
     Wrapper routine from running python unitttests with
@@ -130,43 +175,7 @@ def unitrun(package, test_name, test, sysargs=None, coverage_packages=None):
     @param coverage_packages: list of Python package to compute coverage results for. Defaults to package
     @type  coverage_packages: [str]
     """
-    if sysargs is None:
-        # lazy-init sys args
-        import sys
-        sysargs = sys.argv
-
-    import unittest
-    
-    if coverage_packages is None:
-        coverage_packages = [package]
-        
-    #parse sysargs
-    result_file = None
-    for arg in sysargs:
-        if arg.startswith(XML_OUTPUT_FLAG):
-            result_file = arg[len(XML_OUTPUT_FLAG):]
-    text_mode = '--text' in sysargs
-
-    coverage_mode = '--cov' in sysargs or '--covhtml' in sysargs
-    if coverage_mode:
-        _start_coverage(coverage_packages)
-
-    # lazy-import after coverage tests begin
-    from rostestutil import createXMLRunner, printSummary
-        
-    suite = unittest.TestLoader().loadTestsFromTestCase(test)
-    if text_mode:
-        result = unittest.TextTestRunner(verbosity=2).run(suite)
-    else:
-        result = createXMLRunner(package, test_name, result_file).run(suite)
-    if coverage_mode:
-        cov_html_dir = 'covhtml' if '--covhtml' in sysargs else None
-        _stop_coverage(coverage_packages, html=cov_html_dir)
-    printSummary(result)
-    
-    if not result.wasSuccessful():
-        import sys
-        sys.exit(1)
+    rosunit.unitrun(package, test_name, test, sysargs=sysargs, coverage_packages=coverage_packages)
 
 # coverage instance
 _cov = None
@@ -180,17 +189,17 @@ def _start_coverage(packages):
             _cov.load()
             _cov.start()
         except coverage.CoverageException:
-            print >> sys.stderr, "WARNING: you have an older version of python-coverage that is not support. Please update to the version provided by 'easy_install coverage'"
-    except ImportError, e:
-        print >> sys.stderr, """WARNING: cannot import python-coverage, coverage tests will not run.
-To install coverage, run 'easy_install coverage'"""
+            print("WARNING: you have an older version of python-coverage that is not support. Please update to the version provided by 'easy_install coverage'", file=sys.stderr_
+    except ImportError as e:
+        print("""WARNING: cannot import python-coverage, coverage tests will not run.
+To install coverage, run 'easy_install coverage'""", file=sys.stderr)
     try:
         # reload the module to get coverage
         for package in packages:
             if package in sys.modules:
                 reload(sys.modules[package])
-    except ImportError, e:
-        print >> sys.stderr, "WARNING: cannot import '%s', will not generate coverage report"%package
+    except ImportError as e:
+        print("WARNING: cannot import '%s', will not generate coverage report"%package, file=sys.stderr)
         return
 
 def _stop_coverage(packages, html=None):

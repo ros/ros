@@ -4,10 +4,6 @@
 <p>
      Integration test suite based on roslaunch that is compatible with xUnit frameworks.
 </p>     
-<p>
-     rostest uses xmlrunner.py (Public Domain), which was written by
-     Sebastian Rittau (srittau@jroger.in-berlin.de) and Paolo Borelli.
-</p>     
   </description>
   <author>Ken Conley/kwc@willowgarage.com</author>
   <license>BSD</license>

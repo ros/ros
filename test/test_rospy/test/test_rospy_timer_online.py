@@ -40,7 +40,7 @@ import sys
 import unittest
 import time
 
-import rostest
+import rosunit
 
 from threading import Thread
 
@@ -118,4 +118,4 @@ class TestRospyTimerOnline(unittest.TestCase):
         self.assert_(abs((ev.current_real - ev.current_expected).to_sec()) < 2.)
         
 if __name__ == '__main__':
-    rostest.unitrun('test_rospy', sys.argv[0], TestRospyTimerOnline, coverage_packages=['rospy.timer'])
+    rosunit.unitrun('test_rospy', sys.argv[0], TestRospyTimerOnline, coverage_packages=['rospy.timer'])

@@ -102,5 +102,5 @@ class TestRospyService(unittest.TestCase):
         self.assertEquals([], sm.get_services())
         
 if __name__ == '__main__':
-    import rostest
-    rostest.unitrun('test_rospy', sys.argv[0], TestRospyService, coverage_packages=['rospy.service'])
+    import rosunit
+    rosunit.unitrun('test_rospy', sys.argv[0], TestRospyService, coverage_packages=['rospy.service'])

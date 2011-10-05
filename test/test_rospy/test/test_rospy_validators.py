@@ -64,5 +64,5 @@ class TestRospyValidators(unittest.TestCase):
                     self.assert_('param-name-foo' in str(e))
 
 if __name__ == '__main__':
-    import rostest
-    rostest.unitrun('test_rospy', sys.argv[0], TestRospyValidators, coverage_packages=['rospy.impl.validators'])
+    import rosunit
+    rosunit.unitrun('test_rospy', sys.argv[0], TestRospyValidators, coverage_packages=['rospy.impl.validators'])

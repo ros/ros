@@ -74,6 +74,6 @@ class TestRospyNumpy(unittest.TestCase):
         self.assert_(v.all())
     
 if __name__ == '__main__':
-    import rostest
-    rostest.unitrun('test_rospy', sys.argv[0], TestRospyNumpy, coverage_packages=['rospy.numpy'])
+    import rosunit
+    rosunit.unitrun('test_rospy', sys.argv[0], TestRospyNumpy, coverage_packages=['rospy.numpy'])
 

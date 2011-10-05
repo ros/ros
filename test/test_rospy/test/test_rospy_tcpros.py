@@ -55,5 +55,5 @@ class TestRospyTcpros(unittest.TestCase):
         self.assert_(isinstance(rospy.impl.tcpros.get_tcpros_handler(), rospy.impl.transport.ProtocolHandler))
                 
 if __name__ == '__main__':
-    import rostest
-    rostest.unitrun('test_rospy', sys.argv[0], TestRospyTcpros, coverage_packages=['rospy.impl.tcpros'])
+    import rosunit
+    rosunit.unitrun('test_rospy', sys.argv[0], TestRospyTcpros, coverage_packages=['rospy.impl.tcpros'])

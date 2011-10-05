@@ -239,5 +239,5 @@ class TestRospyTcprosService(unittest.TestCase):
         
             
 if __name__ == '__main__':
-    import rostest
-    rostest.unitrun('test_rospy', 'test_rospy_tcpros_service', TestRospyTcprosService, coverage_packages=['rospy.impl.tcpros_service'])
+    import rosunit
+    rosunit.unitrun('test_rospy', 'test_rospy_tcpros_service', TestRospyTcprosService, coverage_packages=['rospy.impl.tcpros_service'])

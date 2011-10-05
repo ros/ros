@@ -260,5 +260,5 @@ class TestRospyRegistration(unittest.TestCase):
 
         
 if __name__ == '__main__':
-    import rostest
-    rostest.unitrun('test_rospy', sys.argv[0], TestRospyRegistration, coverage_packages=['rospy.impl.registration'])
+    import rosunit
+    rosunit.unitrun('test_rospy', sys.argv[0], TestRospyRegistration, coverage_packages=['rospy.impl.registration'])

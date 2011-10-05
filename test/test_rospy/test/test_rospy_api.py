@@ -144,7 +144,6 @@ class TestRospyApi(unittest.TestCase):
         rospy.ROSException
         rospy.ROSInternalException
         rospy.ROSSerializationException
-        rospy.ServiceDefinition
         rospy.ServiceException
         rospy.Service
         rospy.ServiceProxy
@@ -156,5 +155,5 @@ class TestRospyApi(unittest.TestCase):
         rospy.TransportInitError
         
 if __name__ == '__main__':
-    import rostest
-    rostest.unitrun('test_rospy', sys.argv[0], TestRospyApi)
+    import rosunit
+    rosunit.unitrun('test_rospy', sys.argv[0], TestRospyApi)

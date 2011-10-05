@@ -289,5 +289,5 @@ class TestRospyNames(unittest.TestCase):
             _set_caller_id('/unnamed')
             
 if __name__ == '__main__':
-    import rostest
-    rostest.unitrun('test_rospy', sys.argv[0], TestRospyNames, coverage_packages=['rospy.names'])
+    import rosunit
+    rosunit.unitrun('test_rospy', sys.argv[0], TestRospyNames, coverage_packages=['rospy.names'])

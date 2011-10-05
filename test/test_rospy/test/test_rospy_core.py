@@ -42,7 +42,7 @@ import unittest
 import time
 import random
 
-import rostest
+import rosunit
 
 import rospy
 
@@ -256,4 +256,4 @@ def test_shutdown_hook_exception(reason):
     raise Exception("gotcha")
 
 if __name__ == '__main__':
-    rostest.unitrun('test_rospy', sys.argv[0], TestRospyCore, coverage_packages=['rospy.core'])
+    rosunit.unitrun('test_rospy', sys.argv[0], TestRospyCore, coverage_packages=['rospy.core'])

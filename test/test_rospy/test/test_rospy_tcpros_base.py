@@ -155,5 +155,5 @@ class TestRospyTcprosBase(unittest.TestCase):
         self.assert_(t.protocol is None)
         
 if __name__ == '__main__':
-    import rostest
-    rostest.unitrun('test_rospy', sys.argv[0], TestRospyTcprosBase, coverage_packages=['rospy.impl.tcpros_base'])
+    import rosunit
+    rosunit.unitrun('test_rospy', sys.argv[0], TestRospyTcprosBase, coverage_packages=['rospy.impl.tcpros_base'])

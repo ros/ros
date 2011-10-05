@@ -391,5 +391,5 @@ class TestRospyTopics(unittest.TestCase):
         self.failIf(impl.closed)
         
 if __name__ == '__main__':
-    import rostest
-    rostest.unitrun('test_rospy', 'test_rospy_topic', TestRospyTopics, coverage_packages=['rospy.topics'])
+    import rosunit
+    rosunit.unitrun('test_rospy', 'test_rospy_topic', TestRospyTopics, coverage_packages=['rospy.topics'])

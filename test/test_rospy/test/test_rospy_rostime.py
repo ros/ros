@@ -43,7 +43,7 @@ from cStringIO import StringIO
 import time
 import random
 
-import rostest
+import rosunit
 
 import rospy.rostime
 
@@ -57,7 +57,7 @@ class TestRospyTime(unittest.TestCase):
     def test_import_simtime(self):
         # trip wire test, make sure the module is loading
         import rospy.impl.simtime
-        # can't actually do unit tests of simtime, requires rostest
+        # can't actually do unit tests of simtime, requires rosunit
 
     def test_switch_to_wallclock(self):
         rospy.rostime.switch_to_wallclock()
@@ -383,4 +383,4 @@ def backwards_sleeper():
         test_backwards_sleep_done = True
 
 if __name__ == '__main__':
-    rostest.unitrun('test_rospy', sys.argv[0], TestRospyTime, coverage_packages=['rospy.rostime', 'rospy.impl.simtime', 'rospy.client'])
+    rosunit.unitrun('test_rospy', sys.argv[0], TestRospyTime, coverage_packages=['rospy.rostime', 'rospy.impl.simtime', 'rospy.client'])

@@ -43,7 +43,7 @@ import time
 import random
 import datetime
 
-import rostest
+import rosunit
 
 from roslib.names import make_global_ns, ns_join
 
@@ -81,4 +81,4 @@ class TestRospyParamServer(unittest.TestCase):
             except KeyError: pass
 
 if __name__ == '__main__':
-    rostest.unitrun('test_rospy', sys.argv[0], TestRospyParamServer, coverage_packages=['rospy.impl.paramserver'])
+    rosunit.unitrun('test_rospy', sys.argv[0], TestRospyParamServer, coverage_packages=['rospy.impl.paramserver'])

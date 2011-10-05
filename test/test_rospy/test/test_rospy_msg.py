@@ -270,5 +270,5 @@ class TestRospyMsg(unittest.TestCase):
 
     
 if __name__ == '__main__':
-    import rostest
-    rostest.unitrun('test_rospy', sys.argv[0], TestRospyMsg, coverage_packages=['rospy.msg'])
+    import rosunit
+    rosunit.unitrun('test_rospy', sys.argv[0], TestRospyMsg, coverage_packages=['rospy.msg'])

@@ -234,5 +234,5 @@ class TestRospyTcprosPubsub(unittest.TestCase):
         self.assertEquals('baz', fields['foo'])        
             
 if __name__ == '__main__':
-    import rostest
-    rostest.unitrun('test_rospy', 'test_rospy_tcpros_pubsub', TestRospyTcprosPubsub, coverage_packages=['rospy.impl.tcpros_pubsub'])
+    import rosunit
+    rosunit.unitrun('test_rospy', 'test_rospy_tcpros_pubsub', TestRospyTcprosPubsub, coverage_packages=['rospy.impl.tcpros_pubsub'])

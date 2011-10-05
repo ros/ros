@@ -68,5 +68,5 @@ class TestRospyExceptions(unittest.TestCase):
             pass
     
 if __name__ == '__main__':
-    import rostest
-    rostest.unitrun('test_rospy', sys.argv[0], TestRospyExceptions, coverage_packages=['rospy.exceptions'])
+    import rosunit
+    rosunit.unitrun('test_rospy', sys.argv[0], TestRospyExceptions, coverage_packages=['rospy.exceptions'])

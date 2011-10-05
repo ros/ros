@@ -42,7 +42,7 @@ import unittest
 import time
 import random
 
-import rostest
+import rosunit
 
 from threading import Thread
 class TestTask(Thread):
@@ -304,4 +304,4 @@ class TestRospyClientOnline(unittest.TestCase):
         self.assert_(t3.value is None)
     
 if __name__ == '__main__':
-    rostest.unitrun('test_rospy', sys.argv[0], TestRospyClientOnline, coverage_packages=['rospy.client', 'rospy.msproxy'])
+    rosunit.unitrun('test_rospy', sys.argv[0], TestRospyClientOnline, coverage_packages=['rospy.client', 'rospy.msproxy'])

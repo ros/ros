@@ -42,7 +42,7 @@ import unittest
 import time
 import random
 
-import rostest
+import rosunit
 
 import rospy
 
@@ -81,4 +81,4 @@ class TestRospyClient(unittest.TestCase):
             sys.argv = orig_argv
     
 if __name__ == '__main__':
-    rostest.unitrun('test_rospy', sys.argv[0], TestRospyClient, coverage_packages=['rospy.client'])
+    rosunit.unitrun('test_rospy', sys.argv[0], TestRospyClient, coverage_packages=['rospy.client'])

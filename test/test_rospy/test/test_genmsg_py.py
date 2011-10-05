@@ -395,5 +395,5 @@ class TestGenmsgPy(unittest.TestCase):
 
     
 if __name__ == '__main__':
-    import rostest
-    rostest.unitrun('test_rospy', sys.argv[0], TestGenmsgPy)
+    import rosunit
+    rosunit.unitrun('test_rospy', sys.argv[0], TestGenmsgPy)

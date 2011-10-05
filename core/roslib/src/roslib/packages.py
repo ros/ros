@@ -42,8 +42,6 @@ experimental and incomplete. In particular, the L{ROSPackages} class
 in very experimental.
 """
 
-from __future__ import with_statement
-
 import os
 import sys
 import stat
@@ -51,7 +49,6 @@ import string
 
 from subprocess import Popen, PIPE
 
-import roslib.exceptions
 import roslib.manifest
 import roslib.names
 import roslib.rosenv
@@ -65,7 +62,7 @@ SRC_DIR = 'src'
 ROS_PACKAGE_PATH = roslib.rosenv.ROS_PACKAGE_PATH
 ROS_ROOT = roslib.rosenv.ROS_ROOT
 
-class ROSPkgException(roslib.exceptions.ROSLibException):
+class ROSPkgException(Exception):
     """
     Base class of package-related errors.
     """

@@ -668,10 +668,9 @@ class Service(ServiceImpl):
     def __init__(self, name, service_class, handler, buff_size=DEFAULT_BUFF_SIZE):
         """
         ctor.
-        @param name: service name
-        @type  name: str
-        @param service_class: ServiceDefinition class
-        @type  service_class: ServiceDefinition class
+
+        @param name: service name, ``str``
+        @param service_class: Service definition class
         
         @param handler: callback function for processing service
         request. Function takes in a ServiceRequest and returns a

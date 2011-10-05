@@ -65,7 +65,7 @@ from .msg import AnyMsg
 from .msproxy import MasterProxy
 from .names import get_name, get_caller_id, get_namespace, resolve_name, remap_name
 from .rostime import Time, Duration, get_rostime, get_time
-from .service import ServiceException, ServiceDefinition
+from .service import ServiceException
 
 # - use tcp ros implementation of services
 from .impl.tcpros_service import Service, ServiceProxy, wait_for_service

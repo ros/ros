@@ -389,7 +389,7 @@ def call_service(service_name, service_args, service_class=None):
     argument is provided, it saves a probe call against the service
     @type  service_class: Message class
     @return: service request, service response
-    @rtype: roslib.message.Message, roslib.message.Message
+    @rtype: Message, Message
     @raise ROSServiceException: if call command cannot be executed
     """
     # can't use time w/o being a node. We could optimize this by

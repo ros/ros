@@ -111,7 +111,6 @@ class ROSTopicHz(object):
         """
         ros sub callback
         @param m: Message instance
-        @type  m: roslib.message.Message
         """
         # #694: ignore messages that don't match filter
         if self.filter_expr is not None and not self.filter_expr(m):
@@ -281,7 +280,7 @@ def msgevalgen(pattern):
     @param pattern: subtopic, e.g. /x. Must have a leading '/' if specified.
     @type  pattern: str
     @return: function that converts a message into the desired value
-    @rtype: fn(rospy.Message) -> value
+    @rtype: fn(Message) -> value
     """
     if not pattern or pattern == '/':
         return None
@@ -354,7 +353,7 @@ def get_topic_class(topic, blocking=False):
     @return: message class for topic, real topic
     name, and function for evaluating message objects into the subtopic
     (or None)
-    @rtype: roslib.message.Message, str, str
+    @rtype: Message, str, str
     @raise ROSTopicException: if topic type cannot be determined or loaded
     """
     topic_type, real_topic, msg_eval = get_topic_type(topic, blocking=blocking)
@@ -384,7 +383,8 @@ def _sub_str_plot_fields(val, f, field_filter):
     if type_ in (int, float) or \
            isinstance(val, roslib.rostime.TVal):
         return f
-    elif isinstance(val, rospy.Message):
+    # duck-type check for messages
+    elif hasattr(val, "_slot_types"):
         if field_filter is not None:
             fields = list(field_filter(val))
         else:
@@ -407,7 +407,7 @@ def _sub_str_plot_fields(val, f, field_filter):
         elif type0 in (str, unicode):
             
             return ','.join(["%s%s"%(f,x) for x in xrange(0,len(val))])
-        elif isinstance(val0, rospy.Message):
+        elif hasattr(val0, "_slot_types"):
             labels = ["%s%s"%(f,x) for x in xrange(0,len(val))]
             sub = [s for s in [_sub_str_plot_fields(v, sf, field_filter) for v,sf in zip(val, labels)] if s]
             if sub:
@@ -420,7 +420,6 @@ def _str_plot(val, time_offset=None, current_time=None, field_filter=None):
     Convert value to matlab/octave-friendly CSV string representation.
 
     @param val: message
-    @type  val: Message
     @param current_time: current time to use if message does not contain its own timestamp.
     @type  current_time: roslib.rostime.Time
     @param time_offset: (optional) for time printed for message, print as offset against this time 
@@ -457,7 +456,7 @@ def _sub_str_plot(val, time_offset, field_filter):
             return str(val-time_offset)
         else:
             return str(val)    
-    elif isinstance(val, rospy.Message):
+    elif hasattr(val, "_slot_types"):
         if field_filter is not None:
             fields = list(field_filter(val))
         else:
@@ -480,7 +479,7 @@ def _sub_str_plot(val, time_offset, field_filter):
             return ','.join([str(v) for v in val])
         elif type0 in (str, unicode):
             return ','.join([v for v in val])            
-        elif isinstance(val0, rospy.Message):
+        elif hasattr(val0, "_slot_types"):
             sub = [s for s in [_sub_str_plot(v, time_offset, field_filter) for v in val] if s is not None]
             if sub:
                 return ','.join([s for s in sub])
@@ -566,7 +565,6 @@ class CallbackEcho(object):
         manually. rospy.Subscriber constructor must also pass in the
         topic name as an additional arg
         @param data: Message
-        @type  data: Message    
         @param topic: topic name
         @type  topic: str
         @param current_time: override calculation of current time
@@ -1172,7 +1170,7 @@ def create_publisher(topic_name, topic_type, latch):
     @param latch: latching topic
     @type  latch: bool
     @return: topic publisher, message class
-    @rtype: rospy.topics.Publisher, roslib.message.Message class
+    @rtype: rospy.topics.Publisher, Message class
     """
     topic_name = roslib.scriptutil.script_resolve_name('rostopic', topic_name)
     try:
@@ -1194,7 +1192,6 @@ def _publish_at_rate(pub, msg, rate, verbose=False):
     @param pub: Publisher instance for topic
     @type  pub: rospy.Publisher
     @param msg: message instance to publish
-    @type  msg: Message
     @param rate: publishing rate (hz) or None for just once
     @type  rate: int
     @param verbose: If True, print more verbose output to stdout
@@ -1218,7 +1215,6 @@ def _publish_latched(pub, msg, once=False, verbose=False):
     @param pub: Publisher instance for topic
     @type  pub: rospy.Publisher
     @param msg: message instance to publish
-    @type  msg: roslib.message.Message
     @param once: if True, publish message once and then exit after sleep interval
     @type  once: bool
     @param verbose: If True, print more verbose output to stdout

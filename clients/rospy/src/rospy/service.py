@@ -47,10 +47,6 @@ from rospy.impl.transport import *
 
 logger = logging.getLogger('rospy.service')
 
-## alias of roslib.message.ServiceDefinition
-import roslib.message
-ServiceDefinition = roslib.message.ServiceDefinition
-
 class ServiceException(Exception):
     """Exception class for service-related errors"""
     pass

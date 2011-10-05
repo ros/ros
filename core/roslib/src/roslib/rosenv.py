@@ -68,7 +68,7 @@ class ROSEnvException(roslib.exceptions.ROSLibException):
     pass
 
 import warnings
-warnings.warn("roslib.rosenv is deprecated, please use rospkg or rosgraph.rosenv")
+warnings.warn("roslib.rosenv is deprecated, please use rospkg or rosgraph.rosenv", stacklevel=2)
 
 def get_ros_root(required=True, env=None):
     """

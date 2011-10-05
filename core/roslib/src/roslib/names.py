@@ -39,9 +39,6 @@ Library for manipulating ROS Names. See U{http://ros.org/wiki/Names}.
 import os
 import sys
 
-import roslib.exceptions
-from roslib.rosenv import ROS_NAMESPACE
-
 #TODO: why are these here?
 MSG_EXT = '.msg'
 SRV_EXT = '.srv'
@@ -83,7 +80,7 @@ def get_ros_namespace(env=None, argv=None):
             return make_global_ns(a[len('__ns:='):])
     if env is None:
         env = os.environ
-    return make_global_ns(env.get(ROS_NAMESPACE, GLOBALNS))
+    return make_global_ns(env.get('ROS_NAMESPACE', GLOBALNS))
 
 def make_caller_id(name):
     """

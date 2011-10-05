@@ -44,7 +44,7 @@ import time
 import rospy
 import rospy.service
 
-class MockServiceClass(rospy.service.ServiceDefinition):
+class MockServiceClass(object):
     _request_class = rospy.AnyMsg
     _response_class = rospy.AnyMsg
 

@@ -45,7 +45,6 @@ import traceback
 import struct
 import sys
 
-import roslib.exceptions
 from roslib.rostime import Time, Duration, TVal
 
 # common struct pattern singletons for msgs to use. Although this
@@ -66,7 +65,7 @@ def isstring(s):
     except NameError:
         return isinstance(s, str)
     
-class ROSMessageException(roslib.exceptions.ROSLibException):
+class ROSMessageException(Exception):
     """
     Exception type for errors in roslib.message routines
     """
@@ -440,13 +439,10 @@ class Message(object):
                 return False
         return True
     
-class ServiceDefinition(object):
-    """Base class of Service classes auto-generated from srv files"""
-    pass
-
 class DeserializationError(ROSMessageException):
     """Message deserialization error"""
     pass
+
 class SerializationError(ROSMessageException):
     """Message serialization error"""
     pass

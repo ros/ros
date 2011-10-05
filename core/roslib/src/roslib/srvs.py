@@ -46,7 +46,6 @@ try:
 except ImportError:
     from io import StringIO # Python 3.x
 
-import roslib.exceptions
 import roslib.msgs
 import roslib.names
 import roslib.packages
@@ -57,8 +56,8 @@ import roslib.resources
 import roslib.manifest
 
 ## file extension
-EXT = roslib.names.SRV_EXT #alias
-SEP = roslib.names.PRN_SEPARATOR #e.g. std_msgs/String
+EXT = '.srv' #alias
+SEP = '/' #e.g. std_msgs/String
 ## input/output deliminator
 IODELIM   = '---'
 COMMENTCHAR = roslib.msgs.COMMENTCHAR
@@ -73,7 +72,7 @@ def set_verbose(v):
     global VERBOSE
     VERBOSE = v
 
-class SrvSpecException(roslib.exceptions.ROSLibException): pass
+class SrvSpecException(Exception): pass
 
 # msg spec representation ##########################################
 
@@ -123,7 +122,7 @@ def list_srv_types(package, include_depends):
     @return: service type names
     @rtype: [str]
     """
-    types = roslib.resources.list_package_resources(package, include_depends, roslib.packages.SRV_DIR, _srv_filter)
+    types = roslib.resources.list_package_resources(package, include_depends, 'srv', _srv_filter)
     return [x[:-len(EXT)] for x in types]
 
 def srv_file(package, type_):
@@ -135,7 +134,7 @@ def srv_file(package, type_):
     @return: file path of .srv file in specified package
     @rtype: str
     """
-    return roslib.packages.resource_file(package, roslib.packages.SRV_DIR, type_+EXT)
+    return roslib.packages.resource_file(package, 'srv', type_+EXT)
 
 def get_pkg_srv_specs(package):
     """

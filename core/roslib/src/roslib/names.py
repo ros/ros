@@ -39,10 +39,6 @@ Library for manipulating ROS Names. See U{http://ros.org/wiki/Names}.
 import os
 import sys
 
-#TODO: why are these here?
-MSG_EXT = '.msg'
-SRV_EXT = '.srv'
-
 #TODO: deprecate PRN_SEPARATOR
 PRN_SEPARATOR = '/'
 TYPE_SEPARATOR = PRN_SEPARATOR #alias

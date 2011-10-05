@@ -54,8 +54,6 @@ import roslib.names
 import roslib.rosenv
 import roslib.os_detect
 
-MSG_DIR = 'msg'
-SRV_DIR = 'srv'
 SRC_DIR = 'src'
 
 # aliases

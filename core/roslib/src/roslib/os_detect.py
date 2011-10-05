@@ -36,7 +36,6 @@ The APIs of this library are still very coupled with the rosdep
 command-line tool.
 """
 
-import roslib.exceptions
 import os
 import sys
 import subprocess
@@ -117,7 +116,7 @@ class OSOverride:
         return self._os_name
 
 
-class OSDetectException(roslib.exceptions.ROSLibException): pass
+class OSDetectException(Exception): pass
 
 class OSBase:
     """

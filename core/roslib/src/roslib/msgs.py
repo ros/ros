@@ -70,8 +70,8 @@ def set_verbose(v):
     global VERBOSE
     VERBOSE = v
 
-EXT = roslib.names.MSG_EXT #alias
-SEP = roslib.names.PRN_SEPARATOR #e.g. std_msgs/String
+EXT = '.msg'
+SEP = '/' #e.g. std_msgs/String
 ## character that designates a constant assignment rather than a field
 CONSTCHAR   = '='
 COMMENTCHAR = '#'
@@ -378,7 +378,7 @@ def _init():
     if std_msgs_dir is None:
         raise MsgSpecException("Unable to locate roslib: %s files cannot be loaded"%EXT)
     
-    header = os.path.join(std_msgs_dir, roslib.packages.MSG_DIR, fname)
+    header = os.path.join(std_msgs_dir, 'msg', fname)
     if not os.path.isfile(header):
         sys.stderr.write("ERROR: cannot locate %s. Expected to find it at '%s'\n"%(fname, header))
         return False
@@ -412,7 +412,7 @@ def list_msg_types(package, include_depends):
     @param include_depends bool: if True, will also list messages in package dependencies
     @return [str]: message type names
     """
-    types = roslib.resources.list_package_resources(package, include_depends, roslib.packages.MSG_DIR, _msg_filter)
+    types = roslib.resources.list_package_resources(package, include_depends, 'msg', _msg_filter)
     return [x[:-len(EXT)] for x in types]
 
 def msg_file(package, type_):
@@ -427,7 +427,7 @@ def msg_file(package, type_):
     @return: file path of .msg file in specified package
     @rtype: str
     """
-    return roslib.packages.resource_file(package, roslib.packages.MSG_DIR, type_+EXT)
+    return roslib.packages.resource_file(package, 'msg', type_+EXT)
 
 def get_pkg_msg_specs(package):
     """

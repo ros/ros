@@ -63,7 +63,7 @@ def srv_generator(package, name, spec):
     gendeps_dict = roslib.gentools.get_dependencies(spec, package)
     md5 = roslib.gentools.compute_md5(gendeps_dict)
 
-    yield "class %s(roslib.message.ServiceDefinition):"%name
+    yield "class %s(object):"%name
     yield "  _type          = '%s'"%fulltype
     yield "  _md5sum = '%s'"%md5
     yield "  _request_class  = %s"%req

@@ -45,6 +45,7 @@ import traceback
 import struct
 import sys
 
+import roslib.names
 from roslib.rostime import Time, Duration, TVal
 
 # common struct pattern singletons for msgs to use. Although this

@@ -38,13 +38,14 @@ functionality of rosmsg/rossrv is implemented using the roslib.msgs
 and roslib.srvs libraries and can be found there instead.
 """
 
+from __future__ import print_function
+
 import os
 import platform
 import sys
-import socket
-import threading
-import time
 import subprocess
+
+import rospkg
 
 import roslib
 import roslib.genpy
@@ -52,11 +53,13 @@ import roslib.gentools
 import roslib.message
 import roslib.msgs
 import roslib.names
-import roslib.packages
 import roslib.srvs
 import rosbag
 
 from optparse import OptionParser
+
+MODE_MSG = '.msg'
+MODE_SRV = '.srv'
 
 class ROSMsgException(Exception): pass
 
@@ -75,18 +78,18 @@ def make_find_command(path):
 def rosmsg_users_package_search(mode, type_, package):
     result = set() #using a set for deduplication
     mode_str = "srv"
-    if mode == roslib.msgs.EXT:
+    if mode == MODE_MSG:
         mode_str = "msg"
 
     msg_pkg, msg_name = type_.split('/')
 
     # Get the full path to the using package
-    p = roslib.packages.get_pkg_dir(package)
-
+    rospack = rospkg.RosPack()
+    p = rospack.get_path(package)
 
     # Find the msg/srv files
     # Leave the heavy lifting to find and grep.
-    if mode == roslib.msgs.EXT:
+    if mode == MODE_MSG:
         command = []
         if msg_pkg == package:
             command = make_find_command(p)
@@ -96,36 +99,28 @@ def rosmsg_users_package_search(mode, type_, package):
             command += ["-regex", ".*\.(msg|srv)", "!", "-regex", ".*build.*", "!", "-regex", ".*\.svn.*", "!", "-regex", ".*~", "-exec", "grep", "-lE", type_, "{}", ";"]
 
 
-        #print ' '.join(command)
         msgfiles = subprocess.Popen(command, stdout=subprocess.PIPE).communicate()[0].strip().split()
-        #print cppfiles
         # Dump out what we found
         for f in msgfiles:
             if len(f.strip()) != 0:
                 result.add( f )
-                #print f[len(p)-len(d):]
 
     # Find the C/C++ files in this package that #include the msg/srv
     # header.  Leave the heavy lifting to find and grep.
     command = make_find_command(p)
     command += ["-regex", ".*\.(cpp|h|hh|cc|hpp|c)", "!", "-regex", ".*build.*", "!", "-regex", ".*svn.*", "!", "-regex", ".*~", "-exec", "grep", "-lE", " *#include *(\"|<)" + type_ + ".h", "{}", ";"]
-    #print ' '.join(command)
     cppfiles = subprocess.Popen(command, stdout=subprocess.PIPE).communicate()[0].strip().split()
-    #print cppfiles
     # Dump out what we found
     for f in cppfiles:
         if len(f.strip()) != 0:
             result.add( f )
-            #print f[len(p)-len(d):]
 
-    #print type_list[0], " and ", type_list[1]
     # Capture all of the form import package_name.msg.message_name
     command = make_find_command(p)
     # The following regex doesn't work on OS X, and also doesn't appear to
     # do anything.
     #command += ["-regex", ".*(\.py|)"]
     command += ["!", "-regex", ".*build.*", "!", "-regex", ".*\.svn.*", "-exec", "grep", "-IlE", "import " +msg_pkg+"\."+mode_str+"\."+ msg_name, "{}", ";"]
-    #print ' '.join(command)
     pyfiles =  subprocess.Popen(command, stdout=subprocess.PIPE).communicate()[0].strip().split('\n')
     for f in pyfiles:
         if len(f.strip()) != 0:
@@ -137,19 +132,15 @@ def rosmsg_users_package_search(mode, type_, package):
     # do anything.
     #command += ["-regex", ".*(\.py|)"]
     command += ["!", "-regex", ".*build.*", "!", "-regex", ".*\.svn.*", "!", "-regex", ".*~", "-exec", "grep", "-IlE", " *from.*" + msg_pkg + "\."+mode_str+".*import (\*|" + msg_name +")", "{}",";"]
-    #print ' '.join(command)
     pyfiles =  subprocess.Popen(command, stdout=subprocess.PIPE).communicate()[0].strip().split('\n')
 
 
     for f in pyfiles:
         if len(f.strip()) != 0:
             # Make sure that this message is used for the above test could return without using the message if importing *
-            #print "looking for", msg, "in", f
             command = ["grep", "-l", msg_name, f]
-            #print ' '.join(command)
             present  =  subprocess.Popen(command, stdout=subprocess.PIPE).communicate()[0].strip().split('\n')
             if len(present[0]) > 0:
-                #print present, len(present[0])
                 result.add(f)
             
     return list(result) #return as list
@@ -160,10 +151,10 @@ def rosmsg_users(mode, type_):
     # Find the direct users of the package; they're the only ones who
     # should be able to use this message
     if not msg_pkg:
-        print >> sys.stderr, "Please specify the package and type for [%s]"%type_
+        print("Please specify the package and type for [%s]"%type_, file=sys.stderr)
         sys.exit(os.EX_USAGE)
 
-    print 'Files using %s:' % (type_)
+    print('Files using %s:' % (type_))
         
     deps = subprocess.Popen(["rospack", "depends-on1", msg_pkg], stdout=subprocess.PIPE).communicate()[0].strip().split()
     # Check the messages own package too
@@ -174,19 +165,19 @@ def rosmsg_users(mode, type_):
         files = rosmsg_users_package_search(mode, type_, d)
         correct_dependencies.extend(files)
 
-    print "Usages directly depended upon:" + type_
+    print("Usages directly depended upon:" + type_)
     for f in correct_dependencies:
-        print f
+        print(f)
 
     deps = subprocess.Popen(["rospack", "depends-on", msg_pkg], stdout=subprocess.PIPE).communicate()[0].strip().split()
     incorrect_dependencies = []
     for d in deps:
         files = rosmsg_users_package_search(mode, type_, d)
         incorrect_dependencies.extend(files)
-    print "Usages indirectly depended upon:"
+    print("Usages indirectly depended upon:")
     for f in incorrect_dependencies:
         if f not in correct_dependencies:
-            print f
+            print(f)
 
 def get_srv_text(type_, raw=False):
     """
@@ -261,13 +252,13 @@ def get_msg_text(type_, raw=False, full_text=None):
 def rosmsg_debug(mode, type_, raw=False):
     """
     Prints contents of msg/srv file
-    @param mode: roslib.srvs.EXT or roslib.msgs.EXT
+    @param mode: MODE_MSG or MODE_SRV
     @type  mode: str
     """
-    if mode == roslib.srvs.EXT:
-        print get_srv_text(type_, raw=raw)
-    elif mode == roslib.msgs.EXT:
-        print get_msg_text(type_, raw=raw)
+    if mode == MODE_SRV:
+        print(get_srv_text(type_, raw=raw))
+    elif mode == MODE_MSG:
+        print(get_msg_text(type_, raw=raw))
     else:
         raise ROSMsgException("invalid mode: %s"%mode)
     
@@ -279,7 +270,7 @@ def list_srvs(package):
     @return: list of srvs in package
     @rtype: [str]
     """
-    return list_types(package, mode=roslib.srvs.EXT)
+    return list_types(package, mode=MODE_SRV)
 
 def list_msgs(package):
     """
@@ -291,19 +282,19 @@ def list_msgs(package):
     """
     return list_types(package)
     
-def list_types(package, mode=roslib.msgs.EXT):
+def list_types(package, mode=MODE_MSG):
     """
     Lists msg/srvs contained in package
     @param package: package name
     @type  package: str
-    @param mode: roslib.srvs.EXT or roslib.msgs.EXT. Defaults to msgs.
+    @param mode: MODE_MSG or MODE_SRV. Defaults to msgs.
     @type  mode: str
     @return: list of msgs/srv in package
     @rtype: [str]
     """
-    if mode == roslib.msgs.EXT:
+    if mode == MODE_MSG:
         return [roslib.names.resource_name(package, t) for t in roslib.msgs.list_msg_types(package, False)]
-    elif mode == roslib.srvs.EXT:
+    elif mode == MODE_SRV:
         return [roslib.names.resource_name(package, t) for t in roslib.srvs.list_srv_types(package, False)]
     else:
         raise ValueError('mode')
@@ -311,27 +302,32 @@ def list_types(package, mode=roslib.msgs.EXT):
 def iterate_packages(mode):
     """
     Iterator for packages that contain messages/services
-    @param mode: roslib.msgs.EXT or roslib.srvs.EXT
+    @param mode: .msg or .srv
     @type  mode: str
     """
-    if mode == roslib.msgs.EXT:
-        subdir = roslib.packages.MSG_DIR
-    elif mode == roslib.srvs.EXT:
-        subdir = roslib.packages.SRV_DIR
+    if mode == MODE_MSG:
+        subdir = 'msg'
+    elif mode == MODE_SRV:
+        subdir = 'srv'
     else:
         raise ValueError('mode')
 
-    pkgs = roslib.packages.list_pkgs()
+    rospack = rospkg.RosPack()
+    pkgs = rospack.list()
     for p in pkgs:
-        dir = roslib.packages.get_pkg_subdir(p, subdir, False)
-        if dir and os.path.isdir(dir):
-            yield p
+        try:
+            d = os.path.join(rospack.get_path(p), subdir)
+            if os.path.isdir(d):
+                yield p
+        except rospkg.ResourceNotFound:
+            # race condition, ignore
+            pass
     
-def list_packages(mode=roslib.msgs.EXT):
+def list_packages(mode=MODE_MSG):
     """
     List all packages that contain messages/services. This is a convenience
     function of iterate_packages
-    @param mode: roslib.msgs.EXT or roslib.srvs.EXT. Defaults to msgs
+    @param mode: MODE_MSG or MODE_SRV. Defaults to msgs
     @type  mode: str
     @return: list of packages that contain messages/services (depending on mode)
     @rtype: [str]
@@ -341,7 +337,7 @@ def list_packages(mode=roslib.msgs.EXT):
 ## iterator for all packages that contain a message matching base_type
 ## @param base_type str: message base type to match, e.g. 'String' would match std_msgs/String
 def rosmsg_search(mode, base_type):
-    if mode == roslib.msgs.EXT:
+    if mode == MODE_MSG:
         res_file = roslib.msgs.msg_file
     else:
         res_file = roslib.srvs.srv_file
@@ -387,21 +383,21 @@ def rosmsg_cmd_show(mode, full):
         for topic, msg, t in rosbag.Bag(bag_file).read_messages(raw=True):
             datatype, _, _, _, pytype = msg
             if datatype == arg:
-                print get_msg_text(datatype, options.raw, pytype._full_text)
+                print(get_msg_text(datatype, options.raw, pytype._full_text))
                 break
     else:
         if '/' in arg: #package specified
             rosmsg_debug(mode, arg, options.raw)
         else:
             for found in rosmsg_search(mode, arg):
-                print "[%s]:"%found
+                print("[%s]:"%found)
                 rosmsg_debug(mode, found, options.raw)
 
 def rosmsg_md5(mode, type_):
     package, base_type = roslib.names.package_resource_name(type_)
     roslib.msgs.load_package_dependencies(package, load_recursive=True)
     roslib.msgs.load_package(package)
-    if mode == roslib.msgs.EXT:
+    if mode == MODE_MSG:
         f = roslib.msgs.msg_file(package, base_type)
         name, spec = roslib.msgs.load_from_file(f, package)
     else:
@@ -415,7 +411,7 @@ def _rosmsg_md5_check(mode, type_, gendeps_md5):
     try:
         msg_class = roslib.message.get_message_class(type_)
         if msg_class is not None and msg_class._md5sum != gendeps_md5:
-            print >> sys.stderr, "WARN: md5sum for compiled [%s] appears to differ from %s:\n\t%s vs %s"%(type_, mode, msg_class._md5sum, gendeps_md5)
+            print("WARN: md5sum for compiled [%s] appears to differ from %s:\n\t%s vs %s"%(type_, mode, msg_class._md5sum, gendeps_md5), file=sys.stderr)
     except ImportError: pass
     
 def rosmsg_cmd_md5(mode, full):
@@ -425,21 +421,21 @@ def rosmsg_cmd_md5(mode, full):
     if '/' in arg: #package specified
         try:
             md5 = rosmsg_md5(mode, arg)
-            print md5
+            print(md5)
             _rosmsg_md5_check(mode, arg, md5)
         except IOError:
-            print >> sys.stderr, "Cannot locate [%s]"%arg
+            print("Cannot locate [%s]"%arg, file=sys.stderr)
     else:
         matches = [m for m in rosmsg_search(mode, arg)]
         for found in matches:
             try:
                 md5 = rosmsg_md5(mode, found)
-                print "[%s]: %s"%(found, md5)
+                print("[%s]: %s"%(found, md5))
                 _rosmsg_md5_check(mode, found, md5)
             except IOError:
-                print >> sys.stderr, "Cannot locate [%s]"%found
+                print("Cannot locate [%s]"%found, file=sys.stderr)
         if not matches:
-            print >> sys.stderr, "No messages matching the name [%s]"%arg
+            print("No messages matching the name [%s]"%arg, file=sys.stderr)
                 
 def rosmsg_cmd_users(mode, full):
     parser = OptionParser(usage="usage: ros%s users <%s>"%(mode[1:], full))
@@ -453,9 +449,9 @@ def rosmsg_cmd_package(mode, full):
                       help="list all msgs on a single line")
     options, arg = _stdin_arg(parser, full)
     if options.single_line:    
-        print ' '.join(list_types(arg,mode=mode))        
+        print(' '.join(list_types(arg,mode=mode)))
     else:
-        print '\n'.join(list_types(arg, mode=mode))
+        print('\n'.join(list_types(arg, mode=mode)))
     
 def rosmsg_cmd_packages(mode, full):
     parser = OptionParser(usage="usage: ros%s packages"%mode[1:])
@@ -464,9 +460,9 @@ def rosmsg_cmd_packages(mode, full):
                       help="list all packages on a single line")
     options, args = parser.parse_args(sys.argv[2:])
     if options.single_line:
-        print ' '.join([p for p in iterate_packages(mode)])
+        print(' '.join([p for p in iterate_packages(mode)]))
     else:
-        print '\n'.join([p for p in iterate_packages(mode)])
+        print('\n'.join([p for p in iterate_packages(mode)]))
 
 def fullusage(cmd):
     """
@@ -485,19 +481,19 @@ def fullusage(cmd):
 Type %(cmd)s <command> -h for more detailed usage
 """%locals()
     
-def rosmsgmain(mode=roslib.msgs.EXT):
+def rosmsgmain(mode=MODE_MSG):
     """
     Main entry point for command-line tools (rosmsg/rossrv).
     
     rosmsg can interact with either ros messages or ros services. The mode
     param indicates which
-    @param mode: roslib.msgs.EXT or roslib.srvs.EXT
+    @param mode: MODE_MSG or MODE_SRV
     @type  mode: str
     """
     if len(sys.argv) == 1:
-        print fullusage('ros'+mode[1:])
+        print(fullusage('ros'+mode[1:]))
         sys.exit(0)        
-    if mode == roslib.msgs.EXT:
+    if mode == MODE_MSG:
         ext, full = mode, "message type"
     else:
         ext, full = mode, "service type"
@@ -515,19 +511,19 @@ def rosmsgmain(mode=roslib.msgs.EXT):
         elif command == 'md5':
             rosmsg_cmd_md5(ext, full)
         else:
-            print fullusage('ros'+mode[1:])
-            sys.exit(0)
-    except KeyError, e:
-        print >> sys.stderr, "Unknown message type: %s"%e
+            print(fullusage('ros'+mode[1:]))
+            sys.exit(os.EX_USAGE)
+    except KeyError as e:
+        print("Unknown message type: %s"%e, file=sys.stderr)
         sys.exit(os.EX_USAGE)
-    except roslib.packages.InvalidROSPkgException, e:
-        print >> sys.stderr, "Invalid package: '%s'"%e
+    except rospkg.ResourceNotFound as e:
+        print("Invalid package: '%s'"%e, file=sys.stderr)
         sys.exit(os.EX_USAGE)        
-    except ValueError, e:
-        print >> sys.stderr, "Invalid type: '%s'"%e
+    except ValueError as e:
+        print("Invalid type: '%s'"%e, file=sys.stderr)
         sys.exit(os.EX_USAGE)          
-    except ROSMsgException, e:
-        print >> sys.stderr, str(e)
+    except ROSMsgException as e:
+        print(str(e), file=sys.stderr)
         sys.exit(1)        
     except KeyboardInterrupt:
         pass

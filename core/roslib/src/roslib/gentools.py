@@ -50,6 +50,8 @@ try:
 except ImportError:
     from io import StringIO # Python 3.x
 
+import rospkg
+
 import roslib.msgs 
 from roslib.msgs import MsgSpecException
 import roslib.names 
@@ -59,7 +61,7 @@ import roslib.srvs
 # name of the Header type as gentools knows it
 _header_type_name = 'std_msgs/Header'
 
-def _add_msgs_depends(spec, deps, package_context):
+def _add_msgs_depends(rospack, spec, deps, package_context):
     """
     Add the list of message types that spec depends on to depends.
     @param spec: message to compute dependencies for
@@ -69,7 +71,7 @@ def _add_msgs_depends(spec, deps, package_context):
     @type  deps: [str]
     @raise KeyError for invalid dependent types due to missing package dependencies.
     """
-    valid_packages = ['', package_context] + roslib.rospack.rospack_depends(package_context)
+    valid_packages = ['', package_context] + rospkg.get_depends(package_context, implicit=True)
     for t in spec.types:
         t = roslib.msgs.base_msg_type(t)
         if not roslib.msgs.is_builtin(t):
@@ -97,7 +99,7 @@ def _add_msgs_depends(spec, deps, package_context):
             else:
                 # not allowed to load the message, so error.
                 raise KeyError(t)
-            _add_msgs_depends(depspec, deps, package_context)
+            _add_msgs_depends(rospack, depspec, deps, package_context)
 
 def compute_md5_text(get_deps_dict, spec):
     """
@@ -297,11 +299,12 @@ def get_dependencies(spec, package, compute_files=True, stdout=sys.stdout, stder
 
     deps = []
     try:
+        rospack = rospkg.RosPack()
         if isinstance(spec, roslib.msgs.MsgSpec):
-            _add_msgs_depends(spec, deps, package)
+            _add_msgs_depends(rospack, spec, deps, package)
         elif isinstance(spec, roslib.srvs.SrvSpec):
-            _add_msgs_depends(spec.request, deps, package)
-            _add_msgs_depends(spec.response, deps, package)                
+            _add_msgs_depends(rospack, spec.request, deps, package)
+            _add_msgs_depends(rospack, spec.response, deps, package)                
         else:
             raise MsgSpecException("spec does not appear to be a message or service")
     except KeyError, e:

@@ -38,6 +38,8 @@ import stat
 import string
 import sys
 
+import rosgraph
+
 from roswtf.rules import warning_rule, error_rule
 
 # #1220
@@ -54,14 +56,13 @@ def ip_check(ctx):
 # suggestion by mquigley based on laptop dhcp issues    
 def ros_hostname_check(ctx):
     """Make sure that ROS_HOSTNAME resolves to a local IP address"""
-    import roslib.rosenv
-    if not roslib.rosenv.ROS_HOSTNAME in ctx.env:
+    if not rosgraph.ROS_HOSTNAME in ctx.env:
         return
 
     import roslib.network
     import socket
 
-    hostname = ctx.env[roslib.rosenv.ROS_HOSTNAME]
+    hostname = ctx.env[rosgraph.ROS_HOSTNAME]
     try:
         resolved = socket.gethostbyname(hostname)
     except socket.gaierror:
@@ -75,14 +76,13 @@ def ros_hostname_check(ctx):
 
 def ros_ip_check(ctx):
     """Make sure that ROS_IP is a local IP address"""
-    import roslib.rosenv
-    if not roslib.rosenv.ROS_IP in ctx.env:
+    if not rosgraph.ROS_IP in ctx.env:
         return
 
     import roslib.network
     import socket
 
-    ip = ctx.env[roslib.rosenv.ROS_IP]
+    ip = ctx.env[rosgraph.ROS_IP]
     
     # best we can do is compare roslib's routine against socket resolution and make sure they agree
     addrs = roslib.network.get_local_addresses()

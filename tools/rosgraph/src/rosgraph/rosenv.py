@@ -29,11 +29,46 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
 
-from . rosenv import get_master_uri, ROS_MASTER_URI, ROS_NAMESPACE, ROS_HOSTNAME, ROS_IP
-from . masterapi import Master, MasterFailure, MasterError, MasterException
+import os
+import sys
 
-# bring in names submodule
-from . import names
+ROS_MASTER_URI   = "ROS_MASTER_URI"
+
+ROS_IP           ="ROS_IP"
+ROS_HOSTNAME     ="ROS_HOSTNAME"
+ROS_NAMESPACE    ="ROS_NAMESPACE"
+
+def get_master_uri(env=None, argv=None):
+    """
+    Get the :envvar:`ROS_MASTER_URI` setting from the command-line args or
+    environment, command-line args takes precedence.
+
+    :param env: override environment dictionary, ``dict``
+    :param argv: override ``sys.argv``, ``[str]``
+    :raises: :exc:`ValueError` If :envvar:`ROS_MASTER_URI` value is invalidly
+      specified 
+    """    
+    if env is None:
+        env = os.environ
+    if argv is None:
+        argv = sys.argv
+    try:
+        for arg in argv:
+            if arg.startswith('__master:='):
+                val = None
+                try:
+                    _, val = arg.split(':=')
+                except:
+                    pass
+                
+                # we ignore required here because there really is no
+                # correct return value as the configuration is bad
+                # rather than unspecified
+                if not val:
+                    raise ValueError("__master remapping argument '%s' improperly specified"%arg)
+                return val
+        return env[ROS_MASTER_URI]
+    except KeyError as e:
+        return None
+        

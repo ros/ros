@@ -43,13 +43,11 @@ import os
 import sys
 import string
 import time
-import rosgraph.masterapi
-import rostest
 import unittest
 import xmlrpclib
 
-import roslib.rosenv 
-import roslib.names 
+import rosunit
+import rosgraph
 
 TCPROS = 'TCPROS'
 
@@ -62,14 +60,11 @@ class TopicDescription(object):
         self.topic_type = topic_type
 
         #validate topic
-        if not roslib.names.is_legal_name(topic_name):
+        if not rosgraph.names.is_legal_name(topic_name):
             raise ValueError('topic name: %s'%(topic_name))
         
         # validate type
-        try:
-            p, t = roslib.names.package_resource_name(topic_type)
-        except:
-            raise ValueError('topic type: %s'%(topic_type))
+        p, t = topic_type.split('/')
 
 class TopicDescriptionList(object):
     
@@ -92,7 +87,7 @@ class TestSlaveApi(unittest.TestCase):
     def __init__(self, *args, **kwds):
         super(TestSlaveApi, self).__init__(*args)
         
-        self.ns = os.environ.get(roslib.rosenv.ROS_NAMESPACE, roslib.names.GLOBALNS)
+        self.ns = os.environ.get(rosgraph.ROS_NAMESPACE, rosgraph.names.GLOBALNS)
 
         # load in name of test node
         self.test_node = 'test_node' #default
@@ -107,7 +102,7 @@ class TestSlaveApi(unittest.TestCase):
                 self.load_profile(self.test_node_profile)
                 
         # resolve
-        self.test_node = roslib.names.ns_join(self.ns, self.test_node)
+        self.test_node = rosgraph.names.ns_join(self.ns, self.test_node)
                 
     def load_profile(self, filename):
         import yaml
@@ -122,7 +117,7 @@ class TestSlaveApi(unittest.TestCase):
         # give ourselves 10 seconds for node to appear
         timeout_t = 10.0 + time.time()
         self.node_api = None
-        self.master = rosgraph.masterapi.Master(self.caller_id)
+        self.master = rosgraph.Master(self.caller_id)
         while time.time() < timeout_t and not self.node_api:
             try:
                 self.node_api = self.master.lookupNode(self.test_node)
@@ -276,8 +271,8 @@ class TestSlaveApi(unittest.TestCase):
     ## validate node.paramUpdate(caller_id, key, value)
     def test_paramUpdate(self):
         node = self.node
-        good_key = roslib.names.ns_join(self.ns, 'good_key')
-        bad_key = roslib.names.ns_join(self.ns, 'bad_key')
+        good_key = rosgraph.names.ns_join(self.ns, 'good_key')
+        bad_key = rosgraph.names.ns_join(self.ns, 'bad_key')
         
         # node is not subscribed to good_key (yet)
         self.apiError(node.paramUpdate(self.caller_id, good_key, 'good_value'))
@@ -330,7 +325,7 @@ class TestSlaveApi(unittest.TestCase):
 
         # check against env, canonicalize for comparison
         import urlparse
-        master_env = roslib.rosenv.get_master_uri()
+        master_env = rosgraph.get_master_uri()
         if not master_env.endswith('/'):
             master_env = master_env + '/'
         self.assertEquals(urlparse.urlparse(master_env), urlparse.urlparse(uri))
@@ -350,8 +345,8 @@ class TestSlaveApi(unittest.TestCase):
         validate node.publisherUpdate(caller_id, topic, uris) 
         """
         node = self.node
-        probe_topic = roslib.names.ns_join(self.ns, 'probe_topic')
-        fake_topic = roslib.names.ns_join(self.ns, 'fake_topic')        
+        probe_topic = rosgraph.names.ns_join(self.ns, 'probe_topic')
+        fake_topic = rosgraph.names.ns_join(self.ns, 'fake_topic')        
         
         # test success
         # still success even if not actually interested in topic
@@ -416,7 +411,7 @@ class TestSlaveApi(unittest.TestCase):
         
         topics = self.required_pubs.keys()
         probe_topic = topics[0] if topics else None
-        fake_topic = roslib.names.ns_join(self.ns, 'fake_topic')
+        fake_topic = rosgraph.names.ns_join(self.ns, 'fake_topic')
         
         # currently only support TCPROS as we require all clients to support this
         protocols = [[TCPROS]]
@@ -508,5 +503,4 @@ class TestSlaveApi(unittest.TestCase):
             pass
 
 if __name__ == '__main__':
-    import rostest
-    rostest.unitrun('test_ros', sys.argv[0], TestSlaveApi)
+    rosunit.unitrun('test_ros', sys.argv[0], TestSlaveApi)

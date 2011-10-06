@@ -47,6 +47,8 @@ import roslib.rosenv
 import roslib.rospack
 import roslib.substitution_args
 
+import rosgraph
+
 import roslaunch.depends
 
 from roswtf.model import WtfWarning
@@ -223,7 +225,7 @@ def _load_roslaunch(ctx, roslaunch_files):
         ctx.pkg = base_pkg
         ctx.launch_file_deps = file_deps
         ctx.launch_file_missing_deps = missing
-    except roslib.substitution_args.SubstitutionException, se:
+    except roslib.substitution_args.SubstitutionException as se:
         raise WtfException("Cannot load roslaunch file(s): "+str(se))
     except roslaunch.depends.RoslaunchDepsException, e:
         raise WtfException(str(e))
@@ -241,7 +243,7 @@ def _load_pkg(ctx, pkg):
         ctx.manifest = roslib.manifest.parse_file(roslib.manifest.manifest_file(pkg))        
     except roslib.packages.InvalidROSPkgException:
         raise WtfException("Cannot locate manifest file for package [%s]"%pkg)
-    except roslib.manifest.ManifestException, e:
+    except roslib.manifest.ManifestException as e:
         raise WtfException("Package [%s] has an invalid manifest: %s"%(pkg, e))
 
 def _load_stack(ctx, stack):
@@ -260,7 +262,7 @@ def _load_stack(ctx, stack):
         raise WtfException("[%s] appears to be a stack, but it's not on your ROS_PACKAGE_PATH"%stack)
     
     
-def _load_env(ctx,env):
+def _load_env(ctx, env):
     """
     Utility for initializing WtfContext state
 
@@ -273,7 +275,7 @@ def _load_env(ctx,env):
         raise WtfException("ROS_ROOT is not set")
     ctx.ros_package_path = env.get(roslib.rosenv.ROS_PACKAGE_PATH, None)
     ctx.pythonpath = env.get('PYTHONPATH', None)
-    ctx.ros_master_uri = env.get(roslib.rosenv.ROS_MASTER_URI, None)
+    ctx.ros_master_uri = env.get(rosgraph.ROS_MASTER_URI, None)
     ctx.ros_bindeps_path = env.get(roslib.rosenv.ROS_BINDEPS_PATH, None)
     ctx.ros_boost_root = env.get(roslib.rosenv.ROS_BOOST_ROOT, None)    
     

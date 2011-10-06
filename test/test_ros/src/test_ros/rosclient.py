@@ -36,7 +36,7 @@
 import unittest
 import xmlrpclib
 
-import roslib.rosenv 
+import rosgraph
 
 class TestRosClient(unittest.TestCase):
 
@@ -44,7 +44,7 @@ class TestRosClient(unittest.TestCase):
         self.last_code = None
         self.last_msg = None
         self.last_val = None
-        self.master = xmlrpclib.ServerProxy(roslib.rosenv.get_master_uri())
+        self.master = xmlrpclib.ServerProxy(rosgraph.get_master_uri())
     
     def tearDown(self):
         self.master = None

@@ -39,8 +39,8 @@ import time
 import xmlrpclib
 
 import rospy
-import roslib.rosenv 
-import roslib.names 
+import rosgraph
+
 from test_ros.rosclient import *
 
 NODE_INTEGRATION_NAME = "node_integration_test"
@@ -75,8 +75,8 @@ def set_node_name(name):
 def get_caller_id():
     if _name is None:
         raise Exception("set_node_name has not been called yet")
-    ros_ns = os.environ.get(roslib.rosenv.ROS_NAMESPACE, roslib.names.GLOBALNS)
-    return roslib.names.ns_join(ros_ns, _name)    
+    ros_ns = os.environ.get(rosgraph.ROS_NAMESPACE, rosgraph.names.GLOBALNS)
+    return rosgraph.names.ns_join(ros_ns, _name)    
     
 ## Parent of node API and integration test cases. Performs common state setup
 class _NodeTestCase(TestRosClient):
@@ -84,7 +84,7 @@ class _NodeTestCase(TestRosClient):
     def __init__(self, *args):
         super(_NodeTestCase, self).__init__(*args)
         
-        self.ns = os.environ.get(roslib.rosenv.ROS_NAMESPACE, roslib.names.GLOBALNS)
+        self.ns = os.environ.get(rosgraph.ROS_NAMESPACE, rosgraph.names.GLOBALNS)
         self.caller_id = get_caller_id()
 
         # load in name of test node
@@ -93,7 +93,7 @@ class _NodeTestCase(TestRosClient):
             if arg.startswith("--node="):
                 self.test_node = arg[len("--node="):]
         # resolve
-        self.test_node = roslib.names.ns_join(self.ns, self.test_node)
+        self.test_node = rosgraph.names.ns_join(self.ns, self.test_node)
                 
         
     def setUp(self):
@@ -167,8 +167,8 @@ class NodeApiTestCase(_NodeTestCase):
     ## validate node.paramUpdate(caller_id, key, value)
     def testParamUpdate(self):
         node = self.node
-        good_key = roslib.names.ns_join(self.ns, 'good_key')
-        bad_key = roslib.names.ns_join(self.ns, 'bad_key')
+        good_key = rosgraph.names.ns_join(self.ns, 'good_key')
+        bad_key = rosgraph.names.ns_join(self.ns, 'bad_key')
         
         # test bad key
         self.apiError(node.paramUpdate(self.caller_id, '', 'bad'))
@@ -210,13 +210,13 @@ class NodeApiTestCase(_NodeTestCase):
         # test success
         uri = self.apiSuccess(self.node.getMasterUri(self.caller_id))
         self._checkUri(uri)
-        self.assertEquals(roslib.rosenv.get_master_uri(), uri)
+        self.assertEquals(rosgraph.get_master_uri(), uri)
 
     ## validate node.publisherUpdate(caller_id, topic, uris) 
     def testPublisherUpdate(self):
         node = self.node
-        probe_topic = roslib.names.ns_join(self.ns, 'probe_topic')
-        fake_topic = roslib.names.ns_join(self.ns, 'fake_topic')        
+        probe_topic = rosgraph.names.ns_join(self.ns, 'probe_topic')
+        fake_topic = rosgraph.names.ns_join(self.ns, 'fake_topic')        
         # test bad arity
         self.apiError(node.getBusStats(self.caller_id, 'bad'))
         self.apiError(node.getBusStats())
@@ -253,8 +253,8 @@ class NodeApiTestCase(_NodeTestCase):
     def testRequestTopic(self):
         node = self.node
         protocols = [[_TCPROS]]
-        probe_topic = roslib.names.ns_join(self.ns, 'probe_topic')
-        fake_topic = roslib.names.ns_join(self.ns, 'fake_topic')
+        probe_topic = rosgraph.names.ns_join(self.ns, 'probe_topic')
+        fake_topic = rosgraph.names.ns_join(self.ns, 'fake_topic')
         
         # test bad arity
         self.apiError(node.requestTopic(self.caller_id, probe_topic, protocols, 'extra stuff'))
@@ -267,7 +267,7 @@ class NodeApiTestCase(_NodeTestCase):
         self.apiError(node.requestTopic(self.caller_id, fake_topic, protocols))
         self.apiError(node.requestTopic(self.caller_id, probe_topic, 'fake-protocols')) 
         
-        topics = [roslib.names.ns_join(self.ns, t) for t in _required_publications]
+        topics = [rosgraph.names.ns_join(self.ns, t) for t in _required_publications]
         # currently only support TCPROS as we require all clients to support this
         protocols = [[_TCPROS]]
         for topic in topics:

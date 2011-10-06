@@ -39,8 +39,8 @@ import time
 import xmlrpclib
 
 import rospy
-import roslib.rosenv
-import roslib.names
+import rosgraph
+
 from test_ros.rosclient import *
 
 NODE_INTEGRATION_NAME = "node_integration_test"
@@ -58,19 +58,19 @@ def set_node_name(name):
 def get_caller_id():
     if _name is None:
         raise Exception("set_node_name has not been called yet")
-    ros_ns = os.environ.get(roslib.rosenv.ROS_NAMESPACE, roslib.names.GLOBALNS)
-    return roslib.names.ns_join(ros_ns, _name)    
+    ros_ns = os.environ.get(rosgraph.ROS_NAMESPACE, rosgraph.names.GLOBALNS)
+    return rosgraph.names.ns_join(ros_ns, _name)    
     
 class _MasterTestCase(TestRosClient):
 
     def __init__(self, *args):
         super(_MasterTestCase, self).__init__(*args)
-        self.ns = os.environ.get(roslib.rosenv.ROS_NAMESPACE, roslib.names.GLOBALNS)
+        self.ns = os.environ.get(rosgraph.ROS_NAMESPACE, rosgraph.names.GLOBALNS)
         self.caller_id = get_caller_id()
         
     def setUp(self):
         super(_MasterTestCase, self).setUp()
-        self.master_uri = os.environ.get(roslib.rosenv.ROS_MASTER_URI, None)
+        self.master_uri = os.environ.get(rosgraph.ROS_MASTER_URI, None)
         self._checkUri(self.master_uri)
         self.master = xmlrpclib.ServerProxy(self.master_uri)
 

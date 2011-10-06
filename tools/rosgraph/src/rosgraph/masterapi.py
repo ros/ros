@@ -41,28 +41,33 @@ import os
 import sys
 import xmlrpclib
 
-import roslib.exceptions
-import roslib.names
+from . names import make_caller_id
+from . rosenv import get_master_uri
 
-class ROSMasterException(roslib.exceptions.ROSLibException):
+class MasterException(Exception):
     """
     Base class of ROS-master related errors.
     """
     pass
 
-class Failure(ROSMasterException):
+class MasterFailure(MasterException):
     """
     Call to Master failed. This generally indicates an internal error
     in the Master and that the Master may be in an inconsistent state.
     """
     pass
 
-class Error(ROSMasterException):
+class MasterError(MasterException):
     """
     Master returned an error code, which indicates an error in the
     arguments passed to the Master.
     """
     pass
+
+# backwards compat
+ROSMasterException = MasterException
+Error = MasterError
+Failure = MasterFailure
 
 def is_online(master_uri=None):
     """
@@ -83,24 +88,27 @@ class Master(object):
     
     def __init__(self, caller_id, master_uri=None):
         """
-        @param caller_id: name of node to use in calls to master
-        @type  caller_id: str
-        @param master_uri: (optional) override environment's ROS_MASTER_URI
-        @type  master_uri: str
+        :param caller_id: name of node to use in calls to master, ``str``
+        :param master_uri: (optional) override default ROS master URI, ``str``
+        :raises: :exc:`ValueError` If ROS master uri not set properly
         """
 
         if master_uri is None:
-            master_uri = roslib.rosenv.get_master_uri()
+            master_uri = get_master_uri()
         self._reinit(master_uri)
 
-        self.caller_id = roslib.names.make_caller_id(caller_id) #resolve
+        self.caller_id = make_caller_id(caller_id) #resolve
         if self.caller_id[-1] == '/':
             self.caller_id = self.caller_id[:-1]
         
     def _reinit(self, master_uri):
         """
         Internal API for reinitializing this handle to be a new master
+
+        :raises: :exc:`ValueError` If ROS master uri not set
         """
+        if master_uri is None:
+            raise ValueError("ROS master URI is not set")
         self.master_uri = master_uri
         self.handle = xmlrpclib.ServerProxy(self.master_uri)
         

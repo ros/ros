@@ -13,6 +13,7 @@
   <depend package="roslaunch"/>
   <depend package="rosnode"/>
   <depend package="rosservice"/>
+  <depend package="rosgraph"/>
 
   <rosdep name="paramiko" />
   <export>

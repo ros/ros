@@ -41,6 +41,8 @@ import socket
 import sys
 import traceback
 
+import rospkg
+
 import roslib.packages
 import roslib.scriptutil
     
@@ -88,18 +90,11 @@ def roswtf_main():
     except WtfException, e:
         print >> sys.stderr, e
         
-def master_online():
-    master = roslib.scriptutil.get_master()
-    try:
-        master.getPid('/roswtf')
-        return master
-    except socket.error:
-        pass
-
 def _roswtf_main():
     launch_files = names = None
     # performance optimization
-    all_pkgs = roslib.packages.list_pkgs()
+    rospack = rospkg.RosPack()
+    all_pkgs = rospack.list()
 
     import optparse
     parser = optparse.OptionParser(usage="usage: roswtf [launch file]")
@@ -195,11 +190,10 @@ def _roswtf_main():
 
     try:
         online_checks = False
-        if options.offline or not ctx.ros_master_uri or invalid_url(ctx.ros_master_uri):
+        if options.offline or not ctx.ros_master_uri or invalid_url(ctx.ros_master_uri) or not rosgraph.is_master_online():
             master = None
         else:
             master = roslib.scriptutil.get_master()
-            master = master_online()
         if master is not None:
             online_checks = True
             print "Beginning tests of your ROS graph. These may take awhile..."

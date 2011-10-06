@@ -58,22 +58,6 @@ class RoslibPackagesTest(unittest.TestCase):
     self.assertEquals([], list_pkgs_by_path(os.path.join('bin')))
     
 
-  def test_list_pkgs(self):
-    # should be equal to rospack list
-    import roslib.rospack
-    import roslib.packages    
-    pkgs = [s.split()[0] for s in roslib.rospack.rospackexec(['list']).split('\n')]
-    retval = roslib.packages.list_pkgs()
-    self.assertEquals(set(pkgs), set(retval), set(pkgs) ^ set(retval))
-    
-    # test twice for caching
-    retval = roslib.packages.list_pkgs()
-    self.assertEquals(set(pkgs), set(retval), set(pkgs) ^ set(retval))
-
-    # now manipulate the environment to test ordering
-    d = roslib.packages.get_pkg_dir('test_roslib')
-    d = os.path.join(d, 'test', 'package_tests')
-    
   def test_find_node(self):
     import roslib.packages
     d = roslib.packages.get_pkg_dir('test_roslib')
@@ -201,38 +185,6 @@ class RoslibPackagesTest(unittest.TestCase):
         self.assertEquals({p: []},  rp.rosdeps([p]))      
     
     
-  def test_get_package_paths(self):
-    from roslib.packages import get_package_paths
-
-    s = os.pathsep
-    tests = [
-      ('', []),
-      (s, []),
-      (s+s+s+s+s, []),
-      (s+s+s+s+'/fake/kwc/ros-pkg'+s+s+s, ['/fake/kwc/ros-pkg']),
-      (s.join(['/fake/kwc/ros-pkg', '/fake/wg-ros-pkg']), ['/fake/kwc/ros-pkg', '/fake/wg-ros-pkg']),
-      ]
-    for rpp, v in tests:
-      rr = os.getcwd()
-      for ros_root_required in [True, False]:
-        env = { 'ROS_PACKAGE_PATH' : rpp}
-        # test with ros root not set
-        if ros_root_required:
-          try:
-            get_package_paths(ros_root_required, env)
-            self.fail("should have failed")
-          except roslib.rosenv.ROSEnvException:
-            pass
-        else:
-          paths = get_package_paths(ros_root_required, env)
-          self.assertEquals(v, paths)
-
-        # test with ros root set
-        env['ROS_ROOT'] = rr
-        paths = get_package_paths(ros_root_required, env)
-        self.assertEquals(v + [rr], paths)
-
-
   def test__platform_supported(self):
     self.assertTrue(roslib.packages._platform_supported(os.path.join(roslib.packages.get_pkg_dir("test_roslib"), "test", "platform_supported.manifest.xml"), "test_os", "test_version"))
     self.assertFalse(roslib.packages._platform_supported(os.path.join(roslib.packages.get_pkg_dir("test_roslib"), "test", "platform_supported.manifest.xml"), "test_os", "not_test_version"))

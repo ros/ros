@@ -49,7 +49,7 @@ import re
 from xml.dom.minidom import parse, parseString
 from xml.dom import Node as DomNode
 
-import roslib.rosenv
+import rospkg
 
 class TestInfo(object):
     """
@@ -355,7 +355,7 @@ def read_all(filter_=[]):
     @return: aggregated result
     @rtype: L{Result}
     """
-    dir_ = roslib.rosenv.get_test_results_dir()
+    dir_ = rospkg.get_test_results_dir()
     root_result = Result('ros', 0, 0, 0)
     if not os.path.exists(dir_):
         return root_result

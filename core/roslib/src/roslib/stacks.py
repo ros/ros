@@ -154,6 +154,7 @@ def _update_stack_cache(force=False, env=None):
     _dir_cache_marker = ros_root, ros_package_path
 
     pkg_dirs = rospkg.environment.compute_package_paths(ros_root, ros_package_path)
+    pkg_dirs.reverse() # cpp has reverse precedence order
     # ros is assumed to be at ROS_ROOT
     if os.path.exists(os.path.join(ros_root, 'stack.xml')):
         _dir_cache['ros'] = ros_root

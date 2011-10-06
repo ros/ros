@@ -47,10 +47,8 @@ NAME='roscreate-stack'
 
 import os
 import sys
-import roslib.manifest
-import roslib.packages
-import roslib.stacks
-import roslib.stack_manifest
+
+import rospkg
 
 from roscreate.core import read_template, author_name, print_warning
 from rospkg import on_ros_path
@@ -74,13 +72,13 @@ def instantiate_template(template, stack, brief, description, author, depends, l
     return template%locals()
 
 def _update_depends(depends):
+    # TODO: this logic is rather pointless now that it no longer leverages .toxml().  Needs to be rewritten
     new_depends = []
-    for s, pkgs in depends.iteritems():
-        d = roslib.stack_manifest.StackDepend(s)
-        d.annotation = ', '.join(set(pkgs))
-        new_depends.append(d)
-        new_depends.sort(lambda x, y: -1 if x.stack < y.stack else 1)
-    return ''.join(["  %s\n"%d.xml() for d in new_depends])
+    for name, pkgs in depends.iteritems():
+        annotation = ', '.join(set(pkgs))
+        new_depends.append((name, annotation))
+        new_depends.sort(lambda x, y: -1 if x[0] < y[0] else 1)
+    return ''.join(['  <depend stack="%s" /> <!-- %s -->\n'%(name, annotation) for name, annotation in new_depends])
          
 def create_stack(stack, stack_dir, stack_manifest, author, depends, licenses, show_deps):
     """
@@ -111,7 +109,7 @@ def create_stack(stack, stack_dir, stack_manifest, author, depends, licenses, sh
         description = stack_manifest.description
         review = '  <review status="%s" notes="%s"/>'%(stack_manifest.status, stack_manifest.notes)        
     else:
-        stack_manifest = roslib.stack_manifest.StackManifest()
+        stack_manifest = rospkg.manifest.Manifest(type_='stack')
         brief = description = stack
         review = '  <review status="unreviewed" notes=""/>'
 
@@ -137,11 +135,12 @@ def compute_stack_depends_and_licenses(stack_dir):
     """
     @return: depends, licenses
     @rtype: {str: [str]}, [str]
-    @raise: roslib.packages.InvalidROSPkgException
+    @raise: rospkg.ResourceNotFound
     """
     stack = os.path.basename(os.path.abspath(stack_dir))    
     if os.path.exists(stack_dir):
-        packages = roslib.packages.list_pkgs_by_path(os.path.abspath(stack_dir))
+        rp = rospkg.RosPack(ros_root=os.path.abspath(stack_dir))
+        packages = rp.list()
         depends, licenses = _compute_stack_depends_and_licenses(stack, packages)
     else:
         depends = dict()
@@ -155,27 +154,18 @@ def _compute_stack_depends_and_licenses(stack, packages):
     pkg_depends = []
     licenses = []
     stack_depends = {}
+    rospack = rospkg.RosPack()
     for pkg in packages:
-        m = roslib.manifest.parse_file(roslib.manifest.manifest_file(pkg))
-        pkg_depends.extend([d.package for d in m.depends])
+        m = rospack.get_manifest(pkg)
+        pkg_depends.extend(rospack.get_depends(pkg, implicit=False))
         licenses.extend([l.strip() for l in m.license.split(',')])
         
-        # check for genmsg implicit dependency 
-        pkg_dir = roslib.packages.get_pkg_dir(pkg)
-        if (os.path.isdir(os.path.join(pkg_dir, 'msg')) or \
-                os.path.isdir(os.path.join(pkg_dir, 'srv'))) and \
-                stack not in ['ros', 'ros_comm']:
-            if not 'ros_comm' in stack_depends:
-                stack_depends['ros_comm'] = []
-            # #3310: inserting the pkg to blame confuses people, so leave this out
-            #stack_depends['ros_comm'].append(pkg)
-
     for pkg in pkg_depends:
         if pkg in packages:
             continue
         try:
-            st = roslib.stacks.stack_of(pkg)
-        except roslib.packages.InvalidROSPkgException:
+            st = rospack.stack_of(pkg)
+        except rospkg.ResourceNotFound:
             print_warning("WARNING: cannot locate package [%s], which is a dependency in the [%s] stack"%(pkg, stack))
             continue
         if not st:
@@ -208,7 +198,7 @@ def roscreatestack_main():
     
     try:
         depends, licenses = compute_stack_depends_and_licenses(stack_dir)
-    except roslib.packages.InvalidROSPkgException as e:
+    except rospkg.ResourceNotFound as e:
         print(str(e), file=sys.stderr)
         sys.exit(1)
 
@@ -226,7 +216,7 @@ def roscreatestack_main():
           shutil.copyfile(stack_xml_path, stack_xml_path_bak)
 
           # load existing stack.xml properties
-          stack_manifest = roslib.stack_manifest.parse_file(stack_xml_path)
+          stack_manifest = rospkg.manifest.parse_manifest_file(stack_xml_path, rospkg.STACK_FILE)
           author = stack_manifest.author
   
     create_stack(stack, stack_dir, stack_manifest, author, depends, licenses, options.show_deps)

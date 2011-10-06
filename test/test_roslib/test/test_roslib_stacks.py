@@ -36,41 +36,12 @@ import struct
 import sys
 import unittest
 
+import rospkg
+
 import rosunit
 
 class RoslibStacksTest(unittest.TestCase):
   
-    def test_packages_of_unary(self):
-        from roslib.stacks import packages_of
-        # test with synthetic stacks
-        test_dir = os.path.join(roslib.packages.get_pkg_dir('test_roslib'), 'test', 'stack_tests_unary')
-        env = os.environ.copy()
-        env['ROS_PACKAGE_PATH'] = test_dir
-        for s in ['foo', 'bar']:
-            self.assertEquals([s], packages_of(s, env=env))
-        
-    def test_packages_of(self):
-        from roslib.stacks import packages_of
-        pkgs = packages_of('ros')
-        for p in ['test_roslib', 'rosbuild', 'rospack']:
-            self.assert_(p in pkgs, p)
-        # due to caching behavior, test twice
-        pkgs = packages_of('ros')
-        for p in ['test_roslib', 'rosbuild', 'rospack']:
-            self.assert_(p in pkgs, p)
-
-        try:
-            packages_of(None)
-            self.fail("should have raised ValueError")
-        except ValueError: pass
-
-        # test with env
-        test_dir = os.path.join(roslib.packages.get_pkg_dir('test_roslib'), 'test', 'stack_tests', 's1')
-        env = os.environ.copy()
-        env['ROS_PACKAGE_PATH'] = test_dir
-        self.assertEquals(set(['foo_pkg', 'foo_pkg_2']), set(packages_of('foo', env=env)))
-        
-    
     def test_stack_of(self):
         import roslib.packages
         from roslib.stacks import stack_of
@@ -110,10 +81,9 @@ class RoslibStacksTest(unittest.TestCase):
 
     def test_list_stacks_by_path(self):
         from roslib.stacks import list_stacks_by_path
-        import roslib.rosenv
 
         # test with the ros stack
-        rr = roslib.rosenv.get_ros_root()
+        rr = rospkg.get_ros_root()
         self.assertEquals(['ros'], list_stacks_by_path(rr))
         stacks = []
         self.assertEquals(['ros'], list_stacks_by_path(rr, stacks))
@@ -154,25 +124,24 @@ class RoslibStacksTest(unittest.TestCase):
         d = roslib.packages.get_pkg_dir('test_roslib')
         d = os.path.join(d, 'test', 'stack_tests_unary')
         s1_d = os.path.join(d, 's1')
-        rpp = os.environ.get(roslib.rosenv.ROS_PACKAGE_PATH, None)
+        rpp = rospkg.get_ros_package_path()
         try:
             paths = [d]
-            os.environ[roslib.rosenv.ROS_PACKAGE_PATH] = os.pathsep.join(paths)
+            os.environ[rospkg.environment.ROS_PACKAGE_PATH] = os.pathsep.join(paths)
             self.assertEquals(os.path.join(s1_d, 'foo'), roslib.stacks.get_stack_dir('foo'))
             self.assertEquals(os.path.join(s1_d, 'bar'), roslib.stacks.get_stack_dir('bar'))
             self.assertEquals(os.path.join(s1_d, 'baz'), roslib.stacks.get_stack_dir('baz'))
         finally:
             #restore rpp
             if rpp is not None:
-                os.environ[roslib.rosenv.ROS_PACKAGE_PATH] = rpp
+                os.environ[rospkg.environment.ROS_PACKAGE_PATH] = rpp
             else:
-                del os.environ[roslib.rosenv.ROS_PACKAGE_PATH] 
+                del os.environ[rospkg.environment.ROS_PACKAGE_PATH] 
         
     def test_get_stack_dir(self):
-        import roslib.rosenv
         import roslib.packages
         from roslib.stacks import get_stack_dir, InvalidROSStackException, list_stacks
-        self.assertEquals(roslib.rosenv.get_ros_root(), get_stack_dir('ros'))
+        self.assertEquals(rospkg.get_ros_root(), get_stack_dir('ros'))
         try:
             get_stack_dir('non_existent')
             self.fail("should have raised")
@@ -189,7 +158,7 @@ class RoslibStacksTest(unittest.TestCase):
 
         # now manipulate the environment to test precedence
         # - save original RPP as we popen rosstack in other tests
-        rpp = os.environ.get(roslib.rosenv.ROS_PACKAGE_PATH, None)
+        rpp = os.environ.get(rospkg.environment.ROS_PACKAGE_PATH, None)
         try:
             d = roslib.packages.get_pkg_dir('test_roslib')
             d = os.path.join(d, 'test', 'stack_tests')
@@ -197,7 +166,7 @@ class RoslibStacksTest(unittest.TestCase):
             # - s1/s2/s3
             print "s1/s2/s3"            
             paths = [os.path.join(d, p) for p in ['s1', 's2', 's3']]
-            os.environ[roslib.rosenv.ROS_PACKAGE_PATH] = os.pathsep.join(paths)
+            os.environ[rospkg.environment.ROS_PACKAGE_PATH] = os.pathsep.join(paths)
             # - run multiple times to test caching
             for i in xrange(2):
                 stacks = roslib.stacks.list_stacks()
@@ -213,7 +182,7 @@ class RoslibStacksTest(unittest.TestCase):
             print "s2/s3/s1"
             
             paths = [os.path.join(d, p) for p in ['s2', 's3', 's1']]
-            os.environ[roslib.rosenv.ROS_PACKAGE_PATH] = os.pathsep.join(paths)
+            os.environ[rospkg.environment.ROS_PACKAGE_PATH] = os.pathsep.join(paths)
             stacks = roslib.stacks.list_stacks()
             self.assert_('foo' in stacks)
             self.assert_('bar' in stacks)
@@ -225,16 +194,16 @@ class RoslibStacksTest(unittest.TestCase):
         finally:
             #restore rpp
             if rpp is not None:
-                os.environ[roslib.rosenv.ROS_PACKAGE_PATH] = rpp
+                os.environ[rospkg.environment.ROS_PACKAGE_PATH] = rpp
             else:
-                del os.environ[roslib.rosenv.ROS_PACKAGE_PATH] 
+                del os.environ[rospkg.environment.ROS_PACKAGE_PATH] 
             
     def test_expand_to_packages_unary(self):
         # test unary
         test_dir = os.path.join(roslib.packages.get_pkg_dir('test_roslib'), 'test', 'stack_tests_unary')
 
         env = os.environ.copy()
-        env[roslib.rosenv.ROS_PACKAGE_PATH] = test_dir
+        env[rospkg.environment.ROS_PACKAGE_PATH] = test_dir
 
         from roslib.stacks import expand_to_packages      
         self.assertEquals((['foo'], []), expand_to_packages(['foo'], env=env))
@@ -268,7 +237,7 @@ class RoslibStacksTest(unittest.TestCase):
 
         test_dir = os.path.join(roslib.packages.get_pkg_dir('test_roslib'), 'test', 'stack_tests', 's1')
         env = os.environ.copy()
-        env[roslib.rosenv.ROS_PACKAGE_PATH] = test_dir
+        env[rospkg.environment.ROS_PACKAGE_PATH] = test_dir
 
         # REP 109: stack.xml has precedence over CMakeLists.txt, version is whitespace stripped
         self.assertEquals('1.6.0-manifest', roslib.stacks.get_stack_version('foo', env=env))
@@ -278,7 +247,7 @@ class RoslibStacksTest(unittest.TestCase):
         if 0:
             test_dir = os.path.join(roslib.packages.get_pkg_dir('test_roslib'), 'test', 'stack_tests_unary')
             env = os.environ.copy()
-            env[roslib.rosenv.ROS_PACKAGE_PATH] = test_dir
+            env[rospkg.environment.ROS_PACKAGE_PATH] = test_dir
 
 if __name__ == '__main__':
     rosunit.unitrun('test_roslib', 'test_stacks', RoslibStacksTest, coverage_packages=['roslib.stacks'])

@@ -37,6 +37,8 @@ from __future__ import print_function
 import roslib; roslib.load_manifest("rosdep")
 import roslib.stacks
 
+import rospkg
+
 import sys
 import os
 
@@ -107,7 +109,7 @@ def main():
 
     if not (command == "what_needs" or command == "where_defined" ): # package mode
         if options.rosdep_all:
-            rdargs = roslib.packages.list_pkgs()
+            rdargs = rospack.RosPack().list()
         
         (verified_packages, rejected_packages) = roslib.stacks.expand_to_packages(rdargs)
         valid_stacks = [s for s in roslib.stacks.list_stacks() if s in rdargs]

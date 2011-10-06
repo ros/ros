@@ -35,7 +35,6 @@
 from __future__ import print_function
 
 import roslib.rospack
-import roslib.stacks
 import roslib.manifest
 import roslib.os_detect
 import os
@@ -46,7 +45,8 @@ import tempfile
 import yaml
 import time
 
-  
+import rospkg
+
 import rosdep.base_rosdep
 import rosdep.debian as debian
 import rosdep.opensuse as opensuse
@@ -238,31 +238,33 @@ class RosdepLookupPackage:
 
 
         paths = set()
+        rospack = rospkg.RosPack()
+        rosstack = rospkg.RosStack()
         for p in rosdep_dependent_packages:
             stack = None
             try:
-                stack = roslib.stacks.stack_of(p)
-            except roslib.packages.InvalidROSPkgException as ex:
+                stack = rospack.stack_of(p)
+            except rospkg.ResourceNotFound as ex:
                 print("Failed to find stack for package [%s]"%p, file=sys.stderr)
             if stack:
                 try:
-                    paths.add( os.path.join(roslib.stacks.get_stack_dir(stack), "rosdep.yaml"))
+                    paths.add( os.path.join(rosstack.get_path(stack), "rosdep.yaml"))
                     if "ROSDEP_DEBUG" in os.environ:
-                        print("loading rosdeps from", os.path.join(roslib.stacks.get_stack_dir(stack), "rosdep.yaml"))
+                        print("loading rosdeps from", os.path.join(rosstack.get_path(stack), "rosdep.yaml"))
                 except AttributeError as ex:
                     print("Stack [%s] could not be found"%(stack))
                 for s in self.yaml_cache.get_rosstack_depends(stack):
                     try:
-                        paths.add( os.path.join(roslib.stacks.get_stack_dir(s), "rosdep.yaml"))
+                        paths.add( os.path.join(rosstack.get_path(s), "rosdep.yaml"))
                     except AttributeError as ex:
                         print("Stack [%s] dependency of [%s] could not be found"%(s, stack))
                         
             else:
                 try:
-                    paths.add( os.path.join(roslib.packages.get_pkg_dir(p), "rosdep.yaml"))
+                    paths.add( os.path.join(rospack.get_path(p), "rosdep.yaml"))
                     if "ROSDEP_DEBUG" in os.environ:
-                        print("Package fallback, no parent stack found for package %s: loading rosdeps from"%p, os.path.join(roslib.packages.get_pkg_dir(p), "rosdep.yaml"))
-                except roslib.packages.InvalidROSPkgException as ex:
+                        print("Package fallback, no parent stack found for package %s: loading rosdeps from"%p, os.path.join(rospack.get_path(p), "rosdep.yaml"))
+                except rospkg.ResourceNotFound as ex:
                     print("Failed to load rosdep.yaml for package [%s]:%s"%(p, ex), file=sys.stderr)
         for path in paths:
             yaml_in = self.parse_yaml(path)
@@ -271,7 +273,7 @@ class RosdepLookupPackage:
                 print("rosdep loading from file: %s got"%path, yaml_in)
 
         # Override with ros_home/rosdep.yaml if present
-        ros_home = roslib.rosenv.get_ros_home()
+        ros_home = rospkg.get_ros_home()
         path = os.path.join(ros_home, "rosdep.yaml")
         self._insert_map(self.parse_yaml(path), path, override=True)
 
@@ -453,7 +455,8 @@ class Rosdep:
 
     def what_needs(self, rosdep_args):
         packages = []
-        for p in roslib.packages.list_pkgs():
+        rospack = rospkg.RosPack()
+        for p in rospack.list():
             rosdeps_needed = self.get_rosdep0(p)
             matches = [r for r in rosdep_args if r in rosdeps_needed]
             for r in matches:
@@ -573,26 +576,27 @@ class Rosdep:
         for r in rosdeps:
             locations[r] = set()
 
-        path = os.path.join(roslib.rosenv.get_ros_home(), "rosdep.yaml")
+        rospack = rospkg.RosPack()
+
+        path = os.path.join(rospkg.get_ros_home(), "rosdep.yaml")
         rosdep_dict = self.yc.get_specific_rosdeps(path)
         for r in rosdeps:
             if r in rosdep_dict:
                 locations[r].add("Override:"+path)
             
-
-        for p in roslib.packages.list_pkgs():
-            path = os.path.join(roslib.packages.get_pkg_dir(p), "rosdep.yaml")
+        for p in rospack.list():
+            path = os.path.join(rospack.get_path(p), "rosdep.yaml")
             rosdep_dict = self.yc.get_specific_rosdeps(path)
             for r in rosdeps:
                 if r in rosdep_dict:
                     addendum = ""
-                    if roslib.stacks.stack_of(p):
+                    if rospack.stack_of(p):
                         addendum = "<<Unused due to package '%s' being in a stack.]]"%p
                     locations[r].add(">>" + path + addendum)
             
-
-        for s in roslib.stacks.list_stacks():
-            path = os.path.join(roslib.stacks.get_stack_dir(s), "rosdep.yaml")
+        rosstack = rospkg.RosStack()
+        for s in rosstack.list():
+            path = os.path.join(rosstack.get_path(s), "rosdep.yaml")
             rosdep_dict = self.yc.get_specific_rosdeps(path)
             for r in rosdeps:
                 if r in rosdep_dict:

@@ -94,27 +94,28 @@ def wait_for_service(service, timeout=None):
     @raise ROSException: if specified timeout is exceeded
     @raise ROSInterruptException: if shutdown interrupts wait
     """
+    master = rosgraph.Master(rospy.names.get_caller_id())
     def contact_service(resolved_name, timeout=10.0):
-        code, _, uri = master.lookupService(rospy.names.get_caller_id(), resolved_name)
-        if False and code == 1:
+        try:
+            uri = master.lookupService(resolved_name)
+        except rosgraph.MasterException:
+            return False
+
+        addr = rospy.core.parse_rosrpc_uri(uri)
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)            
+        try:
+            # we always want to timeout just in case we're connecting
+            # to a down service.
+            s.settimeout(timeout)
+            s.connect(addr)
+            h = { 'probe' : '1', 'md5sum' : '*',
+                  'callerid' : rospy.core.get_caller_id(),
+                  'service': resolved_name }
+            roslib.network.write_ros_handshake_header(s, h)
             return True
-        elif True and code == 1:
-            # disabling for now as this is causing socket.error 22 "Invalid argument" on OS X
-            addr = rospy.core.parse_rosrpc_uri(uri)
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)            
-            try:
-                # we always want to timeout just in case we're connecting
-                # to a down service.
-                s.settimeout(timeout)
-                s.connect(addr)
-                h = { 'probe' : '1', 'md5sum' : '*',
-                      'callerid' : rospy.core.get_caller_id(),
-                      'service': resolved_name }
-                roslib.network.write_ros_handshake_header(s, h)
-                return True
-            finally:
-                if s is not None:
-                    s.close()
+        finally:
+            if s is not None:
+                s.close()
     if timeout == 0.:
         raise ValueError("timeout must be non-zero")
     resolved_name = rospy.names.resolve_name(service)

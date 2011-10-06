@@ -33,15 +33,19 @@
 #
 # Revision $Id$
 
+from __future__ import print_function
+
 import roslib; roslib.load_manifest('roscreate')
 
 NAME='roscreate-pkg'
 
 import os
 import sys
-import roslib.packages
 
-from roscreate.core import read_template, author_name, on_ros_path
+import roslib.names
+
+from roscreate.core import read_template, author_name
+from rospkg import on_ros_path, RosPack, ResourceNotFound
 
 def get_templates():
     templates = {}
@@ -57,21 +61,21 @@ def instantiate_template(template, package, brief, description, author, depends)
 def create_package(package, author, depends, uses_roscpp=False, uses_rospy=False):
     p = os.path.abspath(package)
     if os.path.exists(p):
-        print >> sys.stderr, "%s already exists, aborting"%p
+        print("%s already exists, aborting"%p, file=sys.stderr)
         sys.exit(1)
 
     os.makedirs(p)
-    print "Created package directory", p
+    print("Created package directory", p)
         
     if uses_roscpp:
         # create package/include/package and package/src for roscpp code
         cpp_path = os.path.join(p, 'include', package)
         try:        
             os.makedirs(cpp_path)
-            print "Created include directory", cpp_path
+            print("Created include directory", cpp_path)
             cpp_path = os.path.join(p, 'src')
             os.makedirs(cpp_path)
-            print "Created cpp source directory", cpp_path
+            print("Created cpp source directory", cpp_path)
         except:
             # file exists
             pass
@@ -80,7 +84,7 @@ def create_package(package, author, depends, uses_roscpp=False, uses_rospy=False
         py_path = os.path.join(p, 'src')
         try:
             os.makedirs(py_path)
-            print "Created python source directory", py_path
+            print("Created python source directory", py_path)
         except:
             # file exists
             pass
@@ -88,14 +92,11 @@ def create_package(package, author, depends, uses_roscpp=False, uses_rospy=False
     templates = get_templates()
     for filename, template in templates.iteritems():
         contents = instantiate_template(template, package, package, package, author, depends)
-        try:
-            p = os.path.abspath(os.path.join(package, filename))
-            f = open(p, 'w')
+        p = os.path.abspath(os.path.join(package, filename))
+        with open(p, 'w') as f:
             f.write(contents)
-            print "Created package file", p
-        finally:
-            f.close()
-    print "\nPlease edit %s/manifest.xml and mainpage.dox to finish creating your package"%package
+            print("Created package file", p)
+    print("\nPlease edit %s/manifest.xml and mainpage.dox to finish creating your package"%package)
 
 def roscreatepkg_main():
     from optparse import OptionParser    
@@ -112,17 +113,18 @@ def roscreatepkg_main():
     depends = args[1:]
     uses_roscpp = 'roscpp' in depends
     uses_rospy = 'rospy' in depends
-    
+
+    rospack = RosPack()
     for d in depends:
         try:
-            roslib.packages.get_pkg_dir(d)
-        except roslib.packages.InvalidROSPkgException:
-            print >> sys.stderr, "ERROR: dependency [%s] cannot be found"%d
+            rospack.get_path(d)
+        except ResourceNotFound:
+            print("ERROR: dependency [%s] cannot be found"%d, file=sys.stderr)
             sys.exit(1)
     depends = ''.join(['  <depend package="%s"/>\n'%d for d in depends])
 
     if not on_ros_path(os.getcwd()):
-        print >> sys.stderr, '!'*80+"\nWARNING: current working directory is not on ROS_PACKAGE_PATH!\nPlease update your ROS_PACKAGE_PATH environment variable.\n"+'!'*80
+        print('!'*80+"\nWARNING: current working directory is not on ROS_PACKAGE_PATH!\nPlease update your ROS_PACKAGE_PATH environment variable.\n"+'!'*80, file=sys.stderr)
     create_package(package, author_name(), depends, uses_roscpp=uses_roscpp, uses_rospy=uses_rospy)
 
 if __name__ == "__main__":

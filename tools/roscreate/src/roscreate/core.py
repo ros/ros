@@ -33,27 +33,17 @@
 #
 # Revision $Id$
 
+from __future__ import print_function
+
 import os
 import sys
 
-import roslib.rosenv
 import roslib.packages
 
 def print_warning(msg):
     """print warning to screen (bold red)"""
-    print >> sys.stderr, '\033[31m%s\033[0m'%msg
+    print('\033[31m%s\033[0m'%msg, file=sys.stderr)
     
-def on_ros_path(p):
-    """
-    @param p: path
-    @type  p: str
-    @return: True if p is on the ROS path (ROS_ROOT, ROS_PACKAGE_PATH)
-    """
-    pkg = os.path.realpath(roslib.rosenv.resolve_path(p))
-    paths = [p for p in roslib.packages.get_package_paths()]
-    paths = [os.path.realpath(roslib.rosenv.resolve_path(x)) for x in paths]
-    return bool([x for x in paths if pkg == x or pkg.startswith(x + os.sep)])
-
 # utility to compute logged in user name
 def author_name():
     import getpass
@@ -70,10 +60,7 @@ def author_name():
 
 def read_template(tmplf):
     p = os.path.join(roslib.packages.get_pkg_dir('roscreate'), tmplf)
-    f = open(p, 'r')
-    try:
+    with open(p, 'r') as f:
         t = f.read()
-    finally:
-        f.close()
     return t
     

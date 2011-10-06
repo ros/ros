@@ -40,7 +40,7 @@ The focus of this module is on supporting the command-line tool. The
 code API of this module is *not* stable.
 """
 
-from __future__ import with_statement
+from __future__ import print_function
 import roslib; roslib.load_manifest('roscreate')
 
 NAME='roscreate-stack'
@@ -52,7 +52,8 @@ import roslib.packages
 import roslib.stacks
 import roslib.stack_manifest
 
-from roscreate.core import read_template, author_name, print_warning, on_ros_path
+from roscreate.core import read_template, author_name, print_warning
+from rospkg import on_ros_path
 
 def get_templates():
     """
@@ -98,7 +99,7 @@ def create_stack(stack, stack_dir, stack_manifest, author, depends, licenses, sh
     """
 
     if show_deps:
-      print ''.join(['  <depend stack="%s"/> <!-- %s --> \n'%(s, ', '.join(set(pkgs))) for s, pkgs in depends.iteritems()])
+      print(''.join(['  <depend stack="%s"/> <!-- %s --> \n'%(s, ', '.join(set(pkgs))) for s, pkgs in depends.iteritems()]))
       return
     
     # load existing properties
@@ -119,7 +120,7 @@ def create_stack(stack, stack_dir, stack_manifest, author, depends, licenses, sh
     
     p = os.path.abspath(stack_dir)
     if not os.path.exists(p):
-        print "Creating stack directory", p
+        print("Creating stack directory", p)
         os.makedirs(p)
 
     templates = get_templates()
@@ -127,10 +128,10 @@ def create_stack(stack, stack_dir, stack_manifest, author, depends, licenses, sh
         contents = instantiate_template(template, stack, brief, description, author, depends, licenses, review)
         p = os.path.abspath(os.path.join(stack_dir, filename))
         if not os.path.exists(filename) or filename == 'stack.xml':
-            print "Creating stack file", p
+            print("Creating stack file", p)
             with open(p, 'w') as f:
                 f.write(contents.encode('utf-8'))
-    print "\nPlease edit %s/stack.xml to finish creating your stack"%stack
+    print("\nPlease edit %s/stack.xml to finish creating your stack"%stack)
 
 def compute_stack_depends_and_licenses(stack_dir):
     """
@@ -202,13 +203,13 @@ def roscreatestack_main():
     stack = os.path.basename(os.path.abspath(stack_dir))
 
     if not on_ros_path(stack_dir):
-        print >> sys.stderr, "ERROR: roscreate-stack only work in directories in ROS_PACKAGE_PATH\nPlease update your ROS_PACKAGE_PATH environment variable."
+        print("ERROR: roscreate-stack only work in directories in ROS_PACKAGE_PATH\nPlease update your ROS_PACKAGE_PATH environment variable.", file=sys.stderr)
         sys.exit(1)
     
     try:
         depends, licenses = compute_stack_depends_and_licenses(stack_dir)
-    except roslib.packages.InvalidROSPkgException, e:
-        print >> sys.stderr, str(e)
+    except roslib.packages.InvalidROSPkgException as e:
+        print(str(e), file=sys.stderr)
         sys.exit(1)
 
     # defaults
@@ -221,7 +222,7 @@ def roscreatestack_main():
       if os.path.exists(stack_xml_path):
           import shutil
           stack_xml_path_bak = os.path.join(stack_dir, 'stack.xml.bak')
-          print 'Backing up existing stack.xml to %s'%(stack_xml_path_bak)
+          print('Backing up existing stack.xml to %s'%(stack_xml_path_bak))
           shutil.copyfile(stack_xml_path, stack_xml_path_bak)
 
           # load existing stack.xml properties

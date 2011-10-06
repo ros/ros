@@ -372,10 +372,6 @@ d:
         self.assertEquals(val, roundtrip(val))
         
 
-    def test_ServiceDefinition(self):
-        from roslib.message import ServiceDefinition
-        self.assert_(isinstance(ServiceDefinition(), ServiceDefinition))
-
     def test_check_type(self):
         # check_type() currently does not do harder checks like
         # type-checking class types.  as soon as it does, it will need

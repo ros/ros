@@ -44,7 +44,7 @@ import logging
 import time
 import traceback
 
-import roslib.rosenv
+import rosgraph
 import roslib.xmlrpc
 
 from ..names import _set_caller_id
@@ -85,7 +85,7 @@ def start_node(environ, resolved_name, master_uri=None, port=None):
     """
     init_tcpros()
     if not master_uri:
-        master_uri = roslib.rosenv.get_master_uri()
+        master_uri = rosgraph.get_master_uri()
     if not master_uri:
         master_uri = DEFAULT_MASTER_URI
 

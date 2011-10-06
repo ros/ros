@@ -38,5 +38,6 @@ test_results_dir.py simply prints the directory that rosunit/rostest
 results are stored in.
 """
 
-import roslib.rosenv
-print roslib.rosenv.get_test_results_dir()
+from __future__ import print_function
+import rospkg
+print(rospkg.get_test_results_dir())

@@ -46,7 +46,6 @@ import traceback
 
 import rospy.exceptions
 
-import roslib.rosenv
 import roslib.rostime
 
 ## /time support. This hooks into the rospy Time representation and

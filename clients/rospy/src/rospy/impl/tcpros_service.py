@@ -43,7 +43,8 @@ import logging
 import time
 import traceback
 
-import roslib.scriptutil 
+import roslib.message
+import rosgraph
 
 from rospy.exceptions import TransportInitError, TransportTerminated, ROSException, ROSInterruptException
 from rospy.service import _Service, ServiceException
@@ -117,7 +118,6 @@ def wait_for_service(service, timeout=None):
     if timeout == 0.:
         raise ValueError("timeout must be non-zero")
     resolved_name = rospy.names.resolve_name(service)
-    master = roslib.scriptutil.get_master()    
     first = False
     if timeout:
         timeout_t = time.time() + timeout
@@ -449,10 +449,11 @@ class ServiceProxy(_Service):
         if 1: #always do lookup for now, in the future we need to optimize
             try:
                 try:
-                    code, msg, self.uri = roslib.scriptutil.get_master().lookupService(rospy.names.get_caller_id(), self.resolved_name)
-                except:
+                    master = rosgraph.Master(rospy.names.get_caller_id())
+                    self.uri = master.lookupService(self.resolved_name)
+                except socket.error:
                     raise ServiceException("unable to contact master")
-                if code != 1:
+                except rosgraph.MasterError:
                     logger.error("[%s]: lookup service failed with message [%s]", self.resolved_name, msg)
                     raise ServiceException("service [%s] unavailable"%self.resolved_name)
                 

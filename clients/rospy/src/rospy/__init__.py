@@ -39,8 +39,6 @@ See U{http://ros.org/wiki/rospy}
 @author: Ken Conley (kwc)
 """
 
-from roslib.rosenv import ROS_ROOT, ROS_MASTER_URI, ROS_HOSTNAME, ROS_NAMESPACE, ROS_PACKAGE_PATH, ROS_LOG_DIR
-
 # import symbols into rospy namespace
 # NOTE: there are much better ways to configure python module
 # dictionaries, but the rospy codebase isn't quite in shape for that

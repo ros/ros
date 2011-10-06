@@ -56,8 +56,8 @@ try:
 except ImportError:
     import xmlrpclib as xmlrpcclient #Python 2.x
 
+import rospkg
 
-import roslib.rosenv 
 import roslib.roslogging
 
 import rospy.exceptions
@@ -242,9 +242,9 @@ def get_ros_root(required=False, env=None):
     """
     if env is None:
         env = os.environ
-    ros_root = env.get(roslib.rosenv.ROS_ROOT, None)
+    ros_root = rospkg.get_ros_root()
     if required and not ros_root:
-        raise rospy.exceptions.ROSException('%s is not set'%roslib.rosenv.ROS_ROOT)
+        raise rospy.exceptions.ROSException('%s is not set'%rospkg.environment.ROS_ROOT)
     return ros_root
 
 

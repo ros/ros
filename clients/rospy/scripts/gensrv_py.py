@@ -71,7 +71,7 @@ def srv_generator(package, name, spec):
 
 class SrvGenerator(genutil.Generator):
     def __init__(self):
-        super(SrvGenerator, self).__init__('gensrv_py', 'services', roslib.srvs.EXT, 'srv', SrvGenerationException)
+        super(SrvGenerator, self).__init__('gensrv_py', 'services', '.srv', 'srv', SrvGenerationException)
 
     def generate(self, package, f, outdir):
         verbose = True
@@ -109,5 +109,4 @@ class SrvGenerator(genutil.Generator):
         return outfile
     
 if __name__ == "__main__":
-    roslib.srvs.set_verbose(False)
     genutil.genmain(sys.argv, SrvGenerator())

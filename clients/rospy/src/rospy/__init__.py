@@ -125,7 +125,7 @@ __all__ = [
     'resolve_name',
     'remap_name',
     'Time', 'Duration', 'get_rostime', 'get_time',
-    'ServiceException', 'ServiceDefinition',
+    'ServiceException', 
     'Service', 'ServiceProxy',
     'SubscribeListener', 'Publisher', 'Subscriber',
     ]

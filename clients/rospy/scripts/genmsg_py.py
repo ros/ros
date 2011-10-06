@@ -62,7 +62,7 @@ class GenmsgPackage(genutil.Generator):
     """
     def __init__(self):
         super(GenmsgPackage, self).__init__(
-            'genmsg_py', 'messages', roslib.msgs.EXT, roslib.packages.MSG_DIR, roslib.genpy.MsgGenerationException)
+            'genmsg_py', 'messages', '.msg', 'msg', roslib.genpy.MsgGenerationException)
 
     def generate(self, package, f, outdir):
         """

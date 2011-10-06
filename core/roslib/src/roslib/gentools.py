@@ -71,7 +71,7 @@ def _add_msgs_depends(rospack, spec, deps, package_context):
     @type  deps: [str]
     @raise KeyError for invalid dependent types due to missing package dependencies.
     """
-    valid_packages = ['', package_context] + rospkg.get_depends(package_context, implicit=True)
+    valid_packages = ['', package_context] + rospack.get_depends(package_context, implicit=True)
     for t in spec.types:
         t = roslib.msgs.base_msg_type(t)
         if not roslib.msgs.is_builtin(t):

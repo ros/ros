@@ -34,10 +34,11 @@
 # As rostopic is used in tab completion, we manually calculate the
 # sys.path to reduce load latency
 
-import os, sys, roslib.stacks
-d = roslib.stacks.get_stack_dir('ros_comm')
+import os, sys, rospkg
+rosstack = rospkg.RosStack()
+d = rosstack.get_path('ros_comm')
 tools_d = os.path.join(d, 'tools')
-paths = [os.path.join(tools_d, p, 'src') for p in ('rosbag', 'rosmsg', 'rosservice', 'rostopic')]
+paths = [os.path.join(tools_d, p, 'src') for p in ('rosbag', 'rosmsg', 'rosservice', 'rostopic', 'rosgraph')]
 paths.append(os.path.join(d, 'clients', 'rospy', 'src'))
 paths.append(os.path.join(d, 'messages', 'rosgraph_msgs', 'src'))
 paths.append(os.path.join(d, 'messages', 'std_msgs', 'src'))

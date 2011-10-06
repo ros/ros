@@ -42,9 +42,7 @@ import sys
 import os
 import getopt
 
-import roslib.exceptions
 import roslib.packages
-import roslib.rosenv
 
 MANIFEST_FILE = 'manifest.xml'
 
@@ -114,7 +112,7 @@ def manifest_file(package, required=True, env=None):
     # path isn't setup correctly.
     if env is None:
         env = os.environ
-    d = roslib.packages.get_pkg_dir(package, required, ros_root=env[roslib.rosenv.ROS_ROOT]) 
+    d = roslib.packages.get_pkg_dir(package, required, ros_root=env['ROS_ROOT']) 
     return _manifest_file_by_dir(d, required=required, env=env)
 
 def load_manifest(package):

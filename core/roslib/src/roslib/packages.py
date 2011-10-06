@@ -49,16 +49,16 @@ import string
 
 from subprocess import Popen, PIPE
 
+import rospkg
+
 import roslib.manifest
-import roslib.names
-import roslib.rosenv
 import roslib.os_detect
 
 SRC_DIR = 'src'
 
 # aliases
-ROS_PACKAGE_PATH = roslib.rosenv.ROS_PACKAGE_PATH
-ROS_ROOT = roslib.rosenv.ROS_ROOT
+ROS_PACKAGE_PATH = rospkg.environment.ROS_PACKAGE_PATH
+ROS_ROOT = rospkg.environment.ROS_ROOT
 
 class ROSPkgException(Exception):
     """
@@ -92,31 +92,6 @@ def is_pkg_dir(d):
     @rtype: bool
     """
     return os.path.isfile(os.path.join(d, MANIFEST_FILE))
-
-def get_package_paths(ros_root_required=True, env=None):
-    """
-    Get the paths to search for packages
-    
-    @param ros_root_required: if True, raise exception if
-    environment is invalid (i.e. ROS_ROOT is not set properly)
-    @type  ros_root_required: bool
-    @param env: override os.environ dictionary
-    @type  env: dict
-    @raise roslib.rosenv.ROSEnvException: if ros_root_required is True
-    and ROS_ROOT is not set
-    """
-    if env is None:
-        env = os.environ
-    rpp = roslib.rosenv.get_ros_package_path(required=False, env=env)
-    if rpp:
-        paths = [x for x in rpp.split(os.pathsep) if x]
-    else:
-        paths = []
-    rr_path = roslib.rosenv.get_ros_root(required=ros_root_required, env=env)
-    if rr_path:
-        return paths + [rr_path]
-    else:
-        return paths
 
 def get_dir_pkg(d):
     """
@@ -170,7 +145,7 @@ def get_pkg_dir(package, required=True, ros_root=None, ros_package_path=None):
     try:
         penv = os.environ.copy()
         if ros_root:
-            ros_root = roslib.rosenv.resolve_path(ros_root)
+            ros_root = rospkg.environment._resolve_path(ros_root)
             penv[ROS_ROOT] = ros_root
         elif ROS_ROOT in os.environ:
             # record setting for _pkg_dir_cache
@@ -184,7 +159,7 @@ def get_pkg_dir(package, required=True, ros_root=None, ros_package_path=None):
             rospack = os.path.join(os.environ['ROS_BUILD'], 'bin', 'rospack')
 
         if ros_package_path is not None:
-            ros_package_path = roslib.rosenv.resolve_paths(ros_package_path)
+            ros_package_path = rospkg.environment._resolve_paths(ros_package_path)
             penv[ROS_PACKAGE_PATH] = ros_package_path
         elif ROS_PACKAGE_PATH in os.environ:
             # record setting for _pkg_dir_cache
@@ -219,7 +194,7 @@ def get_pkg_dir(package, required=True, ros_root=None, ros_package_path=None):
         elif not os.path.isdir(pkg_dir):
             raise InvalidROSPkgException("Package %s is invalid: file [%s] is in the way"%(package, pkg_dir))
         # don't update cache: this should only be updated from
-        # rospack_cache as it will corrupt list_pkgs() otherwise.
+        # rospack_cache as it will corrupt package list otherwise.
         #_pkg_dir_cache[package] = (pkg_dir, ros_root, ros_package_path)
         return pkg_dir
     except OSError as e:
@@ -338,7 +313,7 @@ def _read_rospack_cache(cache, ros_root, ros_package_path):
     environment.
     
     @param cache: empty dictionary to store package list in. 
-        If no cache argument provided, list_pkgs() will use internal _pkg_dir_cache
+        If no cache argument provided, will use internal _pkg_dir_cache
         and will return cached answers if available.
         The format of the cache is {package_name: dir_path, ros_root, ros_package_path}.
     @type  cache: {str: str, str, str}
@@ -350,7 +325,7 @@ def _read_rospack_cache(cache, ros_root, ros_package_path):
     @rtype: bool
     """
     try:
-        with open(os.path.join(roslib.rosenv.get_ros_home(), 'rospack_cache')) as f:
+        with open(os.path.join(rospkg.get_ros_home(), 'rospack_cache')) as f:
             for l in f.readlines():
                 l = l[:-1]
                 if not len(l):
@@ -369,40 +344,6 @@ def _read_rospack_cache(cache, ros_root, ros_package_path):
     except:
         pass
     
-def list_pkgs(cache=None, env=None):
-    """
-    List packages in ROS_ROOT and ROS_PACKAGE_PATH.
-
-    If no cache and pkg_dirs arguments are provided, list_pkgs() will
-    use internal _pkg_dir_cache and will return cached answers if
-    available.
-
-    @param cache: Empty dictionary to store package list in.     
-        The format of the cache is {package_name: dir_path, ros_root, ros_package_path}.
-    @type  cache: {str: str, str, str}
-    @return: complete list of package names in ROS environment
-    @rtype: [str]
-    """
-    pkg_dirs = get_package_paths(True, env=env)
-    if cache is None:
-        # if cache is not specified, we use global cache instead
-
-        # TODO: this cache can be out-of-date if rospack has not
-        # been run recently. Figure out correct approach for
-        # out-of-date cache.
-            
-        # TODO: we don't have any logic go populate user-specified
-        # cache in most optimal way
-        cache = _pkg_dir_cache
-        if cache:
-            return list(cache.keys()) #py3k
-        if _update_rospack_cache(env=env):
-            return list(cache.keys()) #py3k
-    packages = []
-    for pkg_root in pkg_dirs:
-        list_pkgs_by_path(pkg_root, packages, cache=cache, env=env)
-    return packages
-
 def list_pkgs_by_path(path, packages=None, cache=None, env=None):
     """
     List ROS packages within the specified path.

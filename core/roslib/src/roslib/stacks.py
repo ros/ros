@@ -46,7 +46,11 @@ import re
 
 import roslib.packages
 import roslib.stack_manifest
-from roslib.rosenv import ROS_ROOT, ROS_PACKAGE_PATH
+
+import rospkg
+
+ROS_ROOT=rospkg.environment.ROS_ROOT
+ROS_PACKAGE_PATH=rospkg.environment.ROS_PACKAGE_PATH
 
 STACK_FILE = 'stack.xml'
 ROS_STACK = 'ros'
@@ -74,49 +78,6 @@ def stack_of(pkg, env=None):
             return os.path.basename(d)
         d = os.path.dirname(d)
         
-def packages_of(stack, env=None):
-    """
-    @param env: override environment variables
-    @type  env: {str: str}
-    @return: name of packages that are part of stack
-    @rtype: [str]
-    @raise InvalidROSStackException: if stack cannot be located
-    @raise ValueError: if stack name is invalid
-    """
-    # record settings for error messages
-    if env is None:
-        env = os.environ
-    ros_root = env[ROS_ROOT]
-    ros_package_path = env.get(ROS_PACKAGE_PATH, '')
-    
-    if not stack:
-        raise ValueError("stack name not specified")
-    stack_dir = get_stack_dir(stack, env=env)
-    if stack_dir is None:
-        raise InvalidROSStackException("Cannot locate installation of stack %s. ROS_ROOT[%s] ROS_PACKAGE_PATH[%s]"%(stack, ros_root,ros_package_path))
-    # unary stack
-    if roslib.packages.is_pkg_dir(stack_dir):
-        return [stack]
-    packages = []
-    l = [os.path.join(stack_dir, d) for d in os.listdir(stack_dir)]
-    # kwc: this really is just a 1-directory reimplementation of
-    # list_pkgs(). Should merge implementations, though have to deal
-    # with issues of cache, etc...
-    while l:
-        d = l.pop()
-        if os.path.isdir(d):
-            if roslib.packages.is_pkg_dir(d):
-                p = os.path.basename(d)
-                # this is sometimes true if we've descended into a build directory
-                if not p in packages:
-                    packages.append(p)
-            elif os.path.exists(os.path.join(d, 'rospack_nosubdirs')):
-                # don't descend
-                pass
-            elif os.path.basename(d) not in ['build', '.svn', '.git']: #recurse
-                l.extend([os.path.join(d, e) for e in os.listdir(d)])
-    return packages
-    
 def get_stack_dir(stack, env=None):
     """
     Get the directory of a ROS stack. This will initialize an internal
@@ -192,7 +153,7 @@ def _update_stack_cache(force=False, env=None):
     _dir_cache.clear()
     _dir_cache_marker = ros_root, ros_package_path
 
-    pkg_dirs = roslib.packages.get_package_paths(env=env)
+    pkg_dirs = rospkg.environment.compute_package_paths(ros_root, ros_package_path)
     # ros is assumed to be at ROS_ROOT
     if os.path.exists(os.path.join(ros_root, 'stack.xml')):
         _dir_cache['ros'] = ros_root
@@ -240,7 +201,7 @@ def list_stacks_by_path(path, stacks=None, cache=None):
     """
     if stacks is None:
         stacks = []
-    MANIFEST_FILE = roslib.packages.MANIFEST_FILE
+    MANIFEST_FILE = rospkg.MANIFEST_FILE
     basename = os.path.basename
     for d, dirs, files in os.walk(path, topdown=True):
         if STACK_FILE in files:
@@ -279,24 +240,11 @@ def expand_to_packages(names, env=None):
     names for which no matching stack or package was found. Lists may have duplicates.
     @rtype: ([str], [str])
     """
-    if type(names) not in [tuple, list]:
-        raise ValueError("names must be a list of strings")
-
-    # do full package list first. This forces an entire tree
-    # crawl. This is less efficient for a small list of names, but
-    # much more efficient for many names.
-    package_list = roslib.packages.list_pkgs(env=env)
-    valid = []
-    invalid = []
-    for n in names:
-        if not n in package_list:
-            try:
-                valid.extend(roslib.stacks.packages_of(n, env=env))
-            except roslib.stacks.InvalidROSStackException as e:
-                invalid.append(n)
-        else:
-            valid.append(n)
-    return valid, invalid
+    if env is None:
+        env = os.environ
+    rospack = rospkg.RosPack(ros_root=rospkg.get_ros_root(env), ros_package_path=rospkg.get_ros_package_path(env))
+    rosstack = rospkg.RosStack(ros_root=rospkg.get_ros_root(env), ros_package_path=rospkg.get_ros_package_path(env))
+    return rospkg.expand_to_packages(names, rospack, rosstack)
 
 def get_stack_version(stack, env=None):
     """

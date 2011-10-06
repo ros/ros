@@ -163,32 +163,6 @@ def get_master_uri(required=True, env=None, argv=None):
         if required:
             raise ROSEnvException("%s has not been configured"%ROS_MASTER_URI)
         
-def resolve_path(p):
-    """
-    @param path: path string
-    @type  path: str
-    Catch-all utility routine for fixing ROS environment variables that
-    are a single path (e.g. ROS_ROOT).  Currently this just expands
-    tildes to home directories, but in the future it may encode other
-    behaviors.
-    """
-    if p and p[0] == '~':
-        return os.path.expanduser(p)
-    return p
-    
-def resolve_paths(paths):
-    """
-    @param paths: path string with OS-defined separator (i.e. ':' for Linux)
-    @type  paths: str
-    Catch-all utility routine for fixing ROS environment variables that
-    are paths (e.g. ROS_PACKAGE_PATH).  Currently this just expands
-    tildes to home directories, but in the future it may encode other
-    behaviors.
-    """
-    splits = [p for p in paths.split(os.pathsep) if p]
-    return os.pathsep.join([resolve_path(p) for p in splits])
-
-
 def get_ros_home(env=None):
     """
     Get directory location of '.ros' directory (aka ROS home).
@@ -274,19 +248,3 @@ def makedirs_with_parent_perms(p):
             os.chown(p, s.st_uid, s.st_gid)
         if s.st_mode != s2.st_mode:
             os.chmod(p, s.st_mode)    
-
-def on_ros_path(p):
-    """
-    Check to see if filesystem path is on paths specified in ROS
-    environment (ROS_ROOT, ROS_PACKAGE_PATH).
-
-    New in ROS 1.2.
-    
-    @param p: path
-    @type  p: str
-    @return: True if p is on the ROS path (ROS_ROOT, ROS_PACKAGE_PATH)
-    """
-    pkg = os.path.realpath(resolve_path(p))
-    paths = [p for p in roslib.packages.get_package_paths()]
-    paths = [os.path.realpath(resolve_path(x)) for x in paths]
-    return bool([x for x in paths if pkg == x or pkg.startswith(x + os.sep)])

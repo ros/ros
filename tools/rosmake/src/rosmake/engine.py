@@ -36,10 +36,11 @@ import re
 import sys
 import subprocess
 import time
+
+import rospkg
+
 import roslib
 import roslib.rospack
-import roslib.rosenv
-import roslib.stacks
 import threading
 import traceback
 import signal
@@ -64,6 +65,32 @@ def make_command():
     @rtype: str
     """
     return os.environ.get("MAKE", "make")
+
+# this is a copy of the roslogging utility. it's been moved here as it is a common
+# routine for programs using accessing ROS directories
+def makedirs_with_parent_perms(p):
+    """
+    Create the directory using the permissions of the nearest
+    (existing) parent directory. This is useful for logging, where a
+    root process sometimes has to log in the user's space.
+    @param p: directory to create
+    @type  p: str
+    """    
+    p = os.path.abspath(p)
+    parent = os.path.dirname(p)
+    # recurse upwards, checking to make sure we haven't reached the
+    # top
+    if not os.path.exists(p) and p and parent != p:
+        makedirs_with_parent_perms(parent)
+        s = os.stat(parent)
+        os.mkdir(p)
+
+        # if perms of new dir don't match, set anew
+        s2 = os.stat(p)
+        if s.st_uid != s2.st_uid or s.st_gid != s2.st_gid:
+            os.chown(p, s.st_uid, s.st_gid)
+        if s.st_mode != s2.st_mode:
+            os.chmod(p, s.st_mode)    
 
 class Printer:
    # storage for the instance reference
@@ -284,11 +311,6 @@ class RosMakeAll:
     def update_status(self, argument, start_times, right):
         self.printer.rosmake_cache_info(argument, start_times, right)
 
-    def get_path(self, package):
-        if not package in self.paths:
-            self.paths[package] = roslib.packages.get_pkg_dir(package)
-        return self.paths[package]
-        
     def check_rosdep(self, packages):
         failed_rosdeps = []
         try:
@@ -325,9 +347,9 @@ class RosMakeAll:
         for d in self.dependency_tracker.get_deps_1(p):
             self.build_or_recurse(d)
         try: # append it ot the list only if present
-          self.get_path(p)
+          self.rospack.get_path(p)
           self.build_list.append(p)
-        except roslib.packages.InvalidROSPkgException as ex:
+        except rospkg.ResourceNotFound as ex:
           if not self.robust_build:
             self.printer.print_all("Exiting due to missing package: %s"%ex)
             sys.exit(-1)
@@ -388,7 +410,7 @@ class RosMakeAll:
         elif "ROS_PARALLEL_JOBS" not in os.environ: #if no environment setup and no args fall back to # cpus
             local_env['ROS_PARALLEL_JOBS'] = "-l%d" % parallel_build.num_cpus()
         local_env['SVN_CMDLINE'] = "svn --non-interactive"
-        cmd = ["bash", "-c", "cd %s && %s "%(self.get_path(package), make_command()) ] #UNIXONLY
+        cmd = ["bash", "-c", "cd %s && %s "%(self.rospack.get_path(package), make_command()) ] #UNIXONLY
         if argument:
             cmd[-1] += argument
         self.printer.print_full_verbose (cmd)
@@ -463,7 +485,7 @@ class RosMakeAll:
                 return_string += why
                 return(error, return_string)
             return (True, return_string) # this means that we didn't error in any case above
-        except roslib.packages.InvalidROSPkgException as ex:
+        except rospkg.ResourceNotFound as ex:
             with self._result_lock:
                 self.result[argument][p] = False
             self.printer.print_verbose ("[SKIP] Package not found\n")
@@ -478,7 +500,7 @@ class RosMakeAll:
 
         std_out_filename = os.path.join(package_log_dir, log_type + "_output.log")
         if not os.path.exists (package_log_dir):
-            roslib.rosenv.makedirs_with_parent_perms(package_log_dir)
+            makedirs_with_parent_perms(package_log_dir)
         with open(std_out_filename, 'w') as stdout_file:
             stdout_file.write(stdout)
             print_string = "Output from build of package %s written to:\n[ rosmake ]    %s"%(package, std_out_filename)
@@ -627,22 +649,6 @@ class RosMakeAll:
                     return False
         return True
             
-        # The check for presence doesn't check for updates
-        #if os.path.exists(os.path.join(os.environ["ROS_ROOT"], "bin/rospack")):
-        #    return True
-        #else:
-        #    print "Rosmake detected that rospack was not built.  Building it for you because it is required."
-        #    return subprocess.call(["make", "-C", os.path.join(os.environ["ROS_ROOT"], "tools/rospack")])
-
-
-
-    def is_rosout_built(self):
-        """
-        @return: True if rosout package has been built
-        @rtype: bool
-        """
-        return os.path.exists(os.path.join(roslib.packages.get_pkg_dir("rosout"), "rosout"))
-            
 
     def main(self):
         """
@@ -713,13 +719,15 @@ class RosMakeAll:
 
         options, args = parser.parse_args()
 
-
+        # TODO: retest whther this logic is necessary now that we are using rospkg
         # force a rebuild of the package cache at the top                
         cmd = ["rospack", "profile"]
         command_line = subprocess.Popen(cmd, stdout=subprocess.PIPE,  stderr=subprocess.STDOUT)
         (pstd_out, pstd_err) = command_line.communicate() # pstd_err should be None due to pipe above          
-        # both above and below are necessary for "roscreate-pkg foo && rosmake foo" to work
-        roslib.packages._invalidate_cache(roslib.packages._pkg_dir_cache)
+        # above is necessary for "roscreate-pkg foo && rosmake foo" to work
+
+        self.rospack = rospack = rospkg.RosPack()
+        self.rosstack = rosstack = rospkg.RosStack()
 
         testing = False
         building = True
@@ -752,10 +760,11 @@ class RosMakeAll:
                 self.printer.duration = 1.0/float(options.status_update_rate)
             else:
                 self.printer.duration = 0
+
         packages = []
         #load packages from arguments
         if options.build_all:
-            packages = roslib.packages.list_pkgs()
+            packages = rospack.list()
             self.printer.print_all( "Building all packages")
         else:      # no need to extend if all already selected   
             if options.buildtest:
@@ -771,28 +780,24 @@ class RosMakeAll:
         if len(packages) == 0 and len(args) == 0:
             p = os.path.basename(os.path.abspath('.'))
             try:
-              if (os.path.samefile(roslib.packages.get_pkg_dir(p), '.')):
+              if os.path.samefile(rospack.get_path(p), '.'):
                 packages = [p]
                 self.printer.print_all( "No package specified.  Building %s"%packages)
               else:
                 self.printer.print_all("No package selected and the current directory is not the correct path for package '%s'."%p)
                 
-            except roslib.packages.InvalidROSPkgException as ex:
+            except rospkg.ResourceNotFound as ex:
                 try:
-                    stack_dir = roslib.stacks.get_stack_dir(p)
+                    stack_dir = rosstack.get_path(p)
                     if os.path.samefile(stack_dir, '.'):
                         packages = [p]
                         self.printer.print_all( "No package specified.  Building stack %s"%packages)
                     else:
-                        self.printer.print_all("No package or stack arguments and the current directory is not the correct path for stack '%s'. Stack directory is: %s."%(p, roslib.stacks.get_stack_dir(p)))
+                        self.printer.print_all("No package or stack arguments and the current directory is not the correct path for stack '%s'. Stack directory is: %s."%(p, rosstack.get_path(p)))
                 except:
                     self.printer.print_all("No package or stack specified.  And current directory '%s' is not a package name or stack name."%p)
         else:
             packages.extend(args)
-
-        #if not self.is_rosout_built():
-        #    packages.append("rosout")
-        #    self.printer.print_all("Detected rosout not built, adding it to the build")
 
         self.printer.print_all( "Packages requested are: %s"%packages)
         
@@ -804,7 +809,7 @@ class RosMakeAll:
               #self.log_dir = os.path.join(os.getcwd(), options.output_dir, date_time_stamp);
               self.log_dir = os.path.abspath(options.output_dir)
           else:
-              self.log_dir = os.path.join(roslib.rosenv.get_ros_home(), "rosmake", date_time_stamp);
+              self.log_dir = os.path.join(rospkg.get_ros_home(), "rosmake", date_time_stamp);
 
           self.printer.print_all("Logging to directory%s"%self.log_dir)
           if os.path.exists (self.log_dir) and not os.path.isdir(self.log_dir):
@@ -812,11 +817,13 @@ class RosMakeAll:
               sys.exit(1)
           if not os.path.exists (self.log_dir):
               self.printer.print_verbose("%s doesn't exist: creating"%self.log_dir)
-              roslib.rosenv.makedirs_with_parent_perms(self.log_dir)
+              makedirs_with_parent_perms(self.log_dir)
 
           self.printer.print_verbose("Finished setting up logging")
-        stacks_arguments = [s for s in packages if s in roslib.stacks.list_stacks()]
-        (self.specified_packages, self.rejected_packages) = roslib.stacks.expand_to_packages(packages)
+
+        stacks_arguments = [s for s in packages if s in rosstack.list()]
+        (self.specified_packages, self.rejected_packages) = rospkg.expand_to_packages(packages, rospack, rosstack)
+
         self.printer.print_all("Expanded args %s to:\n%s"%(packages, self.specified_packages))
         if self.rejected_packages:
             self.printer.print_all("WARNING: The following args could not be parsed as stacks or packages: %s"%self.rejected_packages)
@@ -837,8 +844,8 @@ class RosMakeAll:
         # catch dependent packages which are inside of zero sized stacks #3528 
         # add them to required list but not the specified list. 
         for s in stacks_arguments:
-            for d in roslib.rospack.rosstack_depends_1(s):
-                required_packages.extend(roslib.stacks.packages_of(d))
+            for d in rosstack.get_depends(s, implicit=False):
+                required_packages.extend(rosstack.packages_of(d))
 
         # deduplicate required_packages
         required_packages = list(set(required_packages))

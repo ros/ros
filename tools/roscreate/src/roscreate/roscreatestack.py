@@ -73,6 +73,7 @@ def instantiate_template(template, stack, brief, description, author, depends, l
 
 def _update_depends(depends):
     # TODO: this logic is rather pointless now that it no longer leverages .toxml().  Needs to be rewritten
+    print("UPDATE DEPENDS", depends)
     new_depends = []
     for name, pkgs in depends.iteritems():
         annotation = ', '.join(set(pkgs))
@@ -97,8 +98,8 @@ def create_stack(stack, stack_dir, stack_manifest, author, depends, licenses, sh
     """
 
     if show_deps:
-      print(''.join(['  <depend stack="%s"/> <!-- %s --> \n'%(s, ', '.join(set(pkgs))) for s, pkgs in depends.iteritems()]))
-      return
+        print(''.join(['  <depend stack="%s"/> <!-- %s --> \n'%(s, ', '.join(set(pkgs))) for s, pkgs in depends.iteritems()]))
+        return
     
     # load existing properties
     if stack_manifest is not None:
@@ -139,13 +140,16 @@ def compute_stack_depends_and_licenses(stack_dir):
     """
     stack = os.path.basename(os.path.abspath(stack_dir))    
     if os.path.exists(stack_dir):
-        rp = rospkg.RosPack(ros_root=os.path.abspath(stack_dir))
-        packages = rp.list()
+        # create scoped rospack in the directory just to list packages that are there
+        rospack = rospkg.RosPack(ros_root=os.path.abspath(stack_dir), ros_package_path='')
+        packages = rospack.list()
         depends, licenses = _compute_stack_depends_and_licenses(stack, packages)
     else:
         depends = dict()
         licenses = ['BSD']
     # add in bare ros dependency into any stack as an implicit depend
+    # TODO: hopefully remove during Fuerte dev cycle if we can make
+    # ROS build system a sysdep
     if not 'ros' in depends and stack != 'ros':
         depends['ros'] = []
     return depends, licenses
@@ -199,7 +203,7 @@ def roscreatestack_main():
     try:
         depends, licenses = compute_stack_depends_and_licenses(stack_dir)
     except rospkg.ResourceNotFound as e:
-        print(str(e), file=sys.stderr)
+        print("Cannot find resource: %s"%str(e), file=sys.stderr)
         sys.exit(1)
 
     # defaults
@@ -215,9 +219,12 @@ def roscreatestack_main():
           print('Backing up existing stack.xml to %s'%(stack_xml_path_bak))
           shutil.copyfile(stack_xml_path, stack_xml_path_bak)
 
-          # load existing stack.xml properties
-          stack_manifest = rospkg.manifest.parse_manifest_file(stack_xml_path, rospkg.STACK_FILE)
+      try:
+          # load existing stack.xml properties (soft fail if there are issues with existing file)
+          stack_manifest = rospkg.manifest.parse_manifest_file(stack_dir, rospkg.STACK_FILE)
           author = stack_manifest.author
+      except:
+          pass
   
     create_stack(stack, stack_dir, stack_manifest, author, depends, licenses, options.show_deps)
 

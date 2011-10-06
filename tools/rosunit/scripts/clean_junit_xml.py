@@ -48,11 +48,11 @@ import roslib; roslib.load_manifest(PKG)
 import os
 import sys
 
-import roslib.rosenv
+import rospkg
 import rosunit.junitxml as junitxml
 
 def prepare_dirs(output_dir_name):
-    test_results_dir = roslib.rosenv.get_test_results_dir()
+    test_results_dir = rospkg.get_test_results_dir()
     print("will read test results from", test_results_dir)
     output_dir = os.path.join(test_results_dir, output_dir_name)
     if not os.path.exists(output_dir):

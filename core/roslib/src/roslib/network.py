@@ -61,8 +61,9 @@ try:
 except ImportError:
     import urlparse
 
-import roslib.exceptions
-import roslib.rosenv 
+#TODO: change this to rosgraph equivalents once we have ported this module
+ROS_IP = 'ROS_IP'
+ROS_HOSTNAME = 'ROS_HOSTNAME'
 
 SIOCGIFCONF = 0x8912
 SIOCGIFADDR = 0x8915
@@ -137,10 +138,10 @@ def get_address_override():
 
     # check ROS_HOSTNAME and ROS_IP environment variables, which are
     # aliases for each other
-    if roslib.rosenv.ROS_HOSTNAME in os.environ:
-        return os.environ[roslib.rosenv.ROS_HOSTNAME]
-    elif roslib.rosenv.ROS_IP in os.environ:
-        return os.environ[roslib.rosenv.ROS_IP]
+    if ROS_HOSTNAME in os.environ:
+        return os.environ[ROS_HOSTNAME]
+    elif ROS_IP in os.environ:
+        return os.environ[ROS_IP]
     return None
 
 def is_local_address(hostname):
@@ -298,7 +299,7 @@ def create_local_xmlrpc_uri(port):
 
 ## handshake utils ###########################################
 
-class ROSHandshakeException(roslib.exceptions.ROSLibException):
+class ROSHandshakeException(Exception):
     """
     Exception to represent errors decoding handshake
     """

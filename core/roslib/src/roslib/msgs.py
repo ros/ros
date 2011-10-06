@@ -52,12 +52,12 @@ import sys
 import re
 import string
 
-import roslib.exceptions
+import rospkg
+
 import roslib.manifest
 import roslib.packages
 import roslib.names
 import roslib.resources
-import roslib.rospack
 
 VERBOSE = False
 
@@ -76,7 +76,7 @@ SEP = '/' #e.g. std_msgs/String
 CONSTCHAR   = '='
 COMMENTCHAR = '#'
 
-class MsgSpecException(roslib.exceptions.ROSLibException): pass
+class MsgSpecException(Exception): pass
 
 #TODOXXX: unit test
 def base_msg_type(type_):
@@ -471,7 +471,7 @@ def load_package_dependencies(package, load_recursive=False):
         m = roslib.manifest.parse_file(manifest_file)
         depends = [d.package for d in m.depends] # #391
     else:
-        depends = roslib.rospack.rospack_depends(package)
+        depends = rospkg.RosPack().get_depends(package, implicit=True)
 
     msgs = []
     failures = []

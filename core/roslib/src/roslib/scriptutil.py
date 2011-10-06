@@ -47,16 +47,8 @@ import string
 import subprocess
 import sys
 
-import roslib.exceptions
-import roslib.launcher
-import roslib.message
-import roslib.msgs 
 import roslib.names 
 import roslib.network
-import roslib.packages
-import roslib.rosenv 
-
-PRODUCT = 'ros'
 
 ## caller ID for master calls where caller ID is not vital
 _GLOBAL_CALLER_ID = '/script'
@@ -142,18 +134,20 @@ def get_master():
     
     @return: XML-RPC proxy to ROS master
     @rtype: xmlrpclib.ServerProxy
+    @raises ValueError if master URI is invalid
     """
     try:
         import xmlrpc.client as xmlrpcclient  #Python 3.x
     except ImportError:
         import xmlrpclib as xmlrpcclient #Python 2.x
     
+    # changed this to not look as sys args and remove dependency on roslib.rosenv for cleaner cleanup
+    uri = os.environ['ROS_MASTER_URI']
     # #1730 validate URL for better error messages
-    uri = roslib.rosenv.get_master_uri()
     try:
         roslib.network.parse_http_host_and_port(uri)
     except ValueError:
-        raise roslib.exceptions.ROSLibException("invalid master URI: %s"%uri)
+        raise ValueError("invalid master URI: %s"%uri)
     return xmlrpcclient.ServerProxy(uri)
 
 @deprecated

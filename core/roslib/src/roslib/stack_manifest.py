@@ -42,10 +42,6 @@ import sys
 import os
 import getopt
 
-import roslib.exceptions
-import roslib.packages
-import roslib.rosenv
-
 STACK_FILE = 'stack.xml'
 
 import roslib.manifestlib

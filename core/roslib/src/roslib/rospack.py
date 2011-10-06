@@ -41,12 +41,15 @@ import os
 import sys
 import subprocess
 import roslib.exceptions
-import roslib.rosenv
+import rospkg
 
 if sys.hexversion > 0x03000000: #Python3
     python3 = True
 else:
     python3 = False
+
+import warnings
+warnings.warn("roslib.rospack is deprecated, please use rospkg", stacklevel=2)
 
 def rospackexec(args):
     """
@@ -54,7 +57,7 @@ def rospackexec(args):
     @rtype: str
     @raise roslib.exceptions.ROSLibException: if rospack command fails
     """
-    rospack_bin = os.path.join(roslib.rosenv.get_ros_root(), 'bin', 'rospack')
+    rospack_bin = os.path.join(rospkg.get_ros_root(), 'bin', 'rospack')
     if python3:
         val = subprocess.Popen([rospack_bin] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
         val = val.decode().strip()
@@ -119,7 +122,7 @@ def rosstackexec(args):
     @rtype:  str
     @raise roslib.exceptions.ROSLibException: if rosstack command fails
     """
-    rosstack_bin = os.path.join(roslib.rosenv.get_ros_root(), 'bin', 'rosstack')
+    rosstack_bin = os.path.join(rospkg.get_ros_root(), 'bin', 'rosstack')
     if python3:
         val = subprocess.Popen([rosstack_bin] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
         val = val.decode().strip()

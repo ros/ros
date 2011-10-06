@@ -42,11 +42,10 @@ import sys
 import logging
 import logging.config
 
-import roslib.rosenv
-from roslib.rosenv import get_ros_root, ROS_LOG_DIR, ROS_HOME, makedirs_with_parent_perms
-import roslib.exceptions
+from rospkg import get_ros_root, get_log_dir
+from rospkg.environment import ROS_LOG_DIR
 
-get_log_dir = roslib.rosenv.get_log_dir
+import roslib.exceptions
     
 def configure_logging(logname, level=logging.INFO, filename=None, env=None):
     """
@@ -101,3 +100,26 @@ def configure_logging(logname, level=logging.INFO, filename=None, env=None):
     logging.config.fileConfig(config_file, disable_existing_loggers=False)
     return log_filename
 
+def makedirs_with_parent_perms(p):
+    """
+    Create the directory using the permissions of the nearest
+    (existing) parent directory. This is useful for logging, where a
+    root process sometimes has to log in the user's space.
+    @param p: directory to create
+    @type  p: str
+    """    
+    p = os.path.abspath(p)
+    parent = os.path.dirname(p)
+    # recurse upwards, checking to make sure we haven't reached the
+    # top
+    if not os.path.exists(p) and p and parent != p:
+        makedirs_with_parent_perms(parent)
+        s = os.stat(parent)
+        os.mkdir(p)
+
+        # if perms of new dir don't match, set anew
+        s2 = os.stat(p)
+        if s.st_uid != s2.st_uid or s.st_gid != s2.st_gid:
+            os.chown(p, s.st_uid, s.st_gid)
+        if s.st_mode != s2.st_mode:
+            os.chmod(p, s.st_mode)    

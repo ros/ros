@@ -292,12 +292,48 @@ def list_types(package, mode=MODE_MSG):
     @return: list of msgs/srv in package
     @rtype: [str]
     """
+    rospack = rospkg.RosPack()
     if mode == MODE_MSG:
-        return [roslib.names.resource_name(package, t) for t in roslib.msgs.list_msg_types(package, False)]
+        return [roslib.names.resource_name(package, t) for t in _list_types(rospack, package, 'msg', '.msg')]
     elif mode == MODE_SRV:
-        return [roslib.names.resource_name(package, t) for t in roslib.srvs.list_srv_types(package, False)]
+        return [roslib.names.resource_name(package, t) for t in _list_types(rospack, package, 'srv', '.srv')]
     else:
         raise ValueError('mode')
+
+def _msg_filter(ext):
+    def mfilter(f):
+        """
+        Predicate for filtering directory list. matches message files
+        @param f: filename
+        @type  f: str
+        """
+        return os.path.isfile(f) and f.endswith(ext)
+    return mfilter
+
+def _list_types(rospack, package, subdir, ext):
+    """
+    List all messages in the specified package
+    @param package str: name of package to search
+    @param include_depends bool: if True, will also list messages in package dependencies
+    @return [str]: message type names
+    """
+    path = os.path.join(rospack.get_path(package), subdir)
+    types = _list_resources(package, path, _msg_filter(ext))
+    return [x[:-len(ext)] for x in types]
+
+def _list_resources(package, path, rfilter=os.path.isfile):
+    """
+    List resources in a package directory within a particular
+    subdirectory. This is useful for listing messages, services, etc...
+    @param rfilter: resource filter function that returns true if filename is the desired resource type
+    @type  rfilter: fn(filename)->bool
+    """
+    resources = []
+    if os.path.isdir(path):
+        resources = [f for f in os.listdir(path) if rfilter(os.path.join(path, f))]
+    else:
+        resources = []
+    return resources
 
 def iterate_packages(mode):
     """
@@ -517,7 +553,7 @@ def rosmsgmain(mode=MODE_MSG):
         print("Unknown message type: %s"%e, file=sys.stderr)
         sys.exit(os.EX_USAGE)
     except rospkg.ResourceNotFound as e:
-        print("Invalid package: '%s'"%e, file=sys.stderr)
+        print("Invalid package: %s"%e, file=sys.stderr)
         sys.exit(os.EX_USAGE)        
     except ValueError as e:
         print("Invalid type: '%s'"%e, file=sys.stderr)

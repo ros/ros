@@ -35,7 +35,8 @@
 import os
 import sys
 import logging
-import roslib.rosenv
+
+import rospkg
 
 from .xmlrunner import XMLTestRunner
 
@@ -60,6 +61,32 @@ def printerrlog(msg, *args):
     _logger.error(msg)
     print >> sys.stderr, "[ROSUNIT]"+msg
 
+# this is a copy of the roslogging utility. it's been moved here as it is a common
+# routine for programs using accessing ROS directories
+def makedirs_with_parent_perms(p):
+    """
+    Create the directory using the permissions of the nearest
+    (existing) parent directory. This is useful for logging, where a
+    root process sometimes has to log in the user's space.
+    @param p: directory to create
+    @type  p: str
+    """    
+    p = os.path.abspath(p)
+    parent = os.path.dirname(p)
+    # recurse upwards, checking to make sure we haven't reached the
+    # top
+    if not os.path.exists(p) and p and parent != p:
+        makedirs_with_parent_perms(parent)
+        s = os.stat(parent)
+        os.mkdir(p)
+
+        # if perms of new dir don't match, set anew
+        s2 = os.stat(p)
+        if s.st_uid != s2.st_uid or s.st_gid != s2.st_gid:
+            os.chown(p, s.st_uid, s.st_gid)
+        if s.st_mode != s2.st_mode:
+            os.chmod(p, s.st_mode)    
+
 def xml_results_file(test_pkg, test_name, is_rostest=False):
     """
     @param test_pkg: name of test's package 
@@ -71,10 +98,10 @@ def xml_results_file(test_pkg, test_name, is_rostest=False):
     @return: name of xml results file for specified test
     @rtype:  str
     """
-    test_dir = os.path.join(roslib.rosenv.get_test_results_dir(), test_pkg)
+    test_dir = os.path.join(rospkg.get_test_results_dir(), test_pkg)
     if not os.path.exists(test_dir):
         try:
-            roslib.rosenv.makedirs_with_parent_perms(test_dir)
+            makedirs_with_parent_perms(test_dir)
         except OSError:
             raise IOError("cannot create test results directory [%s]. Please check permissions."%(test_dir))
         
@@ -124,7 +151,7 @@ def create_xml_runner(test_pkg, test_name, results_file=None, is_rostest=False):
     test_dir = os.path.abspath(os.path.dirname(results_file))
     if not os.path.exists(test_dir):
         try:
-            roslib.rosenv.makedirs_with_parent_perms(test_dir) #NOTE: this will pass up an error exception if it fails
+            makedirs_with_parent_perms(test_dir) #NOTE: this will pass up an error exception if it fails
         except OSError:
             raise IOError("cannot create test results directory [%s]. Please check permissions."%(test_dir))
 

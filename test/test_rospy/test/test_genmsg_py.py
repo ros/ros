@@ -238,8 +238,8 @@ class TestGenmsgPy(unittest.TestCase):
         self._test_ser_deser(String('a man a plan a canal panama'), String())
 
     def test_std_msgs_SignedInt(self):
-        from std_msgs.msg import Byte, Int8, Int16, Int32, Int64
-        for cls in [Byte, Int8, Int16, Int32, Int64]:
+        from std_msgs.msg import Int8, Int16, Int32, Int64
+        for cls in [Int8, Int16, Int32, Int64]:
             v = random.randint(1, 127)
             self.assertEquals(cls(), cls())
             self.assertEquals(0, cls().data)
@@ -262,7 +262,7 @@ class TestGenmsgPy(unittest.TestCase):
             self._test_ser_deser(cls(v), cls())
 
         # rospy currently does not spot negative overflow due to the fact that Python's struct doesn't either
-        widths = [(8, Byte), (8, Int8), (16, Int16), (32, Int32), (64, Int64)]
+        widths = [(8, Int8), (16, Int16), (32, Int32), (64, Int64)]
         for w, cls in widths:
             maxp = long(math.pow(2, w-1)) - 1
             maxn = -long(math.pow(2, w-1)) + 1
@@ -278,8 +278,8 @@ class TestGenmsgPy(unittest.TestCase):
             except SerializationError: pass
             
     def test_std_msgs_UnsignedInt(self):
-        from std_msgs.msg import Char, UInt8, UInt16, UInt32, UInt64
-        for cls in [Char, UInt8, UInt16, UInt32, UInt64]:
+        from std_msgs.msg import UInt8, UInt16, UInt32, UInt64
+        for cls in [UInt8, UInt16, UInt32, UInt64]:
             v = random.randint(1, 127)
             self.assertEquals(cls(), cls())
             self.assertEquals(0, cls().data)
@@ -305,7 +305,7 @@ class TestGenmsgPy(unittest.TestCase):
             except SerializationError: pass
 
         # rospy currently does not spot negative overflow due to the fact that Python's struct doesn't either
-        widths = [(8, Char), (8, UInt8), (16, UInt16), (32, UInt32), (64, UInt64)]
+        widths = [(8, UInt8), (16, UInt16), (32, UInt32), (64, UInt64)]
         for w, cls in widths:
             maxp = long(math.pow(2, w)) - 1
             self._test_ser_deser(cls(maxp), cls())

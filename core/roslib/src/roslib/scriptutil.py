@@ -157,29 +157,3 @@ def get_param_server():
     @rtype: xmlrpclib.ServerProxy
     """
     return get_master()
-
-def ask_and_call(cmds, cwd=None):
-    """
-    Pretty print cmds, ask if they should be run, and if so, runs
-    them using subprocess.check_call.
-
-    @param cwd: (optional) set cwd of command that is executed
-    @type  cwd: str
-    @return: True if cmds were run.
-    """
-    # Pretty-print a string version of the commands
-    def quote(s):
-        return '"%s"'%s if ' ' in s else s
-    sys.stdout.write("Okay to execute:\n\n%s\n(y/n)?\n"%('\n'.join([' '.join([quote(s) for s in c]) for c in cmds])))
-    while 1:
-        input = sys.stdin.readline().strip().lower()
-        if input in ['y', 'n']:
-            break
-    accepted = input == 'y'
-    if accepted:
-        for c in cmds:
-            if cwd:
-                subprocess.check_call(c, cwd=cwd)
-            else:
-                subprocess.check_call(c)                
-    return accepted

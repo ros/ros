@@ -42,7 +42,8 @@ from __future__ import print_function
 
 import sys
 import rosunit
-import roslib.rosenv
+
+import rosgraph
 
 XML_OUTPUT_FLAG = '--gtest_output=xml:' #use gtest-compatible flag
 
@@ -61,20 +62,20 @@ def get_master():
         import xmlrpc.client as xmlrpcclient  #Python 3.x
     except ImportError:
         import xmlrpclib as xmlrpcclient #Python 2.x
-    uri = roslib.rosenv.get_master_uri()
+    uri = rosgraph.get_master_uri()
     return xmlrpcclient.ServerProxy(uri)
 
 def is_subscriber(topic, subscriber_id):
     """
     Check whether or not master think subscriber_id subscribes to topic
-    @return: True if still register as a subscriber
-    @rtype: bool
-    @raise roslib.exceptions.ROSLibException: if communication with master fails
+
+    :returns: ``True`` if still register as a subscriber, ``bool``
+    :raises: IOError If communication with master fails
     """
     m = get_master()
     code, msg, state = m.getSystemState(_GLOBAL_CALLER_ID)
     if code != 1:
-        raise roslib.exceptions.ROSLibException("Unable to retrieve master state: %s"%msg)
+        raise IOError("Unable to retrieve master state: %s"%msg)
     _, subscribers, _ = state
     for t, l in subscribers:
         if t == topic:
@@ -86,14 +87,13 @@ def is_publisher(topic, publisher_id):
     """
     Predicate to check whether or not master think publisher_id
     publishes topic
-    @return: True if still register as a publisher
-    @rtype: bool
-    @raise roslib.exceptions.ROSLibException: if communication with master fails
+    :returns: ``True`` if still register as a publisher, ``bool``
+    :raises: IOError If communication with master fails
     """
     m = get_master()
     code, msg, state = m.getSystemState(_GLOBAL_CALLER_ID)
     if code != 1:
-        raise roslib.exceptions.ROSLibException("Unable to retrieve master state: %s"%msg)
+        raise IOError("Unable to retrieve master state: %s"%msg)
     pubs, _, _ = state
     for t, l in pubs:
         if t == topic:

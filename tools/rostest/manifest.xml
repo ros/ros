@@ -15,6 +15,7 @@
 
   <review status="Doc reviewed" notes="2010/01/12"/>
   <url>http://ros.org/wiki/rostest</url>
+  <depend package="rosgraph"/>
   <depend package="roslaunch"/>
   <depend package="roslib"/>
   <depend package="rosunit"/>

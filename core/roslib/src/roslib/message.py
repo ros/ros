@@ -271,8 +271,8 @@ def check_type(field_name, field_type, field_val):
     """
     # lazy-import as roslib.genpy has lots of extra imports. Would
     # prefer to do lazy-init in a different manner
-    import roslib.genpy
-    if roslib.genpy.is_simple(field_type):
+    import roslib.genpy_electric
+    if roslib.genpy_electric.is_simple(field_type):
         # check sign and width
         if field_type in ['byte', 'int8', 'int16', 'int32', 'int64']:
             if type(field_val) not in [long, int]:

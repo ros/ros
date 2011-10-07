@@ -230,6 +230,21 @@ def logfatal(msg, *args):
 
 MASTER_NAME = "master" #master is a reserved node name for the central master
 
+import warnings
+def deprecated(func):
+    """This is a decorator which can be used to mark functions
+    as deprecated. It will result in a warning being emmitted
+    when the function is used."""
+    def newFunc(*args, **kwargs):
+        warnings.warn("Call to deprecated function %s." % func.__name__,
+                      category=DeprecationWarning, stacklevel=2)
+        return func(*args, **kwargs)
+    newFunc.__name__ = func.__name__
+    newFunc.__doc__ = func.__doc__
+    newFunc.__dict__.update(func.__dict__)
+    return newFunc
+
+@deprecated
 def get_ros_root(required=False, env=None):
     """
     Get the value of ROS_ROOT.
@@ -242,7 +257,7 @@ def get_ros_root(required=False, env=None):
     """
     if env is None:
         env = os.environ
-    ros_root = rospkg.get_ros_root()
+    ros_root = rospkg.get_ros_root(env)
     if required and not ros_root:
         raise rospy.exceptions.ROSException('%s is not set'%rospkg.environment.ROS_ROOT)
     return ros_root

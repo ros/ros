@@ -48,6 +48,13 @@ import subprocess
 import rospkg
 
 import roslib
+
+try:
+    # TODO: remove after ROS 1.7 is released
+    from roslib.genpy_electric import _generate_dynamic_specs
+except:
+    from roslib.genpy import _generate_dynamic_specs
+
 import roslib.genpy
 import roslib.gentools
 import roslib.message
@@ -236,7 +243,7 @@ def get_msg_text(type_, raw=False, full_text=None):
 
         specs = { type_: roslib.msgs.load_from_string(core_msg, package) }
         for dep_msg in deps_msgs:
-            dep_type, dep_spec = roslib.genpy._generate_dynamic_specs(specs, dep_msg)
+            dep_type, dep_spec = _generate_dynamic_specs(specs, dep_msg)
             specs[dep_type] = dep_spec
         
         for t, spec in specs.iteritems():

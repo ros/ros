@@ -48,7 +48,7 @@ try:
     # TODO: remove after ROS 1.7 is released
     from roslib.genpy_electric import MsgGenerationException
 except:
-    from roslib.genpy_electric import MsgGenerationException    
+    from roslib.genpy import MsgGenerationException    
 
 import roslib.gentools 
 import roslib.srvs

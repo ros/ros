@@ -46,6 +46,7 @@ import sys
 import subprocess
 
 import rospkg
+import genmsg
 
 import roslib
 
@@ -55,11 +56,9 @@ try:
 except:
     from roslib.genpy import _generate_dynamic_specs
 
-import roslib.genpy
 import roslib.gentools
 import roslib.message
 import roslib.msgs
-import roslib.names
 import roslib.srvs
 import rosbag
 
@@ -154,7 +153,7 @@ def rosmsg_users_package_search(mode, type_, package):
 
 
 def rosmsg_users(mode, type_):
-    msg_pkg, msg_name = roslib.names.package_resource_name(type_)
+    msg_pkg, msg_name = genmsg.package_resource_name(type_)
     # Find the direct users of the package; they're the only ones who
     # should be able to use this message
     if not msg_pkg:
@@ -197,7 +196,7 @@ def get_srv_text(type_, raw=False):
     @rtype: str
     @raise ROSMsgException: if type_ is unknown
     """
-    package, base_type = roslib.names.package_resource_name(type_)
+    package, base_type = genmsg.package_resource_name(type_)
     roslib.msgs.load_package_dependencies(package, load_recursive=True)
     roslib.msgs.load_package(package)
     f = roslib.srvs.srv_file(package, base_type)
@@ -222,7 +221,7 @@ def get_msg_text(type_, raw=False, full_text=None):
     @rtype: str
     @raise ROSMsgException: if type_ is unknown
     """
-    package, base_type = roslib.names.package_resource_name(type_)
+    package, base_type = genmsg.package_resource_name(type_)
     
     if not full_text:
         roslib.msgs.load_package_dependencies(package, load_recursive=True)
@@ -301,9 +300,9 @@ def list_types(package, mode=MODE_MSG):
     """
     rospack = rospkg.RosPack()
     if mode == MODE_MSG:
-        return [roslib.names.resource_name(package, t) for t in _list_types(rospack, package, 'msg', '.msg')]
+        return [genmsg.resource_name(package, t) for t in _list_types(rospack, package, 'msg', '.msg')]
     elif mode == MODE_SRV:
-        return [roslib.names.resource_name(package, t) for t in _list_types(rospack, package, 'srv', '.srv')]
+        return [genmsg.resource_name(package, t) for t in _list_types(rospack, package, 'srv', '.srv')]
     else:
         raise ValueError('mode')
 
@@ -386,7 +385,7 @@ def rosmsg_search(mode, base_type):
         res_file = roslib.srvs.srv_file
     for p in iterate_packages(mode):
         if os.path.isfile(res_file(p, base_type)):
-            yield roslib.names.resource_name(p, base_type)
+            yield genmsg.resource_name(p, base_type)
 
 def _stdin_arg(parser, full):
     options, args = parser.parse_args(sys.argv[2:])    
@@ -437,7 +436,7 @@ def rosmsg_cmd_show(mode, full):
                 rosmsg_debug(mode, found, options.raw)
 
 def rosmsg_md5(mode, type_):
-    package, base_type = roslib.names.package_resource_name(type_)
+    package, base_type = genmsg.package_resource_name(type_)
     roslib.msgs.load_package_dependencies(package, load_recursive=True)
     roslib.msgs.load_package(package)
     if mode == MODE_MSG:

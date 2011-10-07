@@ -46,6 +46,7 @@ import struct
 import sys
 
 import roslib.names
+import genpy
 from genpy import Time, Duration, TVal
 
 # common struct pattern singletons for msgs to use. Although this

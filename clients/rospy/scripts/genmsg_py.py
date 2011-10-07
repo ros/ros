@@ -52,7 +52,11 @@ import roslib.packages
 # logic of genmsg_py and gensrv_py logic
 import genutil
 
-import roslib.genpy_electric 
+try:
+    # TODO: remove after ROS 1.7 is released
+    from roslib.genpy_electric import MsgGenerationException
+except:
+    from roslib.genpy_electric import MsgGenerationException    
 
 class GenmsgPackage(genutil.Generator):
     """

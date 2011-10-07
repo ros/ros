@@ -44,7 +44,12 @@ import roslib; roslib.load_manifest('rospy')
 
 import sys, os
 
-import roslib.genpy_electric
+try:
+    # TODO: remove after ROS 1.7 is released
+    from roslib.genpy_electric import MsgGenerationException
+except:
+    from roslib.genpy_electric import MsgGenerationException    
+
 import roslib.gentools 
 import roslib.srvs
 

@@ -45,7 +45,11 @@ import glob
 import roslib.msgs
 import roslib.packages
 import roslib.resources
-from roslib.genpy_electric import MsgGenerationException
+try:
+    # TODO: remove after ROS 1.7 is released
+    from roslib.genpy_electric import MsgGenerationException
+except:
+    from roslib.genpy_electric import MsgGenerationException    
 
 class Generator(object):
     

@@ -36,6 +36,8 @@ The rosbag Python API.
 Provides serialization of bag files.
 """
 
+from __future__ import print_function
+
 PKG = 'rosbag'
 import roslib; roslib.load_manifest(PKG)
 
@@ -51,7 +53,7 @@ import threading
 import time
 import yaml
 
-import roslib.genpy
+import roslib.genpy_electric
 import rospy
 
 class ROSBagException(Exception):
@@ -317,7 +319,7 @@ class Bag(object):
                     raise ROSBagException('cannot locate message class and no message class provided for [%s]' % msg_type)
     
                 if pytype._md5sum != md5sum:
-                    print >> sys.stderr, 'WARNING: md5sum of loaded type [%s] does not match that specified' % msg_type
+                    print('WARNING: md5sum of loaded type [%s] does not match that specified' % msg_type, file=sys.stderr)
                     #raise ROSBagException('md5sum of loaded type does not match that of data being recorded')
             
                 header = { 'topic' : topic, 'type' : msg_type, 'md5sum' : md5sum, 'message_definition' : pytype._full_text }
@@ -560,7 +562,7 @@ class Bag(object):
                     else:
                         rows.append(('', s))
         
-        except Exception, ex:
+        except Exception as ex:
             raise
 
         first_column_width = max([len(field) for field, _ in rows]) + 1
@@ -713,8 +715,8 @@ class Bag(object):
             obj = DictObject(yaml.load(s))
             try:
                 val = eval('obj.' + key)
-            except Exception, ex:
-                print >> sys.stderr, 'Error getting key "%s"' % key
+            except Exception as ex:
+                print('Error getting key "%s"' % key, file=sys.stderr)
                 return None
 
             def print_yaml(val, indent=0):
@@ -739,7 +741,7 @@ class Bag(object):
 
             return print_yaml(val)
 
-        except Exception, ex:
+        except Exception as ex:
             raise
 
     ### Internal API ###
@@ -907,7 +909,7 @@ class Bag(object):
         try:
             self._create_reader()
             self._reader.start_reading()
-        except ROSBagUnindexedException, ex:
+        except ROSBagUnindexedException as ex:
             if not allow_unindexed:
                 self._close_file()
                 raise
@@ -1219,7 +1221,7 @@ class _ConnectionInfo(object):
     def __init__(self, id, topic, header):
         try:
             datatype, md5sum, msg_def = header['type'], header['md5sum'], header['message_definition']
-        except KeyError, ex:
+        except KeyError as ex:
             raise ROSBagFormatException('connection header field %s not found' % str(ex))
 
         self.id       = id
@@ -1298,13 +1300,13 @@ def _get_message_type(info):
     message_type = _message_types.get(info.md5sum)
     if message_type is None:
         try:
-            message_type = roslib.genpy.generate_dynamic(info.datatype, info.msg_def)[info.datatype]
+            message_type = roslib.genpy_electric.generate_dynamic(info.datatype, info.msg_def)[info.datatype]
             if (message_type._md5sum != info.md5sum):
-                print >> sys.stderr, 'WARNING: For type [%s] stored md5sum [%s] does not match message definition [%s].\n  Try: "rosrun rosbag fix_msg_defs.py old_bag new_bag."'%(info.datatype, info.md5sum, message_type._md5sum)
+                print('WARNING: For type [%s] stored md5sum [%s] does not match message definition [%s].\n  Try: "rosrun rosbag fix_msg_defs.py old_bag new_bag."'%(info.datatype, info.md5sum, message_type._md5sum), file=sys.stderr)
         except roslib.msgs.MsgSpecException:
-            message_type = roslib.genpy.generate_dynamic(info.datatype, "")[info.datatype]
-            print >> sys.stderr, 'WARNING: For type [%s] stored md5sum [%s] has invalid message definition."'%(info.datatype, info.md5sum)
-        except roslib.genpy.MsgGenerationException, ex:
+            message_type = roslib.genpy_electric.generate_dynamic(info.datatype, "")[info.datatype]
+            print('WARNING: For type [%s] stored md5sum [%s] has invalid message definition."'%(info.datatype, info.md5sum), file=sys.stderr)
+        except roslib.genpy_electric.MsgGenerationException, ex:
             raise ROSBagException('Error generating datatype %s: %s' % (info.datatype, str(ex)))
 
         _message_types[info.md5sum] = message_type
@@ -1343,7 +1345,7 @@ def _skip_sized(f):
 def _read_sized(f):
     try:
         size = _read_uint32(f)
-    except struct.error, ex:
+    except struct.error as ex:
         raise ROSBagFormatException('error unpacking uint32: %s' % str(ex))
     return _read(f, size)
 
@@ -1357,7 +1359,7 @@ def _read_field(header, field, unpack_fn):
     
     try:
         value = unpack_fn(header[field])
-    except Exception, ex:
+    except Exception as ex:
         raise ROSBagFormatException('error reading field "%s": %s' % (field, str(ex)))
     
     return value
@@ -1391,7 +1393,7 @@ def _read_header(f, req_op=None):
     # Read header
     try:
         header = _read_sized(f)
-    except ROSBagException, ex:
+    except ROSBagException as ex:
         raise ROSBagFormatException('Error reading header: %s' % str(ex))
 
     # Parse header into a dict
@@ -1432,7 +1434,7 @@ def _peek_next_header_op(f):
 def _read_record_data(f):
     try:
         record_data = _read_sized(f)
-    except ROSBagException, ex:
+    except ROSBagException as ex:
         raise ROSBagFormatException('Error reading record data: %s' % str(ex))
 
     return record_data
@@ -1504,7 +1506,7 @@ class _BagReader101(_BagReader):
                     if pytype._md5sum != md5sum:
                         (package, type) = datatype.split('/')
                     if roslib.gentools.compute_md5_v1(roslib.gentools.get_file_dependencies(roslib.msgs.msg_file(package,type))) == md5sum:
-                        print 'In V1.1 Logfile, found old md5sum for type [%s].  Allowing implicit migration to new md5sum.' % datatype
+                        print('In V1.1 Logfile, found old md5sum for type [%s].  Allowing implicit migration to new md5sum.' % datatype)
                     else:
                         raise ROSBagException('Cannot deserialize messages of type [%s]: md5sum is outdated in V1.1 bagfile' % datatype)
                 _message_types[md5sum] = pytype
@@ -1775,7 +1777,7 @@ class _BagReader102_Indexed(_BagReader102_Unindexed):
 
             self.bag._connection_indexes_read = True
 
-        except Exception, ex:
+        except Exception as ex:
             raise ROSBagUnindexedException()
 
     def read_file_header_record(self):
@@ -1898,7 +1900,7 @@ class _BagReader200(_BagReader):
 
             try:
                 self._reindex_read_chunk(f, chunk_pos, total_bytes)
-            except Exception, ex:
+            except Exception as ex:
                 break
             
             trunc_pos = f.tell()
@@ -2058,7 +2060,7 @@ class _BagReader200(_BagReader):
 
             return True
 
-        except Exception, ex:
+        except Exception as ex:
             return False
 
     def start_reading(self):
@@ -2092,7 +2094,7 @@ class _BagReader200(_BagReader):
             if not self.bag._skip_index:
                 self._read_connection_index_records()
 
-        except Exception, ex:
+        except Exception as ex:
             raise ROSBagUnindexedException()
 
     def _read_connection_index_records(self):

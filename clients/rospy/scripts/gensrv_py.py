@@ -44,7 +44,7 @@ import roslib; roslib.load_manifest('rospy')
 
 import sys, os
 
-import roslib.genpy
+import roslib.genpy_electric
 import roslib.gentools 
 import roslib.srvs
 
@@ -53,7 +53,7 @@ import genmsg_py, genutil
 REQUEST ='Request'
 RESPONSE='Response'
 
-class SrvGenerationException(roslib.genpy.MsgGenerationException): pass
+class SrvGenerationException(roslib.genpy_electric.MsgGenerationException): pass
 
 def srv_generator(package, name, spec):
     req, resp = ["%s%s"%(name, suff) for suff in [REQUEST, RESPONSE]]
@@ -94,9 +94,9 @@ class SrvGenerator(genutil.Generator):
         try:
             for mspec, suffix in ((spec.request, REQUEST), (spec.response, RESPONSE)):
                 #outfile = os.path.join(outdir, prefix+suffix+".py")    
-                #gen = roslib.genpy.msg_generator(package, name+suffix, mspec)
+                #gen = roslib.genpy_electric.msg_generator(package, name+suffix, mspec)
                 #self.write_gen(outfile, gen, roslib.srvs.is_verbose())
-                for l in roslib.genpy.msg_generator(package, base_name+suffix, mspec):
+                for l in roslib.genpy_electric.msg_generator(package, base_name+suffix, mspec):
                     f.write(l+'\n')
 
             # generate service file

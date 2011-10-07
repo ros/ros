@@ -52,7 +52,7 @@ import roslib.packages
 # logic of genmsg_py and gensrv_py logic
 import genutil
 
-import roslib.genpy 
+import roslib.genpy_electric 
 
 class GenmsgPackage(genutil.Generator):
     """
@@ -62,7 +62,7 @@ class GenmsgPackage(genutil.Generator):
     """
     def __init__(self):
         super(GenmsgPackage, self).__init__(
-            'genmsg_py', 'messages', '.msg', 'msg', roslib.genpy.MsgGenerationException)
+            'genmsg_py', 'messages', '.msg', 'msg', roslib.genpy_electric.MsgGenerationException)
 
     def generate(self, package, f, outdir):
         """
@@ -82,7 +82,7 @@ class GenmsgPackage(genutil.Generator):
         (name, spec) = roslib.msgs.load_from_file(f, package)
         base_name = roslib.names.resource_name_base(name)
         
-        self.write_gen(outfile_name, roslib.genpy.msg_generator(package, base_name, spec), verbose)
+        self.write_gen(outfile_name, roslib.genpy_electric.msg_generator(package, base_name, spec), verbose)
 
         roslib.msgs.register(name, spec)
         return outfile_name

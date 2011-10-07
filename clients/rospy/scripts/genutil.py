@@ -45,7 +45,7 @@ import glob
 import roslib.msgs
 import roslib.packages
 import roslib.resources
-from roslib.genpy import MsgGenerationException
+from roslib.genpy_electric import MsgGenerationException
 
 class Generator(object):
     

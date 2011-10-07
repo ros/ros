@@ -124,9 +124,9 @@ def get_service_headers(service_name, service_uri):
 def get_service_type(service_name):
     """
     Get the type of the specified service_name. May print errors to stderr.
+    
     :param service_name: name of service, ``str``
     :returns: type of service or ``None``, ``str``
-    :raises: :exc:`ROSServiceException` If service information is invalid
     :raises: :exc:`ROSServiceIOException` If unable to communicate with service
     """
     master = _get_master()
@@ -135,7 +135,7 @@ def get_service_type(service_name):
     except socket.error:
         raise ROSServiceIOException("Unable to communicate with master!")
     except rosgraph.MasterError:
-        raise ROSServiceException("Service [%s] is not available."%(service_name))
+        return None
     try:
         return get_service_headers(service_name, service_uri).get('type', None)
     except socket.error:

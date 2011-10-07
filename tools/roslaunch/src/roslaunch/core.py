@@ -42,11 +42,12 @@ import socket
 import sys
 import xmlrpclib
 
+import rospkg
+import rosgraph
+import rosgraph.names 
 
-import roslib.names 
 import roslib.network
 import roslib.substitution_args
-import roslib.rosenv
 
 #TODO:temporary until xacro is ported after next ROS stable release
 resolve_args = roslib.substitution_args.resolve_args
@@ -197,16 +198,19 @@ def setup_env(node, machine, master_uri):
     @rtype: dict
     """
     d = {}
-    d[roslib.rosenv.ROS_MASTER_URI] = master_uri
-    d[roslib.rosenv.ROS_ROOT] = machine.ros_root or get_ros_root()
+    d[rosgraph.ROS_MASTER_URI] = master_uri
+    d[rospkg.environment.ROS_ROOT] = machine.ros_root or get_ros_root()
+    if d[rospkg.environment.ROS_ROOT] is None:
+        raise RLException("ERROR: ROS_ROOT is not set")
+    
     if machine.ros_package_path: #optional
-        d[roslib.rosenv.ROS_PACKAGE_PATH] = machine.ros_package_path
+        d[rospkg.environment.ROS_PACKAGE_PATH] = machine.ros_package_path
     if machine.ros_ip: #optional
-        d[roslib.rosenv.ROS_IP] = machine.ros_ip
+        d[rosgraph.ROS_IP] = machine.ros_ip
 
-    # roslib now depends on PYTHONPATH being set.  This environment
-    # needs to be setup correctly for roslaunch through ssh to work
-    d['PYTHONPATH'] = os.path.join(d[roslib.rosenv.ROS_ROOT],'core','roslib', 'src')
+    # roslib depends on PYTHONPATH being set.  This environment needs
+    # to be setup correctly for roslaunch through ssh to work
+    d['PYTHONPATH'] = os.path.join(d[rospkg.environment.ROS_ROOT],'core','roslib', 'src')
 
     # load in machine env_args. Node env args have precedence
     for name, value in machine.env_args:
@@ -218,7 +222,7 @@ def setup_env(node, machine, master_uri):
         if ns[-1] == '/':
             ns = ns[:-1]
         if ns:
-            d[roslib.rosenv.ROS_NAMESPACE] = ns 
+            d[rosgraph.ROS_NAMESPACE] = ns 
         for name, value in node.env_args:
             d[name] = value
 
@@ -234,20 +238,14 @@ def rle_wrapper(fn):
     def wrapped_fn(*args):
         try:
             return fn(*args)
-        except Exception, e:
+        except Exception as e:
             # we specifically catch RLExceptions and print their messages differently
             raise RLException("ERROR: %s"%e)
     return wrapped_fn
         
-get_ros_root         = rle_wrapper(roslib.rosenv.get_ros_root)
-get_master_uri_env   = rle_wrapper(roslib.rosenv.get_master_uri) 
-def get_ros_package_path():
-    """
-    @return: ROS_PACKAGE_PATH value
-    @rtype: str
-    """
-    # ROS_PACKAGE_PATH not required to be set
-    return roslib.rosenv.get_ros_package_path(required=False)
+get_ros_root         = rospkg.get_ros_root
+get_master_uri_env   = rle_wrapper(rosgraph.get_master_uri) 
+get_ros_package_path = rospkg.get_ros_package_path
 
 def remap_localhost_uri(uri, force_localhost=False):
     """
@@ -437,7 +435,7 @@ class Param(object):
     specification.
     """
     def __init__(self, key, value):
-        self.key = roslib.names.canonicalize_name(key)
+        self.key = rosgraph.names.canonicalize_name(key)
         self.value = value
     def __eq__(self, p):
         if not isinstance(p, Param):
@@ -517,7 +515,7 @@ class Node(object):
         self.package = package
         self.type = node_type
         self.name = name or None
-        self.namespace = roslib.names.make_global_ns(namespace or '/')
+        self.namespace = rosgraph.names.make_global_ns(namespace or '/')
         self.machine_name = machine_name or None
         self.respawn = respawn
         self.args = args or ''
@@ -538,7 +536,7 @@ class Node(object):
             raise ValueError("respawn and required cannot both be set to true")
         
         # validation
-        if self.name and roslib.names.SEP in self.name: # #1821, namespaces in nodes need to be banned
+        if self.name and rosgraph.names.SEP in self.name: # #1821, namespaces in nodes need to be banned
             raise ValueError("node name cannot contain a namespace")
         if not len(self.package.strip()):
             raise ValueError("package must be non-empty")
@@ -622,7 +620,7 @@ def _xml_escape(s):
     Escape string for XML
     @param s: string to escape
     @type  s: str
-    @return: string with XML entities (<, >, ", &) escaped.
+    @return: string with XML entities (<, >, \", &) escaped.
     @rtype: str
     """
     # gross, but doesn't need to be fast. always replace amp first

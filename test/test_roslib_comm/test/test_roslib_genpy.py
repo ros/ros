@@ -86,12 +86,12 @@ class TestGenpy(unittest.TestCase):
             self.assert_(is_special(t))
     def test_Simple(self):
         from roslib.genpy import get_special
-        self.assertEquals('import roslib.rostime', get_special('time').import_str)
-        self.assertEquals('import roslib.rostime', get_special('duration').import_str)
+        self.assertEquals('import genpy', get_special('time').import_str)
+        self.assertEquals('import genpy', get_special('duration').import_str)
         self.assertEquals('import std_msgs.msg', get_special('Header').import_str)
 
-        self.assertEquals('roslib.rostime.Time()', get_special('time').constructor)
-        self.assertEquals('roslib.rostime.Duration()', get_special('duration').constructor)
+        self.assertEquals('genpy.Time()', get_special('time').constructor)
+        self.assertEquals('genpy.Duration()', get_special('duration').constructor)
         self.assertEquals('std_msgs.msg._Header.Header()', get_special('Header').constructor)
 
         self.assertEquals('self.foo.canon()', get_special('time').get_post_deserialize('self.foo'))
@@ -196,12 +196,12 @@ class TestGenpy(unittest.TestCase):
         self.assertEquals("''", default_value('string', 'roslib'))
 
         # builtin specials
-        self.assertEquals('roslib.rostime.Time()', default_value('time', 'roslib'))
-        self.assertEquals('roslib.rostime.Duration()', default_value('duration', 'roslib'))
+        self.assertEquals('genpy.Time()', default_value('time', 'roslib'))
+        self.assertEquals('genpy.Duration()', default_value('duration', 'roslib'))
         self.assertEquals('std_msgs.msg._Header.Header()', default_value('Header', 'roslib'))
 
-        self.assertEquals('roslib.rostime.Time()', default_value('time', 'std_msgs'))
-        self.assertEquals('roslib.rostime.Duration()', default_value('duration', 'std_msgs'))
+        self.assertEquals('genpy.Time()', default_value('time', 'std_msgs'))
+        self.assertEquals('genpy.Duration()', default_value('duration', 'std_msgs'))
         self.assertEquals('std_msgs.msg._Header.Header()', default_value('Header', 'std_msgs'))
 
         # generic instances
@@ -296,7 +296,7 @@ class TestGenpy(unittest.TestCase):
         self.assertEquals(['import ci4_msgs.msg'], compute_import('ci4_msgs', 'ci4_msgs/Base'))
         self.assertEquals(['import ci4_msgs.msg'], compute_import('ci4_msgs', 'Base'))    
         
-        self.assertEquals(['import ci5_msgs.msg', 'import roslib.rostime'], compute_import('foo', 'ci5_msgs/Base'))
+        self.assertEquals(['import ci5_msgs.msg', 'import genpy'], compute_import('foo', 'ci5_msgs/Base'))
         
     def test_get_registered_ex(self):
         from roslib.msgs import MsgSpec, register
@@ -315,12 +315,12 @@ class TestGenpy(unittest.TestCase):
         register('fake_msgs/ThreeNums', MsgSpec(['int32', 'int32', 'int32'], ['x', 'y', 'z'], [], 'int32 x\nint32 y\nint32 z\n'))
         
         # builtin specials
-        self.assertEquals('roslib.rostime.Time()', compute_constructor('roslib', 'time'))
-        self.assertEquals('roslib.rostime.Duration()', compute_constructor('roslib', 'duration'))
+        self.assertEquals('genpy.Time()', compute_constructor('roslib', 'time'))
+        self.assertEquals('genpy.Duration()', compute_constructor('roslib', 'duration'))
         self.assertEquals('std_msgs.msg._Header.Header()', compute_constructor('std_msgs', 'Header'))
 
-        self.assertEquals('roslib.rostime.Time()', compute_constructor('std_msgs', 'time'))
-        self.assertEquals('roslib.rostime.Duration()', compute_constructor('std_msgs', 'duration'))
+        self.assertEquals('genpy.Time()', compute_constructor('std_msgs', 'time'))
+        self.assertEquals('genpy.Duration()', compute_constructor('std_msgs', 'duration'))
 
         # generic instances
         # - unregistered type
@@ -415,10 +415,10 @@ byte is_calibrated
 """)
         self.assertEquals(set(['gd_msgs/MoveArmState', 'probot_msgs/JointState', 'probot_msgs/ControllerStatus', 'std_msgs/Header']),
                           set(msgs.keys()))
-        import roslib.rostime
+        import genpy
         import time
         m_instance1 = msgs['std_msgs/Header']() # make sure default constructor works
-        m_instance2 = msgs['std_msgs/Header'](stamp=roslib.rostime.Time.from_sec(time.time()), frame_id='foo-%s'%time.time(), seq=12390)
+        m_instance2 = msgs['std_msgs/Header'](stamp=genpy.Time.from_sec(time.time()), frame_id='foo-%s'%time.time(), seq=12390)
         self._test_ser_deser(m_instance2, m_instance1)
 
         m_instance1 = msgs['probot_msgs/ControllerStatus']()

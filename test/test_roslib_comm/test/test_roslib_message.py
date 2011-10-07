@@ -40,7 +40,7 @@ import unittest
 import traceback
 
 import roslib.message
-from roslib.rostime import Time, Duration
+from genpy import Time, Duration
 import rosunit
 
 # Not much to test, just tripwires
@@ -294,7 +294,7 @@ list: []""", strify_message(M2('', -1, 0., False, [])))
                         M2('string', -1, 0., False, []),
                         ])))
         # test Time and Duration
-        from roslib.rostime import Time, Duration
+        from genpy import Time, Duration
         class M5(Message):
             __slots__ = ['t', 'd']
             _slot_types=['time', 'duration']
@@ -364,7 +364,7 @@ d:
         from std_msgs.msg import String, Time, MultiArrayLayout, MultiArrayDimension
         dims1 = [MultiArrayDimension(*args) for args in [('', 0, 0), ('x', 1, 2), ('y of z', 3, 4)]]
         dims2 = [MultiArrayDimension('hello world', 91280, 1983274)]
-        times = [Time(roslib.rostime.Time(*args)) for args in [(0,), (12345, 6789), (1, 1)]]
+        times = [Time(genpy.Time(*args)) for args in [(0,), (12345, 6789), (1, 1)]]
         val = ArrayOfMsgs([String(''), String('foo'), String('bar of soap')],
                           times,
                           [MultiArrayLayout(dims1, 0), MultiArrayLayout(dims2, 12354)],
@@ -377,7 +377,7 @@ d:
         # type-checking class types.  as soon as it does, it will need
         # test to validate this.
         from roslib.message import check_type, SerializationError
-        from roslib.rostime import Time, Duration
+        from genpy import Time, Duration
         valids = [
             ('byte', 1), ('byte', -1),
             ('string', ''), ('string', 'a string of text'),
@@ -433,7 +433,7 @@ d:
         self.assertEquals(rosgraph_msgs.msg.Log, get_message_class('rosgraph_msgs/Log'))    
 
     def test_fill_message_args_embed_time(self):
-        from roslib.rostime import Time, Duration
+        from genpy import Time, Duration
         from roslib.message import fill_message_args
         from test_roslib_comm.msg import FillEmbedTime
 

@@ -46,7 +46,7 @@ import traceback
 
 import rospy.exceptions
 
-import roslib.rostime
+import genpy
 
 ## /time support. This hooks into the rospy Time representation and
 ## allows it to be overriden with data from the /time topic.
@@ -56,7 +56,7 @@ _rostime_current = None
 _rostime_cond = threading.Condition()
 
 # subclass roslib to provide abstraction layer
-class Duration(roslib.rostime.Duration):
+class Duration(genpy.Duration):
     """
     Duration represents the ROS 'duration' primitive type, which
     consists of two integers: seconds and nanoseconds. The Duration
@@ -87,9 +87,9 @@ class Duration(roslib.rostime.Duration):
         @param nsecs: nanoseconds
         @type  nsecs: int
         """
-        roslib.rostime.Duration.__init__(self, secs, nsecs)
+        genpy.Duration.__init__(self, secs, nsecs)
 
-class Time(roslib.rostime.Time):
+class Time(genpy.Time):
     """
     Time represents the ROS 'time' primitive type, which consists of two
     integers: seconds since epoch and nanoseconds since seconds. Time
@@ -132,8 +132,9 @@ class Time(roslib.rostime.Time):
         @param nsecs: nanoseconds since seconds (since epoch)
         @type  nsecs: int
         """
-        roslib.rostime.Time.__init__(self, secs, nsecs)
+        genpy.Time.__init__(self, secs, nsecs)
         
+    @staticmethod
     def now():
         """
         Create new L{Time} instance representing current time. This
@@ -145,19 +146,7 @@ class Time(roslib.rostime.Time):
         @return: L{Time} instance for current time
         @rtype: L{Time}
         """
-        if not _rostime_initialized:
-            raise rospy.exceptions.ROSInitException("time is not initialized. Have you called init_node()?")
-        if _rostime_current is not None:
-            # initialize with sim time
-            return _rostime_current
-        else:
-            # initialize with wallclock
-            float_secs = time.time()
-            secs = int(float_secs)
-            nsecs = int((float_secs - secs) * 1000000000)
-            return Time(secs, nsecs)
-
-    now = staticmethod(now)
+        return get_rostime()
 
     # have to reproduce super class implementation to return correct typing
     
@@ -192,10 +181,10 @@ class Time(roslib.rostime.Time):
     
 def _set_rostime(t):
     """Callback to update ROS time from a ROS Topic"""
-    if isinstance(t, roslib.rostime.Time):
+    if isinstance(t, genpy.Time):
         t = Time(t.secs, t.nsecs)
     elif not isinstance(t, Time):
-        raise ValueError("must be Time instance")
+        raise ValueError("must be Time instance: %s"%t.__class__)
     global _rostime_current
     _rostime_current = t
     try:
@@ -210,7 +199,17 @@ def get_rostime():
     @return: current time as a L{rospy.Time} object
     @rtype: L{Time}
     """
-    return Time.now()
+    if not _rostime_initialized:
+        raise rospy.exceptions.ROSInitException("time is not initialized. Have you called init_node()?")
+    if _rostime_current is not None:
+        # initialize with sim time
+        return _rostime_current
+    else:
+        # initialize with wallclock
+        float_secs = time.time()
+        secs = int(float_secs)
+        nsecs = int((float_secs - secs) * 1000000000)
+        return Time(secs, nsecs)
 
 def get_time():
     """

@@ -35,7 +35,8 @@
 import threading
 import time
 
-import roslib.rostime
+# for Time, Duration
+import genpy
 
 import rospy.core
 import rospy.rostime
@@ -94,7 +95,7 @@ def sleep(duration):
     ROS shutdown occurs before sleep completes
     """
     if rospy.rostime.is_wallclock():
-        if isinstance(duration, roslib.rostime.Duration):
+        if isinstance(duration, genpy.Duration):
             duration = duration.to_sec()
         if duration < 0:
             return
@@ -102,15 +103,15 @@ def sleep(duration):
             rospy.rostime.wallsleep(duration)
     else:
         initial_rostime = rospy.rostime.get_rostime()
-        if not isinstance(duration, roslib.rostime.Duration):
-            duration = rospy.rostime.Duration.from_sec(duration)
+        if not isinstance(duration, genpy.Duration):
+            duration = genpy.Duration.from_sec(duration)
 
         rostime_cond = rospy.rostime.get_rostime_cond()
 
         # #3123
-        if initial_rostime == roslib.rostime.Time(0):
+        if initial_rostime == genpy.Time(0):
             # break loop if time is initialized or node is shutdown
-            while initial_rostime == roslib.rostime.Time(0) and \
+            while initial_rostime == genpy.Time(0) and \
                       not rospy.core.is_shutdown():
                 with rostime_cond:
                     rostime_cond.wait(0.3)

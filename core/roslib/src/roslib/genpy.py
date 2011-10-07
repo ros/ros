@@ -168,8 +168,8 @@ class Special:
         
 _SPECIAL_TYPES = {
     roslib.msgs.HEADER:   Special('std_msgs.msg._Header.Header()',     None, 'import std_msgs.msg'),
-    roslib.msgs.TIME:     Special('roslib.rostime.Time()',     '%s.canon()', 'import roslib.rostime'),
-    roslib.msgs.DURATION: Special('roslib.rostime.Duration()', '%s.canon()', 'import roslib.rostime'), 
+    roslib.msgs.TIME:     Special('genpy.Time()',     '%s.canon()', 'import genpy'),
+    roslib.msgs.DURATION: Special('genpy.Duration()', '%s.canon()', 'import genpy'), 
     }
 
 ################################################################################

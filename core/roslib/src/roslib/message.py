@@ -46,7 +46,7 @@ import struct
 import sys
 
 import roslib.names
-from roslib.rostime import Time, Duration, TVal
+from genpy import Time, Duration, TVal
 
 # common struct pattern singletons for msgs to use. Although this
 # would better placed in a generator-specific module, we don't want to
@@ -491,20 +491,20 @@ def _fill_val(msg, f, v, keys, prefix):
     if not f in msg.__slots__:
         raise ROSMessageException("No field name [%s%s]"%(prefix, f))
     def_val = getattr(msg, f)
-    if isinstance(def_val, Message) or isinstance(def_val, roslib.rostime.TVal):
+    if isinstance(def_val, Message) or isinstance(def_val, genpy.TVal):
         # check for substitution key, e.g. 'now'
         if type(v) == str:
             if v in keys:
                 setattr(msg, f, keys[v])
             else:
                 raise ROSMessageException("No key named [%s]"%(v))
-        elif isinstance(def_val, roslib.rostime.TVal) and type(v) in (int, long):
+        elif isinstance(def_val, genpy.TVal) and type(v) in (int, long):
             #special case to handle time value represented as a single number
             #TODO: this is a lossy conversion
-            if isinstance(def_val, roslib.rostime.Time):
-                setattr(msg, f, roslib.rostime.Time.from_sec(v/1e9))
-            elif isinstance(def_val, roslib.rostime.Duration):                    
-                setattr(msg, f, roslib.rostime.Duration.from_sec(v/1e9))
+            if isinstance(def_val, genpy.Time):
+                setattr(msg, f, genpy.Time.from_sec(v/1e9))
+            elif isinstance(def_val, genpy.Duration):                    
+                setattr(msg, f, genpy.Duration.from_sec(v/1e9))
             else:
                 raise ROSMessageException("Cannot create time values of type [%s]"%(type(def_val)))
         else:
@@ -550,7 +550,7 @@ def _fill_message_args(msg, msg_args, keys, prefix=''):
     @raise ROSMessageException: if not enough message arguments to fill message
     @raise ValueError: if msg or msg_args is not of correct type
     """
-    if not isinstance(msg, (Message, roslib.rostime.TVal)):
+    if not isinstance(msg, (Message, genpy.TVal)):
         raise ValueError("msg must be a Message instance: %s"%msg)
 
     if type(msg_args) == dict:

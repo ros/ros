@@ -46,8 +46,10 @@ import sys
 import time
 import random
 
+import rosgraph
+import rosgraph.names
+
 import roslib
-import roslib.names
 import roslib.network
 
 import rospy.core
@@ -78,6 +80,36 @@ _rospy_to_logging_levels = {
     FATAL: logging.CRITICAL,
     }
 
+def myargv(argv=None):
+    """
+    Remove ROS remapping arguments from sys.argv arguments.
+    @return: copy of sys.argv with ROS remapping arguments removed
+    @rtype: [str]
+    """
+    if argv is None:
+        argv = sys.argv
+    return [a for a in argv if not rosgraph.names.REMAP in a]
+
+def load_command_line_node_params(argv):
+    """
+    Load node param mappings (aka private parameters) encoded in
+    command-line arguments, e.g. _foo:=bar. See also rosgraph.names.load_mappings.
+    @param argv: command-line arguments
+    @param argv: [str]
+    @return: param->value remappings. 
+    @rtype: {str: val}
+    """    
+    mappings = {}
+    for arg in argv:
+        if rosgraph.names.REMAP in arg:
+            try:
+                src, dst = [x.strip() for x in arg.split(rosgraph.names.REMAP)]
+                if src and dst:
+                    if len(src) > 1 and src[0] == '_' and src[1] != '_':
+                        mappings[src[1:]] = yaml.load(dst)
+            except:
+                sys.stderr.write("ERROR: Invalid remapping argument '%s'\n"%arg)
+    return mappings
 
 def on_shutdown(h):
     """
@@ -104,15 +136,6 @@ def spin():
         logdebug("keyboard interrupt, shutting down")
         rospy.core.signal_shutdown('keyboard interrupt')
 
-def myargv(argv=sys.argv):
-    """
-    Helper function for using sys.argv is ROS client libraries.
-    @return: copy of sys.argv with ROS remapping arguments removed
-    @rtype: [str]
-    """
-    import roslib.scriptutil
-    return roslib.scriptutil.myargv(argv=argv)
-
 def _init_node_params(argv, node_name):
     """
     Uploads private params to the parameter server. Private params are specified
@@ -120,11 +143,10 @@ def _init_node_params(argv, node_name):
     """
 
     # #1027: load in param name mappings
-    import roslib.params
-    params = roslib.params.load_command_line_node_params(argv)
+    params = load_command_line_node_params(argv)
     for param_name, param_value in params.items():
         logdebug("setting param %s to %s"%(param_name, param_value))
-        set_param(roslib.names.PRIV_NAME + param_name, param_value)
+        set_param(rosgraph.names.PRIV_NAME + param_name, param_value)
 
 _init_node_args = None
 
@@ -192,9 +214,9 @@ def init_node(name, argv=None, anonymous=False, log_level=INFO, disable_rostime=
         rospy.names.reload_mappings(argv)
         
     # this test can be eliminated once we change from warning to error in the next check
-    if roslib.names.SEP in name:
+    if rosgraph.names.SEP in name:
         raise ValueError("namespaces are not allowed in node names")
-    if not roslib.names.is_legal_base_name(name):
+    if not rosgraph.names.is_legal_base_name(name):
         import warnings
         warnings.warn("'%s' is not a legal ROS base name. This may cause problems with other ROS tools"%name, stacklevel=2)
     
@@ -223,7 +245,7 @@ def init_node(name, argv=None, anonymous=False, log_level=INFO, disable_rostime=
     mappings = rospy.names.get_mappings()
     if '__name' in mappings:
         # use roslib version of resolve_name to avoid remapping
-        name = roslib.names.resolve_name(mappings['__name'], rospy.core.get_caller_id())
+        name = rosgraph.names.resolve_name(mappings['__name'], rospy.core.get_caller_id())
         if anonymous:
             logdebug("[%s] WARNING: due to __name setting, anonymous setting is being changed to false"%name)
             anonymous = False
@@ -282,8 +304,7 @@ def get_master(env=os.environ):
     global _master_proxy
     if _master_proxy is not None:
         return _master_proxy
-    import roslib.rosenv
-    _master_proxy = rospy.msproxy.MasterProxy(roslib.rosenv.get_master_uri())
+    _master_proxy = rospy.msproxy.MasterProxy(rosgraph.get_master_uri())
     return _master_proxy
 
 #########################################################
@@ -406,7 +427,7 @@ def set_param(param_name, param_value):
     @raise ROSException: if parameter server reports an error
     """
     # #2202
-    if not roslib.names.is_legal_name(param_name):
+    if not rosgraph.names.is_legal_name(param_name):
         import warnings
         warnings.warn("'%s' is not a legal ROS graph resource name. This may cause problems with other ROS tools"%param_name, stacklevel=2)
 

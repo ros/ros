@@ -293,7 +293,6 @@ def resolve_name(name, namespace_, remappings=None):
     else:
         return resolved_name
 
-
 def script_resolve_name(script_name, name):
     """
     Name resolver for scripts. Supports :envvar:`ROS_NAMESPACE`.  Does not
@@ -313,3 +312,20 @@ def script_resolve_name(script_name, name):
     elif is_private(name):
         return ns_join(make_caller_id(script_name), name[1:])
     return get_ros_namespace() + name
+
+def anonymous_name(id):
+    """
+    Generate a ROS-legal 'anonymous' name
+
+    @param id: prefix for anonymous name
+    @type  id: str
+    """
+    import socket, random
+    name = "%s_%s_%s_%s"%(id, socket.gethostname(), os.getpid(), random.randint(0, sys.maxsize))
+    # RFC 952 allows hyphens, IP addrs can have '.'s, both
+    # of which are illegal for ROS names. For good
+    # measure, screen ipv6 ':'. 
+    name = name.replace('.', '_')
+    name = name.replace('-', '_')                
+    return name.replace(':', '_')
+

@@ -41,9 +41,12 @@ import os
 import logging
 import sys
 import time
+import traceback
 
-import roslib.names
 import roslib.network 
+
+import rosgraph
+import rosgraph.names
 
 from roslaunch.core import *
 from roslaunch.config import ROSLaunchConfig
@@ -100,7 +103,7 @@ def validate_master_launch(m, is_core):
     if is_core:
         # User wants to start a master, and our configuration does
         # point to the local host.
-        env_uri = roslib.rosenv.get_master_uri()
+        env_uri = rosgraph.get_master_uri()
         env_host, env_port = roslib.network.parse_http_host_and_port(env_uri)
 
         if not roslib.network.is_local_address(env_host):
@@ -111,11 +114,11 @@ def validate_master_launch(m, is_core):
             printerrlog("WARNING: ROS_MASTER_URI port [%s] does not match this roscore [%s]"%(env_port, m.get_port()))
 
 def _all_namespace_parents(p):
-    splits = [s for s in p.split(roslib.names.SEP) if s]
-    curr =roslib.names.SEP
+    splits = [s for s in p.split(rosgraph.names.SEP) if s]
+    curr =rosgraph.names.SEP
     parents = [curr]
     for s in splits[:-1]:
-        next_ = curr + s + roslib.names.SEP
+        next_ = curr + s + rosgraph.names.SEP
         parents.append(next_)
         curr = next_
     return parents
@@ -136,8 +139,8 @@ def _unify_clear_params(params):
     # canonicalize parameters
     canon_params = []
     for p in params:
-        if not p[-1] == roslib.names.SEP:
-            p += roslib.names.SEP
+        if not p[-1] == rosgraph.names.SEP:
+            p += rosgraph.names.SEP
         if not p in canon_params:
             canon_params.append(p)
     # reduce operation
@@ -191,8 +194,7 @@ class _ROSLaunchListeners(ProcessListener):
         for l in self.process_listeners:
             try:
                 l.process_died(process_name, exit_code)
-            except Exception, e:
-                import traceback
+            except Exception as e:
                 logging.getLogger('roslaunch').error(traceback.format_exc())
                 
 class ROSLaunchListener(object):
@@ -325,7 +327,7 @@ class ROSLaunchRunner(object):
                     raise RLException("Failed to set parameter: %s"%(msg))
         except RLException:
             raise
-        except Exception, e:
+        except Exception as e:
             printerrlog("load_parameters: unable to set parameters (last param was [%s]): %s"%(p,e))
             raise #re-raise as this is fatal
         self.logger.info("... load_parameters complete")            
@@ -456,7 +458,7 @@ class ROSLaunchRunner(object):
             retcode = subprocess.call(cmd, shell=True, env=env)
             if retcode < 0:
                 raise RLException("command [%s] failed with exit code %s"%(cmd, retcode))
-        except OSError, e:
+        except OSError as e:
             raise RLException("command [%s] failed: %s"%(cmd, e))
         
     #TODO: _launch_run_executables, _launch_teardown_executables
@@ -475,13 +477,11 @@ class ROSLaunchRunner(object):
         be already running
         @raise RLException: if core launches fail
         """
-        import roslib.names
-
         config = self.config
         master = config.master.get()
         tolaunch = []
         for node in config.nodes_core:
-            node_name = roslib.names.ns_join(node.namespace, node.name)
+            node_name = rosgraph.names.ns_join(node.namespace, node.name)
             code, msg, _ = master.lookupNode(_ID, node_name)
             if code == -1:
                 tolaunch.append(node)
@@ -492,7 +492,7 @@ class ROSLaunchRunner(object):
                 self.logger.error("ERROR: master return [%s][%s] on lookupNode call"%(code,msg))
                 
         for node in tolaunch:
-            node_name = roslib.names.ns_join(node.namespace, node.name)
+            node_name = rosgraph.names.ns_join(node.namespace, node.name)
             name, success = self.launch_node(node, core=True)
             if success:
                 print "started core service [%s]"%node_name
@@ -516,13 +516,13 @@ class ROSLaunchRunner(object):
         if node.machine is None:
             node.machine = self.config.machines['']
         if node.name is None:
-            node.name = roslib.names.anonymous_name(node.type)
+            node.name = rosgraph.names.anonymous_name(node.type)
             
         master = self.config.master
         import roslaunch.node_args
         try:
             process = create_node_process(self.run_id, node, master.uri)
-        except roslaunch.node_args.NodeParamsException, e:
+        except roslaunch.node_args.NodeParamsException as e:
             self.logger.error(e)
             if node.package == 'rosout' and node.type == 'rosout':
                 printerrlog("\n\n\nERROR: rosout is not built. Please run 'rosmake rosout'\n\n\n")

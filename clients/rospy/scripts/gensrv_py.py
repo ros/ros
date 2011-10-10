@@ -46,9 +46,9 @@ import sys, os
 
 try:
     # TODO: remove after ROS 1.7 is released
-    from roslib.genpy_electric import MsgGenerationException
+    from roslib.genpy_electric import MsgGenerationException, msg_generator
 except:
-    from roslib.genpy import MsgGenerationException    
+    from roslib.genpy import MsgGenerationException, msg_generator
 
 import roslib.gentools 
 import roslib.srvs
@@ -58,7 +58,7 @@ import genmsg_py, genutil
 REQUEST ='Request'
 RESPONSE='Response'
 
-class SrvGenerationException(roslib.genpy_electric.MsgGenerationException): pass
+class SrvGenerationException(MsgGenerationException): pass
 
 def srv_generator(package, name, spec):
     req, resp = ["%s%s"%(name, suff) for suff in [REQUEST, RESPONSE]]
@@ -101,7 +101,7 @@ class SrvGenerator(genutil.Generator):
                 #outfile = os.path.join(outdir, prefix+suffix+".py")    
                 #gen = roslib.genpy_electric.msg_generator(package, name+suffix, mspec)
                 #self.write_gen(outfile, gen, roslib.srvs.is_verbose())
-                for l in roslib.genpy_electric.msg_generator(package, base_name+suffix, mspec):
+                for l in msg_generator(package, base_name+suffix, mspec):
                     f.write(l+'\n')
 
             # generate service file

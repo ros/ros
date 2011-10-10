@@ -43,8 +43,10 @@ import shlex
 import sys
 import time
 
+import rospkg
+import rosgraph
+
 import roslib.packages
-import roslib.rosenv
 import roslib.substitution_args
 from roslib.scriptutil import script_resolve_name
 
@@ -167,7 +169,7 @@ def get_node_args(node_name, roslaunch_files):
         raise RLException("ERROR: multiple nodes named [%s] in [%s].\nPlease fix the launch files as duplicate names are not allowed."%(node_name, ', '.join(roslaunch_files)))
     node = node[0]
     
-    master_uri = roslib.rosenv.get_master_uri()
+    master_uri = rosgraph.get_master_uri()
     machine = local_machine()
 
     # don't use create_local_process_env, which merges the env with the full env of the shell
@@ -200,19 +202,21 @@ def create_local_process_env(node, machine, master_uri, env=os.environ):
     full_env = env.copy()
 
     for evar in [
-        roslib.rosenv.ROS_MASTER_URI,
-        roslib.rosenv.ROS_ROOT,
-        roslib.rosenv.ROS_PACKAGE_PATH,
-        roslib.rosenv.ROS_IP,
+        rosgraph.ROS_MASTER_URI,
+        rospkg.environment.ROS_ROOT,
+        rospkg.environment.ROS_PACKAGE_PATH,
+        rosgraph.ROS_IP,
         'PYTHONPATH',
-        roslib.rosenv.ROS_NAMESPACE]:
+        rosgraph.ROS_NAMESPACE]:
         if evar in full_env:
             del full_env[evar]
 
     proc_env = setup_env(node, machine, master_uri)
 
     # #2372: add ROS_ROOT/bin to path if it is not present
-    rosroot_bin = os.path.join(roslib.rosenv.get_ros_root(), 'bin')
+    ros_root = rospkg.get_ros_root()
+    if ros_root is not None:
+        rosroot_bin = os.path.join(rospkg.get_ros_root(), 'bin')
     path = os.environ.get('PATH', '')
     if not rosroot_bin in path.split(os.pathsep):
         proc_env['PATH'] = path + os.pathsep + rosroot_bin

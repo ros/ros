@@ -44,7 +44,8 @@ import subprocess
 import time
 import traceback
 
-import roslib.rosenv 
+import rospkg
+
 import roslib.network 
 
 from roslaunch.core import *
@@ -199,7 +200,7 @@ class LocalProcess(Process):
         name. Values are None if stdout/stderr are not logged.
         @rtype: str, str
         """    
-        log_dir = roslib.rosenv.get_log_dir(env=os.environ)
+        log_dir = rospkg.get_log_dir(env=os.environ)
         if self.run_id:
             log_dir = os.path.join(log_dir, self.run_id)
         if not os.path.exists(log_dir):
@@ -275,7 +276,7 @@ class LocalProcess(Process):
             elif self.cwd == 'ros-root':
                 cwd = get_ros_root()
             else:
-                cwd = roslib.rosenv.get_ros_home()
+                cwd = rospkg.get_ros_home()
 
             _logger.info("process[%s]: start w/ args [%s]", self.name, self.args)
             _logger.info("process[%s]: cwd will be [%s]", self.name, cwd)

@@ -45,7 +45,7 @@ import sys
 import time
 import unittest
 
-import rostest
+import rosunit
 
 import cStringIO
 from subprocess import Popen, PIPE, check_call, call
@@ -274,4 +274,4 @@ class TestRosnode(unittest.TestCase):
         
             
 if __name__ == '__main__':
-    rostest.unitrun(PKG, NAME, TestRosnode, sys.argv, coverage_packages=['rosnode'])
+    rosunit.unitrun(PKG, NAME, TestRosnode, sys.argv, coverage_packages=['rosnode'])

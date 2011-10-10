@@ -43,8 +43,6 @@ import sys
 import cStringIO
 import logging
 
-import roslib.rosenv 
-
 def printlog(msg, *args):
     if args:
         msg = msg%args

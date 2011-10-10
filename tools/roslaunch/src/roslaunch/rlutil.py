@@ -41,10 +41,12 @@ This API should not be considered stable.
 import os
 import time
 
-from roslib.names import SEP
+import rospkg
 
 import roslaunch.core
 from rosmaster import DEFAULT_MASTER_PORT
+
+import rosgraph
 
 def check_log_disk_usage():
     """
@@ -52,8 +54,7 @@ def check_log_disk_usage():
     """
     try:
         import rosclean
-        import roslib.rosenv
-        d = roslib.rosenv.get_log_dir()
+        d = rospkg.get_log_dir()
         roslaunch.core.printlog("Checking log directory for disk usage. This may take awhile.\nPress Ctrl-C to interrupt") 
         disk_usage = rosclean.get_disk_usage(d)
         # warn if over a gig
@@ -71,10 +72,10 @@ def resolve_launch_arguments(args):
     @rtype: [str]
     """
     import roslib.packages
-    import roslib.scriptutil
+    import rospy
 
     # strip remapping args for processing
-    args = roslib.scriptutil.myargv(args)
+    args = rospy.myargv(args)
     
     # user can either specify:
     #  - filename + launch args
@@ -94,7 +95,7 @@ def resolve_launch_arguments(args):
                 resolved = resolved[0]
             elif len(resolved) > 1:
                 raise roslaunch.core.RLException("multiple files named [%s] in package [%s].\nPlease specify full path instead"%(args[1], top))
-        except roslib.packages.InvalidROSPkgException, e:
+        except roslib.packages.InvalidROSPkgException as e:
             raise roslaunch.core.RLException("[%s] is not a package or launch file name"%top)
         if not resolved:
             raise roslaunch.core.RLException("cannot locate [%s] in package [%s]"%(args[1], top))
@@ -155,7 +156,7 @@ def get_or_generate_uuid(options_runid, options_wait_for_master):
       conditions with the roscore being initialized.
     @type  options_wait_for_master: bool
     """
-    import roslib.scriptutil
+
     # Three possible sources of the run_id:
     #
     #  - if we're a child process, we get it from options_runid
@@ -167,16 +168,11 @@ def get_or_generate_uuid(options_runid, options_wait_for_master):
     # #773: Generate a run_id to use if we launch a master
     # process.  If a master is already running, we'll get the
     # run_id from it instead
-    param_server = roslib.scriptutil.get_param_server()
+    param_server = rosgraph.Master('/roslaunch')
     val = None
     while val is None:
         try:
-            code, msg, val = param_server.getParam('/roslaunch', '/run_id')
-            if code == 1:
-                return val
-            else:
-                val = None
-                raise RuntimeError("unknown error communicating with Parameter Server: %s"%msg)
+            val = param_server.getParam('/run_id')
         except:
             if not options_wait_for_master:
                 val = roslaunch.core.generate_run_id()
@@ -241,10 +237,10 @@ def namespaces_of(name):
     if not isinstance(name, basestring):
         raise TypeError('name')
     if not name:
-        return [SEP]
+        return ['/']
 
-    splits = [x for x in name.split(SEP) if x]
-    return ['/'] + ['/'+SEP.join(splits[:i]) for i in xrange(1, len(splits))]
+    splits = [x for x in name.split('/') if x]
+    return ['/'] + ['/'+'/'.join(splits[:i]) for i in xrange(1, len(splits))]
 
 def print_file_list(roslaunch_files):
     """

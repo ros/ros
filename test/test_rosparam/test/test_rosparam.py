@@ -33,8 +33,6 @@
 #
 # Revision $Id: test_rosparam_command_line_online.py 5710 2009-08-20 03:11:04Z sfkwc $
 
-from __future__ import with_statement
-
 PKG = 'test_rosparam'
 NAME = 'test_rosparam_command_line_online'
 import roslib; roslib.load_manifest(PKG)
@@ -45,12 +43,15 @@ import sys
 import time
 import unittest
 
-import rostest
+import rospkg
+import rosgraph
+import rosunit
 
 import cStringIO
 from subprocess import Popen, PIPE, check_call, call
 
-from roslib.scriptutil import get_param_server, script_resolve_name
+def get_param_server():
+    return rosgraph.Master('/test_rosparam')
 
 from contextlib import contextmanager
 @contextmanager
@@ -139,32 +140,32 @@ class TestRosparam(unittest.TestCase):
 
         # load into top-level
         rosparam.yamlmain([cmd, 'load', f])
-        self.assertEquals('bar', ps.getParam('/', '/foo')[2])
+        self.assertEquals('bar', ps.getParam('/foo'))
         # - make sure it did an overlay, not erase
-        self.assertEquals('foo-value', ps.getParam('/', '/string')[2])
+        self.assertEquals('foo-value', ps.getParam('/string'))
         
         rosparam.yamlmain([cmd, 'load', '-v', f])
-        self.assertEquals('bar', ps.getParam('/', '/foo')[2])
+        self.assertEquals('bar', ps.getParam('/foo'))
         
         # load into namespace
         rosparam.yamlmain([cmd, 'load', f, '/rosparam_load/test'])
-        self.assertEquals('bar', ps.getParam('/', '/rosparam_load/test/foo')[2])
+        self.assertEquals('bar', ps.getParam('/rosparam_load/test/foo'))
         rosparam.yamlmain([cmd, 'load', '-v', f, '/rosparam_load/test'])
-        self.assertEquals('bar', ps.getParam('/', '/rosparam_load/test/foo')[2])
+        self.assertEquals('bar', ps.getParam('/rosparam_load/test/foo'))
 
         # load file with namespace spec in it
         # - load into top-level
         rosparam.yamlmain([cmd, 'load', f_ns])
-        self.assertEquals('baz', ps.getParam('/', '/a/b/foo')[2])
-        self.assertEquals('bar', ps.getParam('/', '/foo')[2])
+        self.assertEquals('baz', ps.getParam('/a/b/foo'))
+        self.assertEquals('bar', ps.getParam('/foo'))
         rosparam.yamlmain([cmd, 'load', '-v', f_ns])
-        self.assertEquals('baz', ps.getParam('/', '/a/b/foo')[2])        
+        self.assertEquals('baz', ps.getParam('/a/b/foo'))        
         
         # load into namespace
         rosparam.yamlmain([cmd, 'load', f_ns, '/rosparam_load/test2'])
-        self.assertEquals('baz', ps.getParam('/', '/rosparam_load/test2/a/b/foo')[2])
+        self.assertEquals('baz', ps.getParam('/rosparam_load/test2/a/b/foo'))
         rosparam.yamlmain([cmd, 'load', '-v', f_ns, '/rosparam_load/test2'])
-        self.assertEquals('baz', ps.getParam('/', '/rosparam_load/test2/a/b/foo')[2])
+        self.assertEquals('baz', ps.getParam('/rosparam_load/test2/a/b/foo'))
         
     def test_rosparam_get(self):
         from ros import rosparam
@@ -234,57 +235,57 @@ class TestRosparam(unittest.TestCase):
         ps = get_param_server()
         with fakestdout() as b:
             rosparam.yamlmain([cmd, 'set', "/rosparam_set/test1", "1"])
-            self.assertEquals(1, ps.getParam('/', '/rosparam_set/test1')[2])
+            self.assertEquals(1, ps.getParam('/rosparam_set/test1'))
         with fakestdout() as b:            
             # -- verbose
             rosparam.yamlmain([cmd, 'set', '-v', "/rosparam_set/test1", "1"])
-            self.assertEquals(1, ps.getParam('/', '/rosparam_set/test1')[2])
+            self.assertEquals(1, ps.getParam('/rosparam_set/test1'))
         with fakestdout() as b:            
             rosparam.yamlmain([cmd, 'set', "rosparam_set/test1", "2"])
-            self.assertEquals(2, ps.getParam('/', '/rosparam_set/test1')[2])
+            self.assertEquals(2, ps.getParam('/rosparam_set/test1'))
             
         with fakestdout() as b:
             # - floats
             rosparam.yamlmain([cmd, 'set', "/rosparam_set/test2", "1.0"])
-            self.assertEquals(1., ps.getParam('/', '/rosparam_set/test2')[2])
+            self.assertEquals(1., ps.getParam('/rosparam_set/test2'))
         with fakestdout() as b:
             # - floats
             rosparam.yamlmain([cmd, 'set', "/rosparam_set/test2", "2.0"])
-            self.assertEquals(2., ps.getParam('/', '/rosparam_set/test2')[2])
+            self.assertEquals(2., ps.getParam('/rosparam_set/test2'))
         with fakestdout() as b:            
             # - booleans
             rosparam.yamlmain([cmd, 'set', "/rosparam_set/testbool", "true"])
-            self.assertEquals(True, ps.getParam('/', '/rosparam_set/testbool')[2])
+            self.assertEquals(True, ps.getParam('/rosparam_set/testbool'))
         with fakestdout() as b:            
             # - strings
             rosparam.yamlmain([cmd, 'set', "/rosparam_set/teststr", "hi"])
-            self.assertEquals("hi", ps.getParam('/', '/rosparam_set/teststr')[2])
+            self.assertEquals("hi", ps.getParam('/rosparam_set/teststr'))
         with fakestdout() as b: 
             # - list
             rosparam.yamlmain([cmd, 'set', "/rosparam_set/testlist", "[1, 2, 3]"])
-            self.assertEquals([1, 2, 3], ps.getParam('/', '/rosparam_set/testlist')[2])
+            self.assertEquals([1, 2, 3], ps.getParam('/rosparam_set/testlist'))
         with fakestdout() as b: 
             # - dictionary
             rosparam.yamlmain([cmd, 'set', "/rosparam_set/testdict", "{a: b, c: d}"])
-            self.assertEquals('b', ps.getParam('/', '/rosparam_set/testdict/a')[2])
-            self.assertEquals('d', ps.getParam('/', '/rosparam_set/testdict/c')[2])
+            self.assertEquals('b', ps.getParam('/rosparam_set/testdict/a'))
+            self.assertEquals('d', ps.getParam('/rosparam_set/testdict/c'))
         with fakestdout() as b:             
             #   - empty dictionary should be a noop
             rosparam.yamlmain([cmd, 'set', "set/testdict", "{}"])
-            self.assertEquals('b', ps.getParam('/', '/rosparam_set/testdict/a')[2])
-            self.assertEquals('d', ps.getParam('/', '/rosparam_set/testdict/c')[2])
+            self.assertEquals('b', ps.getParam('/rosparam_set/testdict/a'))
+            self.assertEquals('d', ps.getParam('/rosparam_set/testdict/c'))
         with fakestdout() as b:                         
             #   - this should be an update
             rosparam.yamlmain([cmd, 'set', "/rosparam_set/testdict", "{e: f, g: h}"])
-            self.assertEquals('b', ps.getParam('/', '/rosparam_set/testdict/a')[2])
-            self.assertEquals('d', ps.getParam('/', '/rosparam_set/testdict/c')[2])
-            self.assertEquals('f', ps.getParam('/', '/rosparam_set/testdict/e')[2])
-            self.assertEquals('h', ps.getParam('/', '/rosparam_set/testdict/g')[2])
+            self.assertEquals('b', ps.getParam('/rosparam_set/testdict/a'))
+            self.assertEquals('d', ps.getParam('/rosparam_set/testdict/c'))
+            self.assertEquals('f', ps.getParam('/rosparam_set/testdict/e'))
+            self.assertEquals('h', ps.getParam('/rosparam_set/testdict/g'))
         with fakestdout() as b:                                     
             # -- verbose
             rosparam.yamlmain([cmd, 'set', '-v', "/rosparam_set/testdictverbose", "{e: f, g: h}"])
-            self.assertEquals('f', ps.getParam('/', '/rosparam_set/testdictverbose/e')[2])
-            self.assertEquals('h', ps.getParam('/', '/rosparam_set/testdictverbose/g')[2])
+            self.assertEquals('f', ps.getParam('/rosparam_set/testdictverbose/e'))
+            self.assertEquals('h', ps.getParam('/rosparam_set/testdictverbose/g'))
 
     def test_rosparam_delete(self):
         from ros import rosparam
@@ -301,21 +302,21 @@ class TestRosparam(unittest.TestCase):
             self.assertNotEquals(0, e.code)
 
         # delete
-        ps.setParam('/', '/delete/me', True)
-        self.assert_(ps.hasParam('/', '/delete/me')[2])
+        ps.setParam('/delete/me', True)
+        self.assert_(ps.hasParam('/delete/me'))
         rosparam.yamlmain([cmd, 'delete', "/delete/me"])
-        self.failIf(ps.hasParam('/', '/delete/me')[2])
+        self.failIf(ps.hasParam('/delete/me'))
 
-        ps.setParam('/', '/delete/me2', True)
-        self.assert_(ps.hasParam('/', '/delete/me2')[2])
+        ps.setParam('/delete/me2', True)
+        self.assert_(ps.hasParam('/delete/me2'))
         rosparam.yamlmain([cmd, 'delete', '-v', "/delete/me2"])
-        self.failIf(ps.hasParam('/', '/delete/me2')[2])
+        self.failIf(ps.hasParam('/delete/me2'))
 
     def test_rosparam_dump(self):
         from ros import rosparam
-        import roslib.packages
-        f = os.path.join(roslib.packages.get_pkg_dir('test_rosparam'), 'test', 'test.yaml')
-        f_out = os.path.join(roslib.packages.get_pkg_dir('test_rosparam'), 'test', 'test_dump.yaml')
+        rp = rospkg.RosPack()
+        f = os.path.join(rp.get_path('test_rosparam'), 'test', 'test.yaml')
+        f_out = os.path.join(rp.get_path('test_rosparam'), 'test', 'test_dump.yaml')
         
         cmd = 'rosparam'
         ps = get_param_server()
@@ -330,7 +331,7 @@ class TestRosparam(unittest.TestCase):
             self.assertNotEquals(0, e.code)
 
         rosparam.yamlmain([cmd, 'load', f, 'rosparam_dump'])
-        self.assertEquals('bar', ps.getParam('/', 'rosparam_dump/foo')[2])
+        self.assertEquals('bar', ps.getParam('rosparam_dump/foo'))
         
         rosparam.yamlmain([cmd, 'dump', f_out, 'rosparam_dump'])
         # yaml files should be equal
@@ -358,4 +359,4 @@ class TestRosparam(unittest.TestCase):
         
             
 if __name__ == '__main__':
-    rostest.unitrun(PKG, NAME, TestRosparam, sys.argv, coverage_packages=['rosparam'])
+    rosunit.unitrun(PKG, NAME, TestRosparam, sys.argv, coverage_packages=['rosparam'])

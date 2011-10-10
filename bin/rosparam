@@ -35,6 +35,6 @@
 # and thus must be as low-latency as possible
 import os, sys, roslib.stacks
 d = roslib.stacks.get_stack_dir('ros_comm')
-sys.path = [os.path.join(d, 'tools', 'rosparam', 'src')] + sys.path
+sys.path = [os.path.join(d, 'tools', 'rosparam', 'src'), os.path.join(d, 'tools', 'rosgraph', 'src')] + sys.path
 import rosparam
 rosparam.yamlmain()

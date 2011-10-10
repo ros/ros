@@ -38,6 +38,8 @@ Implementation of the rosparam as well as a library for modifying the
 state of the ROS Parameter Server using YAML files.
 """
 
+from __future__ import print_function
+
 NAME = 'rosparam'
 
 ## namespace key. Use of this in a YAML document specifies the
@@ -59,8 +61,8 @@ from optparse import OptionParser
 
 import yaml
 
-from roslib.names import ns_join, get_ros_namespace, make_caller_id, make_global_ns, GLOBALNS
-from roslib.scriptutil import get_param_server, script_resolve_name
+import rosgraph
+from rosgraph.names import script_resolve_name, ns_join, get_ros_namespace, make_caller_id, make_global_ns, GLOBALNS
 
 class ROSParamException(Exception):
     """
@@ -107,7 +109,7 @@ def construct_angle_radians(loader, node):
         exprvalue = exprvalue[4:-1]
     try:
         return float(eval(exprvalue))
-    except SyntaxError, e:
+    except SyntaxError as e:
         raise ROSParamException("invalid radian expression: %s"%value)
 
 def construct_angle_degrees(loader, node):
@@ -126,18 +128,6 @@ def construct_angle_degrees(loader, node):
 
 # utilities
 
-def _succeed(args):
-    """
-    Utility routine for checking ROS XMLRPC API call
-    @return: value field from ROS xmlrpc call
-    @rtype: XmlRpcLegalValue
-    @raise ROSParamException: if call to ROS xmlrpc API did not succeed
-    """
-    code, msg, val = args
-    if code != 1:
-        raise ROSParamException(msg)
-    return val
-
 def _get_caller_id():
     """
     @return: caller ID for rosparam ROS client calls
@@ -154,9 +144,9 @@ def print_params(params, ns):
             if type(v) == dict:
                 print_params(v, ns_join(ns, k))
             else:
-                print "%s=%s"%(ns_join(ns, k), v)
+                print("%s=%s"%(ns_join(ns, k), v))
     else:
-        print params
+        print(params)
     
 # yaml processing
 
@@ -175,7 +165,7 @@ def load_file(filename, default_namespace=None, verbose=False):
     if not os.path.isfile(filename):
         raise ROSParamException("file [%s] does not exist"%filename)
     if verbose:
-        print "reading parameters from [%s]"%filename
+        print("reading parameters from [%s]"%filename)
     f = open(filename, 'r')
     try:
         return load_str(f.read(), filename, default_namespace=default_namespace, verbose=verbose)
@@ -202,7 +192,7 @@ def load_str(str, filename, default_namespace=None, verbose=False):
         if NS in doc:
             ns = ns_join(default_namespace, doc.get(NS, None))
             if verbose:
-                print "reading parameters into namespace [%s]"%ns
+                print("reading parameters into namespace [%s]"%ns)
             del doc[NS]
         else:
             ns = default_namespace
@@ -211,6 +201,9 @@ def load_str(str, filename, default_namespace=None, verbose=False):
 
 
 # DUMP/GET
+
+def get_param_server():
+    return rosgraph.Master(_get_caller_id())
 
 def get_param(param):
     """
@@ -222,7 +215,7 @@ def get_param(param):
     @type  param: str
     """
     try:
-        return _succeed(get_param_server().getParam(_get_caller_id(), param))
+        return get_param_server().getParam(param)
     except socket.error:
         raise ROSParamIOException("Unable to communicate with master!")
     
@@ -239,15 +232,15 @@ def _pretty_print(value, indent=''):
     for k in keys:
         v = value[k]
         if type(v) == dict:
-            print "%s%s:"%(indent, k)
+            print("%s%s:"%(indent, k))
             _pretty_print(v, indent+'  ')
         elif type(v) == str:
             if '\n' in v:
-                print indent+'%s: |'%k
+                print(indent+'%s: |'%k)
                 for l in v.split('\n'):
-                    print indent+'  '+l
+                    print(indent+'  '+l)
             else:
-                print "%s%s: %s"%(indent, k, v)
+                print("%s%s: %s"%(indent, k, v))
         else:
             dump = yaml.dump(v)
             # #1617
@@ -270,18 +263,18 @@ def _rosparam_cmd_get_param(param, pretty=False, verbose=False):
     """
     # yaml.dump has a \n at the end, so use stdout.write instead of print
     if verbose:
-        print "getting parameter [%s]"%param
+        print("getting parameter [%s]"%param)
     val = get_param(param)
     if pretty and type(val) in [dict, str]:
         if type(val) == dict:
             _pretty_print(val)
         else:
             if '\n' in val:
-                print '|'
+                print('|')
                 for l in val.split('\n'):
-                    print '  '+l
+                    print('  '+l)
             else:
-                print val
+                print(val)
     else:
         dump = yaml.dump(val)
         # #1617
@@ -327,13 +320,13 @@ def delete_param(param, verbose=False):
             # not allowed to delete the root of the tree as it must always
             # have a value. the equivalent command is setting the root to an
             # empty dictionary
-            _succeed(get_param_server().setParam(_get_caller_id(), GLOBALNS, {})) 
+            get_param_server().setParam(GLOBALNS, {})
             if verbose:
-                print "deleted ENTIRE parameter server"
+                print("deleted ENTIRE parameter server")
         else:
-            _succeed(get_param_server().deleteParam(_get_caller_id(), param))
+            get_param_server().deleteParam(param)
             if verbose:
-                print "deleted parameter [%s]"%param
+                print("deleted parameter [%s]"%param)
     except socket.error:
         raise ROSParamIOException("Unable to communicate with master!")
     
@@ -364,11 +357,11 @@ def set_param_raw(param, value, verbose=False):
                 raise ROSParamException("Overflow: Parameter Server integers must be 32-bit signed integers:\n\t-%s <= value <= %s"%(sys.maxint-1, sys.maxint))
             
         try:
-            _succeed(get_param_server().setParam(_get_caller_id(), param, value))
+            get_param_server().setParam(param, value)
         except socket.error:
             raise ROSParamIOException("Unable to communicate with master!")
         if verbose:
-            print "set parameter [%s] to [%s]"%(param, value)
+            print("set parameter [%s] to [%s]"%(param, value))
 
 def set_param(param, value, verbose=False):
     """
@@ -406,7 +399,7 @@ def list_params(ns):
     """
     try:
         ns = make_global_ns(ns)
-        names = _succeed(get_param_server().getParamNames(_get_caller_id()))
+        names = get_param_server().getParamNames()
         names.sort()
         return [n for n in names if n.startswith(ns)]
     except socket.error:
@@ -457,7 +450,7 @@ def _rosparam_cmd_get_dump(cmd, argv):
         _rosparam_cmd_get_param(script_resolve_name(NAME, arg), pretty=options.pretty, verbose=options.verbose)
     else:
         if options.verbose:
-            print "dumping namespace [%s] to file [%s]"%(ns, arg)
+            print("dumping namespace [%s] to file [%s]"%(ns, arg))
         dump_params(arg, script_resolve_name(NAME, ns), verbose=options.verbose)
 
 def _set_optparse_neg_args(parser, argv):
@@ -576,7 +569,7 @@ def _rosparam_cmd_list(argv):
     elif len(args) == 2:
         parser.error("too many arguments")
 
-    print '\n'.join(list_params(ns))
+    print('\n'.join(list_params(ns)))
 
 
 def _rosparam_cmd_delete(argv):
@@ -607,7 +600,7 @@ def _fullusage():
     """
     Prints rosparam usage
     """
-    print """rosparam is a command-line tool for getting, setting, and deleting parameters from the ROS Parameter Server.
+    print("""rosparam is a command-line tool for getting, setting, and deleting parameters from the ROS Parameter Server.
 
 Commands:
 \trosparam set\tset parameter
@@ -616,7 +609,7 @@ Commands:
 \trosparam dump\tdump parameters to file
 \trosparam delete\tdelete parameter
 \trosparam list\tlist parameter names
-"""
+""")
     sys.exit(0)
 
 def yamlmain(argv=None):
@@ -642,8 +635,8 @@ def yamlmain(argv=None):
             _rosparam_cmd_list(argv)
         else:
             _fullusage()
-    except ROSParamException, e:
-        print >> sys.stderr, "ERROR: "+str(e)
+    except ROSParamException as e:
+        print("ERROR: "+str(e), file=sys.stderr)
         sys.exit(1)
 
 # YAML configuration. Doxygen does not like these being higher up in the code

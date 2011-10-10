@@ -53,8 +53,7 @@ except ImportError:
     import urlparse
 
 from optparse import OptionParser
-
-import roslib.scriptutil as scriptutil 
+import rosgraph
 
 NAME='rosnode'
 ID = '/rosnode'
@@ -70,12 +69,13 @@ class ROSNodeIOException(ROSNodeException):
     """
     pass
 
+# need for calling node APIs
 def _succeed(args):
     code, msg, val = args
     if code != 1:
         raise ROSNodeException("remote call failed: %s"%msg)
     return val
-        
+
 _caller_apis = {}
 def get_api_uri(master, caller_id):
     """
@@ -90,11 +90,10 @@ def get_api_uri(master, caller_id):
     caller_api = _caller_apis.get(caller_id, None)
     if not caller_api:
         try:
-            code, msg, caller_api = master.lookupNode(ID, caller_id)
-            if code != 1:
-                return None
-            else:
-                _caller_apis[caller_id] = caller_api
+            caller_api = master.lookupNode(caller_id)
+            _caller_apis[caller_id] = caller_api
+        except rosgraph.MasterError:
+            return None
         except socket.error:
             raise ROSNodeIOException("Unable to communicate with master!")
     return caller_api
@@ -107,9 +106,9 @@ def get_node_names(namespace=None):
     @rtype: [str]
     @raise ROSNodeIOException: if unable to communicate with master
     """
-    master = scriptutil.get_master()
+    master = rosgraph.Master(ID)
     try:
-        state = _succeed(master.getSystemState(ID))
+        state = master.getSystemState()
     except socket.error:
         raise ROSNodeIOException("Unable to communicate with master!")
     nodes = []
@@ -139,7 +138,7 @@ def get_nodes_by_machine(machine):
     """
     import urlparse
     
-    master = scriptutil.get_master()
+    master = rosgraph.Master(ID)
     try:
         machine_actual = socket.gethostbyname(machine)
     except:
@@ -154,9 +153,10 @@ def get_nodes_by_machine(machine):
     retval = []
     for n in node_names:
         try:
-            code, msg, uri = master.lookupNode(ID, n)
-            # it's possible that the state changes as we are doing lookups. this is a soft-fail
-            if code != 1:
+            try:
+                uri = master.lookupNode(n)
+            except rosgraph.MasterError:
+                # it's possible that the state changes as we are doing lookups. this is a soft-fail
                 continue
 
             h = urlparse.urlparse(uri).hostname
@@ -182,7 +182,7 @@ def kill_nodes(node_names):
     @return: list of nodes that shutdown was called on successfully and list of failures
     @rtype: ([str], [str])
     """
-    master = scriptutil.get_master()
+    master = rosgraph.Master(ID)
     
     success = []
     fail = []
@@ -191,7 +191,7 @@ def kill_nodes(node_names):
         # lookup all nodes keeping track of lookup failures for return value
         for n in node_names:
             try:
-                uri = _succeed(master.lookupNode(ID, n))
+                uri = master.lookupNode(n)
                 tocall.append([n, uri])
             except:
                 fail.append(n)
@@ -223,7 +223,7 @@ def _sub_rosnode_listnodes(namespace=None, list_uri=False, list_all=False):
     @return: new-line separated string containing list of all nodes
     @rtype: str
     """
-    master = scriptutil.get_master()    
+    master = rosgraph.Master(ID)
     nodes = get_node_names(namespace)
     nodes.sort()
     if list_all:
@@ -258,7 +258,7 @@ def rosnode_ping(node_name, max_count=None, verbose=False):
     @return: True if node pinged
     @rtype: bool
     """
-    master = scriptutil.get_master()
+    master = rosgraph.Master(ID)
     node_api = get_api_uri(master,node_name)
     if not node_api:
         print("cannot ping [%s]: unknown node"%node_name, file=sys.stderr)
@@ -315,9 +315,9 @@ def rosnode_ping_all(verbose=False):
     @return [str], [str]: pinged nodes, un-pingable nodes
     @raise ROSNodeIOException: if unable to communicate with master
     """
-    master = scriptutil.get_master()
+    master = rosgraph.Master(ID)
     try:
-        state = _succeed(master.getSystemState(ID))
+        state = master.getSystemState()
     except socket.error:
         raise ROSNodeIOException("Unable to communicate with master!")
 
@@ -346,20 +346,23 @@ def cleanup_master_blacklist(master, blacklist):
     @param blacklist: list of nodes to scrub
     @type  blacklist: [str]
     """
-    pubs, subs, srvs = _succeed(master.getSystemState(ID))
+    pubs, subs, srvs = master.getSystemState()
     for n in blacklist:
         print("Unregistering", n)
         node_api = get_api_uri(master, n)
         for t, l in pubs:
             if n in l:
-                _succeed(master.unregisterPublisher(n, t, node_api))
+                master_n = rosgraph.Master(n)
+                master_n.unregisterPublisher(t, node_api)
         for t, l in subs:
             if n in l:
-                _succeed(master.unregisterSubscriber(n, t, node_api))
+                master_n = rosgraph.Master(n)
+                master_n.unregisterSubscriber(t, node_api)
         for s, l in srvs:
             if n in l:
-                service_api = _succeed(master.lookupService(ID, s))
-                _succeed(master.unregisterService(n, s, service_api))
+                service_api = master.lookupService(s)
+                master_n = rosgraph.Master(n)
+                master_n.unregisterService(s, service_api)
 
 def cleanup_master_whitelist(master, whitelist):
     """
@@ -369,22 +372,25 @@ def cleanup_master_whitelist(master, whitelist):
     @param whitelist: list of nodes to keep
     @type  whitelist: list of nodes to keep
    """
-    pubs, subs, srvs = _succeed(master.getSystemState(ID))
+    pubs, subs, srvs = master.getSystemState()
     for t, l in pubs:
         for n in l:
             if n not in whitelist:
                 node_api = get_api_uri(master, n)
-                _succeed(master.unregisterPublisher(n, t, node_api))
+                master_n = rosgraph.Master(n)
+                master_n.unregisterPublisher(t, node_api)
     for t, l in subs:
         for n in l:
             if n not in whitelist:
                 node_api = get_api_uri(master, n)
-                _succeed(master.unregisterSubscriber(n, t, node_api))
+                master_n = rosgraph.Master(n)                
+                master_n.unregisterSubscriber(t, node_api)
     for s, l in srvs:
         for n in l:
             if n not in whitelist:
-                service_api = _succeed(master.lookupService(ID, s))
-                _succeed(master.unregisterService(n, s, service_api))
+                service_api = master.lookupService(s)
+                master_n = rosgraph.Master(n)
+                master_n.unregisterService(s, service_api)
 
 def rosnode_cleanup():
     """
@@ -394,7 +400,7 @@ def rosnode_cleanup():
     """
     pinged, unpinged = rosnode_ping_all()
     if unpinged:
-        master = scriptutil.get_master()
+        master = rosgraph.Master(ID)
         print("Unable to contact the following nodes:")
         print('\n'.join(' * %s'%n for n in unpinged))
         print("cleanup will purge all information about these nodes from the master")
@@ -417,12 +423,12 @@ def get_node_info_description(node_name):
             return matches[0]
         return 'unknown type'
 
-    master = scriptutil.get_master()
+    master = rosgraph.Master(ID)
 
     # go through the master system state first
     try:
-        state = _succeed(master.getSystemState(ID))
-        pub_topics = _succeed(scriptutil.get_master().getPublishedTopics(ID, '/'))
+        state = master.getSystemState()
+        pub_topics = master.getPublishedTopics('/')
     except socket.error:
         raise ROSNodeIOException("Unable to communicate with master!")
     pubs = [t for t, l in state[0] if node_name in l]
@@ -500,8 +506,8 @@ def rosnode_info(node_name):
             return matches[0]
         return 'unknown type'
 
-    master = scriptutil.get_master()
-    node_name = scriptutil.script_resolve_name('rosnode', node_name)
+    master = rosgraph.Master(ID)
+    node_name = rosgraph.names.script_resolve_name('rosnode', node_name)
 
     print('-'*80)
     print(get_node_info_description(node_name))
@@ -537,7 +543,7 @@ def _rosnode_cmd_list(argv):
     if len(args) > 1:
         parser.error("invalid args: you may only specify one namespace")
     elif len(args) == 1:
-        namespace = scriptutil.script_resolve_name('rostopic', args[0])
+        namespace = rosgraph.names.script_resolve_name('rostopic', args[0])
     rosnode_listnodes(namespace=namespace, list_uri=options.list_uri, list_all=options.list_all)
 
 def _rosnode_cmd_info(argv):
@@ -611,7 +617,7 @@ def _rosnode_cmd_kill(argv):
         args = [node_list[selection - 1]]
     else:
         # validate args
-        args = [scriptutil.script_resolve_name(ID, n) for n in args]
+        args = [rosgraph.names.script_resolve_name(ID, n) for n in args]
         node_list = get_node_names()
         unknown = [n for n in args if not n in node_list]
         if unknown:
@@ -667,7 +673,7 @@ def _rosnode_cmd_ping(argv):
         elif len(args) > 1:
             parser.error("you may only specify one input node")
         elif len(args) == 1:
-            node_name = scriptutil.script_resolve_name('rosnode', args[0])
+            node_name = rosgraph.names.script_resolve_name('rosnode', args[0])
             print("rosnode: node is [%s]"%node_name)
     else:
         if args:
@@ -725,6 +731,8 @@ def rosnodemain(argv=None):
             _fullusage()
     except socket.error:
         print("Network communication failed. Most likely failed to communicate with master.", file=sys.stderr)
+    except rosgraph.MasterError as e:
+        print("ERROR: "+str(e), file=sys.stderr)
     except ROSNodeException as e:
         print("ERROR: "+str(e), file=sys.stderr)
     except KeyboardInterrupt:

@@ -41,10 +41,6 @@ import rosunit
 
 class MsgSpecTest(unittest.TestCase):
 
-  def setUp(self):
-    # for coverage
-    reload(roslib.msgs)
-    
   def test_verbose(self):
     import roslib.msgs
     self.failIf(roslib.msgs.is_verbose())

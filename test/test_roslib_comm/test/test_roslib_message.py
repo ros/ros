@@ -40,6 +40,7 @@ import unittest
 import traceback
 
 import roslib.message
+import genpy
 from genpy import Time, Duration
 import rosunit
 

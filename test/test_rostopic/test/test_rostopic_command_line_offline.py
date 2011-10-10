@@ -33,8 +33,6 @@
 #
 # Revision $Id$
 
-from __future__ import with_statement
-
 NAME = 'test_rostopic_command_line_offline'
 import roslib; roslib.load_manifest('test_rostopic')
 
@@ -44,7 +42,7 @@ import unittest
 import cStringIO
 import time
         
-import rostest
+import rosunit
 
 from subprocess import Popen, PIPE, check_call, call
 
@@ -90,19 +88,19 @@ class TestRostopicOffline(unittest.TestCase):
         msg = "ERROR: Unable to communicate with master!\n"
 
         output = Popen([cmd, 'bw', 'chatter'], **kwds).communicate()
-        self.assertEquals(msg, output[1])
+        self.assert_(output[1].endswith(msg))
         output = Popen([cmd, 'echo', 'chatter'], **kwds).communicate()
-        self.assertEquals(msg, output[1])
+        self.assert_(output[1].endswith(msg))
         output = Popen([cmd, 'hz', 'chatter'], **kwds).communicate()
-        self.assertEquals(msg, output[1])
+        self.assert_(output[1].endswith(msg))
         output = Popen([cmd, 'list'], **kwds).communicate()
-        self.assertEquals(msg, output[1])
+        self.assert_(output[1].endswith(msg))
         output = Popen([cmd, 'pub', 'chatter', 'std_msgs/String', 'hello'], **kwds).communicate()
-        self.assertEquals(msg, output[1])        
+        self.assert_(output[1].endswith(msg))
         output = Popen([cmd, 'type', 'chatter'], **kwds).communicate()
-        self.assertEquals(msg, output[1])        
+        self.assert_(output[1].endswith(msg))
         output = Popen([cmd, 'type', 'std_msgs/String'], **kwds).communicate()
-        self.assertEquals(msg, output[1])        
+        self.assert_(output[1].endswith(msg))
         
 if __name__ == '__main__':
-    rostest.unitrun('test_rostopic', NAME, TestRostopicOffline, sys.argv, coverage_packages=[])
+    rosunit.unitrun('test_rostopic', NAME, TestRostopicOffline, sys.argv, coverage_packages=[])

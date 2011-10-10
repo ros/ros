@@ -57,7 +57,7 @@ class TestRostopicUnit(unittest.TestCase):
         from std_msgs.msg import String, Int32, Header
         from test_rostopic.msg import Simple, TVals, Floats, Arrays, Embed
 
-        from roslib.rostime import Time, Duration
+        from genpy import Time, Duration
         from rostopic import create_field_filter
 
         # str plotting requires rospy time, we fix time to a set time
@@ -147,7 +147,7 @@ class TestRostopicUnit(unittest.TestCase):
         from std_msgs.msg import String, Int32, Header
         from test_rostopic.msg import Simple, TVals, Floats, Arrays, Embed
 
-        from roslib.rostime import Time, Duration
+        from genpy import Time, Duration
         from rostopic import create_field_filter
 
         # str plotting requires rospy time, we fix time to a set time
@@ -241,7 +241,7 @@ class TestRostopicUnit(unittest.TestCase):
         from std_msgs.msg import String, Int32, Header
         from test_rostopic.msg import Simple, TVals, Floats, Arrays, Embed
 
-        from roslib.rostime import Time, Duration
+        from genpy import Time, Duration
         from roslib.message import strify_message
         from rostopic import create_field_filter
 

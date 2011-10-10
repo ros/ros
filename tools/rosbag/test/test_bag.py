@@ -1,8 +1,37 @@
 #!/usr/bin/env python
+# Software License Agreement (BSD License)
+#
+# Copyright (c) 2008, Willow Garage, Inc.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+#  * Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#  * Redistributions in binary form must reproduce the above
+#    copyright notice, this list of conditions and the following
+#    disclaimer in the documentation and/or other materials provided
+#    with the distribution.
+#  * Neither the name of Willow Garage, Inc. nor the names of its
+#    contributors may be used to endorse or promote products derived
+#    from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
 #
 # test_bag.py
-
-from __future__ import with_statement
 
 PKG = 'rosbag'
 import roslib; roslib.load_manifest(PKG)
@@ -13,6 +42,8 @@ import shutil
 import sys
 import time
 import unittest
+
+import genpy
 
 import rosbag
 from rosbag import bag
@@ -67,7 +98,7 @@ class TestRosbag(unittest.TestCase):
             for i in range(5, 0, -1):
                 msg = Int32()
                 msg.data = i
-                t = roslib.rostime.Time.from_sec(i)
+                t = genpy.Time.from_sec(i)
                 b.write('/ints' + str(i), msg, t)
                 msg_count += 1
 
@@ -84,7 +115,7 @@ class TestRosbag(unittest.TestCase):
             for i in range(5, 0, -1):
                 msg = Int32()
                 msg.data = i
-                t = roslib.rostime.Time.from_sec(i)
+                t = genpy.Time.from_sec(i)
                 b.write('/ints', msg, t)
                 msg_count += 1
 
@@ -102,7 +133,7 @@ class TestRosbag(unittest.TestCase):
                 for i in range(10000):
                     msg = Int32()
                     msg.data = i
-                    t = roslib.rostime.Time.from_sec(i)
+                    t = genpy.Time.from_sec(i)
                     b.write('/ints', msg, t)
                     msg_count += 1
 
@@ -118,11 +149,11 @@ class TestRosbag(unittest.TestCase):
             for i in range(30):
                 msg = Int32()
                 msg.data = i
-                t = roslib.rostime.Time.from_sec(i)
+                t = genpy.Time.from_sec(i)
                 b.write('/ints', msg, t)
         
-        start_time = roslib.rostime.Time.from_sec(3)
-        end_time = roslib.rostime.Time.from_sec(7)
+        start_time = genpy.Time.from_sec(3)
+        end_time = genpy.Time.from_sec(7)
         msgs = list(rosbag.Bag('/tmp/test_get_messages_time_range_works.bag').read_messages(topics='/ints', start_time=start_time, end_time=end_time))
 
         self.assertEquals(len(msgs), 5)
@@ -132,7 +163,7 @@ class TestRosbag(unittest.TestCase):
             for i in range(30):
                 msg = Int32()
                 msg.data = i
-                t = roslib.rostime.Time.from_sec(i)
+                t = genpy.Time.from_sec(i)
                 b.write('/ints' + str(i), msg, t)
 
         def filter(topic, datatype, md5sum, msg_def, header):
@@ -148,7 +179,7 @@ class TestRosbag(unittest.TestCase):
             for i in range(30):
                 msg = Int32()
                 msg.data = i
-                t = roslib.rostime.Time.from_sec(i)
+                t = genpy.Time.from_sec(i)
                 b.write('/ints' + str(i), msg, t)
 
         expression = "(int(t.secs) == m.data) and (topic == '/ints' + str(m.data)) and (m.data >= 15 and m.data < 20)"

@@ -43,7 +43,6 @@ import roslib; roslib.load_manifest(PKG)
 
 import bisect
 import bz2
-from cStringIO import StringIO
 import heapq
 import os
 import re
@@ -54,10 +53,17 @@ import time
 import yaml
 
 try:
-    # backwards compatbility import
-    import roslib.genpy_electric as genpy_electic
+    from cStringIO import StringIO # Python 2.x
 except ImportError:
-    import roslib.genpy as genpy_electic
+    from io import StringIO # Python 3.x
+
+import genpy
+
+try:
+    # backwards compatbility import
+    import roslib.genpy_electric as genpy_electric
+except ImportError:
+    import roslib.genpy as genpy_electric
     
 import rospy
 
@@ -239,15 +245,15 @@ class Bag(object):
         @param topics: list of topics or a single topic [optional]
         @type  topics: list(str) or str
         @param start_time: earliest timestamp of message to return [optional]
-        @type  start_time: U{roslib.rostime.Time}
+        @type  start_time: U{genpy.Time}
         @param end_time: latest timestamp of message to return [optional]
-        @type  end_time: U{roslib.rostime.Time}
+        @type  end_time: U{genpy.Time}
         @param connection_filter: function to filter connections to include [optional]
         @type  connection_filter: function taking (topic, datatype, md5sum, msg_def, header) and returning bool
         @param raw: if True, then generate tuples of (datatype, (data, md5sum, position), pytype)
         @type  raw: bool
         @return: generator of (topic, message, timestamp) tuples for each message in the bag file
-        @rtype:  generator of tuples of (str, U{roslib.message.Message}, U{roslib.rostime.Time}) [not raw] or (str, (str, str, str, tuple, class), U{roslib.rostime.Time}) [raw]
+        @rtype:  generator of tuples of (str, U{roslib.message.Message}, U{genpy.Time}) [not raw] or (str, (str, str, str, tuple, class), U{genpy.Time}) [raw]
         """
         self.flush()
 
@@ -275,7 +281,7 @@ class Bag(object):
         @param msg: message to add to bag, or tuple (if raw)
         @type  msg: Message or tuple of raw message data
         @param t: ROS time of message publication, if None specifed, use current time [optional]
-        @type  t: U{roslib.rostime.Time}
+        @type  t: U{genpy.Time}
         @param raw: if True, msg is in raw format, i.e. (msg_type, serialized_bytes, md5sum, pytype)
         @type  raw: bool
         @raise ValueError: if arguments are invalid or bag is closed
@@ -289,7 +295,7 @@ class Bag(object):
             raise ValueError('msg is invalid')
 
         if t is None:
-            t = roslib.rostime.Time.from_sec(time.time())
+            t = genpy.Time.from_sec(time.time())
 
         # Seek to end (in case previous operation was a read)
         self._file.seek(0, os.SEEK_END)
@@ -1566,7 +1572,7 @@ class _BagReader102_Unindexed(_BagReader):
                 topic = _read_str_field(header, 'topic')
                 secs  = _read_uint32_field(header, 'sec')
                 nsecs = _read_uint32_field(header, 'nsec')
-                t = roslib.rostime.Time(secs, nsecs)
+                t = genpy.Time(secs, nsecs)
 
                 if topic not in self.bag._topic_connections:
                     datatype = _read_str_field(header, 'type')
@@ -1631,7 +1637,7 @@ class _BagReader102_Unindexed(_BagReader):
             # Get the timestamp
             secs  = _read_uint32_field(header, 'sec')
             nsecs = _read_uint32_field(header, 'nsec')
-            t = roslib.rostime.Time(secs, nsecs)
+            t = genpy.Time(secs, nsecs)
 
             # Read the message content
             data = _read_record_data(f)
@@ -1723,7 +1729,7 @@ class _BagReader102_Indexed(_BagReader102_Unindexed):
                 topic = _read_str_field(header, 'topic')
                 secs  = _read_uint32_field(header, 'sec')
                 nsecs = _read_uint32_field(header, 'nsec')
-                t = roslib.rostime.Time(secs, nsecs)
+                t = genpy.Time(secs, nsecs)
 
                 if topic not in self.bag._topic_connections:
                     datatype = _read_str_field(header, 'type')
@@ -1850,7 +1856,7 @@ class _BagReader102_Indexed(_BagReader102_Unindexed):
         # Get the timestamp
         secs  = _read_uint32_field(header, 'sec')
         nsecs = _read_uint32_field(header, 'nsec')
-        t = roslib.rostime.Time(secs, nsecs)
+        t = genpy.Time(secs, nsecs)
 
         # Read the message content
         data = _read_record_data(f)

@@ -38,7 +38,7 @@ import roslib; roslib.load_manifest('test_roslaunch')
 import os, sys, unittest
 import time
 
-import rostest
+import rosunit
 import roslaunch.child
 
 import roslaunch.server
@@ -194,5 +194,5 @@ def kill_parent(p, delay=1.0):
     p.shutdown()
         
 if __name__ == '__main__':
-    rostest.unitrun('test_roslaunch', sys.argv[0], TestRoslaunchChild, coverage_packages=['roslaunch.child'])
+    rosunit.unitrun('test_roslaunch', sys.argv[0], TestRoslaunchChild, coverage_packages=['roslaunch.child'])
     

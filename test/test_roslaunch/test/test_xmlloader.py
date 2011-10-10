@@ -37,7 +37,7 @@ import roslib; roslib.load_manifest('test_roslaunch')
 
 import os, sys, unittest
 
-import rostest
+import rosunit
 import roslaunch.loader 
 import roslaunch.xmlloader 
 
@@ -993,5 +993,5 @@ class TestXmlLoader(unittest.TestCase):
         self.assertEquals(param_d['/include3/include_test/p4_test'], 'new3')
         
 if __name__ == '__main__':
-    rostest.unitrun('test_roslaunch', sys.argv[0], TestXmlLoader, coverage_packages=['roslaunch.xmlloader', 'roslaunch.loader'])
+    rosunit.unitrun('test_roslaunch', sys.argv[0], TestXmlLoader, coverage_packages=['roslaunch.xmlloader', 'roslaunch.loader'])
     

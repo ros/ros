@@ -137,6 +137,6 @@ class TestNodeArgs(unittest.TestCase):
         self.assertEquals(d['MENV2'], "val2")
         
 if __name__ == '__main__':
-    import rostest
-    rostest.unitrun('test_roslaunch', NAME, TestNodeArgs, coverage_packages=['roslaunch.node_args'])
+    import rosunit
+    rosunit.unitrun('test_roslaunch', NAME, TestNodeArgs, coverage_packages=['roslaunch.node_args'])
     

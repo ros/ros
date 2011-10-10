@@ -281,6 +281,6 @@ class TestNodeprocess(unittest.TestCase):
         self.assert_(master_p in m3.args)
         
 if __name__ == '__main__':
-    import rostest
-    rostest.unitrun('test_roslaunch', NAME, TestNodeprocess, coverage_packages=['roslaunch.nodeprocess'])
+    import rosunit
+    rosunit.unitrun('test_roslaunch', NAME, TestNodeprocess, coverage_packages=['roslaunch.nodeprocess'])
     

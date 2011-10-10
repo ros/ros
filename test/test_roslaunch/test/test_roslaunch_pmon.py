@@ -39,7 +39,7 @@ import os, sys, unittest
 import time
 import thread
 
-import rostest
+import rosunit
 import roslaunch.server
 
 
@@ -539,5 +539,5 @@ def kill_pmon(pmon, marker, delay=1.0):
     pmon.done = True
     
 if __name__ == '__main__':
-    rostest.unitrun('test_roslaunch', sys.argv[0], TestRoslaunchPmon, coverage_packages=['roslaunch.pmon'])
+    rosunit.unitrun('test_roslaunch', sys.argv[0], TestRoslaunchPmon, coverage_packages=['roslaunch.pmon'])
     

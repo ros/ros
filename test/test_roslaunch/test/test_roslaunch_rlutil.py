@@ -79,6 +79,6 @@ class TestRoslaunchRlutil(unittest.TestCase):
                 pass
             
 if __name__ == '__main__':
-    import rostest
-    rostest.unitrun('test_roslaunch', NAME, TestRoslaunchRlutil, coverage_packages=['roslaunch.rlutil'])
+    import rosunit
+    rosunit.unitrun('test_roslaunch', NAME, TestRoslaunchRlutil, coverage_packages=['roslaunch.rlutil'])
     

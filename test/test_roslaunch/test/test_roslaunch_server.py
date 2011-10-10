@@ -38,7 +38,7 @@ import roslib; roslib.load_manifest('test_roslaunch')
 import os, sys, unittest
 import time
 
-import rostest
+import rosunit
 import roslaunch.pmon
 import roslaunch.server
 
@@ -481,5 +481,5 @@ class TestRoslaunchServer(unittest.TestCase):
         
 
 if __name__ == '__main__':
-    rostest.unitrun('test_roslaunch', sys.argv[0], TestRoslaunchServer, coverage_packages=['roslaunch.server'])
+    rosunit.unitrun('test_roslaunch', sys.argv[0], TestRoslaunchServer, coverage_packages=['roslaunch.server'])
     

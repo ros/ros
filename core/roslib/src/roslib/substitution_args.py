@@ -44,11 +44,10 @@ try:
 except ImportError:
     from io import StringIO # Python 3.x
 
-import roslib.exceptions
 import roslib.names
 import roslib.packages
 
-class SubstitutionException(roslib.exceptions.ROSLibException):
+class SubstitutionException(Exception):
     """
     Base class for exceptions in roslib.substitution_args routines
     """

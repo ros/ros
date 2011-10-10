@@ -50,11 +50,11 @@ import xmlrpclib
 
 from urlparse import urlparse
 
-import roslib.exceptions
+import genpy
+
 import roslib.names
-import roslib.scriptutil
 import roslib.message
-import rosgraph.masterapi
+import rosgraph
 #TODO: lazy-import rospy or move rospy-dependent routines to separate location
 import rospy
 import rosbag
@@ -73,10 +73,10 @@ class ROSTopicIOException(ROSTopicException):
 def _check_master():
     """
     Make sure that master is available
-    @raise ROSTopicException: if unable to successfully communicate with master
+    :raises: :exc:`ROSTopicException` If unable to successfully communicate with master
     """
     try:
-        rosgraph.masterapi.Master('/rostopic').getPid()
+        rosgraph.Master('/rostopic').getPid()
     except socket.error:
         raise ROSTopicIOException("Unable to communicate with master!")
     
@@ -110,7 +110,7 @@ class ROSTopicHz(object):
     def callback_hz(self, m):
         """
         ros sub callback
-        @param m: Message instance
+        :param m: Message instance
         """
         # #694: ignore messages that don't match filter
         if self.filter_expr is not None and not self.filter_expr(m):
@@ -176,11 +176,9 @@ def _rostopic_hz(topic, window_size=-1, filter_expr=None):
     """
     Periodically print the publishing rate of a topic to console until
     shutdown
-    @param topic: topic name
-    @type  topic: str
-    @param window_size: number of messages to average over, -1 for infinite
-    @type  window_size: int
-    @param filter_expr: Python filter expression that is called with m, the message instance
+    :param topic: topic name, ``str``
+    :param window_size: number of messages to average over, -1 for infinite, ``int``
+    :param filter_expr: Python filter expression that is called with m, the message instance
     """
     msg_class, real_topic, _ = get_topic_class(topic, blocking=True) #pause hz until topic is published
     if rospy.is_shutdown():
@@ -277,10 +275,8 @@ def _rostopic_bw(topic, window_size=-1):
 def msgevalgen(pattern):
     """
     Generates a function that returns the relevant field (aka 'subtopic') of a Message object
-    @param pattern: subtopic, e.g. /x. Must have a leading '/' if specified.
-    @type  pattern: str
-    @return: function that converts a message into the desired value
-    @rtype: fn(Message) -> value
+    :param pattern: subtopic, e.g. /x. Must have a leading '/' if specified, ``str``
+    :returns: function that converts a message into the desired value, ``fn(Message) -> value``
     """
     if not pattern or pattern == '/':
         return None
@@ -296,12 +292,11 @@ def msgevalgen(pattern):
 def _get_topic_type(topic):
     """
     subroutine for getting the topic type
-    @return: topic type, real topic name and fn to evaluate the message instance
-    if the topic points to a field within a topic, e.g. /rosout/msg
-    @rtype: str, str, fn
+    :returns: topic type, real topic name and fn to evaluate the message instance
+    if the topic points to a field within a topic, e.g. /rosout/msg, ``(str, str, fn)``
     """
     try:
-        val = _master_get_topic_types(rosgraph.masterapi.Master('/rostopic'))
+        val = _master_get_topic_types(rosgraph.Master('/rostopic'))
     except socket.error:
         raise ROSTopicIOException("Unable to communicate with master!")
 
@@ -312,7 +307,7 @@ def _get_topic_type(topic):
     if matches:
         #TODO logic for multiple matches if we are prefix matching
         t, t_type = matches[0]
-        if t_type == roslib.names.ANYTYPE:
+        if t_type == rosgraph.names.ANYTYPE:
             return None, None, None
         return t_type, t, msgevalgen(topic[len(t):])
     else:
@@ -324,15 +319,12 @@ def get_topic_type(topic, blocking=False):
     """
     Get the topic type.
 
-    @param topic: topic name
-    @type  topic: str
-    @param blocking: (default False) block until topic becomes available
-    @type  blocking: bool
+    :param topic: topic name, ``str``
+    :param blocking: (default False) block until topic becomes available, ``bool``
     
-    @return: topic type, real topic name and fn to evaluate the message instance
-    if the topic points to a field within a topic, e.g. /rosout/msg. fn is None otherwise.
-    @rtype: str, str, fn
-    @raise ROSTopicException: if master cannot be contacted
+    :returns: topic type, real topic name and fn to evaluate the message instance
+      if the topic points to a field within a topic, e.g. /rosout/msg. fn is None otherwise. ``(str, str, fn)``
+    :raises: :exc:`ROSTopicException` If master cannot be contacted
     """
     topic_type, real_topic, msg_eval = _get_topic_type(topic)
     if topic_type:
@@ -350,11 +342,10 @@ def get_topic_type(topic, blocking=False):
 def get_topic_class(topic, blocking=False):
     """
     Get the topic message class
-    @return: message class for topic, real topic
-    name, and function for evaluating message objects into the subtopic
-    (or None)
-    @rtype: Message, str, str
-    @raise ROSTopicException: if topic type cannot be determined or loaded
+    :returns: message class for topic, real topic
+      name, and function for evaluating message objects into the subtopic
+      (or ``None``). ``(Message, str, str)``
+    :raises: :exc:`ROSTopicException` If topic type cannot be determined or loaded
     """
     topic_type, real_topic, msg_eval = get_topic_type(topic, blocking=blocking)
     if topic_type is None:
@@ -367,8 +358,7 @@ def get_topic_class(topic, blocking=False):
 def _str_plot_fields(val, f, field_filter):
     """
     get CSV representation of fields used by _str_plot
-    @return: list of fields as a CSV string
-    @rtype: str
+    :returns: list of fields as a CSV string, ``str``
     """
     s = _sub_str_plot_fields(val, f, field_filter)
     if s is not None:
@@ -381,7 +371,7 @@ def _sub_str_plot_fields(val, f, field_filter):
     # CSV
     type_ = type(val)
     if type_ in (int, float) or \
-           isinstance(val, roslib.rostime.TVal):
+           isinstance(val, genpy.TVal):
         return f
     # duck-type check for messages
     elif hasattr(val, "_slot_types"):
@@ -402,7 +392,7 @@ def _sub_str_plot_fields(val, f, field_filter):
         type0 = type(val0)
         # no arrays of arrays
         if type0 in (int, float) or \
-               isinstance(val0, roslib.rostime.TVal):
+               isinstance(val0, genpy.TVal):
             return ','.join(["%s%s"%(f,x) for x in xrange(0,len(val))])
         elif type0 in (str, unicode):
             
@@ -419,15 +409,11 @@ def _str_plot(val, time_offset=None, current_time=None, field_filter=None):
     """
     Convert value to matlab/octave-friendly CSV string representation.
 
-    @param val: message
-    @param current_time: current time to use if message does not contain its own timestamp.
-    @type  current_time: roslib.rostime.Time
-    @param time_offset: (optional) for time printed for message, print as offset against this time 
-    @type  time_offset: roslib.rostime.Time
-    @param field_filter: filter the fields that are strified for Messages.
-    @type  field_filter: fn(Message)->iter(str)
-    @return: comma-separated list of field values in val
-    @rtype: str
+    :param val: message
+    :param current_time: current :class:`genpy.Time` to use if message does not contain its own timestamp.
+    :param time_offset: (optional) for time printed for message, print as offset against this :class:`genpy.Time`
+    :param field_filter: filter the fields that are strified for Messages, ``fn(Message)->iter(str)``
+    :returns: comma-separated list of field values in val, ``str``
     """
         
     s = _sub_str_plot(val, time_offset, field_filter)
@@ -451,8 +437,8 @@ def _sub_str_plot(val, time_offset, field_filter):
     type_ = type(val)
     
     if type_ in (int, float) or \
-           isinstance(val, roslib.rostime.TVal):
-        if time_offset is not None and isinstance(val, roslib.rostime.Time):
+           isinstance(val, genpy.TVal):
+        if time_offset is not None and isinstance(val, genpy.Time):
             return str(val-time_offset)
         else:
             return str(val)    
@@ -475,7 +461,7 @@ def _sub_str_plot(val, time_offset, field_filter):
         # no arrays of arrays
         type0 = type(val0)
         if type0 in (int, float) or \
-               isinstance(val0, roslib.rostime.TVal):
+               isinstance(val0, genpy.TVal):
             return ','.join([str(v) for v in val])
         elif type0 in (str, unicode):
             return ','.join([v for v in val])            
@@ -508,18 +494,12 @@ class CallbackEcho(object):
                  offset_time=False, count=None,
                  field_filter_fn=None):
         """
-        @param plot: if True, echo in plotting-friendly format
-        @type  plot: bool
-        @param filter_fn: function that evaluates to True if message is to be echo'd
-        @type  filter_fn: fn(topic, msg)
-        @param echo_all_topics: (optional) if True, echo all messages in bag
-        @type  echo_all_topics: bool
-        @param offset_time: (optional) if True, display time as offset from current time
-        @type  offset_time: bool
-        @param count: number of messages to echo, None for infinite
-        @type  count: int
-        @param field_filter_fn: filter the fields that are strified for Messages.
-        @type  field_filter_fn: fn(Message)->iter(str)
+        :param plot: if ``True``, echo in plotting-friendly format, ``bool``
+        :param filter_fn: function that evaluates to ``True`` if message is to be echo'd, ``fn(topic, msg)``
+        :param echo_all_topics: (optional) if ``True``, echo all messages in bag, ``bool``
+        :param offset_time: (optional) if ``True``, display time as offset from current time, ``bool``
+        :param count: number of messages to echo, ``None`` for infinite, ``int``
+        :param field_filter_fn: filter the fields that are strified for Messages, ``fn(Message)->iter(str)``
         """
         if topic and topic[-1] == '/':
             topic = topic[:-1]
@@ -564,11 +544,9 @@ class CallbackEcho(object):
         Callback to pass to rospy.Subscriber or to call
         manually. rospy.Subscriber constructor must also pass in the
         topic name as an additional arg
-        @param data: Message
-        @param topic: topic name
-        @type  topic: str
-        @param current_time: override calculation of current time
-        @type  current_time: roslib.rostime.Time
+        :param data: Message
+        :param topic: topic name, ``str``
+        :param current_time: override calculation of current time, :class:`genpy.Time`
         """
         if self.filter_fn is not None and not self.filter_fn(data):
             return
@@ -636,8 +614,7 @@ class CallbackEcho(object):
 def _rostopic_type(topic):
     """
     Print ROS message type of topic to screen
-    @param topic: topic name
-    @type  topic: str
+    :param topic: topic name, ``str``
     """
     t, _, _ = get_topic_type(topic, blocking=False)
     if t:
@@ -648,10 +625,8 @@ def _rostopic_type(topic):
 
 def _rostopic_echo_bag(callback_echo, bag_file):
     """
-    @param callback_echo: CallbackEcho instance to invoke on new messages in bag file
-    @type  callback_echo: L{CallbackEcho}
-    @param bag_file: name of bag file to echo messages from or None
-    @type  bag_file: str
+    :param callback_echo: :class:`CallbackEcho` instance to invoke on new messages in bag file
+    :param bag_file: name of bag file to echo messages from or ``None``, ``str``
     """
     if not os.path.exists(bag_file):
         raise ROSTopicException("bag file [%s] does not exist"%bag_file)
@@ -662,7 +637,7 @@ def _rostopic_echo_bag(callback_echo, bag_file):
         # bag files can have relative paths in them, this respects any
             # dynamic renaming
             if t[0] != '/':
-                t = roslib.scriptutil.script_resolve_name('rostopic', t)
+                t = rosgraph.names.script_resolve_name('rostopic', t)
             callback_echo.callback(msg, t, current_time=timestamp)
             # done is set if there is a max echo count
             if callback_echo.done:
@@ -672,10 +647,8 @@ def _rostopic_echo(topic, callback_echo, bag_file=None, echo_all_topics=False):
     """
     Print new messages on topic to screen.
     
-    @param topic: topic name
-    @type  topic: str
-    @param bag_file: name of bag file to echo messages from or None
-    @type  bag_file: str
+    :param topic: topic name, ``str``
+    :param bag_file: name of bag file to echo messages from or ``None``, ``str``
     """
     # we have to init a node regardless and bag echoing can print timestamps
 
@@ -717,13 +690,10 @@ _caller_apis = {}
 def get_api(master, caller_id):
     """
     Get XML-RPC API of node
-    @param master: XML-RPC handle to ROS Master
-    @type  master: xmlrpclib.ServerProxy
-    @param caller_id: node name
-    @type  caller_id: str
-    @return: XML-RPC URI of node
-    @rtype: str
-    @raise ROSTopicIOException: if unable to communicate with master
+    :param master: XML-RPC handle to ROS Master, :class:`xmlrpclib.ServerProxy`
+    :param caller_id: node name, ``str``
+    :returns: XML-RPC URI of node, ``str``
+    :raises: :exc:`ROSTopicIOException` If unable to communicate with master
     """
     caller_api = _caller_apis.get(caller_id, None)
     if not caller_api:
@@ -732,7 +702,7 @@ def get_api(master, caller_id):
             _caller_apis[caller_id] = caller_api
         except socket.error:
             raise ROSTopicIOException("Unable to communicate with master!")
-        except rosgraph.masterapi.Error:
+        except rosgraph.MasterError:
             caller_api = 'unknown address %s'%caller_id
 
     return caller_api
@@ -740,10 +710,8 @@ def get_api(master, caller_id):
 def _rostopic_list_bag(bag_file, topic=None):
     """
     Prints topics in bag file to screen
-    @param bag_file: path to bag file
-    @type  bag_file: str
-    @param topic: optional topic name to match. Will print additional information just about messagese in this topic.
-    @type  topic: str
+    :param bag_file: path to bag file, ``str``
+    :param topic: optional topic name to match. Will print additional information just about messagese in this topic, ``str``
     """
     import rosbag
     if not os.path.exists(bag_file):
@@ -752,7 +720,7 @@ def _rostopic_list_bag(bag_file, topic=None):
     with rosbag.Bag(bag_file) as b:
         if topic:
             # create string for namespace comparison
-            topic_ns = roslib.names.make_global_ns(topic)
+            topic_ns = rosgraph.names.make_global_ns(topic)
             count = 0
             earliest = None
             latest = None
@@ -818,8 +786,7 @@ def _sub_rostopic_list(master, pubs, subs, publishers_only, subscribers_only, ve
 def _rostopic_list_group_by_host(master, pubs, subs):
     """
     Build up maps for hostname to topic list per hostname
-    @return: publishers host map, subscribers host map
-    @rtype: {str: set(str)}, {str: set(str)}
+    :returns: publishers host map, subscribers host map, ``{str: set(str)}, {str: set(str)}``
     """
     def build_map(master, state, uricache):
         tmap = {}
@@ -850,29 +817,24 @@ def _rostopic_list(topic, verbose=False,
     """
     Print topics to screen
     
-    @param topic: topic name to list information or None to match all topics
-    @type  topic: str
-    @param verbose: print additional debugging information
-    @type  verbose: bool
-    @param subscribers_only: print information about subscriptions only
-    @type  subscribers_only: bool
-    @param publishers_only: print information about subscriptions only
-    @type  publishers_only: bool    
-    @param group_by_host: group topic list by hostname
-    @type  group_by_host: bool    
+    :param topic: topic name to list information or None to match all topics, ``str``
+    :param verbose: print additional debugging information, ``bool``
+    :param subscribers_only: print information about subscriptions only, ``bool``
+    :param publishers_only: print information about subscriptions only, ``bool``
+    :param group_by_host: group topic list by hostname, ``bool``
     """
     # #1563
     if subscribers_only and publishers_only:
         raise ROSTopicException("cannot specify both subscribers- and publishers-only")
     
-    master = rosgraph.masterapi.Master('/rostopic')
+    master = rosgraph.Master('/rostopic')
     try:
         state = master.getSystemState()
 
         pubs, subs, _ = state
         if topic:
             # filter based on topic
-            topic_ns = roslib.names.make_global_ns(topic)        
+            topic_ns = rosgraph.names.make_global_ns(topic)        
             subs = (x for x in subs if x[0] == topic or x[0].startswith(topic_ns))
             pubs = (x for x in pubs if x[0] == topic or x[0].startswith(topic_ns))
             
@@ -898,8 +860,7 @@ def get_info_text(topic):
     """
     Get human-readable topic description
     
-    @param topic: topic name 
-    @type  topic: str
+    :param topic: topic name, ``str``
     """
     import cStringIO, itertools
     buff = cStringIO.StringIO()
@@ -909,7 +870,7 @@ def get_info_text(topic):
             return matches[0]
         return 'unknown type'
 
-    master = rosgraph.masterapi.Master('/rostopic')
+    master = rosgraph.Master('/rostopic')
     try:
         state = master.getSystemState()
 
@@ -949,8 +910,7 @@ def _rostopic_info(topic):
     """
     Print topic information to screen.
     
-    @param topic: topic name 
-    @type  topic: str
+    :param topic: topic name, ``str``
     """
     print(get_info_text(topic))
             
@@ -1013,7 +973,7 @@ def _rostopic_cmd_echo(argv):
     else:
         if len(args) == 0:
             parser.error("topic must be specified")        
-        topic = roslib.scriptutil.script_resolve_name('rostopic', args[0])
+        topic = rosgraph.names.script_resolve_name('rostopic', args[0])
         # suppressing output to keep it clean
         #if not options.plot:
         #    print "rostopic: topic is [%s]"%topic
@@ -1059,7 +1019,7 @@ def _optparse_topic_only(cmd, argv):
         parser.error("topic must be specified")        
     if len(args) > 1:
         parser.error("you may only specify one input topic")
-    return roslib.scriptutil.script_resolve_name('rostopic', args[0])
+    return rosgraph.names.script_resolve_name('rostopic', args[0])
 
 def _rostopic_cmd_type(argv):
     _rostopic_type(_optparse_topic_only('type', argv))
@@ -1088,7 +1048,7 @@ def _rostopic_cmd_hz(argv):
             window_size = options.window_size
     except:
         parser.error("window size must be an integer")
-    topic = roslib.scriptutil.script_resolve_name('rostopic', args[0])
+    topic = rosgraph.names.script_resolve_name('rostopic', args[0])
 
     # #694
     if options.filter_expr:
@@ -1121,18 +1081,16 @@ def _rostopic_cmd_bw(argv=sys.argv):
             window_size = options.window_size
     except:
         parser.error("window size must be an integer")
-    topic = roslib.scriptutil.script_resolve_name('rostopic', args[0])
+    topic = rosgraph.names.script_resolve_name('rostopic', args[0])
     _rostopic_bw(topic, window_size=window_size)
 
 def find_by_type(topic_type):
     """
     Lookup topics by topic_type
-    @param topic_type: type of topic to find
-    @type  topic_type: str
-    @return: list of topic names that use topic_type    
-    @rtype: [str]
+    :param topic_type: type of topic to find, ``str``
+    :returns: list of topic names that use topic_type, ``[str]``   
     """
-    master = rosgraph.masterapi.Master('/rostopic')
+    master = rosgraph.Master('/rostopic')
     try:
         t_list = _master_get_topic_types(master)
     except socket.error:
@@ -1142,8 +1100,7 @@ def find_by_type(topic_type):
 def _rostopic_cmd_find(argv=sys.argv):
     """
     Implements 'rostopic type'
-    @param argv: command-line args
-    @type  argv: [str]
+    :param argv: command-line args, ``[str]``
     """
     args = argv[2:]
     from optparse import OptionParser
@@ -1163,16 +1120,12 @@ def create_publisher(topic_name, topic_type, latch):
     rospy.Publisher and Message instances using the topic and type
     names. This enables more dynamic publishing from Python programs.
 
-    @param topic_name: name of topic
-    @type  topic_name: str
-    @param topic_type: name of topic type
-    @type  topic_type: str
-    @param latch: latching topic
-    @type  latch: bool
-    @return: topic publisher, message class
-    @rtype: rospy.topics.Publisher, Message class
+    :param topic_name: name of topic, ``str``
+    :param topic_type: name of topic type, ``str``
+    :param latch: latching topic, ``bool``
+    :returns: topic :class:`rospy.Publisher`, :class:`Message` class
     """
-    topic_name = roslib.scriptutil.script_resolve_name('rostopic', topic_name)
+    topic_name = rosgraph.names.script_resolve_name('rostopic', topic_name)
     try:
         msg_class = roslib.message.get_message_class(topic_type)
     except:
@@ -1189,13 +1142,10 @@ def _publish_at_rate(pub, msg, rate, verbose=False):
     """
     Publish message at specified rate. Subroutine of L{publish_message()}.
     
-    @param pub: Publisher instance for topic
-    @type  pub: rospy.Publisher
-    @param msg: message instance to publish
-    @param rate: publishing rate (hz) or None for just once
-    @type  rate: int
-    @param verbose: If True, print more verbose output to stdout
-    @type  verbose: bool
+    :param pub: :class:rospy.Publisher` instance for topic
+    :param msg: message instance to publish
+    :param rate: publishing rate (hz) or None for just once, ``int``
+    :param verbose: If ``True``, print more verbose output to stdout, ``bool``
     """
     try:
         r = rospy.Rate(float(rate))
@@ -1212,13 +1162,10 @@ def _publish_latched(pub, msg, once=False, verbose=False):
     """
     Publish and latch message. Subroutine of L{publish_message()}.
     
-    @param pub: Publisher instance for topic
-    @type  pub: rospy.Publisher
-    @param msg: message instance to publish
-    @param once: if True, publish message once and then exit after sleep interval
-    @type  once: bool
-    @param verbose: If True, print more verbose output to stdout
-    @type  verbose: bool
+    :param pub: :class:`rospy.Publisher` instance for topic
+    :param msg: message instance to publish
+    :param once: if ``True``, publish message once and then exit after sleep interval, ``bool``
+    :param verbose: If ``True``, print more verbose output to stdout, ``bool``
     """
     try:
         pub.publish(msg)
@@ -1233,18 +1180,12 @@ def publish_message(pub, msg_class, pub_args, rate=None, once=False, verbose=Fal
     Create new instance of msg_class, populate with pub_args, and publish. This may
     print output to screen.
     
-    @param pub: Publisher instance for topic
-    @type  pub: rospy.Publisher
-    @param msg_class: Message type
-    @type  msg_class: Class
-    @param pub_args: Arguments to initialize message that is published
-    @type  pub_args: [val]
-    @param rate: publishing rate (hz) or None for just once
-    @type  rate: int
-    @param once: publish only once and return
-    @type  once: bool
-    @param verbose: If True, print more verbose output to stdout
-    @type  verbose: bool
+    :param pub: :class:`rospy.Publisher` instance for topic
+    :param msg_class: Message type, ``Class``
+    :param pub_args: Arguments to initialize message that is published, ``[val]``
+    :param rate: publishing rate (hz) or None for just once, ``int``
+    :param once: publish only once and return, ``bool``
+    :param verbose: If ``True``, print more verbose output to stdout, ``bool``
     """
     msg = msg_class()
     try:
@@ -1290,9 +1231,9 @@ def _rostopic_cmd_pub(argv):
     """
     Parse 'pub' command arguments and run command. Will cause a system
     exit if command-line argument parsing fails.
-    @param argv: command-line arguments
-    @param argv: [str]
-    @raise ROSTopicException: if call command cannot be executed
+    :param argv: command-line arguments
+    :param argv: [str]
+    :raises: :exc:`ROSTopicException` If call command cannot be executed
     """
     args = argv[2:]
     from optparse import OptionParser
@@ -1354,7 +1295,7 @@ def _rostopic_cmd_pub(argv):
     pub, msg_class = create_publisher(topic_name, topic_type, latch)
 
     if 0 and options.parameter:
-        param_name = roslib.scriptutil.script_resolve_name('rostopic', options.parameter)
+        param_name = rosgraph.names.script_resolve_name('rostopic', options.parameter)
         if options.once:
             param_publish_once(pub, msg_class, param_name, rate, options.verbose)
         else:
@@ -1373,11 +1314,9 @@ def _rostopic_cmd_pub(argv):
 
 def file_yaml_arg(filename):
     """
-    @param filename: file name
-    @type  filename: str
-    @return: Iterator that yields pub args (list of args)
-    @rtype: iterator
-    @raise ROSTopicException: if filename is invalid
+    :param filename: file name, ``str``
+    :returns: Iterator that yields pub args (list of args), ``iterator``
+    :raises: :exc:`ROSTopicException` If filename is invalid
     """
     if not os.path.isfile(filename):
         raise ROSTopicException("file does not exist: %s"%(filename))
@@ -1445,15 +1384,13 @@ class _ParamNotifier(object):
         
 def param_publish(pub, msg_class, param_name, rate, verbose):
     """
-    @param param_name: ROS parameter name
-    @type  param_name: str
-    @return: List of msg dicts in file
-    @rtype: [{str: any}]
-    @raise ROSTopicException: if parameter is not set
+    :param param_name: ROS parameter name, ``str``
+    :returns: List of msg dicts in file, ``[{str: any}]``
+    :raises: :exc:`ROSTopicException` If parameter is not set
     """
     import rospy
     import rospy.impl.paramserver
-    import rosgraph.masterapi
+    import rosgraph
     
     if not rospy.has_param(param_name):
         raise ROSTopicException("parameter does not exist: %s"%(param_name))
@@ -1463,7 +1400,7 @@ def param_publish(pub, msg_class, param_name, rate, verbose):
     ps_cache = rospy.impl.paramserver.get_param_server_cache()
     notifier = _ParamNotifier(param_name)
     ps_cache.set_notifier(notifier)
-    master = rosgraph.masterapi.Master(rospy.get_name())
+    master = rosgraph.Master(rospy.get_name())
     notifier.value = master.subscribeParam(rospy.get_node_uri(), param_name)
     pub_args = notifier.value
     ps_cache.set(param_name, pub_args)
@@ -1504,8 +1441,7 @@ def param_publish(pub, msg_class, param_name, rate, verbose):
 
 def stdin_publish(pub, msg_class, rate, once, filename, verbose):
     """
-    @param filename: name of file to read from instead of stdin, or None
-    @type  filename: str
+    :param filename: name of file to read from instead of stdin, or ``None``, ``str``
     """
     if filename:
         iterator = file_yaml_arg(filename)
@@ -1556,8 +1492,7 @@ def stdin_publish(pub, msg_class, rate, once, filename, verbose):
 def stdin_yaml_arg():
     """
     Iterate over YAML documents in stdin
-    @return: for next list of arguments on stdin. Iterator returns a list of args for each call.
-    @rtype: iterator
+    :returns: for next list of arguments on stdin. Iterator returns a list of args for each call, ``iterator``
     """
     import yaml
     from select import select
@@ -1620,7 +1555,7 @@ def _rostopic_cmd_list(argv):
     topic = None
 
     if len(args) == 1:
-        topic = roslib.scriptutil.script_resolve_name('rostopic', args[0])
+        topic = rosgraph.names.script_resolve_name('rostopic', args[0])
     elif len(args) > 1:
         parser.error("you may only specify one input topic")
     if options.bag:
@@ -1653,7 +1588,7 @@ def _rostopic_cmd_info(argv):
     elif len(args) > 1:
         parser.error("you may only specify one topic name")
             
-    topic = roslib.scriptutil.script_resolve_name('rostopic', args[0])
+    topic = rosgraph.names.script_resolve_name('rostopic', args[0])
     exitval = _rostopic_info(topic) or 0
     if exitval != 0:
         sys.exit(exitval)
@@ -1679,7 +1614,7 @@ def rostopicmain(argv=None):
     if argv is None:
         argv=sys.argv
     # filter out remapping arguments in case we are being invoked via roslaunch
-    argv = roslib.scriptutil.myargv(argv)
+    argv = rospy.myargv(argv)
     
     # process argv
     if len(argv) == 1:
@@ -1710,11 +1645,11 @@ def rostopicmain(argv=None):
     except rosbag.ROSBagException as e:
         sys.stderr.write("ERROR: unable to use bag file: %s\n"%str(e))
         sys.exit(1)
-    except roslib.exceptions.ROSLibException, e:
-        # mainly for invalid master URI or rosgraph.masterapi.ROSMasterException
+    except rosgraph.MasterException as e:
+        # mainly for invalid master URI/rosgraph.masterapi
         sys.stderr.write("ERROR: %s\n"%str(e))
         sys.exit(1)
-    except ROSTopicException, e:
+    except ROSTopicException as e:
         sys.stderr.write("ERROR: %s\n"%str(e))
         sys.exit(1)
     except KeyboardInterrupt: pass

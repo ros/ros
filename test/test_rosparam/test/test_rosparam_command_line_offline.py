@@ -44,7 +44,7 @@ import unittest
 import cStringIO
 import time
         
-import rostest
+import rosunit
 
 from subprocess import Popen, PIPE, check_call, call
 
@@ -89,25 +89,25 @@ class TestRosparamOffline(unittest.TestCase):
         msg = "ERROR: Unable to communicate with master!\n"
 
         output = Popen([cmd, 'list'], **kwds).communicate()
-        self.assertEquals(msg, output[1])
+        self.assert_(output[1].endswith(msg))
         output = Popen([cmd, 'set', 'foo', '1.0'], **kwds).communicate()
-        self.assertEquals(msg, output[1])
+        self.assert_(output[1].endswith(msg))
         output = Popen([cmd, 'get', 'foo'], **kwds).communicate()
-        self.assertEquals(msg, output[1])
+        self.assert_(output[1].endswith(msg))
         # have to test with actual file to avoid error
         path = roslib.packages.get_pkg_dir('test_rosparam')
         path = os.path.join(path, 'test', 'test.yaml')
         output = Popen([cmd, 'load', path], **kwds).communicate()
-        self.assertEquals(msg, output[1])
+        self.assert_(output[1].endswith(msg))
 
         # test with file that does not exist
         output = Popen([cmd, 'load', 'fake.yaml'], **kwds).communicate()
         self.assertEquals('ERROR: file [fake.yaml] does not exist\n', output[1])
         
         output = Popen([cmd, 'dump', 'foo.yaml'], **kwds).communicate()
-        self.assertEquals(msg, output[1])        
+        self.assert_(output[1].endswith(msg))
         output = Popen([cmd, 'delete', 'foo'], **kwds).communicate()
-        self.assertEquals(msg, output[1])        
+        self.assert_(output[1].endswith(msg))
         
 if __name__ == '__main__':
-    rostest.unitrun('test_rosparam', NAME, TestRosparamOffline, sys.argv, coverage_packages=[])
+    rosunit.unitrun('test_rosparam', NAME, TestRosparamOffline, sys.argv, coverage_packages=[])

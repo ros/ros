@@ -54,9 +54,9 @@ import genutil
 
 try:
     # TODO: remove after ROS 1.7 is released
-    from roslib.genpy_electric import MsgGenerationException
+    from roslib.genpy_electric import MsgGenerationException, msg_generator
 except:
-    from roslib.genpy import MsgGenerationException    
+    from roslib.genpy import MsgGenerationException, msg_generator
 
 class GenmsgPackage(genutil.Generator):
     """
@@ -66,7 +66,7 @@ class GenmsgPackage(genutil.Generator):
     """
     def __init__(self):
         super(GenmsgPackage, self).__init__(
-            'genmsg_py', 'messages', '.msg', 'msg', roslib.genpy_electric.MsgGenerationException)
+            'genmsg_py', 'messages', '.msg', 'msg', MsgGenerationException)
 
     def generate(self, package, f, outdir):
         """
@@ -86,7 +86,7 @@ class GenmsgPackage(genutil.Generator):
         (name, spec) = roslib.msgs.load_from_file(f, package)
         base_name = roslib.names.resource_name_base(name)
         
-        self.write_gen(outfile_name, roslib.genpy_electric.msg_generator(package, base_name, spec), verbose)
+        self.write_gen(outfile_name, msg_generator(package, base_name, spec), verbose)
 
         roslib.msgs.register(name, spec)
         return outfile_name

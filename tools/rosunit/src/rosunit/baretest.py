@@ -65,7 +65,7 @@ class TestTimeoutException(Exception): pass
 
 class BareTestCase(unittest.TestCase):
 
-    def __init__(self, exe, args, retry=0, time_limit=None, test_name=None):
+    def __init__(self, exe, args, retry=0, time_limit=None, test_name=None, text_mode=False):
         """
         @param exe: path to executable to run
         @type  exe: str
@@ -78,6 +78,7 @@ class BareTestCase(unittest.TestCase):
         @type  test_name: str
         """
         super(BareTestCase, self).__init__()
+        self.text_mode = text_mode
         _, self.package = roslib.packages.get_dir_pkg(exe)
         self.exe = os.path.abspath(exe)
         if test_name is None:
@@ -90,6 +91,8 @@ class BareTestCase(unittest.TestCase):
             self.args = ['python', self.exe] + args
         else:
             self.args = [self.exe] + args
+        if text_mode:
+            self.args = self.args + ['--text']
             
         self.retry = retry
         self.time_limit = time_limit or BARE_TIME_LIMIT
@@ -155,14 +158,18 @@ class BareTestCase(unittest.TestCase):
             else:
                 printerrlog("test [%s] timed out"%test_name)                
         
-            # load in test_file
-            if not timeout_failure:
-                self.assert_(os.path.isfile(test_file), "test [%s] did not generate test results"%test_name)
-                printlog("test [%s] results are in [%s]", test_name, test_file)
-                results = junitxml.read(test_file, test_name)
-                test_fail = results.num_errors or results.num_failures
-            else:
-                test_fail = True
+                
+            if self.text_mode:
+                results = self.results
+            elif not self.text_mode:
+                # load in test_file
+                if not timeout_failure:
+                    self.assert_(os.path.isfile(test_file), "test [%s] did not generate test results"%test_name)
+                    printlog("test [%s] results are in [%s]", test_name, test_file)
+                    results = junitxml.read(test_file, test_name)
+                    test_fail = results.num_errors or results.num_failures
+                else:
+                    test_fail = True
 
             if self.retry > 0 and test_fail:
                 self.retry -= 1
@@ -487,8 +494,9 @@ def print_runner_summary(runner_results, junit_results, runner_name='ROSUNIT'):
     # confusing. 'result' counts successful _running_ of tests
     # (i.e. doesn't check for actual test success). The 'r' result
     # object contains results of the actual tests.
-    
+
     buff = cStringIO.StringIO()
+
     buff.write("[%s]"%(runner_name)+'-'*71+'\n\n')
     for tc_result in junit_results.test_case_results:
         buff.write(tc_result.description)

@@ -439,3 +439,69 @@ class MacportsInstaller(InstallerAPI):
             if len(pkg_row) == 3 and pkg_row[0] in pkgs and pkg_row[2] =='(active)':
                 ret_list.append( pkg_row[0])
         return ret_list
+
+class GentooPortageInstaller(InstallerAPI):
+    """
+    An implementation of the InstallerAPI for portage-based Gentoo systems
+    """
+
+    # Determine whether package p needs to be installed
+    def equery_detect(self, p):
+        cmd = ['equery', '-q', 'l', p]
+        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (std_out, std_err) = pop.communicate()
+
+        return (pop.returncode == 0)
+    
+    # Check equery for existence and compatibility (gentoolkit 0.3)
+    def equery_available(self):
+        if not os.path.exists("/usr/bin/equery"):
+            return False
+    
+        cmd = ['equery', '-V']
+        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (stdout, stderr) = pop.communicate()
+    
+        return "0.3." == stdout[8:12]
+
+    def __init__(self, arg_dict):
+        packages = arg_dict.get("packages", "")
+        if type(packages) == type("string"):
+            packages = packages.split()
+
+        self.packages = packages
+        self.equery = self.equery_available()
+
+
+    def generate_package_install_command(self, default_yes, execute = True, display = True):
+        """
+        If execute is True, install the rosdep, else if display = True
+        print the script it would have run to install.
+        @param default_yes  Pass through -y or equivilant to package manager
+        """
+        if len(self.packages) == 0:
+            script = "#!/bin/bash\n# Package prerequisites satisfied - nothing to do"
+        else:
+            script = "#!/bin/bash\n#Packages\nsudo emerge -u --noreplace " + ' '.join(self.packages)
+
+        if execute:
+            return rosdep.core.create_tempfile_from_string_and_execute(script)
+        elif display:
+            print "To install packages: %s would have executed script\n{{{\n%s\n}}}"%(packages_to_install, script)
+        return False
+
+    def check_presence(self):
+        """
+        Always return false; just let the package manager handle it
+        """
+        if self.equery:
+           ret = True
+           for p in self.packages:
+              detect = self.equery_detect(p)
+              if detect:
+                 print "%s detected %d"%(p, detect)
+              else:
+                 ret = False
+                 print "%s not detected %d"%(p,detect)
+           return ret
+        return False

@@ -94,17 +94,17 @@ def rosunitmain():
     pkg_dir, pkg = roslib.packages.get_dir_pkg(test_file) 
 
     try:
-        
+        runner_result = None
         results = Result('rosunit', 0, 0, 0)
 
         test_case = BareTestCase(test_file, args[1:], \
-                                     retry=0, time_limit=time_limit, \
-                                     test_name=test_name)
+                                 retry=0, time_limit=time_limit, \
+                                 test_name=test_name, text_mode=options.text_mode)
         suite = unittest.TestSuite()
         suite.addTest(test_case)
 
         if options.text_mode:
-            result = unittest.TextTestRunner(verbosity=2).run(suite)
+            result = unittest.TextTestRunner(stream=sys.stdout, verbosity=2).run(suite)
         else:
             results_file = xml_results_file(pkg, test_name, True)
             # the is_rostest really just means "wrapper"
@@ -127,7 +127,7 @@ def rosunitmain():
     if logfile_name:
         print "rosunit log file is in %s"%logfile_name
         
-    if not runner_result.wasSuccessful():
+    if runner_result is not None and not runner_result.wasSuccessful():
         sys.exit(1)
     elif results.num_errors or results.num_failures:
         sys.exit(2)

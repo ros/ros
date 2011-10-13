@@ -55,6 +55,10 @@ def equery_available():
 
 ###### Gentoo SPECIALIZATION #########################
 class Gentoo(roslib.os_detect.Gentoo, rosdep.base_rosdep.RosdepBaseOS):
+    def __init__(self):
+        self.installers = {}
+        self.installers['default'] = rosdep.installers.GentooPortageInstaller
+
     def strip_detected_packages(self, packages):
         if equery_available():
             return [p for p in packages if equery_detect(p)]

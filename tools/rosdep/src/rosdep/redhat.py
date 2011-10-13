@@ -34,40 +34,36 @@ import subprocess
 
 import rosdep.base_rosdep
 
-class YumInstall:
-    """This class provides the functions for installing using yum
-    it's methods partially implement the Rosdep OS api to complement 
-    the roslib.OSDetect API. """
-    def rpm_detect(self, p):
-        return subprocess.call(['rpm', '-q', p], stdout=subprocess.PIPE, stderr=subprocess.PIPE)    
-
-    def strip_detected_packages(self, packages):
-        return [p for p in packages if self.rpm_detect(p)]
-
-    def generate_package_install_command(self, packages, default_yes):
-        if not packages:
-            return "#No Packages to install"
-
-        if default_yes:
-            return "#Packages\nsudo yum -y install " + ' '.join(packages)
-        else:
-            return "#Packages\nsudo yum install " + ' '.join(packages)
-
-
 ###### Fedora SPECIALIZATION #########################
-class Fedora(roslib.os_detect.Fedora, YumInstall, rosdep.base_rosdep.RosdepBaseOS): 
-    """This class provides the Rosdep OS API for by combining the Fedora
-    OSDetect API and the YumInstall API
-    """
+class Fedora(roslib.os_detect.Fedora, rosdep.base_rosdep.RosdepBaseOS): 
+    """ This is an implementation of a standard interface for
+    interacting with rosdep.  This defines all Fedora sepecific
+    methods, including detecting the OS/Version number.  As well as
+    how to check for and install packages."""
+
+    def __init__(self):
+        self.installers = {}
+        self.installers['yum'] = rosdep.installers.YumInstaller
+        self.installers['pip'] = rosdep.installers.PipInstaller
+        self.installers['source'] = rosdep.installers.SourceInstaller
+        self.installers['default'] = rosdep.installers.YumInstaller
     pass
                  
 ###### END Fedora SPECIALIZATION ########################
 
 ###### Rhel SPECIALIZATION #########################
-class Rhel(roslib.os_detect.Rhel, YumInstall, rosdep.base_rosdep.RosdepBaseOS): 
-    """This class provides the Red Hat Enterprise Linux Rosdep OS API
-    for by combining the RHEL OSDetect API and the YumInstall API
-    """
+class Rhel(roslib.os_detect.Rhel, rosdep.base_rosdep.RosdepBaseOS): 
+    """ This is an implementation of a standard interface for
+    interacting with rosdep.  This defines all Fedora sepecific
+    methods, including detecting the OS/Version number.  As well as
+    how to check for and install packages."""
+
+    def __init__(self):
+        self.installers = {}
+        self.installers['yum'] = rosdep.installers.YumInstaller
+        self.installers['pip'] = rosdep.installers.PipInstaller
+        self.installers['source'] = rosdep.installers.SourceInstaller
+        self.installers['default'] = rosdep.installers.YumInstaller
     pass
 ###### END Rhel SPECIALIZATION ########################
 

@@ -37,6 +37,8 @@
 Library for reading and manipulating Ant JUnit XML result files.
 """
 
+from __future__ import print_function
+
 import os
 import sys
 import cStringIO
@@ -180,6 +182,7 @@ class Result(object):
         self.num_errors += r.num_errors
         self.num_failures += r.num_failures
         self.num_tests += r.num_tests
+        self.time += r.time
         self.test_case_results.extend(r.test_case_results)
         if r.system_out:
             self.system_out += '\n'+r.system_out
@@ -240,7 +243,7 @@ def _load_suite_results(test_suite_name, test_suite, result):
             elif not classname.startswith(result.name):
               classname = "%s.%s"%(result.name,classname)
               
-            time = node.getAttribute('time') or 0.0
+            time = float(node.getAttribute('time')) or 0.0
             tc_result = TestCaseResult("%s/%s"%(test_suite_name,name))
             tc_result.classname = classname
             tc_result.time = time            
@@ -310,14 +313,14 @@ def read(test_file, test_name):
     try:
         xml_str = _read_file_safe_xml(test_file)
         if not xml_str.strip():
-            print "WARN: test result file is empty [%s]"%(test_file)
+            print("WARN: test result file is empty [%s]"%(test_file))
             return Result(test_name, 0, 0, 0)
         test_suites = parseString(xml_str).getElementsByTagName('testsuite')
     except Exception as e:
-        print "WARN: cannot read test result file [%s]: %s"%(test_file, str(e))
+        print("WARN: cannot read test result file [%s]: %s"%(test_file, str(e)))
         return Result(test_name, 0, 0, 0)
     if not test_suites:
-        print "WARN: test result file [%s] contains no results"%(test_file)
+        print("WARN: test result file [%s] contains no results"%(test_file))
         return Result(test_name, 0, 0, 0)
 
     results = Result(test_name, 0, 0, 0)
@@ -328,7 +331,7 @@ def read(test_file, test_name):
         err, fail, tests = [string.atoi(val) for val in vals]
 
         result = Result(test_name, err, fail, tests)
-        result.time = test_suite.getAttribute('time') or 0.0    
+        result.time = float(test_suite.getAttribute('time')) or 0.0    
 
         # Create a prefix based on the test result filename. The idea is to
         # disambiguate the case when tests of the same name are provided in
@@ -447,5 +450,5 @@ def print_summary(junit_results, runner_name='ROSUNIT'):
     else:
         buff.write(" * FAILURES: 0\n")
 
-    print buff.getvalue()
+    print(buff.getvalue())
 

@@ -498,7 +498,7 @@ class Rosdep:
                 
             # Detect a script and execute it if desired
             if len(rosdep_dict.split('\n')) > 1:
-                return create_tempfile_from_string_and_execute(rosdep_dict)
+                return create_tempfile_from_string_and_execute("#!/bin/bash\n"+rosdep_dict)
 
             installer = self.osi.get_os().get_installer('default')
             packages = rosdep_dict.split()

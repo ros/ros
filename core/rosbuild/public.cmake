@@ -344,6 +344,10 @@ macro(rosbuild_init)
     add_dependencies(test-results test-results-coverage)
   endif("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
 
+  # Initialize a counter to be used to uniquify target names for
+  # calls to rosbuild_add_roslaunch_check(), #3674.
+  set(ROSBUILD_roslaunch_check_count 1)
+
   # Find roslib; roslib_path will be used later
   rosbuild_invoke_rospack("" roslib path find roslib)
 
@@ -708,12 +712,18 @@ endmacro(rosbuild_add_pyunit_future)
 # specify environment variables as var=val var=val ...
 macro(rosbuild_add_roslaunch_check file)
   string(REPLACE "/" "_" _testname ${file})
-  _rosbuild_add_roslaunch_check(${ARGV})
+  # Append a unique count to avoid target name collisions when the same
+  # launch file is tested in different environment variable configurations,
+  # #3674.  The counter is initialized in rosbuild_init().
+  set(_targetname roslaunch_check_${_testname}_${ROSBUILD_roslaunch_check_count})
+  # Increment counter for the next call
+  math(EXPR ROSBUILD_roslaunch_check_count "${ROSBUILD_roslaunch_check_count} + 1")
+  _rosbuild_add_roslaunch_check(${_targetname} ${ARGV})
   # Redeclaration of target is to workaround bug in 2.4.6
   if(CMAKE_MINOR_VERSION LESS 6)
     add_custom_target(test)
   endif(CMAKE_MINOR_VERSION LESS 6)
-  add_dependencies(test roslaunch_check_${_testname})
+  add_dependencies(test ${_targetname})
 endmacro(rosbuild_add_roslaunch_check)
 
 set(_ROSBUILD_GENERATED_MSG_FILES "")

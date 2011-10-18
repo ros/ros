@@ -154,10 +154,10 @@ class YamlCache:
             if rep_version in os_specific:
                 return os_specific[rep_version]
         if type(os_specific) == type({}): # detected a map
-            for k in os_specific.keys():
-                if not k in self.installers:
-                    print("Invalid identifier found [%s] when processing rosdep %s.  \n{{{\n%s\n}}}\n"%(k, rosdep_name, os_specific))
-                    return False # If the map doesn't have a valid installer key reject it, it must be a version key
+            matches = [k for k in self.installers if k in os_specific]
+            if not matches:
+                print("No installers found for rosdep [%s], OS version [%s].  Rule:\n{{{\n%s\n}}}\n"%(rosdep_name, self.os_version, os_specific))
+                return False # If the map doesn't have a valid installer key reject it, it must be a version key
             # return the map 
             return os_specific
         else:

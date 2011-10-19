@@ -1,10 +1,10 @@
 tinyxml:
   ubuntu: libtinyxml-dev
   debian: libtinyxml-dev
-  osx:
-    source:
-      uri: 'http://kforge.ros.org/rosrelease/viewvc/sourcedeps/tinyxml/tinyxml-2.6.2-1.rdmanifest'
-      md5sum: 13760e61e08c9004493c302a16966c42
+  osxbrew:
+    homebrew:
+      packages: [ tinyxml ]
+      formula_uri: 'https://kforge.ros.org/rososx/homebrew/file/tip/electric/tinyxml.rb'
   fedora: tinyxml-devel
 python:
   ubuntu: python-dev
@@ -14,9 +14,19 @@ python:
   fedora: python-devel
   rhel: python-devel
   macports: python26 python_select
+  osxbrew:
+    homebrew: 
+      packages: |
   gentoo: python
   cygwin: python
   freebsd: python
+yaml:
+  ubuntu: libyaml-dev
+  fedora: libyaml-devel
+  osxbrew:
+    homebrew:
+      packages: [ libyaml ]
+      options: [ --universal ]
 python-yaml:
   ubuntu: python-yaml
   debian: python-yaml
@@ -26,6 +36,10 @@ python-yaml:
   centos: PyYAML
   arch: python-yaml
   macports: py26-yaml
+  osxbrew:
+    pip: 
+      packages: [ PyYAML ]
+      depends: [ yaml ]
   gentoo: pyyaml
   cygwin: |
       if [ ! -d /usr/lib/python2.5/site-packages/yaml/ ] ; then
@@ -41,11 +55,19 @@ python-gtk2:
   arch: pygtk
   debian: python-gtk2
   macports: py26-gtk
+  osxbrew:
+    pip:
+      packages: |
+  pip: pygtk
   opensuse: python-gtk
   fedora: pygtk2
   rhel: pygtk2
   gentoo: "=dev-python/pygtk-2*"
   freebsd: py-gtk2
+gfortran:
+  osxbrew:
+    homebrew: 
+      packages: [ gfortran ]
 python-scipy:
   ubuntu: python-scipy
   debian: python-scipy
@@ -53,6 +75,12 @@ python-scipy:
   opensuse: python-scipy
   fedora: scipy
   macports: py26-scipy
+  osxbrew:
+    pip:
+      packages: [ scipy ]
+      alt_install_cmd: '-e git+https://github.com/scipy/scipy#egg=scipy-dev'
+      depends: [ gfortran ]
+  pip: scipy
   gentoo: dev-libs/scipy
   freebsd: py-scipy
 bzip2:
@@ -63,6 +91,9 @@ bzip2:
   rhel: bzip2-devel
   arch: bzip2
   macports: bzip2
+  osxbrew:
+    homebrew:
+      packages: |
   gentoo: app-arch/bzip2
   cygwin: bzip2
   freebsd: bzip2
@@ -77,6 +108,9 @@ boost:
     natty:
       apt:
         packages: [libboost1.42-all-dev]
+    oneiric:
+      apt:
+        packages: [libboost1.46-all-dev]
   debian:
     squeeze: libboost1.42-all-dev
     lenny: |
@@ -106,6 +140,9 @@ boost:
   rhel: boost-devel
   arch: boost
   macports: boost
+  osxbrew:
+    homebrew:
+      packages: [ boost ]
   gentoo: dev-libs/boost
   cygwin: libboost-devel libboost1.40
   freebsd: boost-python-libs
@@ -117,6 +154,9 @@ zlib:
   rhel: zlib-devel
   arch: zlib
   macports: zlib
+  osxbrew:
+    homebrew:
+      packages: |
   gentoo: sys-libs/zlib
   cygwin: zlib
   freebsd: builtin
@@ -128,6 +168,10 @@ graphviz:
   rhel: graphviz
   arch: graphviz
   macports: graphviz
+  osxbrew:
+    homebrew:
+      packages: [ graphviz ]
+      options: [  ]
   gentoo: media-gfx/graphviz
   freebsd: graphviz
 wxwidgets:
@@ -137,6 +181,9 @@ wxwidgets:
   fedora: wxGTK-devel
   rhel: wxGTK-devel
   macports: wxWidgets-python
+  osxbrew:
+    homebrew:
+      depends: [ wxpython ]
   arch: wxgtk
   gentoo: x11-libs/wxGTK
   freebsd: wxgtk2
@@ -149,6 +196,10 @@ wxpython:
   centos: wxPython-devel
   debian: python-wxgtk2.8
   macports: py26-wxpython py26-gobject py26-gtk py26-cairo
+  osxbrew:
+    source:
+      uri: http://mirror.ausparc.com/ros/sourcedeps/wxPython.rdmanifest
+      md5sum: 4fdb30e1abfb4a36a4c5d9efc48049c4
   gentoo: dev-python/wxpython
   freebsd: py27-wxPython
 gtk2:
@@ -158,6 +209,9 @@ gtk2:
   fedora: gtk2-devel
   rhel: gtk2-devel
   macports: gtk2
+  osxbrew:
+    homebrew:
+      packages: [ gtk+ ]
   arch: gtk2
   gentoo: x11-libs/gtk+
   freebsd: gtk20
@@ -169,6 +223,9 @@ pkg-config:
   rhel: pkgconfig
   arch: pkg-config
   macports: pkgconfig
+  osxbrew:
+    homebrew:
+      packages: [ pkg-config ]
   gentoo: dev-util/pkgconfig
   cygwin: pkg-config
   freebsd: pkg-config
@@ -179,6 +236,10 @@ qt4:
   opensuse: libqt4-devel 
   fedora: qt-devel
   macports: qt4-mac
+  osxbrew:
+    homebrew:
+      packages: [ qt ]
+      options: [ --universal ]
   gentoo: ">=x11-libs/qt-core-4"
   freebsd: qt4-corelib
 libstdc++5:
@@ -200,6 +261,9 @@ unzip:
   fedora: unzip
   rhel: unzip
   macports: unzip
+  osxbrew:
+    homebrew:
+      packages: |
   gentoo: app-arch/unzip
   freebsd: unzip
 fltk:
@@ -209,6 +273,9 @@ fltk:
   fedora: fltk-devel
   arch: fltk
   macports: fltk
+  osxbrew:
+    homebrew:
+      packages: [ fltk ]
   gentoo: "=x11-libs/fltk-1*"
   freebsd: fltk
 bazaar:
@@ -217,6 +284,9 @@ bazaar:
   opensuse: bzr 
   fedora: bazaar
   macports: bazaar
+  osxbrew:
+    homebrew:
+      packages: [ bazaar ]
   gentoo: dev-vcs/bzr
   freebsd: bazaar
 git: 
@@ -225,6 +295,9 @@ git:
   opensuse: git-core
   fedora: git
   macports: git-core
+  osxbrew:
+    homebrew:
+      packages: [ git ]
   gentoo: dev-vcs/git
   freebsd: git
 subversion:
@@ -233,6 +306,9 @@ subversion:
   opensuse: subversion
   fedora: subversion
   macports: subversion
+  osxbrew:
+    homebrew:
+      packages: [ subversion ]
   gentoo: dev-vcs/subversion
   freebsd: subversion
 mercurial:
@@ -241,6 +317,9 @@ mercurial:
   opensuse: mercurial 
   fedora: mercurial
   macports: mercurial
+  osxbrew:
+    pip:
+      packages: [ mercurial ]
   gentoo: dev-vcs/mercurial
   freebsd: mercurial
 gtest:
@@ -249,6 +328,10 @@ gtest:
   opensuse: gtest-devel 
   fedora: gtest-devel
   macports: google-test
+  osxbrew:
+    homebrew:
+      packages: [ gtest ]
+      options: [ --universal ]
   gentoo: dev-util/gtest
   freebsd: googletest
 autoconf:
@@ -259,6 +342,9 @@ autoconf:
   rhel: autoconf
   arch: autoconf
   macports: autoconf
+  osxbrew:
+    homebrew:
+      packages: |
   gentoo: sys-devel/autoconf
   freebsd: autoconf213 autoconf268
 automake:
@@ -269,6 +355,9 @@ automake:
   rhel: automake
   arch: automake
   macports: automake
+  osxbrew:
+    homebrew:
+      packages: |
   gentoo: sys-devel/automake
   freebsd: automake14 automake111
 libtool:
@@ -282,6 +371,9 @@ libtool:
   fedora: libtool libtool-ltdl-devel
   rhel: libtool libtool-ltdl-devel
   macports: libtool
+  osxbrew:
+    homebrew:
+      packages: |
   arch: libtool
   gentoo: sys-devel/libtool
   freebsd: libtool

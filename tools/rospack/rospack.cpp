@@ -42,8 +42,6 @@
   #include <dirent.h>
   #include <sys/time.h>
   #include <sys/file.h>
-  #include <sys/types.h>
-  #include <pwd.h>
 #endif
 #include <stdexcept>
 #include <time.h>
@@ -1580,15 +1578,7 @@ string ROSPack::getCachePath()
       cache_file_name = dotros + "\\rospack_cache";
     }
 #else // UNIX
-    // Get the user's home directory by looking up the password entry based
-    // on UID.  If that doesn't work, we fall back on examining $HOME,
-    // knowing that that can cause trouble when mixed with sudo (#2884).  
-    struct passwd* passwd_ent;
-    // Look up based on effective UID, just in case we got here by set-uid
-    if((passwd_ent = getpwuid(geteuid())))
-      ros_home = passwd_ent->pw_dir;
-    else
-      ros_home = getenv("HOME");
+    ros_home = getenv("HOME");
     if (ros_home)
     {
       // By providing the trailing slash, stat() will only succeed if the

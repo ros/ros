@@ -355,7 +355,6 @@ gtest:
     lion:
       homebrew:
         packages: [ gtest ]
-        formula_uri: https://github.com/wjwwood/homebrew/raw/0d2300fd45e53995a76bec8b94b8effaa4b46585/Library/Formula/gtest.rb
         options: [ --universal ]
   gentoo: dev-util/gtest
   freebsd: googletest

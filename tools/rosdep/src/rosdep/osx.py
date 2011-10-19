@@ -45,17 +45,25 @@ def port_detect(p):
 class Osx(roslib.os_detect.Osx, rosdep.base_rosdep.RosdepBaseOS):
     def __init__(self):
         self.installers = {}
-        self.installers['pip'] = rosdep.installers.PipInstaller
         self.installers['macports'] = rosdep.installers.MacportsInstaller
         self.installers['default'] = rosdep.installers.MacportsInstaller
         self.installers['source'] = rosdep.installers.SourceInstaller
-
+    
     def strip_detected_packages(self, packages):
         return [p for p in packages if not port_detect(p)] 
-
-    def generate_package_install_command(self, packages, default_yes):        
+    
+    def generate_package_install_command(self, packages, default_yes):
         if len(packages) < 1:
             return "#No packages to install"
         return "#Packages\nsudo port install " + ' '.join(packages)
+    
 
+class OsxBrew(roslib.os_detect.OsxBrew, rosdep.base_rosdep.RosdepBaseOS):
+    def __init__(self):
+        self.installers = {}
+        self.installers['pip'] = rosdep.installers.PipInstaller
+        self.installers['default'] = rosdep.installers.HomebrewInstaller
+        self.installers['homebrew'] = rosdep.installers.HomebrewInstaller
+        self.installers['source'] = rosdep.installers.SourceInstaller
+    
 ###### END Osx SPECIALIZATION ########################

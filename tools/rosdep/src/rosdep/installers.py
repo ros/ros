@@ -28,9 +28,12 @@
 
 # Author Tully Foote/tfoote@willowgarage.com
 
+from __future__ import print_function
+
 import subprocess
 import roslib.os_detect
 import os 
+import sys
 import shutil
 import urllib
 import urllib2
@@ -113,7 +116,7 @@ class SourceInstaller(InstallerAPI):
 
         #TODO add md5sum verification
         if "ROSDEP_DEBUG" in os.environ:
-            print "Downloading manifest %s"%self.url
+            print("Downloading manifest %s"%self.url)
 
         error = ''
 
@@ -123,7 +126,7 @@ class SourceInstaller(InstallerAPI):
             contents = fetch_file(self.url, self.md5sum)
         except rosdep.core.RosdepException as ex:
             if "ROSDEP_DEBUG" in os.environ:
-                print "Failed to fetch file %s for reason %s"%(self.url, ex)
+                print("Failed to fetch file %s for reason %s"%(self.url, ex))
 
         if not contents: # try the backup url
             if not self.alt_url:
@@ -132,7 +135,7 @@ class SourceInstaller(InstallerAPI):
                 contents = fetch_file(self.alt_url, self.md5sum)
             except rosdep.core.RosdepException as ex:
                 if "ROSDEP_DEBUG" in os.environ:
-                    print "Failed to fetch file %s for reason %s"%(self.alt_url, ex)
+                    print("Failed to fetch file %s for reason %s"%(self.alt_url, ex))
 
         if not contents:
             raise rosdep.core.RosdepException("Failed to load a rdmanifest from either %s or %s"%(self.url, self.alt_url))
@@ -143,12 +146,14 @@ class SourceInstaller(InstallerAPI):
             raise rosdep.core.RosdepException("Failed to parse yaml in %s:  Error: %s"%(contents, ex))
                 
         if "ROSDEP_DEBUG" in os.environ:
-            print "Downloaded manifest:\n{{{%s\n}}}\n"%self.manifest
+            print("Downloaded manifest:\n{{{%s\n}}}\n"%self.manifest)
         
         self.install_command = self.manifest.get("install-script", "#!/bin/bash\n#no install-script specificd")
         self.check_presence_command = self.manifest.get("check-presence-script", "#!/bin/bash\n#no check-presence-script\nfalse")
 
         self.exec_path = self.manifest.get("exec-path", ".")
+        
+        self.dmg_file_name = self.manifest.get("dmg_file_name", None)
 
         self.depends = self.manifest.get("depends", [])
 
@@ -168,7 +173,7 @@ class SourceInstaller(InstallerAPI):
         success = False
 
         if "ROSDEP_DEBUG" in os.environ:
-            print "Fetching %s"%self.tarball
+            print("Fetching %s"%self.tarball)
         f = urllib.urlretrieve(self.tarball)
         filename = f[0]
         if self.tarball_md5sum:
@@ -186,18 +191,23 @@ class SourceInstaller(InstallerAPI):
             
         else:
             if "ROSDEP_DEBUG" in os.environ:
-                print "No md5sum defined for tarball, not checking."
+                print("No md5sum defined for tarball, not checking.")
             
         try:
-            tarf = tarfile.open(filename)
-            tarf.extractall(tempdir)
-
+            if filename[-3:] == "dmg":
+                if self.dmg_file_name == None:
+                    raise rosdep.core.RosdepException("File downloaded is a .dmg, but no dmg_file_name was specified.")
+                shutil.copyfile(filename, os.path.join(tempdir, os.path.basename(self.dmg_file_name)))
+            else:
+                tarf = tarfile.open(filename)
+                tarf.extractall(tempdir)
+            
             if execute:
                 if "ROSDEP_DEBUG" in os.environ:
-                    print "Running installation script"
+                    print("Running installation script")
                 success = rosdep.core.create_tempfile_from_string_and_execute(self.install_command, os.path.join(tempdir, self.exec_path))
             elif display:
-                print "Would have executed\n{{{%s\n}}}"%self.install_command
+                print("Would have executed\n{{{%s\n}}}"%self.install_command)
             
         finally:
             shutil.rmtree(tempdir)
@@ -205,7 +215,7 @@ class SourceInstaller(InstallerAPI):
 
         if success:
             if "ROSDEP_DEBUG" in os.environ:
-                print "successfully executed script"
+                print("successfully executed script")
             return True
         return False
 
@@ -243,14 +253,14 @@ class AptInstaller(InstallerAPI):
         if not packages_to_install:
             script =  "#!/bin/bash\n#No Packages to install"
         if default_yes:
-            script = "#!/bin/bash\n#Packages %s\nsudo apt-get install -y "%packages_to_install + ' '.join(packages_to_install)        
+            script = "#!/bin/bash\n#Packages %s\nsudo apt-get install -y "%packages_to_install + ' '.join(packages_to_install)
         else:
             script =  "#!/bin/bash\n#Packages %s\nsudo apt-get install "%packages_to_install + ' '.join(packages_to_install)
 
         if execute:
             return rosdep.core.create_tempfile_from_string_and_execute(script)
         elif display:
-            print "To install packages: %s would have executed script\n{{{\n%s\n}}}"%(packages_to_install, script)
+            print("To install packages: %s would have executed script\n{{{\n%s\n}}}"%(packages_to_install, script))
         return False
 
 
@@ -316,7 +326,7 @@ class YumInstaller(InstallerAPI):
         if execute:
             return rosdep.core.create_tempfile_from_string_and_execute(script)
         elif display:
-            print "To install packages: %s would have executed script\n{{{\n%s\n}}}"%(packages_to_install, script)
+            print("To install packages: %s would have executed script\n{{{\n%s\n}}}"%(packages_to_install, script))
         return False
 
 
@@ -350,6 +360,7 @@ class PipInstaller(InstallerAPI):
             packages = packages.split()
 
         self.depends = arg_dict.get("depends", [])
+        self.alt_install_cmd = arg_dict.get("alt_install_cmd", None)
         self.packages = packages
 
     def get_packages_to_install(self):
@@ -367,15 +378,15 @@ class PipInstaller(InstallerAPI):
         script = '!#/bin/bash\n#no script'
         if not packages_to_install:
             script =  "#!/bin/bash\n#No PIP Packages to install"
-        #if default_yes:
-        #    script = "#!/bin/bash\n#Packages %s\nsudo apt-get install -U "%packages_to_install + ' '.join(packages_to_install)        
-        #else:
-        script =  "#!/bin/bash\n#Packages %s\nsudo pip install -U "%packages_to_install + ' '.join(packages_to_install)
+        if self.alt_install_cmd:
+            script = "#!/bin/bash\n#Packages %s\npip install -U "%packages_to_install + ' ' + self.alt_install_cmd
+        else:
+            script = "#!/bin/bash\n#Packages %s\npip install -U "%packages_to_install + ' '.join(packages_to_install)
 
         if execute:
             return rosdep.core.create_tempfile_from_string_and_execute(script)
         elif display:
-            print "To install packages: %s would have executed script\n{{{\n%s\n}}}"%(packages_to_install, script)
+            print("To install packages: %s would have executed script\n{{{\n%s\n}}}"%(packages_to_install, script))
         return False
 
     def pip_detect(self, pkgs):
@@ -389,10 +400,11 @@ class PipInstaller(InstallerAPI):
         pkg_list = std_out.split('\n')
         for pkg in pkg_list:
             pkg_row = pkg.split("==")
-            print pkg_row
+            # print(pkg_row)
             if pkg_row[0] in pkgs:
                 ret_list.append( pkg_row[0])
         return ret_list
+    
 
 class MacportsInstaller(InstallerAPI):
     """ 
@@ -402,28 +414,35 @@ class MacportsInstaller(InstallerAPI):
         packages = arg_dict.get("packages", "")
         if type(packages) == type("string"):
             packages = packages.split()
-
+        
+        try:
+            pop = subprocess.Popen(['port'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        except OSError:
+            import traceback; traceback.print_exc()
+            print("There was an error running macports, make sure it is installed properly.", file=sys.stderr)
+            sys.exit(-1)
+        
         self.packages = packages
-
+    
     def get_packages_to_install(self):
-         return list(set(self.packages) - set(self.port_detect(self.packages)))
-
+        return list(set(self.packages) - set(self.port_detect(self.packages)))
+    
     def check_presence(self):
         return len(self.get_packages_to_install()) == 0
-
+    
     def generate_package_install_command(self, default_yes = False, execute = True, display = True):
         script = '!#/bin/bash\n#no script'
         packages_to_install = self.get_packages_to_install()
         if not packages_to_install:
             script =  "#!/bin/bash\n#No Packages to install"
-        script = "#!/bin/bash\n#Packages %s\nsudo port install "%packages_to_install + ' '.join(packages_to_install)        
-
+        script = "#!/bin/bash\n#Packages %s\nsudo port install "%packages_to_install + ' '.join(packages_to_install)
+        
         if execute:
             return rosdep.core.create_tempfile_from_string_and_execute(script)
         elif display:
-            print "To install packages: %s would have executed script\n{{{\n%s\n}}}"%(packages_to_install, script)
+            print("To install packages: %s would have executed script\n{{{\n%s\n}}}"%(packages_to_install, script))
         return False
-
+    
     def port_detect(self, pkgs):
         """ 
         Given a list of package, return the list of installed packages.
@@ -487,7 +506,7 @@ class GentooPortageInstaller(InstallerAPI):
         if execute:
             return rosdep.core.create_tempfile_from_string_and_execute(script)
         elif display:
-            print "To install packages: %s would have executed script\n{{{\n%s\n}}}"%(packages_to_install, script)
+            print("To install packages: %s would have executed script\n{{{\n%s\n}}}"%(packages_to_install, script))
         return False
 
     def check_presence(self):
@@ -499,9 +518,72 @@ class GentooPortageInstaller(InstallerAPI):
            for p in self.packages:
               detect = self.equery_detect(p)
               if detect:
-                 print "%s detected %d"%(p, detect)
+                 print("%s detected %d"%(p, detect))
               else:
                  ret = False
-                 print "%s not detected %d"%(p,detect)
+                 print("%s not detected %d"%(p,detect))
            return ret
         return False
+
+
+class HomebrewInstaller(InstallerAPI):
+    """An implementation of the InstallerAPI for use on homebrew systems."""
+    def __init__(self, arg_dict):
+        packages = arg_dict.get("packages", "")
+        if type(packages) == type("string"):
+            packages = packages.split()
+        try:
+            pop = subprocess.Popen(['brew'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        except OSError:
+            import traceback; traceback.print_exc()
+            print("There was an error running homebrew, make sure it is installed properly.", file=sys.stderr)
+            sys.exit(-1)
+        self.depends = arg_dict.get("depends", [])
+        self.formula_uri = arg_dict.get("formula_uri", [])
+        if type(self.formula_uri) == type("string"):
+            self.formula_uri = self.formula_uri.split()
+        self.args = arg_dict.get("args", [])
+        self.args += arg_dict.get("options", [])
+        self.packages = packages
+    
+    def get_packages_to_install(self):
+        return list(set(self.packages) - set(self.port_detect(self.packages)))
+    
+    def check_presence(self):
+        return len(self.get_packages_to_install()) == 0
+    
+    def generate_package_install_command(self, default_yes = False, execute = True, display = True):
+        script = '!#/bin/bash\n#no script'
+        packages_to_install = self.get_packages_to_install()
+        if not packages_to_install:
+            script =  "#!/bin/bash\n#No Packages to install"
+        if self.formula_uri == []:
+            script = "#!/bin/bash\n#Packages %s\nbrew install "%packages_to_install + ' '.join(packages_to_install) + ' ' + ' '.join(self.args)
+        else:
+            script = "#!/bin/bash\n#Packages %s\nbrew install "%packages_to_install + ' '.join(self.formula_uri) + ' ' + ' '.join(self.args)
+        
+        if execute:
+            return rosdep.core.create_tempfile_from_string_and_execute(script)
+        elif display:
+            print(("To install packages: %s would have executed script\n{{{\n%s\n}}}"%(packages_to_install, script)))
+        return False
+    
+    def get_depends(self):
+        #todo verify type before returning
+        return self.depends
+    
+    def port_detect(self, pkgs):
+        """ 
+        Given a list of package, return the list of installed packages.
+        """
+        ret_list = []
+        cmd = ['brew', 'list']
+        pop = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (std_out, std_err) = pop.communicate()
+        pkg_list = std_out.split()
+        for pkg in pkg_list:
+            if pkg in pkgs:
+                ret_list.append(pkg)
+        return ret_list
+    
+

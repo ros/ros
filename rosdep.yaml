@@ -2,9 +2,9 @@ tinyxml:
   ubuntu: libtinyxml-dev
   debian: libtinyxml-dev
   osxbrew:
-    source:
-      uri: 'http://mirror.ausparc.com/ros/sourcedeps/tinyxml-2.6.2.rdmanifest'
-      md5sum: 9640cd2b928aca91e824356f787e54ec
+    homebrew:
+      packages: [ tinyxml ]
+      formula_uri: 'https://kforge.ros.org/rososx/homebrew/file/tip/electric/tinyxml.rb'
   fedora: tinyxml-devel
 python:
   ubuntu: python-dev

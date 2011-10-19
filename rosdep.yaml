@@ -15,10 +15,8 @@ python:
   rhel: python-devel
   macports: python26 python_select
   osxbrew:
-    lion:
-      homebrew: 
-        # packages: python
-        packages: |
+    homebrew: 
+      packages: |
   gentoo: python
   cygwin: python
   freebsd: python
@@ -26,10 +24,9 @@ yaml:
   ubuntu: libyaml-dev
   fedora: libyaml-devel
   osxbrew:
-    lion:
-      homebrew:
-        packages: [ libyaml ]
-        options: [ --universal ]
+    homebrew:
+      packages: [ libyaml ]
+      options: [ --universal ]
 python-yaml:
   ubuntu: python-yaml
   debian: python-yaml
@@ -40,10 +37,9 @@ python-yaml:
   arch: python-yaml
   macports: py26-yaml
   osxbrew:
-      lion:
-          pip: 
-              packages: [ PyYAML ]
-              depends: [ yaml ]
+    pip: 
+      packages: [ PyYAML ]
+      depends: [ yaml ]
   gentoo: pyyaml
   cygwin: |
       if [ ! -d /usr/lib/python2.5/site-packages/yaml/ ] ; then
@@ -60,10 +56,8 @@ python-gtk2:
   debian: python-gtk2
   macports: py26-gtk
   osxbrew:
-    lion:
-      pip:
-        # packages: [ PyGTK ]
-        packages: |
+    pip:
+      packages: |
   pip: pygtk
   opensuse: python-gtk
   fedora: pygtk2
@@ -72,9 +66,8 @@ python-gtk2:
   freebsd: py-gtk2
 gfortran:
   osxbrew:
-    lion:
-      homebrew: 
-        packages: [ gfortran ]
+    homebrew: 
+      packages: [ gfortran ]
 python-scipy:
   ubuntu: python-scipy
   debian: python-scipy
@@ -83,11 +76,10 @@ python-scipy:
   fedora: scipy
   macports: py26-scipy
   osxbrew:
-    lion:
-      pip:
-        packages: [ scipy ]
-        alt_install_cmd: '-e git+https://github.com/scipy/scipy#egg=scipy-dev'
-        depends: [ gfortran ]
+    pip:
+      packages: [ scipy ]
+      alt_install_cmd: '-e git+https://github.com/scipy/scipy#egg=scipy-dev'
+      depends: [ gfortran ]
   pip: scipy
   gentoo: dev-libs/scipy
   freebsd: py-scipy
@@ -100,9 +92,8 @@ bzip2:
   arch: bzip2
   macports: bzip2
   osxbrew:
-    lion:
-      homebrew:
-        packages: |
+    homebrew:
+      packages: |
   gentoo: app-arch/bzip2
   cygwin: bzip2
   freebsd: bzip2
@@ -150,9 +141,8 @@ boost:
   arch: boost
   macports: boost
   osxbrew:
-    lion:
-      homebrew:
-        packages: [ boost ]
+    homebrew:
+      packages: [ boost ]
   gentoo: dev-libs/boost
   cygwin: libboost-devel libboost1.40
   freebsd: boost-python-libs
@@ -165,9 +155,8 @@ zlib:
   arch: zlib
   macports: zlib
   osxbrew:
-    lion:
-      homebrew:
-        packages: |
+    homebrew:
+      packages: |
   gentoo: sys-libs/zlib
   cygwin: zlib
   freebsd: builtin
@@ -180,10 +169,9 @@ graphviz:
   arch: graphviz
   macports: graphviz
   osxbrew:
-    lion:
-      homebrew:
-        packages: [ graphviz ]
-        options: [  ]
+    homebrew:
+      packages: [ graphviz ]
+      options: [  ]
   gentoo: media-gfx/graphviz
   freebsd: graphviz
 wxwidgets:
@@ -194,9 +182,8 @@ wxwidgets:
   rhel: wxGTK-devel
   macports: wxWidgets-python
   osxbrew:
-    lion:
-      homebrew:
-        depends: [ wxpython ]
+    homebrew:
+      depends: [ wxpython ]
   arch: wxgtk
   gentoo: x11-libs/wxGTK
   freebsd: wxgtk2
@@ -210,10 +197,9 @@ wxpython:
   debian: python-wxgtk2.8
   macports: py26-wxpython py26-gobject py26-gtk py26-cairo
   osxbrew:
-    lion:
-      source:
-        uri: http://mirror.ausparc.com/ros/sourcedeps/wxPython.rdmanifest
-        md5sum: 4fdb30e1abfb4a36a4c5d9efc48049c4
+    source:
+      uri: http://mirror.ausparc.com/ros/sourcedeps/wxPython.rdmanifest
+      md5sum: 4fdb30e1abfb4a36a4c5d9efc48049c4
   gentoo: dev-python/wxpython
   freebsd: py27-wxPython
 gtk2:
@@ -224,9 +210,8 @@ gtk2:
   rhel: gtk2-devel
   macports: gtk2
   osxbrew:
-    lion:
-      homebrew:
-        packages: [ gtk+ ]
+    homebrew:
+      packages: [ gtk+ ]
   arch: gtk2
   gentoo: x11-libs/gtk+
   freebsd: gtk20
@@ -239,9 +224,8 @@ pkg-config:
   arch: pkg-config
   macports: pkgconfig
   osxbrew:
-    lion:
-      homebrew:
-        packages: [ pkg-config ]
+    homebrew:
+      packages: [ pkg-config ]
   gentoo: dev-util/pkgconfig
   cygwin: pkg-config
   freebsd: pkg-config
@@ -253,10 +237,9 @@ qt4:
   fedora: qt-devel
   macports: qt4-mac
   osxbrew:
-    lion:
-      homebrew:
-        packages: [ qt ]
-        options: [ --universal ]
+    homebrew:
+      packages: [ qt ]
+      options: [ --universal ]
   gentoo: ">=x11-libs/qt-core-4"
   freebsd: qt4-corelib
 libstdc++5:
@@ -279,9 +262,8 @@ unzip:
   rhel: unzip
   macports: unzip
   osxbrew:
-    lion:
-      homebrew:
-        packages: |
+    homebrew:
+      packages: |
   gentoo: app-arch/unzip
   freebsd: unzip
 fltk:
@@ -292,9 +274,8 @@ fltk:
   arch: fltk
   macports: fltk
   osxbrew:
-    lion:
-      homebrew:
-        packages: [ fltk ]
+    homebrew:
+      packages: [ fltk ]
   gentoo: "=x11-libs/fltk-1*"
   freebsd: fltk
 bazaar:
@@ -304,9 +285,8 @@ bazaar:
   fedora: bazaar
   macports: bazaar
   osxbrew:
-    lion:
-      homebrew:
-        packages: [ bazaar ]
+    homebrew:
+      packages: [ bazaar ]
   gentoo: dev-vcs/bzr
   freebsd: bazaar
 git: 
@@ -316,9 +296,8 @@ git:
   fedora: git
   macports: git-core
   osxbrew:
-    lion:
-      homebrew:
-        packages: [ git ]
+    homebrew:
+      packages: [ git ]
   gentoo: dev-vcs/git
   freebsd: git
 subversion:
@@ -328,9 +307,8 @@ subversion:
   fedora: subversion
   macports: subversion
   osxbrew:
-    lion:
-      homebrew:
-        packages: [ subversion ]
+    homebrew:
+      packages: [ subversion ]
   gentoo: dev-vcs/subversion
   freebsd: subversion
 mercurial:
@@ -340,9 +318,8 @@ mercurial:
   fedora: mercurial
   macports: mercurial
   osxbrew:
-    lion:
-      pip:
-        packages: [ mercurial ]
+    pip:
+      packages: [ mercurial ]
   gentoo: dev-vcs/mercurial
   freebsd: mercurial
 gtest:
@@ -352,10 +329,9 @@ gtest:
   fedora: gtest-devel
   macports: google-test
   osxbrew:
-    lion:
-      homebrew:
-        packages: [ gtest ]
-        options: [ --universal ]
+    homebrew:
+      packages: [ gtest ]
+      options: [ --universal ]
   gentoo: dev-util/gtest
   freebsd: googletest
 autoconf:
@@ -367,9 +343,8 @@ autoconf:
   arch: autoconf
   macports: autoconf
   osxbrew:
-    lion:
-      homebrew:
-        packages: |
+    homebrew:
+      packages: |
   gentoo: sys-devel/autoconf
   freebsd: autoconf213 autoconf268
 automake:
@@ -381,9 +356,8 @@ automake:
   arch: automake
   macports: automake
   osxbrew:
-    lion:
-      homebrew:
-        packages: |
+    homebrew:
+      packages: |
   gentoo: sys-devel/automake
   freebsd: automake14 automake111
 libtool:
@@ -398,9 +372,8 @@ libtool:
   rhel: libtool libtool-ltdl-devel
   macports: libtool
   osxbrew:
-    lion:
-      homebrew:
-        packages: |
+    homebrew:
+      packages: |
   arch: libtool
   gentoo: sys-devel/libtool
   freebsd: libtool

@@ -427,11 +427,11 @@ function _roscomplete_rostopic {
     arg="${COMP_WORDS[COMP_CWORD]}"
 
     if [[ $COMP_CWORD == 1 ]]; then
-        opts="bw echo hz list pub type find"
+        opts="bw echo hz list pub type find info"
         COMPREPLY=($(compgen -W "$opts" -- ${arg}))
     elif [[ $COMP_CWORD -ge 2 ]]; then
         case ${COMP_WORDS[1]} in
-            bw|echo|hz|list|type)
+            bw|echo|hz|list|type|info)
                 if [[ ${COMP_WORDS[$(( $COMP_CWORD - 1 ))]} == "-b" ]]; then
                     COMPREPLY=($(compgen -f -- ${arg}))
                 else

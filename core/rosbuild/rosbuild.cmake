@@ -15,6 +15,8 @@ if(COMMAND cmake_policy)
   endif(POLICY CMP0011)
 endif(COMMAND cmake_policy)
 
+set(CMAKE_OSX_ARCHITECTURES "x86_64")
+
 ##############################################################################
 # First things first: we must have rospack.
 find_program(ROSPACK_EXE NAMES rospack DOC "rospack executable")

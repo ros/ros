@@ -154,10 +154,10 @@ class YamlCache:
             if rep_version in os_specific:
                 return os_specific[rep_version]
         if type(os_specific) == type({}): # detected a map
-            for k in os_specific.keys():
-                if not k in self.installers:
-                    print("Invalid identifier found [%s] when processing rosdep %s.  \n{{{\n%s\n}}}\n"%(k, rosdep_name, os_specific))
-                    return False # If the map doesn't have a valid installer key reject it, it must be a version key
+            matches = [k for k in self.installers if k in os_specific]
+            if not matches:
+                print("No installers found for rosdep [%s], OS version [%s].  Rule:\n{{{\n%s\n}}}\n"%(rosdep_name, self.os_version, os_specific))
+                return False # If the map doesn't have a valid installer key reject it, it must be a version key
             # return the map 
             return os_specific
         else:
@@ -333,7 +333,7 @@ from collections import defaultdict
 
 class Rosdep:
     def __init__(self, packages, command = "rosdep", robust = False):
-        os_list = [debian.RosdepTestOS(), debian.Debian(), debian.Ubuntu(), debian.Mint(), opensuse.OpenSuse(), redhat.Fedora(), redhat.Rhel(), arch.Arch(), osx.Osx(), gentoo.Gentoo(), cygwin.Cygwin(), freebsd.FreeBSD()]
+        os_list = [debian.RosdepTestOS(), debian.Debian(), debian.Ubuntu(), debian.Mint(), opensuse.OpenSuse(), redhat.Fedora(), redhat.Rhel(), arch.Arch(), osx.Osx(), osx.OsxBrew(), gentoo.Gentoo(), cygwin.Cygwin(), freebsd.FreeBSD()]
         # Make sure that these classes are all well formed.  
         for o in os_list:
             if not isinstance(o, rosdep.base_rosdep.RosdepBaseOS):

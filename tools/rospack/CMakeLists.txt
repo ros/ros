@@ -7,6 +7,8 @@ endif()
 cmake_minimum_required(VERSION 2.4.6)
 set(CMAKE_BUILD_TYPE Release)
 
+set(CMAKE_OSX_ARCHITECTURES "x86_64")
+
 set(CMAKE_INSTALL_PREFIX /tmp/rospack)
 #set(CMAKE_INSTALL_RPATH_USE_LINK_RPATH true)
 #set(CMAKE_SKIP_BUILD_RPATH true)

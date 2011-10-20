@@ -369,6 +369,37 @@ class Osx(OSBase):
     def get_name(self):
         return "osx"
 
+class OsxBrew(OSBase):
+    """
+    Detect OS X 
+    """
+
+    def check_presence(self):
+        # not enabled for ROS Electric.  Only enabled under override.
+        return False
+    
+    def get_version(self):
+        # REP 111 this should be the code name (e.g., lion, snow, tiger) #3570
+        std_out = _read_stdout(['/usr/bin/sw_vers','-productVersion'])
+        ver = distutils.version.StrictVersion(std_out).version
+        if len(ver) < 2:
+            raise OSDetectException("invalid version string: %s"%(std_out))
+        major, minor = ver[0:2]
+        # Source: http://en.wikipedia.org/wiki/Mac_OS_X#Versions
+        if major == 10 and minor == 4:
+            return 'tiger'
+        elif major == 10 and minor == 5:
+            return 'leopard'
+        elif major == 10 and minor == 6:
+            return 'snow'
+        elif major == 10 and minor == 7:
+            return 'lion'
+        else:
+            raise OSDetectException("unrecognized version: %s"%(std_out))
+
+    def get_name(self):
+        return "osxbrew"
+
 ###### END OSX SPECIALIZATION ########################
 
 ###### Arch SPECIALIZATION #########################
@@ -491,7 +522,7 @@ class FreeBSD(OSBase):
 class OSDetect:
     """ This class will iterate over registered classes to lookup the
     active OS and version"""
-    def __init__(self, os_list = [Debian(), Mandriva(), Ubuntu(), Mint(), Osx(), Arch(), OpenSuse(), Fedora(), Rhel(), Gentoo(), Cygwin(), FreeBSD()]):
+    def __init__(self, os_list = [Debian(), Mandriva(), Ubuntu(), Mint(), Osx(), OsxBrew(), Arch(), OpenSuse(), Fedora(), Rhel(), Gentoo(), Cygwin(), FreeBSD()]):
         self._os_list = os_list
         for o in self._os_list:
             if not isinstance(o, OSBase):

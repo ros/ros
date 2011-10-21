@@ -27,12 +27,60 @@
 
 #include "rp.h"
 #include <boost/program_options.hpp>
+#include <iostream>
+
+namespace po = boost::program_options;
+
+int
+parse_args(int argc, char** argv)
+{
+  po::options_description desc("Allowed options");
+  desc.add_options()
+          ("command", po::value<std::string>(), "command")
+          ("package", po::value<std::string>(), "package")
+          ("target", po::value<std::string>(), "target")
+          ("deps-only", "deps-only")
+          ("lang", po::value<std::string>(), "lang")
+          ("attrib", po::value<std::string>(), "attrib")
+          ("top", po::value<std::string>(), "top")
+          ("length", po::value<std::string>(), "length")
+          ("zombie-only", "zombie-only");
+
+  po::positional_options_description pd;
+  pd.add("command", 1).add("package", 1);
+  po::variables_map vm;
+  try
+  {
+    po::store(po::command_line_parser(argc, argv).options(desc).positional(pd).run(), vm);
+  }
+  catch(boost::program_options::error e)
+  {
+    fprintf(stderr, "Error parsing command-line options: %s\n", e.what());
+    // TODO: print USAGE
+    return 1;
+  }
+  po::notify(vm);
+
+  for(po::variables_map::const_iterator it = vm.begin();
+      it != vm.end();
+      ++it)
+  {
+    printf("%s:%s:\n", it->first.c_str(), it->second.as<std::string>().c_str());
+  }
+
+  return 0;
+}
 
 int
 main(int argc, char** argv)
 {
-  rospack::Rospack rp;
+  int ret;
 
+  ret = parse_args(argc, argv);
+  if(ret)
+    return ret;
+
+  rospack::Rospack rp;
   std::vector<std::string> search_path;
   search_path.push_back("/Users/gerkey/code/ros/ros");
   search_path.push_back("/Users/gerkey/code/ros/ros/tools/rospack");
@@ -42,7 +90,7 @@ main(int argc, char** argv)
   //rp.debug_dump();
 
   std::string rospack_path = rp.find("rospack");
-  printf("rospack:%s:\n", rospack_path.c_str());
+  //printf("rospack:%s:\n", rospack_path.c_str());
 
   return 0;
 }

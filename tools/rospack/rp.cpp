@@ -162,7 +162,13 @@ Rosstackage::isStackage(const std::string& path)
 void
 Rosstackage::addStackage(const std::string& path)
 {
+#if !defined(BOOST_FILESYSTEM_VERSION) || (BOOST_FILESYSTEM_VERSION == 2)
   std::string name = fs::path(path).filename();
+#else
+  // in boostfs3, filename() returns a path, which needs to be stringified
+  std::string name = fs::path(path).filename().string();
+#endif
+
   if(stackages_.find(name) != stackages_.end())
   {
     // TODO: optionally notify on duplicates

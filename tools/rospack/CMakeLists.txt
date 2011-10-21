@@ -119,6 +119,8 @@ add_custom_target(test-results)
 add_custom_target(test-future)
 add_custom_target(gcoverage)
 
+#########################################
+# Uncomment below for new rospack
 #add_library(rp rp.cpp
 #               tinyxml-2.5.3/tinyxml.cpp
 #               tinyxml-2.5.3/tinyxmlparser.cpp
@@ -128,3 +130,5 @@ add_custom_target(gcoverage)
 #target_link_libraries(rpexe rp boost_filesystem boost_system)
 #add_executable(rs rs_main.cpp)
 #target_link_libraries(rs rp boost_filesystem boost_system)
+# Uncomment above for new rospack
+#########################################

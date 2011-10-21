@@ -33,6 +33,7 @@
 #if !defined(WIN32)
   #include <sys/types.h>
   #include <libgen.h>
+  #include <limits.h>
   #include <pwd.h>
 #endif
 
@@ -161,7 +162,7 @@ Rosstackage::isStackage(const std::string& path)
 void
 Rosstackage::addStackage(const std::string& path)
 {
-  std::string name = fs::path(path).filename().string();
+  std::string name = fs::path(path).filename();
   if(stackages_.find(name) != stackages_.end())
   {
     // TODO: optionally notify on duplicates
@@ -180,6 +181,9 @@ Rosstackage::crawlDetail(const std::string& path,
 {
   if(depth > max_crawl_depth_)
     throw Exception("Maximum depth exceeded during crawl");
+
+  if(!fs::is_directory(path))
+    return;
 
   if(isStackage(path))
   {

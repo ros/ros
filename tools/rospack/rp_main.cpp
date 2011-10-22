@@ -93,7 +93,6 @@ parse_args(int argc, char** argv, po::variables_map& vm)
   catch(boost::program_options::error e)
   {
     rospack::log_error("rospack", std::string("failed to parse command-line options: ") + e.what());
-    // TODO: print USAGE
     return 1;
   }
   po::notify(vm);
@@ -124,7 +123,8 @@ main(int argc, char** argv)
     package = vm["package"].as<std::string>();
   else
   {
-    // TODO: try to determine package from directory context
+    // try to determine package from directory context
+    rp.inStackage(package);
   }
 
   if(!command.size())

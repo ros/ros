@@ -55,11 +55,11 @@ class Rosstackage
     crawl_direction_t crawl_dir_;
 
     bool crawled_;
-    bool isStackage(const std::string& path);
     void addStackage(const std::string& path);
     void crawlDetail(const std::string& path,
                      bool force,
                      int depth);
+    bool isStackage(const std::string& path);
     void loadManifest(Stackage* stackage);
     void computeDeps(Stackage* stackage);
     void gatherDeps(Stackage* stackage, bool direct, int depth,
@@ -79,6 +79,7 @@ class Rosstackage
                 std::string cache_name,
                 crawl_direction_t crawl_dir);
 
+    bool inStackage(std::string& name);
     bool find(const std::string& name, std::string& path); 
     void list(std::vector<std::pair<std::string, std::string> >& list);
     bool deps(const std::string& name, bool direct, std::vector<std::string>& deps);
@@ -89,19 +90,17 @@ class Rosstackage
 class Rospack : public Rosstackage
 {
   public:
-    // TODO: make private
+    Rospack();
     void crawl(const std::vector<std::string>& search_path,
                bool force);
-    Rospack();
 };
 
 class Rosstack : public Rosstackage
 {
   public:
-    // TODO: make private
+    Rosstack();
     void crawl(const std::vector<std::string>& search_path,
                bool force);
-    Rosstack();
 };
 
 void get_search_path_from_env(std::vector<std::string>& sp);

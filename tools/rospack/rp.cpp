@@ -31,11 +31,15 @@
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 
-#if !defined(WIN32)
+#if defined(WIN32)
+  #include <direct.h>
+  #define getcwd _getcwd
+#else //!defined(WIN32)
   #include <sys/types.h>
   #include <libgen.h>
   #include <limits.h>
   #include <pwd.h>
+  #include <unistd.h>
 #endif
 
 #include <sys/stat.h>
@@ -151,6 +155,27 @@ Rosstackage::crawl(const std::vector<std::string>& search_path,
 
   writeCache();
 }
+
+bool 
+Rosstackage::inStackage(std::string& name)
+{
+  char path[PATH_MAX];
+  if(getcwd(path,sizeof(path)))
+  {
+    if(Rosstackage::isStackage(path))
+    {
+#if !defined(BOOST_FILESYSTEM_VERSION) || (BOOST_FILESYSTEM_VERSION == 2)
+      name = fs::path(path).filename();
+#else
+      // in boostfs3, filename() returns a path, which needs to be stringified
+      name = fs::path(path).filename().string();
+#endif
+      return true;
+    }
+  }
+  return false;
+}
+
 
 bool
 Rosstackage::find(const std::string& name, std::string& path)
@@ -604,8 +629,9 @@ Rospack::Rospack() :
 {
 }
 
-void Rospack::crawl(const std::vector<std::string>& search_path,
-                    bool force)
+void 
+Rospack::crawl(const std::vector<std::string>& search_path,
+               bool force)
 {
   Rosstackage::crawl(search_path, force);
 }

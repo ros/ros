@@ -27,12 +27,15 @@
 
 #include "rp.h"
 #include <boost/program_options.hpp>
+#include <boost/algorithm/string.hpp>
 #include <iostream>
+#include <stdlib.h>
 
+using namespace rospack;
 namespace po = boost::program_options;
 
 int
-parse_args(int argc, char** argv)
+parse_args(int argc, char** argv, po::variables_map& vm)
 {
   po::options_description desc("Allowed options");
   desc.add_options()
@@ -48,49 +51,88 @@ parse_args(int argc, char** argv)
 
   po::positional_options_description pd;
   pd.add("command", 1).add("package", 1);
-  po::variables_map vm;
   try
   {
     po::store(po::command_line_parser(argc, argv).options(desc).positional(pd).run(), vm);
   }
   catch(boost::program_options::error e)
   {
-    fprintf(stderr, "Error parsing command-line options: %s\n", e.what());
+    rospack_error("rospack", std::string("failed to parse command-line options: ") + e.what());
     // TODO: print USAGE
     return 1;
   }
   po::notify(vm);
 
-  for(po::variables_map::const_iterator it = vm.begin();
-      it != vm.end();
-      ++it)
-  {
-    printf("%s:%s:\n", it->first.c_str(), it->second.as<std::string>().c_str());
-  }
-
   return 0;
+}
+
+void
+get_search_path_from_env(std::vector<std::string>& sp)
+{
+  char* rr = getenv("ROS_ROOT");
+  char* rpp = getenv("ROS_PACKAGE_PATH");
+
+  if(rr)
+    sp.push_back(rr);
+  if(rpp)
+  {
+    std::vector<std::string> rpp_strings;
+    boost::split(rpp_strings, rpp, 
+                 boost::is_any_of(":"),
+                 boost::token_compress_on);
+    for(std::vector<std::string>::const_iterator it = rpp_strings.begin();
+        it != rpp_strings.end();
+        ++it)
+    {
+      sp.push_back(*it);
+    }
+  }
 }
 
 int
 main(int argc, char** argv)
 {
+  po::variables_map vm;
   int ret;
 
-  ret = parse_args(argc, argv);
+  ret = parse_args(argc, argv, vm);
   if(ret)
     return ret;
 
-  rospack::Rospack rp;
+  Rospack rp;
   std::vector<std::string> search_path;
-  search_path.push_back("/Users/gerkey/code/ros/ros");
-  search_path.push_back("/Users/gerkey/code/ros/ros/tools/rospack");
-  search_path.push_back("/Users/gerkey/code/ros/ros_comm");
+  get_search_path_from_env(search_path);
   rp.crawl(search_path, false);
 
-  //rp.debug_dump();
+  std::string command;
+  std::string package;
+  if(vm.count("command"))
+    command = vm["command"].as<std::string>();
+  if(vm.count("package"))
+    package = vm["package"].as<std::string>();
 
-  std::string rospack_path = rp.find("rospack");
-  //printf("rospack:%s:\n", rospack_path.c_str());
+  if(!command.size())
+  {
+    rospack_error("rospack", "no command given");
+    return 1;
+  }
+
+  if(command == "find")
+  {
+    if(!package.size())
+    {
+      rospack_error("rospack", "no package given for find command");
+      return 1;
+    }
+    std::string path = rp.find(package);
+    printf("%s\n", path.c_str());
+  }
+  else
+  {
+    rospack_error("rospack", 
+                  std::string("command ") + command + " not implemented");
+    return 1;
+  }
 
   return 0;
 }

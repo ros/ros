@@ -134,7 +134,15 @@ class Rosstack : public Rosstackage
 };
 
 
-}
+// Simple console output helpers
+void rospack_warn(const std::string& name, 
+                  const std::string& msg,
+                  bool append_errno = false);
+void rospack_error(const std::string& name, 
+                   const std::string& msg,
+                   bool append_errno = false);
+
+} // namespace rospack
 
 
 #endif

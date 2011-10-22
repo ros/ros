@@ -41,6 +41,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
+#include <errno.h>
 
 namespace fs = boost::filesystem;
 
@@ -103,16 +105,10 @@ Rosstackage::crawl(const std::vector<std::string>& search_path,
                    bool force)
 {
   if(crawled_ && !force)
-  {
-    printf("alredy crawled\n");
     return;
-  }
 
   if(readCache() && !force)
-  {
-    printf("loaded cache\n");
     return;
-  }
 
   for(std::vector<std::string>::const_iterator p = search_path.begin();
       p != search_path.end();
@@ -124,7 +120,6 @@ Rosstackage::crawl(const std::vector<std::string>& search_path,
   crawled_ = true;
 
   writeCache();
-  printf("crawled\n");
 }
 
 std::string
@@ -270,10 +265,9 @@ Rosstackage::getCachePath()
     }
     catch(fs::filesystem_error& e)
     {
-      fprintf(stderr,
-              "[rospack] WARNING: cannot create rospack cache directory %s: %s\n",
-              cache_path.string().c_str(),
-              e.what());
+      rospack_warn("librospack",
+                   std::string("cannot create rospack cache directory ") +
+                   cache_path.string() + ": " + e.what());
     }
   }
   cache_path /= cache_name_;
@@ -319,7 +313,8 @@ Rosstackage::writeCache()
   std::string cache_path = getCachePath();
   if(!cache_path.size())
   {
-    fprintf(stderr, "[rospack] No location available to write cache file.  Try setting ROS_HOME or HOME.\n");
+    rospack_warn("librospack",
+                 "no location available to write cache file. Try setting ROS_HOME or HOME.");
   }
   else
   {
@@ -347,8 +342,9 @@ Rosstackage::writeCache()
     int fd = open(tmp_cache_path, O_RDWR | O_EXCL | _O_CREAT, 0644);
     if (fd < 0)
     {
-      fprintf(stderr, "[rospack] Unable to create temporary cache file %s: %u\n",
-              tmp_cache_path, errno);
+      rospack_warn("librospack",
+                   std::string("unable to create temporary cache file ") +
+                   tmp_cache_path, true);
     }
     else
     {
@@ -492,4 +488,30 @@ void Rosstack::crawl(const std::vector<std::string>& search_path,
   Rosstackage::crawl(search_path, force);
 }
 
+// Simple console output helpers
+void rospack_log(const std::string& name, 
+                 const std::string& level,
+                 const std::string& msg,
+                 bool append_errno)
+{
+  fprintf(stderr, "[%s] %s: %s",
+          name.c_str(), level.c_str(), msg.c_str());
+  if(append_errno)
+    fprintf(stderr, ": %s", strerror(errno));
+  fprintf(stderr, "\n");
 }
+
+void rospack_warn(const std::string& name, 
+                  const std::string& msg,
+                  bool append_errno)
+{
+  rospack_log(name, "Warning", msg, append_errno);
+}
+void rospack_error(const std::string& name, 
+                   const std::string& msg,
+                   bool append_errno)
+{
+  rospack_log(name, "Error", msg, append_errno);
+}
+
+} // namespace rospack

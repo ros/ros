@@ -59,6 +59,11 @@ static const int MAX_CRAWL_DEPTH = 1000;
 static const int MAX_DEPENDENCY_DEPTH = 1000;
 static const double DEFAULT_MAX_CACHE_AGE = 60.0;
 
+rospack_tinyxml::TiXmlElement*
+get_manifest_root(const std::string& name, 
+                  const std::string& manifest_path,
+                  rospack_tinyxml::TiXmlDocument& manifest);
+
 class Exception : public std::runtime_error
 {
   public:
@@ -293,20 +298,6 @@ Rosstackage::loadManifest(Stackage* stackage)
   stackage->manifest_loaded_ = true;
 }
 
-rospack_tinyxml::TiXmlElement*
-Rosstackage::getManifestRoot(Stackage* stackage)
-{
-  loadManifest(stackage);
-  rospack_tinyxml::TiXmlElement* ele = stackage->manifest_.RootElement();
-  if(!ele)
-  {
-    std::string errmsg = std::string("error parsing manifest of package ") + 
-            stackage->name_ + " at " + stackage->manifest_path_;
-    throw Exception(errmsg);
-  }
-  return ele;
-}
-
 void
 Rosstackage::computeDeps(Stackage* stackage)
 {
@@ -315,7 +306,11 @@ Rosstackage::computeDeps(Stackage* stackage)
 
   stackage->deps_computed_ = true;
 
-  rospack_tinyxml::TiXmlElement* root = getManifestRoot(stackage);
+  loadManifest(stackage);
+  rospack_tinyxml::TiXmlElement* root = 
+          get_manifest_root(stackage->name_,
+                            stackage->manifest_path_,
+                            stackage->manifest_);
   rospack_tinyxml::TiXmlNode *dep_node = NULL;
   while((dep_node = root->IterateChildren("depend", dep_node)))
   {
@@ -629,6 +624,21 @@ void Rosstack::crawl(const std::vector<std::string>& search_path,
                      bool force)
 {
   Rosstackage::crawl(search_path, force);
+}
+
+rospack_tinyxml::TiXmlElement*
+get_manifest_root(const std::string& name, 
+                  const std::string& manifest_path,
+                  rospack_tinyxml::TiXmlDocument& manifest)
+{
+  rospack_tinyxml::TiXmlElement* ele = manifest.RootElement();
+  if(!ele)
+  {
+    std::string errmsg = std::string("error parsing manifest of package ") + 
+            name + " at " + manifest_path;
+    throw Exception(errmsg);
+  }
+  return ele;
 }
 
 

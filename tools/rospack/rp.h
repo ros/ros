@@ -29,8 +29,6 @@
 #ifndef ROSPACK_ROSPACK_H
 #define ROSPACK_ROSPACK_H
 
-#include "tinyxml-2.5.3/tinyxml.h"
-
 #include <boost/tr1/unordered_set.hpp>
 #include <boost/tr1/unordered_map.hpp>
 #include <string>
@@ -48,7 +46,6 @@ typedef enum
 } crawl_direction_t;
 
 class Stackage;
-class rospack_tinyxml::TiXmlElement;
 
 class Rosstackage
 {
@@ -68,7 +65,6 @@ class Rosstackage
     void gatherDeps(Stackage* stackage, bool direct, int depth,
                     std::tr1::unordered_set<std::string>& deps_hash,
                     std::vector<std::string>& deps);
-    rospack_tinyxml::TiXmlElement* getManifestRoot(Stackage* stackage);
     std::string getCachePath();
     bool readCache();
     void writeCache();

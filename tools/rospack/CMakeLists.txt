@@ -5,7 +5,7 @@ endif()
 # We can't use rosbuild/rosbuild.cmake here, because rosbuild.cmake
 # requires rospack, and we're in the process of building rospack.
 cmake_minimum_required(VERSION 2.4.6)
-set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_BUILD_TYPE Debug)
 
 set(CMAKE_OSX_ARCHITECTURES "x86_64")
 
@@ -121,14 +121,14 @@ add_custom_target(gcoverage)
 
 #########################################
 # Uncomment below for new rospack
-#add_library(rp rp.cpp
-#               tinyxml-2.5.3/tinyxml.cpp
-#               tinyxml-2.5.3/tinyxmlparser.cpp
-#               tinyxml-2.5.3/tinyxmlerror.cpp)
-#add_executable(rpexe rp_main.cpp)
-#set_target_properties(rpexe PROPERTIES OUTPUT_NAME rp)
-#target_link_libraries(rpexe rp boost_filesystem boost_system boost_program_options)
-#add_executable(rs rs_main.cpp)
-#target_link_libraries(rs rp boost_filesystem boost_system)
+add_library(rp rp.cpp
+               tinyxml-2.5.3/tinyxml.cpp
+               tinyxml-2.5.3/tinyxmlparser.cpp
+               tinyxml-2.5.3/tinyxmlerror.cpp)
+add_executable(rpexe rp_main.cpp)
+set_target_properties(rpexe PROPERTIES OUTPUT_NAME rp)
+target_link_libraries(rpexe rp boost_filesystem boost_system boost_program_options)
+add_executable(rs rs_main.cpp)
+target_link_libraries(rs rp boost_filesystem boost_system)
 # Uncomment above for new rospack
 #########################################

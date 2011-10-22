@@ -33,6 +33,299 @@
 
 namespace po = boost::program_options;
 
+const char* usage();
+bool parse_args(int argc, char** argv, po::variables_map& vm);
+
+int
+main(int argc, char** argv)
+{
+  po::variables_map vm;
+
+  if(!parse_args(argc, argv, vm))
+    return 1;
+
+  bool quiet = (vm.count("quiet")==1);
+  rospack::Rospack rp(quiet);
+
+  std::string command;
+  std::string package;
+  bool package_given = false;
+  if(vm.count("command"))
+    command = vm["command"].as<std::string>();
+  if(!command.size())
+  {
+    rospack::log_error("rospack", "no command given.  Try 'rospack help'");
+    return 0;
+  }
+  bool force = (command == "profile");
+  std::vector<std::string> search_path;
+  if(!rospack::get_search_path_from_env(search_path))
+    return 1;
+  rp.crawl(search_path, force);
+
+  if(vm.count("package"))
+  {
+    package = vm["package"].as<std::string>();
+    package_given = true;
+  }
+  else
+  {
+    // try to determine package from directory context
+    rp.inPackage(package);
+  }
+
+
+  if(command == "profile")
+  {
+    if(package_given)
+    {
+      rospack::log_error("rospack", "no package allowed");
+      return 1;
+    }
+    rospack::log_error("rospack", "profile output not yet implemented");
+    // TODO
+    return 0;
+  }
+  else if(command == "find")
+  {
+    if(!package.size())
+    {
+      rospack::log_error("rospack", "no package given");
+      return 1;
+    }
+    std::string path;
+    if(!rp.find(package, path))
+      return 1;
+    else
+    {
+      printf("%s\n", path.c_str());
+      return 0;
+    }
+  }
+  else if(command == "list")
+  {
+    if(package_given)
+    {
+      rospack::log_error("rospack", "no package allowed");
+      return 1;
+    }
+    std::vector<std::pair<std::string, std::string> > list;
+    rp.list(list);
+    for(std::vector<std::pair<std::string, std::string> >::const_iterator it = list.begin();
+        it != list.end();
+        ++it)
+    {
+      printf("%s %s\n", it->first.c_str(), it->second.c_str());
+    }
+    return 0;
+  }
+  else if(command == "list-names")
+  {
+    if(package_given)
+    {
+      rospack::log_error("rospack", "no package allowed");
+      return 1;
+    }
+    std::vector<std::pair<std::string, std::string> > list;
+    rp.list(list);
+    for(std::vector<std::pair<std::string, std::string> >::const_iterator it = list.begin();
+        it != list.end();
+        ++it)
+    {
+      printf("%s\n", it->first.c_str());
+    }
+    return 0;
+  }
+  else if(command == "list-duplicates")
+  {
+    if(package_given)
+    {
+      rospack::log_error("rospack", "no package allowed");
+      return 1;
+    }
+    std::vector<std::string> dups;
+    rp.listDuplicates(dups);
+    // list-duplicates returns 0 if no duplicates
+    if(!dups.size())
+      return 0;
+    else
+    {
+      // if there are dups, list-duplicates prints them and returns non-zero
+      for(std::vector<std::string>::const_iterator it = dups.begin();
+          it != dups.end();
+          ++it)
+      {
+        printf("%s\n", (*it).c_str());
+      }
+      return 1;
+    }
+  }
+  else if(command == "langs")
+  {
+    if(package_given)
+    {
+      rospack::log_error("rospack", "no package allowed");
+      return 1;
+    }
+    rospack::log_error("rospack", 
+                       std::string("command ") + command + " not implemented");
+    return 1;
+  }
+  else if(command == "depends" || command == "deps" || 
+          command == "depends1" || command == "deps1")
+  {
+    if(!package.size())
+    {
+      rospack::log_error("rospack", "no package given");
+      return 1;
+    }
+    std::vector<std::string> deps;
+    if(!rp.deps(package, (command == "depends1" || command == "deps1"), deps))
+      return 1;
+    else
+    {
+      for(std::vector<std::string>::const_iterator it = deps.begin();
+          it != deps.end();
+          ++it)
+        printf("%s\n", it->c_str());
+      return 0;
+    }
+  }
+  else if(command == "depends-manifests" || command == "deps-manifests")
+  {
+    if(!package.size())
+    {
+      rospack::log_error("rospack", "no package given");
+      return 1;
+    }
+    std::vector<std::string> manifests;
+    if(!rp.depsManifests(package, false, manifests))
+      return 1;
+    else
+    {
+      for(std::vector<std::string>::const_iterator it = manifests.begin();
+          it != manifests.end();
+          ++it)
+        printf("%s ", it->c_str());
+      printf("\n");
+      return 0;
+    }
+  }
+  else if(command == "depends-msgsrv" || command == "deps-msgsrv")
+  {
+    if(!package.size())
+    {
+      rospack::log_error("rospack", "no package given");
+      return 1;
+    }
+    std::vector<std::string> gens;
+    if(!rp.depsMsgSrv(package, false, gens))
+      return 1;
+    else
+    {
+      for(std::vector<std::string>::const_iterator it = gens.begin();
+          it != gens.end();
+          ++it)
+        printf("%s ", it->c_str());
+      printf("\n");
+      return 0;
+    }
+  }
+  else if(command == "depends-indent" || command == "deps-indent")
+  {
+    if(!package.size())
+    {
+      rospack::log_error("rospack", "no package given");
+      return 1;
+    }
+    std::vector<std::string> deps;
+    if(!rp.depsIndent(package, false, deps))
+      return 1;
+    else
+    {
+      for(std::vector<std::string>::const_iterator it = deps.begin();
+          it != deps.end();
+          ++it)
+        printf("%s\n", it->c_str());
+      return 0;
+    }
+  }
+  else if(command == "rosdep" || command == "rosdeps" ||
+          command == "rosdep0" || command == "rosdeps0")
+  {
+    if(!package.size())
+    {
+      rospack::log_error("rospack", "no package given");
+      return 1;
+    }
+    std::vector<std::string> rosdeps;
+    if(!rp.rosdeps(package, (command == "rosdep0" || command == "rosdeps0"), rosdeps))
+      return 1;
+    else
+    {
+      for(std::vector<std::string>::const_iterator it = rosdeps.begin();
+          it != rosdeps.end();
+          ++it)
+        printf("%s\n", it->c_str());
+      return 0;
+    }
+  }
+  else if(command == "vcs" || command == "vcs0")
+  {
+    if(!package.size())
+    {
+      rospack::log_error("rospack", "no package given");
+      return 1;
+    }
+    std::vector<std::string> vcs;
+    if(!rp.vcs(package, (command == "vcs0"), vcs))
+      return 1;
+    else
+    {
+      for(std::vector<std::string>::const_iterator it = vcs.begin();
+          it != vcs.end();
+          ++it)
+        printf("%s\n", it->c_str());
+      return 0;
+    }
+  }
+  else if(command == "depends-on" || command == "depends-on1")
+  {
+    if(!package.size())
+    {
+      rospack::log_error("rospack", "no package given");
+      return 1;
+    }
+    std::vector<std::string> deps;
+    if(!rp.dependsOn(package, (command == "depends-on1"), deps))
+      return 1;
+    else
+    {
+      for(std::vector<std::string>::const_iterator it = deps.begin();
+          it != deps.end();
+          ++it)
+        printf("%s\n", it->c_str());
+      return 0;
+    }
+  }
+  else if(command == "help")
+  {
+    if(package_given)
+    {
+      rospack::log_error("rospack", "no package allowed");
+      return 1;
+    }
+    printf("%s", usage());
+    return 0;
+  }
+  else
+  {
+    rospack::log_error("rospack", 
+                       std::string("command ") + command + " not implemented");
+    return 1;
+  }
+}
+
 const char* usage()
 {
   return "USAGE: rospack <command> [options] [package]\n"
@@ -69,7 +362,7 @@ const char* usage()
           " is used (if it contains a manifest.xml).\n\n";
 }
 
-int
+bool
 parse_args(int argc, char** argv, po::variables_map& vm)
 {
   po::options_description desc("Allowed options");
@@ -82,7 +375,8 @@ parse_args(int argc, char** argv, po::variables_map& vm)
           ("attrib", po::value<std::string>(), "attrib")
           ("top", po::value<std::string>(), "top")
           ("length", po::value<std::string>(), "length")
-          ("zombie-only", "zombie-only");
+          ("zombie-only", "zombie-only")
+          ("quiet,q", "quiet");
 
   po::positional_options_description pd;
   pd.add("command", 1).add("package", 1);
@@ -93,122 +387,10 @@ parse_args(int argc, char** argv, po::variables_map& vm)
   catch(boost::program_options::error e)
   {
     rospack::log_error("rospack", std::string("failed to parse command-line options: ") + e.what());
-    return 1;
+    return false;
   }
   po::notify(vm);
 
-  return 0;
+  return true;
 }
 
-int
-main(int argc, char** argv)
-{
-  po::variables_map vm;
-  int ret;
-
-  ret = parse_args(argc, argv, vm);
-  if(ret)
-    return ret;
-
-  rospack::Rospack rp;
-  std::vector<std::string> search_path;
-  rospack::get_search_path_from_env(search_path);
-  rp.crawl(search_path, false);
-
-  std::string command;
-  std::string package;
-  if(vm.count("command"))
-    command = vm["command"].as<std::string>();
-  if(vm.count("package"))
-    package = vm["package"].as<std::string>();
-  else
-  {
-    // try to determine package from directory context
-    rp.inStackage(package);
-  }
-
-  if(!command.size())
-  {
-    rospack::log_error("rospack", "no command given");
-    return 1;
-  }
-
-  if(command == "find")
-  {
-    if(!package.size())
-    {
-      rospack::log_error("rospack", "no package given for find command");
-      return 1;
-    }
-    std::string path;
-    if(!rp.find(package, path))
-      return 1;
-    else
-    {
-      printf("%s\n", path.c_str());
-      return 0;
-    }
-  }
-  else if(command == "list")
-  {
-    std::vector<std::pair<std::string, std::string> > list;
-    rp.list(list);
-    for(std::vector<std::pair<std::string, std::string> >::const_iterator it = list.begin();
-        it != list.end();
-        ++it)
-    {
-      printf("%s %s\n", it->first.c_str(), it->second.c_str());
-    }
-  }
-  else if(command == "list-names")
-  {
-    std::vector<std::pair<std::string, std::string> > list;
-    rp.list(list);
-    for(std::vector<std::pair<std::string, std::string> >::const_iterator it = list.begin();
-        it != list.end();
-        ++it)
-    {
-      printf("%s\n", it->first.c_str());
-    }
-  }
-  else if(command == "list-duplicates")
-  {
-    rospack::log_error("rospack", 
-                       std::string("command ") + command + " not implemented");
-    return 1;
-  }
-  else if(command == "langs")
-  {
-    rospack::log_error("rospack", 
-                       std::string("command ") + command + " not implemented");
-    return 1;
-  }
-  else if(command == "depends" || command == "deps" || 
-          command == "depends1" || command == "deps1")
-  {
-    std::vector<std::string> deps;
-    if(!rp.deps(package, (command == "depends1" || command == "deps1"), deps))
-      return 1;
-    else
-    {
-      for(std::vector<std::string>::const_iterator it = deps.begin();
-          it != deps.end();
-          ++it)
-        printf("%s\n", it->c_str());
-      return 0;
-    }
-  }
-  else if(command == "help")
-  {
-    printf("%s", usage());
-    return 0;
-  }
-  else
-  {
-    rospack::log_error("rospack", 
-                       std::string("command ") + command + " not implemented");
-    return 1;
-  }
-
-  return 0;
-}

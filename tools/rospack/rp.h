@@ -55,16 +55,21 @@ class Rosstackage
     crawl_direction_t crawl_dir_;
 
     bool crawled_;
+    std::tr1::unordered_set<std::string> dups_;
     void addStackage(const std::string& path);
     void crawlDetail(const std::string& path,
                      bool force,
                      int depth);
     bool isStackage(const std::string& path);
     void loadManifest(Stackage* stackage);
-    void computeDeps(Stackage* stackage);
-    void gatherDeps(Stackage* stackage, bool direct, int depth,
-                    std::tr1::unordered_set<std::string>& deps_hash,
-                    std::vector<std::string>& deps);
+    void computeDeps(Stackage* stackage, bool ignore_errors=false);
+    void gatherDeps(Stackage* stackage, bool direct, 
+                    std::vector<Stackage*>& deps);
+    void gatherDepsFull(Stackage* stackage, bool direct, int depth, 
+                        std::tr1::unordered_set<Stackage*>& deps_hash,
+                        std::vector<Stackage*>& deps,
+                        bool get_indented_deps,
+                        std::vector<std::string>& indented_deps);
     std::string getCachePath();
     bool readCache();
     void writeCache();
@@ -77,12 +82,27 @@ class Rosstackage
   public:
     Rosstackage(std::string manifest_name,
                 std::string cache_name,
-                crawl_direction_t crawl_dir);
+                crawl_direction_t crawl_dir,
+                bool quiet);
+    virtual ~Rosstackage();
 
     bool inStackage(std::string& name);
     bool find(const std::string& name, std::string& path); 
     void list(std::vector<std::pair<std::string, std::string> >& list);
+    void listDuplicates(std::vector<std::string>& dups);
     bool deps(const std::string& name, bool direct, std::vector<std::string>& deps);
+    bool dependsOn(const std::string& name, bool direct,
+                   std::vector<std::string>& deps);
+    bool depsManifests(const std::string& name, bool direct, 
+                       std::vector<std::string>& manifests);
+    bool depsMsgSrv(const std::string& name, bool direct, 
+                    std::vector<std::string>& gens);
+    bool depsIndent(const std::string& name, bool direct,
+                    std::vector<std::string>& deps);
+    bool rosdeps(const std::string& name, bool direct,
+                 std::vector<std::string>& rosdeps);
+    bool vcs(const std::string& name, bool direct, 
+             std::vector<std::string>& vcs);
 
     void debug_dump();
 };
@@ -90,20 +110,22 @@ class Rosstackage
 class Rospack : public Rosstackage
 {
   public:
-    Rospack();
+    Rospack(bool quiet=false);
     void crawl(const std::vector<std::string>& search_path,
                bool force);
+    bool inPackage(std::string& name);
 };
 
 class Rosstack : public Rosstackage
 {
   public:
-    Rosstack();
+    Rosstack(bool quiet=false);
     void crawl(const std::vector<std::string>& search_path,
                bool force);
+    bool inStack(std::string& name);
 };
 
-void get_search_path_from_env(std::vector<std::string>& sp);
+bool get_search_path_from_env(std::vector<std::string>& sp);
 
 // Simple console output helpers
 void log_warn(const std::string& name, 

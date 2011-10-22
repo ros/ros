@@ -29,6 +29,7 @@
 #include "tinyxml-2.5.3/tinyxml.h"
 
 #include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
 
 #if !defined(WIN32)
   #include <sys/types.h>
@@ -55,31 +56,55 @@ static const std::string ROSPACK_CACHE_NAME = "rospack_cache";
 static const std::string ROSSTACK_CACHE_NAME = "rosstack_cache";
 static const std::string DOTROS_NAME = ".ros";
 static const int MAX_CRAWL_DEPTH = 1000;
+static const int MAX_DEPENDENCY_DEPTH = 1000;
 static const double DEFAULT_MAX_CACHE_AGE = 60.0;
 
-/////////////////////////////////////////////////////////////
-// Stackage methods
-/////////////////////////////////////////////////////////////
-Stackage::Stackage(const std::string& name,
-                   const std::string& path,
-                   const std::string& manifest_path) :
-        name_(name),
-        path_(path),
-        manifest_path_(manifest_path)
+class Exception : public std::runtime_error
 {
-}
+  public:
+    Exception(const std::string& what)
+            : std::runtime_error(what)
+    {}
+};
+
+class Stackage
+{
+  public:
+    // \brief name of the stackage
+    std::string name_;
+    // \brief absolute path to the stackage
+    std::string path_;
+    // \brief absolute path to the stackage manifest
+    std::string manifest_path_;
+    // \brief have we already loaded the manifest?
+    bool manifest_loaded_;
+    // \brief TinyXML structure, filled in during parsing
+    rospack_tinyxml::TiXmlDocument manifest_;
+    std::vector<Stackage*> deps;
+    bool deps_computed_;
+
+    Stackage(const std::string& name,
+             const std::string& path,
+             const std::string& manifest_path) :
+            name_(name),
+            path_(path),
+            manifest_path_(manifest_path),
+            manifest_loaded_(false),
+            deps_computed_(false)
+  {
+  }
+
+};
 
 /////////////////////////////////////////////////////////////
 // Rosstackage methods (public/protected)
 /////////////////////////////////////////////////////////////
 Rosstackage::Rosstackage(std::string manifest_name,
                          std::string cache_name,
-                         crawl_direction_t crawl_dir,
-                         int max_crawl_depth) :
+                         crawl_direction_t crawl_dir):
         manifest_name_(manifest_name),
         cache_name_(cache_name),
         crawl_dir_(crawl_dir),
-        max_crawl_depth_(max_crawl_depth),
         crawled_(false)
 {
 }
@@ -87,7 +112,7 @@ Rosstackage::Rosstackage(std::string manifest_name,
 void
 Rosstackage::debug_dump()
 {
-  for(std::map<std::string, Stackage*>::const_iterator it = stackages_.begin();
+  for(std::tr1::unordered_map<std::string, Stackage*>::const_iterator it = stackages_.begin();
       it != stackages_.end();
       ++it)
   {
@@ -122,14 +147,59 @@ Rosstackage::crawl(const std::vector<std::string>& search_path,
   writeCache();
 }
 
-std::string
-Rosstackage::find(const std::string& name)
+bool
+Rosstackage::find(const std::string& name, std::string& path)
 {
-  std::map<std::string, Stackage*>::const_iterator it = stackages_.find(name);
+  std::tr1::unordered_map<std::string, Stackage*>::const_iterator it = stackages_.find(name);
   if(it != stackages_.end())
-    return it->second->path_;
+  {
+    path = it->second->path_;
+    return true;
+  }
   else
-    return "";
+  {
+    log_error("librospack", std::string("package ") + name + " not found");
+    return false;
+  }
+}
+
+void 
+Rosstackage::list(std::vector<std::pair<std::string, std::string> >& list)
+{
+  list.resize(stackages_.size());
+  int i = 0;
+  for(std::tr1::unordered_map<std::string, Stackage*>::const_iterator it = stackages_.begin();
+      it != stackages_.end();
+      ++it)
+  {
+    list[i].first = it->first;
+    list[i].second = it->second->path_;
+    i++;
+  }
+}
+
+bool
+Rosstackage::deps(const std::string& name, bool direct, 
+                  std::vector<std::string>& deps)
+{
+  if(!stackages_.count(name))
+  {
+    log_error("librospack", std::string("no such package ") + name);
+    return false;
+  }
+  Stackage* stackage = stackages_[name];
+  try
+  {
+    computeDeps(stackage);
+    std::tr1::unordered_set<std::string> deps_hash;
+    gatherDeps(stackage, direct, 0, deps_hash, deps);
+  }
+  catch(Exception& e)
+  {
+    log_error("librospack", e.what());
+    return false;
+  }
+  return true;
 }
 
 /////////////////////////////////////////////////////////////
@@ -171,8 +241,6 @@ Rosstackage::addStackage(const std::string& path)
   }
   fs::path manifest_path = fs::path(path) / manifest_name_;
   stackages_[name] = new Stackage(name, path, manifest_path.string());
-  // TODO
-  loadManifest(stackages_[name]);
 }
 
 void
@@ -180,8 +248,8 @@ Rosstackage::crawlDetail(const std::string& path,
                          bool force,
                          int depth)
 {
-  if(depth > max_crawl_depth_)
-    throw Exception("Maximum depth exceeded during crawl");
+  if(depth > MAX_CRAWL_DEPTH)
+    throw Exception("maximum depth exceeded during crawl");
 
   if(!fs::is_directory(path))
     return;
@@ -218,11 +286,88 @@ Rosstackage::loadManifest(Stackage* stackage)
 
   if(!stackage->manifest_.LoadFile(stackage->manifest_path_))
   {
-    std::string errmsg = std::string("Error parsing manifest of package ") + 
-            stackage->name_ + " at [" + stackage->manifest_path_ + "]";
+    std::string errmsg = std::string("error parsing manifest of package ") + 
+            stackage->name_ + " at " + stackage->manifest_path_;
     throw Exception(errmsg);
   }
   stackage->manifest_loaded_ = true;
+}
+
+rospack_tinyxml::TiXmlElement*
+Rosstackage::getManifestRoot(Stackage* stackage)
+{
+  loadManifest(stackage);
+  rospack_tinyxml::TiXmlElement* ele = stackage->manifest_.RootElement();
+  if(!ele)
+  {
+    std::string errmsg = std::string("error parsing manifest of package ") + 
+            stackage->name_ + " at " + stackage->manifest_path_;
+    throw Exception(errmsg);
+  }
+  return ele;
+}
+
+void
+Rosstackage::computeDeps(Stackage* stackage)
+{
+  if(stackage->deps_computed_)
+    return;
+
+  stackage->deps_computed_ = true;
+
+  rospack_tinyxml::TiXmlElement* root = getManifestRoot(stackage);
+  rospack_tinyxml::TiXmlNode *dep_node = NULL;
+  while((dep_node = root->IterateChildren("depend", dep_node)))
+  {
+    rospack_tinyxml::TiXmlElement *dep_ele = dep_node->ToElement();
+    const char* dep_pkgname = dep_ele->Attribute("package");
+    if(!dep_pkgname)
+    {
+      std::string errmsg = std::string("bad depend syntax (no 'package' attribute) in manifest ") + stackage->name_ + " at " + stackage->manifest_path_;
+      throw Exception(errmsg);
+    }
+    else if(dep_pkgname == stackage->name_)
+    {
+      std::string errmsg = std::string("package ") + stackage->name_ + " depends on itself";
+      throw Exception(errmsg);
+    }
+    else if(!stackages_.count(dep_pkgname))
+    {
+      std::string errmsg = std::string("package ") + stackage->name_ + " depends on non-existent package " + dep_pkgname;
+      throw Exception(errmsg);
+    }
+    else
+    {
+      Stackage* dep = stackages_[dep_pkgname];
+      stackage->deps.push_back(dep);
+      computeDeps(dep);
+    }
+  }
+}
+
+// Pre-condition: computeDeps(stackage) succeeded
+void
+Rosstackage::gatherDeps(Stackage* stackage, bool direct, int depth, 
+                        std::tr1::unordered_set<std::string>& deps_hash,
+                        std::vector<std::string>& deps)
+{
+  if(depth > MAX_DEPENDENCY_DEPTH)
+    throw Exception("maximum dependency depth exceeded (likely circular dependency)");
+
+  for(std::vector<Stackage*>::const_iterator it = stackage->deps.begin();
+      it != stackage->deps.end();
+      ++it)
+  {
+    if(deps_hash.find((*it)->name_) == deps_hash.end())
+    {
+      deps_hash.insert((*it)->name_);
+      if(!direct)
+        gatherDeps(*it, direct, depth+1, deps_hash, deps);
+      // We maintain the vector because the original rospack guaranteed
+      // ordering in dep reporting.
+      deps.push_back((*it)->name_);
+    }
+  }
 }
 
 std::string
@@ -265,7 +410,7 @@ Rosstackage::getCachePath()
     }
     catch(fs::filesystem_error& e)
     {
-      rospack_warn("librospack",
+      log_warn("librospack",
                    std::string("cannot create rospack cache directory ") +
                    cache_path.string() + ": " + e.what());
     }
@@ -313,7 +458,7 @@ Rosstackage::writeCache()
   std::string cache_path = getCachePath();
   if(!cache_path.size())
   {
-    rospack_warn("librospack",
+    log_warn("librospack",
                  "no location available to write cache file. Try setting ROS_HOME or HOME.");
   }
   else
@@ -342,7 +487,7 @@ Rosstackage::writeCache()
     int fd = open(tmp_cache_path, O_RDWR | O_EXCL | _O_CREAT, 0644);
     if (fd < 0)
     {
-      rospack_warn("librospack",
+      log_warn("librospack",
                    std::string("unable to create temporary cache file ") +
                    tmp_cache_path, true);
     }
@@ -383,7 +528,7 @@ Rosstackage::writeCache()
 
         char *rpp = getenv("ROS_PACKAGE_PATH");
         fprintf(cache, "#ROS_PACKAGE_PATH=%s\n", (rpp ? rpp : ""));
-        for(std::map<std::string, Stackage*>::const_iterator it = stackages_.begin();
+        for(std::tr1::unordered_map<std::string, Stackage*>::const_iterator it = stackages_.begin();
             it != stackages_.end();
             ++it)
           fprintf(cache, "%s\n", it->second->path_.c_str());
@@ -460,8 +605,7 @@ Rosstackage::validateCache()
 Rospack::Rospack() :
         Rosstackage(ROSPACK_MANIFEST_NAME,
                     ROSPACK_CACHE_NAME,
-                    CRAWL_DOWN,
-                    MAX_CRAWL_DEPTH)
+                    CRAWL_DOWN)
 {
 }
 
@@ -477,8 +621,7 @@ void Rospack::crawl(const std::vector<std::string>& search_path,
 Rosstack::Rosstack() :
         Rosstackage(ROSSTACK_MANIFEST_NAME,
                     ROSSTACK_CACHE_NAME,
-                    CRAWL_UP,
-                    MAX_CRAWL_DEPTH)
+                    CRAWL_UP)
 {
 }
 
@@ -488,11 +631,35 @@ void Rosstack::crawl(const std::vector<std::string>& search_path,
   Rosstackage::crawl(search_path, force);
 }
 
+
+void
+get_search_path_from_env(std::vector<std::string>& sp)
+{
+  char* rr = getenv("ROS_ROOT");
+  char* rpp = getenv("ROS_PACKAGE_PATH");
+
+  if(rr)
+    sp.push_back(rr);
+  if(rpp)
+  {
+    std::vector<std::string> rpp_strings;
+    boost::split(rpp_strings, rpp, 
+                 boost::is_any_of(":"),
+                 boost::token_compress_on);
+    for(std::vector<std::string>::const_iterator it = rpp_strings.begin();
+        it != rpp_strings.end();
+        ++it)
+    {
+      sp.push_back(*it);
+    }
+  }
+}
+
 // Simple console output helpers
-void rospack_log(const std::string& name, 
-                 const std::string& level,
-                 const std::string& msg,
-                 bool append_errno)
+void log(const std::string& name, 
+         const std::string& level,
+         const std::string& msg,
+         bool append_errno)
 {
   fprintf(stderr, "[%s] %s: %s",
           name.c_str(), level.c_str(), msg.c_str());
@@ -501,17 +668,17 @@ void rospack_log(const std::string& name,
   fprintf(stderr, "\n");
 }
 
-void rospack_warn(const std::string& name, 
-                  const std::string& msg,
-                  bool append_errno)
+void log_warn(const std::string& name, 
+              const std::string& msg,
+              bool append_errno)
 {
-  rospack_log(name, "Warning", msg, append_errno);
+  log(name, "Warning", msg, append_errno);
 }
-void rospack_error(const std::string& name, 
-                   const std::string& msg,
-                   bool append_errno)
+void log_error(const std::string& name, 
+               const std::string& msg,
+               bool append_errno)
 {
-  rospack_log(name, "Error", msg, append_errno);
+  log(name, "Error", msg, append_errno);
 }
 
 } // namespace rospack

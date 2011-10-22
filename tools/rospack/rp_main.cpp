@@ -27,12 +27,46 @@
 
 #include "rp.h"
 #include <boost/program_options.hpp>
-#include <boost/algorithm/string.hpp>
 #include <iostream>
 #include <stdlib.h>
 
-using namespace rospack;
 namespace po = boost::program_options;
+
+const char* usage()
+{
+  return "USAGE: rospack <command> [options] [package]\n"
+          "  Allowed commands:\n"
+          "    help\n"
+          "    find [package]\n"
+          "    list\n"
+          "    list-names\n"
+          "    list-duplicates\n"
+          "    langs\n"
+          "    depends [package] (alias: deps)\n"
+          "    depends-manifests [package] (alias: deps-manifests)\n"
+          "    depends-msgsrv [package] (alias: deps-msgsrv)\n"
+          "    depends1 [package] (alias: deps1)\n"
+          "    depends-indent [package] (alias: deps-indent)\n"
+          "    depends-why --target=<target> [package] (alias: deps-why)\n"
+          "    rosdep [package] (alias: rosdeps)\n"
+          "    rosdep0 [package] (alias: rosdeps0)\n"
+          "    vcs [package]\n"
+          "    vcs0 [package]\n"
+          "    depends-on [package]\n"
+          "    depends-on1 [package]\n"
+          "    export [--deps-only] --lang=<lang> --attrib=<attrib> [package]\n"
+          "    plugins --attrib=<attrib> [--top=<toppkg>] [package]\n"
+          "    cflags-only-I [--deps-only] [package]\n"
+          "    cflags-only-other [--deps-only] [package]\n"
+          "    libs-only-L [--deps-only] [package]\n"
+          "    libs-only-l [--deps-only] [package]\n"
+          "    libs-only-other [--deps-only] [package]\n"
+          "    profile [--length=<length>] [--zombie-only]\n"
+          "  Extra options:\n"
+          "    -q     Quiets error reports.\n\n"
+          " If [package] is omitted, the current working directory\n"
+          " is used (if it contains a manifest.xml).\n\n";
+}
 
 int
 parse_args(int argc, char** argv, po::variables_map& vm)
@@ -57,36 +91,13 @@ parse_args(int argc, char** argv, po::variables_map& vm)
   }
   catch(boost::program_options::error e)
   {
-    rospack_error("rospack", std::string("failed to parse command-line options: ") + e.what());
+    rospack::log_error("rospack", std::string("failed to parse command-line options: ") + e.what());
     // TODO: print USAGE
     return 1;
   }
   po::notify(vm);
 
   return 0;
-}
-
-void
-get_search_path_from_env(std::vector<std::string>& sp)
-{
-  char* rr = getenv("ROS_ROOT");
-  char* rpp = getenv("ROS_PACKAGE_PATH");
-
-  if(rr)
-    sp.push_back(rr);
-  if(rpp)
-  {
-    std::vector<std::string> rpp_strings;
-    boost::split(rpp_strings, rpp, 
-                 boost::is_any_of(":"),
-                 boost::token_compress_on);
-    for(std::vector<std::string>::const_iterator it = rpp_strings.begin();
-        it != rpp_strings.end();
-        ++it)
-    {
-      sp.push_back(*it);
-    }
-  }
 }
 
 int
@@ -99,9 +110,9 @@ main(int argc, char** argv)
   if(ret)
     return ret;
 
-  Rospack rp;
+  rospack::Rospack rp;
   std::vector<std::string> search_path;
-  get_search_path_from_env(search_path);
+  rospack::get_search_path_from_env(search_path);
   rp.crawl(search_path, false);
 
   std::string command;
@@ -110,10 +121,14 @@ main(int argc, char** argv)
     command = vm["command"].as<std::string>();
   if(vm.count("package"))
     package = vm["package"].as<std::string>();
+  else
+  {
+    // TODO: try to determine package from directory context
+  }
 
   if(!command.size())
   {
-    rospack_error("rospack", "no command given");
+    rospack::log_error("rospack", "no command given");
     return 1;
   }
 
@@ -121,16 +136,76 @@ main(int argc, char** argv)
   {
     if(!package.size())
     {
-      rospack_error("rospack", "no package given for find command");
+      rospack::log_error("rospack", "no package given for find command");
       return 1;
     }
-    std::string path = rp.find(package);
-    printf("%s\n", path.c_str());
+    std::string path;
+    if(!rp.find(package, path))
+      return 1;
+    else
+    {
+      printf("%s\n", path.c_str());
+      return 0;
+    }
+  }
+  else if(command == "list")
+  {
+    std::vector<std::pair<std::string, std::string> > list;
+    rp.list(list);
+    for(std::vector<std::pair<std::string, std::string> >::const_iterator it = list.begin();
+        it != list.end();
+        ++it)
+    {
+      printf("%s %s\n", it->first.c_str(), it->second.c_str());
+    }
+  }
+  else if(command == "list-names")
+  {
+    std::vector<std::pair<std::string, std::string> > list;
+    rp.list(list);
+    for(std::vector<std::pair<std::string, std::string> >::const_iterator it = list.begin();
+        it != list.end();
+        ++it)
+    {
+      printf("%s\n", it->first.c_str());
+    }
+  }
+  else if(command == "list-duplicates")
+  {
+    rospack::log_error("rospack", 
+                       std::string("command ") + command + " not implemented");
+    return 1;
+  }
+  else if(command == "langs")
+  {
+    rospack::log_error("rospack", 
+                       std::string("command ") + command + " not implemented");
+    return 1;
+  }
+  else if(command == "depends" || command == "deps" || 
+          command == "depends1" || command == "deps1")
+  {
+    std::vector<std::string> deps;
+    if(!rp.deps(package, (command == "depends1" || command == "deps1"), deps))
+      return 1;
+    else
+    {
+      for(std::vector<std::string>::const_iterator it = deps.begin();
+          it != deps.end();
+          ++it)
+        printf("%s\n", it->c_str());
+      return 0;
+    }
+  }
+  else if(command == "help")
+  {
+    printf("%s", usage());
+    return 0;
   }
   else
   {
-    rospack_error("rospack", 
-                  std::string("command ") + command + " not implemented");
+    rospack::log_error("rospack", 
+                       std::string("command ") + command + " not implemented");
     return 1;
   }
 

@@ -31,6 +31,8 @@
 
 #include "tinyxml-2.5.3/tinyxml.h"
 
+#include <boost/tr1/unordered_set.hpp>
+#include <boost/tr1/unordered_map.hpp>
 #include <string>
 #include <map>
 #include <vector>
@@ -39,46 +41,14 @@
 namespace rospack
 {
 
-class Stackage
-{
-  public:
-    // \brief name of the stackage
-    std::string name_;
-    // \brief absolute path to the stackage
-    std::string path_;
-    // \brief absolute path to the stackage manifest
-    std::string manifest_path_;
-    // \brief have we already loaded the manifest?
-    bool manifest_loaded_;
-    // \brief TinyXML structure, filled in during parsing
-    rospack_tinyxml::TiXmlDocument manifest_;
-
-    Stackage(const std::string& name,
-             const std::string& path,
-             const std::string& manifest_path);
-};
-
-class Package : public Stackage
-{
-};
-
-class Stack : public Stackage
-{
-};
-
 typedef enum
 {
   CRAWL_UP,
   CRAWL_DOWN
 } crawl_direction_t;
 
-class Exception : public std::runtime_error
-{
-  public:
-    Exception(const std::string& what)
-            : std::runtime_error(what)
-    {}
-};
+class Stackage;
+class rospack_tinyxml::TiXmlElement;
 
 class Rosstackage
 {
@@ -86,7 +56,6 @@ class Rosstackage
     std::string manifest_name_;
     std::string cache_name_;
     crawl_direction_t crawl_dir_;
-    int max_crawl_depth_;
 
     bool crawled_;
     bool isStackage(const std::string& path);
@@ -95,22 +64,28 @@ class Rosstackage
                      bool force,
                      int depth);
     void loadManifest(Stackage* stackage);
+    void computeDeps(Stackage* stackage);
+    void gatherDeps(Stackage* stackage, bool direct, int depth,
+                    std::tr1::unordered_set<std::string>& deps_hash,
+                    std::vector<std::string>& deps);
+    rospack_tinyxml::TiXmlElement* getManifestRoot(Stackage* stackage);
     std::string getCachePath();
     bool readCache();
     void writeCache();
     bool validateCache();
 
   protected:
-    std::map<std::string, Stackage*> stackages_;
+    std::tr1::unordered_map<std::string, Stackage*> stackages_;
     void crawl(const std::vector<std::string>& search_path, bool force);
 
   public:
     Rosstackage(std::string manifest_name,
                 std::string cache_name,
-                crawl_direction_t crawl_dir,
-                int max_crawl_depth);
+                crawl_direction_t crawl_dir);
 
-    std::string find(const std::string& name); 
+    bool find(const std::string& name, std::string& path); 
+    void list(std::vector<std::pair<std::string, std::string> >& list);
+    bool deps(const std::string& name, bool direct, std::vector<std::string>& deps);
 
     void debug_dump();
 };
@@ -133,14 +108,15 @@ class Rosstack : public Rosstackage
     Rosstack();
 };
 
+void get_search_path_from_env(std::vector<std::string>& sp);
 
 // Simple console output helpers
-void rospack_warn(const std::string& name, 
-                  const std::string& msg,
-                  bool append_errno = false);
-void rospack_error(const std::string& name, 
-                   const std::string& msg,
-                   bool append_errno = false);
+void log_warn(const std::string& name, 
+              const std::string& msg,
+              bool append_errno = false);
+void log_error(const std::string& name, 
+               const std::string& msg,
+               bool append_errno = false);
 
 } // namespace rospack
 

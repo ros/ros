@@ -27,6 +27,8 @@
 
 #include "rp.h"
 #include <boost/program_options.hpp>
+#include <boost/algorithm/string.hpp>
+#include <algorithm>
 #include <iostream>
 #include <stdlib.h>
 #include <stdio.h>
@@ -35,6 +37,14 @@ namespace po = boost::program_options;
 
 const char* usage();
 bool parse_args(int argc, char** argv, po::variables_map& vm);
+void parse_compiler_flags(const std::string& instring, 
+                          const std::string& token,
+                          bool select,
+                          bool last,
+                          std::string& outstring);
+void deduplicate_tokens(const std::string& instring, 
+                        bool last,
+                        std::string& outstring);
 
 int
 main(int argc, char** argv)
@@ -50,6 +60,14 @@ main(int argc, char** argv)
   std::string command;
   std::string package;
   bool package_given = false;
+  bool deps_only = false;
+  std::string lang;
+  std::string attrib;
+  std::string top;
+  std::string target;
+  bool zombie_only = false;
+  std::string length_str;
+  int length;
   if(vm.count("command"))
     command = vm["command"].as<std::string>();
   if(!command.size())
@@ -73,19 +91,45 @@ main(int argc, char** argv)
     // try to determine package from directory context
     rp.inPackage(package);
   }
+  if(vm.count("deps-only"))
+    deps_only = true;
+  if(vm.count("lang"))
+    lang = vm["lang"].as<std::string>();
+  if(vm.count("attrib"))
+    attrib = vm["attrib"].as<std::string>();
+  if(vm.count("top"))
+    top = vm["top"].as<std::string>();
+  if(vm.count("target"))
+    target = vm["target"].as<std::string>();
+  if(vm.count("zombie-only"))
+    zombie_only = true;
+  if(vm.count("length"))
+  {
+    length_str = vm["length"].as<std::string>();
+    length = atoi(length_str.c_str());
+  }
+  else
+  {
+    if(zombie_only)
+      length = -1;
+    else
+      length = 20;
+  }
 
-
+  // COMMAND: profile
   if(command == "profile")
   {
-    if(package_given)
+    if(package_given || target.size() || top.size() || length_str.size() || 
+       zombie_only || deps_only || lang.size() || attrib.size())
     {
-      rospack::log_error("rospack", "no package allowed");
+      rospack::log_error("rospack", "invalid option(s) given");
       return 1;
     }
     rospack::log_error("rospack", "profile output not yet implemented");
     // TODO
     return 0;
   }
+  // COMMAND: find [package]
   else if(command == "find")
   {
     if(!package.size())
@@ -93,20 +137,25 @@ main(int argc, char** argv)
       rospack::log_error("rospack", "no package given");
       return 1;
     }
+    if(target.size() || top.size() || length_str.size() || 
+       zombie_only || deps_only || lang.size() || attrib.size())
+    {
+      rospack::log_error("rospack", "invalid option(s) given");
+      return 1;
+    }
     std::string path;
     if(!rp.find(package, path))
       return 1;
-    else
-    {
-      printf("%s\n", path.c_str());
-      return 0;
-    }
+    printf("%s\n", path.c_str());
+    return 0;
   }
+  // COMMAND: list
   else if(command == "list")
   {
-    if(package_given)
+    if(package_given || target.size() || top.size() || length_str.size() || 
+       zombie_only || deps_only || lang.size() || attrib.size())
     {
-      rospack::log_error("rospack", "no package allowed");
+      rospack::log_error("rospack", "invalid option(s) given");
       return 1;
     }
     std::vector<std::pair<std::string, std::string> > list;
@@ -119,11 +168,13 @@ main(int argc, char** argv)
     }
     return 0;
   }
+  // COMMAND: list-names
   else if(command == "list-names")
   {
-    if(package_given)
+    if(package_given || target.size() || top.size() || length_str.size() || 
+       zombie_only || deps_only || lang.size() || attrib.size())
     {
-      rospack::log_error("rospack", "no package allowed");
+      rospack::log_error("rospack", "invalid option(s) given");
       return 1;
     }
     std::vector<std::pair<std::string, std::string> > list;
@@ -136,11 +187,13 @@ main(int argc, char** argv)
     }
     return 0;
   }
+  // COMMAND: list-duplicates
   else if(command == "list-duplicates")
   {
-    if(package_given)
+    if(package_given || target.size() || top.size() || length_str.size() || 
+       zombie_only || deps_only || lang.size() || attrib.size())
     {
-      rospack::log_error("rospack", "no package allowed");
+      rospack::log_error("rospack", "invalid option(s) given");
       return 1;
     }
     std::vector<std::string> dups;
@@ -148,29 +201,29 @@ main(int argc, char** argv)
     // list-duplicates returns 0 if no duplicates
     if(!dups.size())
       return 0;
-    else
+    // if there are dups, list-duplicates prints them and returns non-zero
+    for(std::vector<std::string>::const_iterator it = dups.begin();
+        it != dups.end();
+        ++it)
     {
-      // if there are dups, list-duplicates prints them and returns non-zero
-      for(std::vector<std::string>::const_iterator it = dups.begin();
-          it != dups.end();
-          ++it)
-      {
-        printf("%s\n", (*it).c_str());
-      }
-      return 1;
+      printf("%s\n", (*it).c_str());
     }
+    return 1;
   }
+  // COMMAND: langs
   else if(command == "langs")
   {
-    if(package_given)
+    if(package_given || target.size() || top.size() || length_str.size() || 
+       zombie_only || deps_only || lang.size() || attrib.size())
     {
-      rospack::log_error("rospack", "no package allowed");
+      rospack::log_error("rospack", "invalid option(s) given");
       return 1;
     }
     rospack::log_error("rospack", 
                        std::string("command ") + command + " not implemented");
     return 1;
   }
+  // COMMAND: depends [package] (alias: deps)
   else if(command == "depends" || command == "deps" || 
           command == "depends1" || command == "deps1")
   {
@@ -179,18 +232,22 @@ main(int argc, char** argv)
       rospack::log_error("rospack", "no package given");
       return 1;
     }
+    if(target.size() || top.size() || length_str.size() || 
+       zombie_only || deps_only || lang.size() || attrib.size())
+    {
+      rospack::log_error("rospack", "invalid option(s) given");
+      return 1;
+    }
     std::vector<std::string> deps;
     if(!rp.deps(package, (command == "depends1" || command == "deps1"), deps))
       return 1;
-    else
-    {
-      for(std::vector<std::string>::const_iterator it = deps.begin();
-          it != deps.end();
-          ++it)
-        printf("%s\n", it->c_str());
-      return 0;
-    }
+    for(std::vector<std::string>::const_iterator it = deps.begin();
+        it != deps.end();
+        ++it)
+      printf("%s\n", it->c_str());
+    return 0;
   }
+  // COMMAND: depends-manifests [package] (alias: deps-manifests)
   else if(command == "depends-manifests" || command == "deps-manifests")
   {
     if(!package.size())
@@ -198,19 +255,23 @@ main(int argc, char** argv)
       rospack::log_error("rospack", "no package given");
       return 1;
     }
+    if(target.size() || top.size() || length_str.size() || 
+       zombie_only || deps_only || lang.size() || attrib.size())
+    {
+      rospack::log_error("rospack", "invalid option(s) given");
+      return 1;
+    }
     std::vector<std::string> manifests;
     if(!rp.depsManifests(package, false, manifests))
       return 1;
-    else
-    {
-      for(std::vector<std::string>::const_iterator it = manifests.begin();
-          it != manifests.end();
-          ++it)
+    for(std::vector<std::string>::const_iterator it = manifests.begin();
+        it != manifests.end();
+        ++it)
         printf("%s ", it->c_str());
-      printf("\n");
-      return 0;
-    }
+    printf("\n");
+    return 0;
   }
+  // COMMAND: depends-msgsrv [package] (alias: deps-msgsrv)
   else if(command == "depends-msgsrv" || command == "deps-msgsrv")
   {
     if(!package.size())
@@ -218,19 +279,23 @@ main(int argc, char** argv)
       rospack::log_error("rospack", "no package given");
       return 1;
     }
+    if(target.size() || top.size() || length_str.size() || 
+       zombie_only || deps_only || lang.size() || attrib.size())
+    {
+      rospack::log_error("rospack", "invalid option(s) given");
+      return 1;
+    }
     std::vector<std::string> gens;
     if(!rp.depsMsgSrv(package, false, gens))
       return 1;
-    else
-    {
-      for(std::vector<std::string>::const_iterator it = gens.begin();
-          it != gens.end();
-          ++it)
-        printf("%s ", it->c_str());
-      printf("\n");
-      return 0;
-    }
+    for(std::vector<std::string>::const_iterator it = gens.begin();
+        it != gens.end();
+        ++it)
+      printf("%s ", it->c_str());
+    printf("\n");
+    return 0;
   }
+  // COMMAND: depends-indent [package] (alias: deps-indent)
   else if(command == "depends-indent" || command == "deps-indent")
   {
     if(!package.size())
@@ -238,18 +303,23 @@ main(int argc, char** argv)
       rospack::log_error("rospack", "no package given");
       return 1;
     }
+    if(target.size() || top.size() || length_str.size() || 
+       zombie_only || deps_only || lang.size() || attrib.size())
+    {
+      rospack::log_error("rospack", "invalid option(s) given");
+      return 1;
+    }
     std::vector<std::string> deps;
     if(!rp.depsIndent(package, false, deps))
       return 1;
-    else
-    {
-      for(std::vector<std::string>::const_iterator it = deps.begin();
-          it != deps.end();
-          ++it)
-        printf("%s\n", it->c_str());
-      return 0;
-    }
+    for(std::vector<std::string>::const_iterator it = deps.begin();
+        it != deps.end();
+        ++it)
+      printf("%s\n", it->c_str());
+    return 0;
   }
+  // COMMAND: rosdep [package] (alias: rosdeps)
+  // COMMAND: rosdep0 [package] (alias: rosdeps0)
   else if(command == "rosdep" || command == "rosdeps" ||
           command == "rosdep0" || command == "rosdeps0")
   {
@@ -258,18 +328,23 @@ main(int argc, char** argv)
       rospack::log_error("rospack", "no package given");
       return 1;
     }
+    if(target.size() || top.size() || length_str.size() || 
+       zombie_only || deps_only || lang.size() || attrib.size())
+    {
+      rospack::log_error("rospack", "invalid option(s) given");
+      return 1;
+    }
     std::vector<std::string> rosdeps;
     if(!rp.rosdeps(package, (command == "rosdep0" || command == "rosdeps0"), rosdeps))
       return 1;
-    else
-    {
-      for(std::vector<std::string>::const_iterator it = rosdeps.begin();
-          it != rosdeps.end();
-          ++it)
-        printf("%s\n", it->c_str());
-      return 0;
-    }
+    for(std::vector<std::string>::const_iterator it = rosdeps.begin();
+        it != rosdeps.end();
+        ++it)
+      printf("%s\n", it->c_str());
+    return 0;
   }
+  // COMMAND: vcs [package]
+  // COMMAND: vcs0 [package]
   else if(command == "vcs" || command == "vcs0")
   {
     if(!package.size())
@@ -277,18 +352,23 @@ main(int argc, char** argv)
       rospack::log_error("rospack", "no package given");
       return 1;
     }
+    if(target.size() || top.size() || length_str.size() || 
+       zombie_only || deps_only || lang.size() || attrib.size())
+    {
+      rospack::log_error("rospack", "invalid option(s) given");
+      return 1;
+    }
     std::vector<std::string> vcs;
     if(!rp.vcs(package, (command == "vcs0"), vcs))
       return 1;
-    else
-    {
-      for(std::vector<std::string>::const_iterator it = vcs.begin();
-          it != vcs.end();
-          ++it)
-        printf("%s\n", it->c_str());
-      return 0;
-    }
+    for(std::vector<std::string>::const_iterator it = vcs.begin();
+        it != vcs.end();
+        ++it)
+      printf("%s\n", it->c_str());
+    return 0;
   }
+  // COMMAND: depends-on [package]
+  // COMMAND: depends-on1 [package]
   else if(command == "depends-on" || command == "depends-on1")
   {
     if(!package.size())
@@ -296,23 +376,190 @@ main(int argc, char** argv)
       rospack::log_error("rospack", "no package given");
       return 1;
     }
+    if(target.size() || top.size() || length_str.size() || 
+       zombie_only || deps_only || lang.size() || attrib.size())
+    {
+      rospack::log_error("rospack", "invalid option(s) given");
+      return 1;
+    }
     std::vector<std::string> deps;
     if(!rp.dependsOn(package, (command == "depends-on1"), deps))
       return 1;
-    else
-    {
-      for(std::vector<std::string>::const_iterator it = deps.begin();
-          it != deps.end();
-          ++it)
-        printf("%s\n", it->c_str());
-      return 0;
-    }
+    for(std::vector<std::string>::const_iterator it = deps.begin();
+        it != deps.end();
+        ++it)
+      printf("%s\n", it->c_str());
+    return 0;
   }
+  // COMMAND: export [--deps-only] --lang=<lang> --attrib=<attrib> [package]
+  else if(command == "export")
+  {
+    if(!package.size() || !lang.size() || !attrib.size())
+    {
+      rospack::log_error("rospack", "no package / lang / attrib given");
+      return 1;
+    }
+    if(target.size() || top.size() || length_str.size() || zombie_only)
+    {
+      rospack::log_error("rospack", "invalid option(s) given");
+      return 1;
+    }
+    std::vector<std::string> flags;
+    if(!rp.exports(package, lang, attrib, deps_only, flags))
+      return 1;
+    for(std::vector<std::string>::const_iterator it = flags.begin();
+        it != flags.end();
+        ++it)
+      printf("%s ", it->c_str());
+    printf("\n");
+    return 0;
+  }
+  // COMMAND: plugins --attrib=<attrib> [--top=<toppkg>] [package]
+  else if(command == "plugins")
+  {
+    rospack::log_error("rospack", 
+                       std::string("command ") + command + " not implemented");
+    return 1;
+  }
+  // COMMAND: cflags-only-I [--deps-only] [package]
+  else if(command == "cflags-only-I")
+  {
+    if(!package.size())
+    {
+      rospack::log_error("rospack", "no package given");
+      return 1;
+    }
+    if(target.size() || top.size() || length_str.size() || zombie_only)
+    {
+      rospack::log_error("rospack", "invalid option(s) given");
+      return 1;
+    }
+    std::vector<std::string> flags;
+    if(!rp.exports(package, "cpp", "cflags", deps_only, flags))
+      return 1;
+    std::string combined;
+    for(std::vector<std::string>::const_iterator it = flags.begin();
+        it != flags.end();
+        ++it)
+      combined.append(*it + " ");
+    std::string result;
+    parse_compiler_flags(combined, "-I", true, false, result);
+    printf("%s\n", result.c_str());
+    return 0;
+  }
+  // COMMAND: cflags-only-other [--deps-only] [package]
+  else if(command == "cflags-only-other")
+  {
+    if(!package.size())
+    {
+      rospack::log_error("rospack", "no package given");
+      return 1;
+    }
+    if(target.size() || top.size() || length_str.size() || zombie_only)
+    {
+      rospack::log_error("rospack", "invalid option(s) given");
+      return 1;
+    }
+    std::vector<std::string> flags;
+    if(!rp.exports(package, "cpp", "cflags", deps_only, flags))
+      return 1;
+    std::string combined;
+    for(std::vector<std::string>::const_iterator it = flags.begin();
+        it != flags.end();
+        ++it)
+      combined.append(*it + " ");
+    std::string result;
+    parse_compiler_flags(combined, "-I", false, false, result);
+    printf("%s\n", result.c_str());
+    return 0;
+  }
+  // COMMAND: libs-only-L [--deps-only] [package]
+  else if(command == "libs-only-L")
+  {
+    if(!package.size())
+    {
+      rospack::log_error("rospack", "no package given");
+      return 1;
+    }
+    if(target.size() || top.size() || length_str.size() || zombie_only)
+    {
+      rospack::log_error("rospack", "invalid option(s) given");
+      return 1;
+    }
+    std::vector<std::string> flags;
+    if(!rp.exports(package, "cpp", "lflags", deps_only, flags))
+      return 1;
+    std::string combined;
+    for(std::vector<std::string>::const_iterator it = flags.begin();
+        it != flags.end();
+        ++it)
+      combined.append(*it + " ");
+    std::string result;
+    parse_compiler_flags(combined, "-L", true, false, result);
+    printf("%s\n", result.c_str());
+    return 0;
+  }
+  // COMMAND: libs-only-l [--deps-only] [package]
+  else if(command == "libs-only-l")
+  {
+    if(!package.size())
+    {
+      rospack::log_error("rospack", "no package given");
+      return 1;
+    }
+    if(target.size() || top.size() || length_str.size() || zombie_only)
+    {
+      rospack::log_error("rospack", "invalid option(s) given");
+      return 1;
+    }
+    std::vector<std::string> flags;
+    if(!rp.exports(package, "cpp", "lflags", deps_only, flags))
+      return 1;
+    std::string combined;
+    for(std::vector<std::string>::const_iterator it = flags.begin();
+        it != flags.end();
+        ++it)
+      combined.append(*it + " ");
+    std::string result;
+    parse_compiler_flags(combined, "-l", true, true, result);
+    printf("%s\n", result.c_str());
+    return 0;
+  }
+  // COMMAND: libs-only-other [--deps-only] [package]
+  else if(command == "libs-only-other")
+  {
+    if(!package.size())
+    {
+      rospack::log_error("rospack", "no package given");
+      return 1;
+    }
+    if(target.size() || top.size() || length_str.size() || zombie_only)
+    {
+      rospack::log_error("rospack", "invalid option(s) given");
+      return 1;
+    }
+    std::vector<std::string> flags;
+    if(!rp.exports(package, "cpp", "lflags", deps_only, flags))
+      return 1;
+    std::string combined;
+    for(std::vector<std::string>::const_iterator it = flags.begin();
+        it != flags.end();
+        ++it)
+      combined.append(*it + " ");
+    std::string intermediate;
+    parse_compiler_flags(combined, "-L", false, false, intermediate);
+    std::string result;
+    parse_compiler_flags(intermediate, "-l", false, false, result);
+    printf("%s\n", result.c_str());
+    return 0;
+  }
+  // COMMAND: help
   else if(command == "help")
   {
-    if(package_given)
+    if(package_given || top.size() || length_str.size() || 
+       zombie_only || deps_only || lang.size() || attrib.size())
     {
-      rospack::log_error("rospack", "no package allowed");
+      rospack::log_error("rospack", "invalid option(s) given");
       return 1;
     }
     printf("%s", usage());
@@ -324,6 +571,86 @@ main(int argc, char** argv)
                        std::string("command ") + command + " not implemented");
     return 1;
   }
+}
+
+void
+deduplicate_tokens(const std::string& instring, 
+                   bool last,
+                   std::string& outstring)
+{
+  std::vector<std::string> vec;
+  std::tr1::unordered_set<std::string> set;
+  boost::split(vec, instring,
+               boost::is_any_of("\t "),
+               boost::token_compress_on);
+  if(last)
+    std::reverse(vec.begin(), vec.end());
+  std::vector<std::string> vec_out;
+  vec_out.resize(vec.size());
+  int i = 0;
+  for(std::vector<std::string>::const_iterator it = vec.begin();
+      it != vec.end();
+      ++it)
+  {
+    if(set.find(*it) == set.end())
+    {
+      vec_out[i] = *it;
+      set.insert(*it);
+      i++;
+    }
+  }
+  if(last)
+    std::reverse(vec_out.begin(), vec_out.end());
+  for(std::vector<std::string>::const_iterator it = vec_out.begin();
+      it != vec_out.end();
+      ++it)
+    outstring.append(*it + " ");
+}
+
+void
+parse_compiler_flags(const std::string& instring, 
+                     const std::string& token,
+                     bool select,
+                     bool last,
+                     std::string& outstring)
+{
+  std::string intermediate;
+  std::vector<std::string> result_vec;
+  boost::split(result_vec, instring,
+               boost::is_any_of("\t "),
+               boost::token_compress_on);
+  for(std::vector<std::string>::const_iterator it = result_vec.begin();
+      it != result_vec.end();
+      ++it)
+  {
+    // Combined into one arg
+    if(it->size() > token.size() && it->substr(0,token.size()) == token)
+    {
+      if(select)
+        intermediate.append(it->substr(token.size()) + " ");
+    }
+    // Space-separated
+    else if((*it) == token)
+    {
+      std::vector<std::string>::const_iterator iit = it;
+      if(++iit != result_vec.end())
+      {
+        if(it->size() >= token.size() && it->substr(0,token.size()) == token)
+        {
+          // skip it
+        }
+        else
+        {
+          if(select)
+            intermediate.append((*iit) + " ");
+          it = iit;
+        }
+      }
+    }
+    else if(!select)
+      intermediate.append((*it) + " ");
+  }
+  deduplicate_tokens(intermediate, last, outstring);
 }
 
 const char* usage()

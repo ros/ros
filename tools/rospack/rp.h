@@ -45,6 +45,12 @@ typedef enum
   CRAWL_DOWN
 } crawl_direction_t;
 
+typedef enum 
+{
+  POSTORDER,
+  PREORDER
+} traversal_order_t;
+
 class Stackage;
 
 class Rosstackage
@@ -64,8 +70,10 @@ class Rosstackage
     void loadManifest(Stackage* stackage);
     void computeDeps(Stackage* stackage, bool ignore_errors=false);
     void gatherDeps(Stackage* stackage, bool direct, 
+                    traversal_order_t order,
                     std::vector<Stackage*>& deps);
-    void gatherDepsFull(Stackage* stackage, bool direct, int depth, 
+    void gatherDepsFull(Stackage* stackage, bool direct, 
+                        traversal_order_t order, int depth, 
                         std::tr1::unordered_set<Stackage*>& deps_hash,
                         std::vector<Stackage*>& deps,
                         bool get_indented_deps,
@@ -74,6 +82,9 @@ class Rosstackage
     bool readCache();
     void writeCache();
     bool validateCache();
+    bool expandExportString(Stackage* stackage,
+                            const std::string& instring,
+                            std::string& outstring);
 
   protected:
     std::tr1::unordered_map<std::string, Stackage*> stackages_;
@@ -103,6 +114,9 @@ class Rosstackage
                  std::vector<std::string>& rosdeps);
     bool vcs(const std::string& name, bool direct, 
              std::vector<std::string>& vcs);
+    bool exports(const std::string& name, const std::string& lang,
+                 const std::string& attrib, bool deps_only,
+                 std::vector<std::string>& flags);
 
     void debug_dump();
 };

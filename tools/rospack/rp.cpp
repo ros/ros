@@ -67,9 +67,11 @@ static const char* SRV_GEN_GENERATED_FILE = "generated";
 static const char* MANIFEST_TAG_PACKAGE = "package";
 static const char* MANIFEST_TAG_ROSDEP = "rosdep";
 static const char* MANIFEST_TAG_VERSIONCONTROL = "versioncontrol";
+static const char* MANIFEST_TAG_EXPORT = "export";
 static const char* MANIFEST_ATTR_NAME = "name";
 static const char* MANIFEST_ATTR_TYPE = "type";
 static const char* MANIFEST_ATTR_URL = "url";
+static const char* MANIFEST_PREFIX = "${prefix}";
 static const int MAX_CRAWL_DEPTH = 1000;
 static const int MAX_DEPENDENCY_DEPTH = 1000;
 static const double DEFAULT_MAX_CACHE_AGE = 60.0;
@@ -252,7 +254,7 @@ Rosstackage::deps(const std::string& name, bool direct,
   {
     computeDeps(stackage);
     std::vector<Stackage*> deps_vec;
-    gatherDeps(stackage, direct, deps_vec);
+    gatherDeps(stackage, direct, POSTORDER, deps_vec);
     for(std::vector<Stackage*>::const_iterator it = deps_vec.begin();
         it != deps_vec.end();
         ++it)
@@ -280,7 +282,7 @@ Rosstackage::dependsOn(const std::string& name, bool direct,
     {
       computeDeps(it->second, true);
       std::vector<Stackage*> deps_vec;
-      gatherDeps(it->second, direct, deps_vec);
+      gatherDeps(it->second, direct, POSTORDER, deps_vec);
       for(std::vector<Stackage*>::const_iterator iit = deps_vec.begin();
           iit != deps_vec.end();
           ++iit)
@@ -317,7 +319,7 @@ Rosstackage::depsIndent(const std::string& name, bool direct,
     std::vector<Stackage*> deps_vec;
     std::tr1::unordered_set<Stackage*> deps_hash;
     std::vector<std::string> indented_deps;
-    gatherDepsFull(stackage, direct, 0, deps_hash, deps_vec, true, indented_deps);
+    gatherDepsFull(stackage, direct, POSTORDER, 0, deps_hash, deps_vec, true, indented_deps);
     for(std::vector<std::string>::const_iterator it = indented_deps.begin();
         it != indented_deps.end();
         ++it)
@@ -345,7 +347,7 @@ Rosstackage::depsManifests(const std::string& name, bool direct,
   {
     computeDeps(stackage);
     std::vector<Stackage*> deps_vec;
-    gatherDeps(stackage, direct, deps_vec);
+    gatherDeps(stackage, direct, POSTORDER, deps_vec);
     for(std::vector<Stackage*>::const_iterator it = deps_vec.begin();
         it != deps_vec.end();
         ++it)
@@ -376,7 +378,7 @@ Rosstackage::rosdeps(const std::string& name, bool direct,
     // rosdeps include the current package
     deps_vec.push_back(stackage);
     if(!direct)
-      gatherDeps(stackage, direct, deps_vec);
+      gatherDeps(stackage, direct, POSTORDER, deps_vec);
     for(std::vector<Stackage*>::const_iterator it = deps_vec.begin();
         it != deps_vec.end();
         ++it)
@@ -419,7 +421,7 @@ Rosstackage::vcs(const std::string& name, bool direct,
     // vcs include the current package
     deps_vec.push_back(stackage);
     if(!direct)
-      gatherDeps(stackage, direct, deps_vec);
+      gatherDeps(stackage, direct, POSTORDER, deps_vec);
     for(std::vector<Stackage*>::const_iterator it = deps_vec.begin();
         it != deps_vec.end();
         ++it)
@@ -453,6 +455,72 @@ Rosstackage::vcs(const std::string& name, bool direct,
   return true;
 }
 
+bool 
+Rosstackage::exports(const std::string& name, const std::string& lang,
+                     const std::string& attrib, bool deps_only,
+                     std::vector<std::string>& flags)
+{
+  if(!stackages_.count(name))
+  {
+    log_error("librospack", std::string("no such package ") + name);
+    return false;
+  }
+  Stackage* stackage = stackages_[name];
+  try
+  {
+    computeDeps(stackage);
+    std::vector<Stackage*> deps_vec;
+    if(!deps_only)
+      deps_vec.push_back(stackage);
+    gatherDeps(stackage, false, PREORDER, deps_vec);
+    for(std::vector<Stackage*>::const_iterator it = deps_vec.begin();
+        it != deps_vec.end();
+        ++it)
+    {
+      rospack_tinyxml::TiXmlElement* root = get_manifest_root(*it);
+      for(rospack_tinyxml::TiXmlElement* ele = root->FirstChildElement(MANIFEST_TAG_EXPORT);
+          ele;
+          ele = ele->NextSiblingElement(MANIFEST_TAG_EXPORT))
+      {
+        for(rospack_tinyxml::TiXmlElement* ele2 = ele->FirstChildElement(lang);
+            ele2;
+            ele2 = ele2->NextSiblingElement(lang))
+        {
+          const char *att_str;
+          if((att_str = ele2->Attribute(attrib.c_str())))
+          {
+            std::string expanded_str;
+            if(!expandExportString(*it, att_str, expanded_str))
+              return false;
+            flags.push_back(expanded_str);
+          }
+        }
+      }
+
+      // We automatically point to msg_gen and msg_srv directories if
+      // certain files are present
+      fs::path msg_gen = fs::path((*it)->path_) / MSG_GEN_GENERATED_DIR;
+      fs::path srv_gen = fs::path((*it)->path_) / SRV_GEN_GENERATED_DIR;
+      if(fs::is_regular_file(msg_gen / MSG_GEN_GENERATED_FILE))
+      {
+        msg_gen /= fs::path("cpp") / "include";
+        flags.push_back(std::string("-I" + msg_gen.string()));
+      }
+      if(fs::is_regular_file(srv_gen / SRV_GEN_GENERATED_FILE))
+      {
+        srv_gen /= fs::path("cpp") / "include";
+        flags.push_back(std::string("-I" + srv_gen.string()));
+      }
+    }
+  }
+  catch(Exception& e)
+  {
+    log_error("librospack", e.what());
+    return false;
+  }
+  return true;
+}
+
 bool
 Rosstackage::depsMsgSrv(const std::string& name, bool direct, 
                         std::vector<std::string>& gens)
@@ -467,7 +535,7 @@ Rosstackage::depsMsgSrv(const std::string& name, bool direct,
   {
     computeDeps(stackage);
     std::vector<Stackage*> deps_vec;
-    gatherDeps(stackage, direct, deps_vec);
+    gatherDeps(stackage, direct, POSTORDER, deps_vec);
     for(std::vector<Stackage*>::const_iterator it = deps_vec.begin();
         it != deps_vec.end();
         ++it)
@@ -665,16 +733,19 @@ Rosstackage::computeDeps(Stackage* stackage, bool ignore_errors)
 
 void
 Rosstackage::gatherDeps(Stackage* stackage, bool direct, 
+                        traversal_order_t order,
                         std::vector<Stackage*>& deps)
 {
   std::tr1::unordered_set<Stackage*> deps_hash;
   std::vector<std::string> indented_deps;
-  gatherDepsFull(stackage, direct, 0, deps_hash, deps, false, indented_deps);
+  gatherDepsFull(stackage, direct, order, 0, 
+                 deps_hash, deps, false, indented_deps);
 }
 
 // Pre-condition: computeDeps(stackage) succeeded
 void
-Rosstackage::gatherDepsFull(Stackage* stackage, bool direct, int depth, 
+Rosstackage::gatherDepsFull(Stackage* stackage, bool direct, 
+                            traversal_order_t order, int depth, 
                             std::tr1::unordered_set<Stackage*>& deps_hash,
                             std::vector<Stackage*>& deps,
                             bool get_indented_deps,
@@ -700,12 +771,14 @@ Rosstackage::gatherDepsFull(Stackage* stackage, bool direct, int depth,
       }
 
       deps_hash.insert(*it);
-      if(!direct)
-        gatherDepsFull(*it, direct, depth+1, deps_hash, deps,
-                       get_indented_deps, indented_deps);
       // We maintain the vector because the original rospack guaranteed
       // ordering in dep reporting.
-      if(first)
+      if(first && order == PREORDER)
+        deps.push_back(*it);
+      if(!direct)
+        gatherDepsFull(*it, direct, order, depth+1, deps_hash, deps,
+                       get_indented_deps, indented_deps);
+      if(first && order == POSTORDER)
         deps.push_back(*it);
     }
   }
@@ -946,6 +1019,80 @@ Rosstackage::validateCache()
   }
   fclose(cache);
   return ros_root_ok && ros_package_path_ok;
+}
+
+bool
+Rosstackage::expandExportString(Stackage* stackage,
+                                const std::string& instring,
+                                std::string& outstring)
+{
+  outstring = instring;
+  for(std::string::size_type i = outstring.find(MANIFEST_PREFIX);
+      i != std::string::npos;
+      i = outstring.find(MANIFEST_PREFIX))
+  {
+    outstring.replace(i, std::string(MANIFEST_PREFIX).length(), 
+                      stackage->path_);
+  }
+  
+  // Do backquote substitution.  E.g.,  if we find this string:
+  //   `pkg-config --cflags gdk-pixbuf-2.0`
+  // We replace it with the result of executing the command
+  // contained within the backquotes (reading from its stdout), which
+  // might be something like:
+  //   -I/usr/include/gtk-2.0 -I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include
+
+  // Construct and execute the string
+  // We do the assignment first to ensure that if backquote expansion (or
+  // anything else) fails, we'll get a non-zero exit status from pclose().
+  std::string cmd = std::string("ret=\"") + outstring + "\" && echo $ret";
+
+  // Remove embedded newlines
+  std::string token("\n");
+  for (std::string::size_type s = cmd.find(token); 
+       s != std::string::npos;
+       s = cmd.find(token, s))
+    cmd.replace(s,token.length(),std::string(" "));
+
+  FILE* p;
+  if(!(p = popen(cmd.c_str(), "r")))
+  {
+    std::string errmsg = 
+            std::string("failed to execute backquote expression ") +
+            cmd + " in " +
+            stackage->manifest_path_;
+    log_warn("librospack", errmsg, true);
+    return false;
+  }
+  else
+  {
+    char buf[8192];
+    memset(buf,0,sizeof(buf));
+    // Read the command's output
+    do
+    {
+      clearerr(p);
+      while(fgets(buf + strlen(buf),sizeof(buf)-strlen(buf)-1,p));
+    } while(ferror(p) && errno == EINTR);
+    // Close the subprocess, checking exit status
+    if(pclose(p) != 0)
+    {
+      std::string errmsg = 
+              std::string("got non-zero exit status from executing backquote expression ") +
+              cmd + " in " +
+              stackage->manifest_path_;
+      return false;
+    }
+    else
+    {
+      // Strip trailing newline, which was added by our call to echo
+      buf[strlen(buf)-1] = '\0';
+      // Replace the backquote expression with the new text
+      outstring = buf;
+    }
+  }
+
+  return true;
 }
 
 /////////////////////////////////////////////////////////////

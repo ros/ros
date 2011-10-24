@@ -39,7 +39,5 @@ main(int argc, char** argv)
   search_path.push_back("/Users/gerkey/code/ros/ros_comm");
   rs.crawl(search_path, false);
 
-  rs.debug_dump();
-
   return 0;
 }

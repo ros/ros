@@ -49,6 +49,11 @@
 #include <string.h>
 #include <errno.h>
 
+// TODO:
+//   recrawl on:
+//     package not found in cache
+//     package found in cache, but no manifest.xml present in filesystem
+
 namespace fs = boost::filesystem;
 
 namespace rospack
@@ -135,29 +140,13 @@ Rosstackage::Rosstackage(std::string manifest_name,
 }
 
 void
-Rosstackage::debug_dump()
-{
-  for(std::tr1::unordered_map<std::string, Stackage*>::const_iterator it = stackages_.begin();
-      it != stackages_.end();
-      ++it)
-  {
-    printf("%s:\n  %s\n  %s\n  %s\n",
-           it->first.c_str(),
-           it->second->name_.c_str(),
-           it->second->path_.c_str(),
-           it->second->manifest_path_.c_str());
-  }
-  printf("Total:%d\n", (int)stackages_.size());
-}
-
-void
 Rosstackage::crawl(const std::vector<std::string>& search_path,
                    bool force)
 {
+  if(crawled_)
+    return;
   if(!force)
   {
-    if(crawled_)
-      return;
     if(readCache())
        return;
   }

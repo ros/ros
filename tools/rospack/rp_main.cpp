@@ -75,7 +75,15 @@ main(int argc, char** argv)
     rospack::log_error("rospack", "no command given.  Try 'rospack help'");
     return 0;
   }
-  bool force = (command == "profile");
+  // For some commands, we force a crawl.  Definitely anything that does a
+  // depends-on calculation.
+  bool force = false;
+  if((command == "profile") ||
+     (command == "depends-on") ||
+     (command == "depends-on1") ||
+     (command == "langs") ||
+     (command == "list-duplicates"))
+    force = true;
   std::vector<std::string> search_path;
   if(!rospack::get_search_path_from_env(search_path))
     return 1;
@@ -219,9 +227,32 @@ main(int argc, char** argv)
       rospack::log_error("rospack", "invalid option(s) given");
       return 1;
     }
-    rospack::log_error("rospack", 
-                       std::string("command ") + command + " not implemented");
-    return 1;
+    std::vector<std::string> deps;
+    if(!rp.dependsOn("roslang", true, deps))
+      return 1;
+    const char* ros_lang_disable;
+    if((ros_lang_disable = getenv("ROS_LANG_DISABLE")))
+    {
+      std::vector<std::string> disable_langs;
+      boost::split(disable_langs, ros_lang_disable,
+                   boost::is_any_of(":"),
+                   boost::token_compress_on);
+      std::vector<std::string>::iterator it = deps.begin();
+      while(it != deps.end())
+      {
+        if(std::find(disable_langs.begin(), disable_langs.end(), *it) != 
+           disable_langs.end())
+          it = deps.erase(it);
+        else
+          ++it;
+      }
+    }
+    for(std::vector<std::string>::const_iterator it = deps.begin();
+        it != deps.end();
+        ++it)
+      printf("%s ", it->c_str());
+    printf("\n");
+    return 0;
   }
   // COMMAND: depends [package] (alias: deps)
   else if(command == "depends" || command == "deps" || 
@@ -661,6 +692,14 @@ parse_compiler_flags(const std::string& instring,
           it = iit;
         }
       }
+    }
+    // Special case: if we're told to look for -l, then also find *.a
+    else if(it->size() > 2 && 
+            (*it)[0] == '/' && 
+            it->substr(it->size()-2) == ".a")
+    {
+      if(select)
+        intermediate.append((*it) + " ");
     }
     else if(!select)
       intermediate.append((*it) + " ");

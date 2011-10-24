@@ -93,6 +93,7 @@ class Rosstackage
   protected:
     std::tr1::unordered_map<std::string, Stackage*> stackages_;
     void crawl(const std::vector<std::string>& search_path, bool force);
+    bool inStackage(std::string& name);
 
   public:
     Rosstackage(std::string manifest_name,
@@ -101,7 +102,6 @@ class Rosstackage
                 bool quiet);
     virtual ~Rosstackage();
 
-    bool inStackage(std::string& name);
     bool find(const std::string& name, std::string& path); 
     void list(std::vector<std::pair<std::string, std::string> >& list);
     void listDuplicates(std::vector<std::string>& dups);
@@ -124,8 +124,6 @@ class Rosstackage
     bool plugins(const std::string& name, const std::string& attrib, 
                  const std::string& top,
                  std::vector<std::string>& flags);
-
-    void debug_dump();
 };
 
 class Rospack : public Rosstackage

@@ -465,15 +465,12 @@ function _roscomplete_rosservice {
         COMPREPLY=($(compgen -W "$opts" -- ${arg}))
     elif [[ $COMP_CWORD == 2 ]]; then
         case ${COMP_WORDS[1]} in
-            uri|list|type)
+            uri|list|type|call)
                 opts=`rosservice list 2> /dev/null`
                 COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
                 ;;
             find)
                 # Need a clever way to do message searching
-                ;;
-            call)
-                # This takes more logic.
                 ;;
         esac
     fi

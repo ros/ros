@@ -23,8 +23,8 @@ distribution.
 */
 
 
-#ifndef TINYXML_INCLUDED
-#define TINYXML_INCLUDED
+#ifndef ROSPACK_TINYXML_INCLUDED
+#define ROSPACK_TINYXML_INCLUDED
 
 #ifdef _MSC_VER
 #pragma warning( push )

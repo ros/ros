@@ -66,6 +66,10 @@ class Rosstackage
     void crawlDetail(const std::string& path,
                      bool force,
                      int depth);
+    bool dependsOnDetail(const std::string& name, bool direct,
+                         std::vector<Stackage*>& deps);
+    bool depsDetail(const std::string& name, bool direct,
+                    std::vector<Stackage*>& deps);
     bool isStackage(const std::string& path);
     void loadManifest(Stackage* stackage);
     void computeDeps(Stackage* stackage, bool ignore_errors=false);
@@ -116,6 +120,9 @@ class Rosstackage
              std::vector<std::string>& vcs);
     bool exports(const std::string& name, const std::string& lang,
                  const std::string& attrib, bool deps_only,
+                 std::vector<std::string>& flags);
+    bool plugins(const std::string& name, const std::string& attrib, 
+                 const std::string& top,
                  std::vector<std::string>& flags);
 
     void debug_dump();

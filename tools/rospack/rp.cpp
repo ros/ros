@@ -244,27 +244,13 @@ bool
 Rosstackage::deps(const std::string& name, bool direct,
                   std::vector<std::string>& deps)
 {
-  if(!stackages_.count(name))
-  {
-    log_error("librospack", std::string("no such package ") + name);
+  std::vector<Stackage*> stackages;
+  if(!depsDetail(name, direct, stackages))
     return false;
-  }
-  Stackage* stackage = stackages_[name];
-  try
-  {
-    computeDeps(stackage);
-    std::vector<Stackage*> deps_vec;
-    gatherDeps(stackage, direct, POSTORDER, deps_vec);
-    for(std::vector<Stackage*>::const_iterator it = deps_vec.begin();
-        it != deps_vec.end();
-        ++it)
-      deps.push_back((*it)->name_);
-  }
-  catch(Exception& e)
-  {
-    log_error("librospack", e.what());
-    return false;
-  }
+  for(std::vector<Stackage*>::const_iterator it = stackages.begin();
+      it != stackages.end();
+      ++it)
+    deps.push_back((*it)->name_);
   return true;
 }
 
@@ -272,34 +258,13 @@ bool
 Rosstackage::dependsOn(const std::string& name, bool direct,
                        std::vector<std::string>& deps)
 {
-  if(!stackages_.count(name))
-    log_warn("librospack", std::string("no such package ") + name);
-  try
-  {
-    for(std::tr1::unordered_map<std::string, Stackage*>::const_iterator it = stackages_.begin();
-        it != stackages_.end();
-        ++it)
-    {
-      computeDeps(it->second, true);
-      std::vector<Stackage*> deps_vec;
-      gatherDeps(it->second, direct, POSTORDER, deps_vec);
-      for(std::vector<Stackage*>::const_iterator iit = deps_vec.begin();
-          iit != deps_vec.end();
-          ++iit)
-      {
-        if((*iit)->name_ == name)
-        {
-          deps.push_back(it->second->name_);
-          break;
-        }
-      }
-    }
-  }
-  catch(Exception& e)
-  {
-    log_error("librospack", e.what());
+  std::vector<Stackage*> stackages;
+  if(!dependsOnDetail(name, direct, stackages))
     return false;
-  }
+  for(std::vector<Stackage*>::const_iterator it = stackages.begin();
+      it != stackages.end();
+      ++it)
+    deps.push_back((*it)->name_);
   return true;
 }
 
@@ -521,6 +486,65 @@ Rosstackage::exports(const std::string& name, const std::string& lang,
   return true;
 }
 
+bool 
+Rosstackage::plugins(const std::string& name, const std::string& attrib, 
+                     const std::string& top,
+                     std::vector<std::string>& flags)
+{
+  // Find everybody who depends directly on the package in question
+  std::vector<Stackage*> stackages;
+  if(!dependsOnDetail(name, true, stackages))
+    return false;
+  // If top was given, filter to include only those package on which top
+  // depends.
+  if(top.size())
+  {
+    std::vector<Stackage*> top_deps;
+    if(!depsDetail(top, false, top_deps))
+      return false;
+    std::tr1::unordered_set<Stackage*> top_deps_set;
+    for(std::vector<Stackage*>::iterator it = top_deps.begin();
+        it != top_deps.end();
+        ++it)
+      top_deps_set.insert(*it);
+    std::vector<Stackage*>::iterator it = stackages.begin();
+    while(it != stackages.end())
+    {
+      if((*it)->name_ != top &&
+         (top_deps_set.find(*it) == top_deps_set.end()))
+        it = stackages.erase(it);
+      else
+        ++it;
+    }
+  }
+  // Now go looking for the manifest data
+  for(std::vector<Stackage*>::const_iterator it = stackages.begin();
+      it != stackages.end();
+      ++it)
+  {
+    rospack_tinyxml::TiXmlElement* root = get_manifest_root(*it);
+    for(rospack_tinyxml::TiXmlElement* ele = root->FirstChildElement(MANIFEST_TAG_EXPORT);
+        ele;
+        ele = ele->NextSiblingElement(MANIFEST_TAG_EXPORT))
+    {
+      for(rospack_tinyxml::TiXmlElement* ele2 = ele->FirstChildElement(name);
+          ele2;
+          ele2 = ele2->NextSiblingElement(name))
+      {
+        const char *att_str;
+        if((att_str = ele2->Attribute(attrib.c_str())))
+        {
+          std::string expanded_str;
+          if(!expandExportString(*it, att_str, expanded_str))
+            return false;
+          flags.push_back((*it)->name_ + " " + expanded_str);
+        }
+      }
+    }
+  }
+  return true;
+}
+
 bool
 Rosstackage::depsMsgSrv(const std::string& name, bool direct, 
                         std::vector<std::string>& gens)
@@ -563,6 +587,68 @@ Rosstackage::depsMsgSrv(const std::string& name, bool direct,
 /////////////////////////////////////////////////////////////
 // Rosstackage methods (private)
 /////////////////////////////////////////////////////////////
+bool
+Rosstackage::depsDetail(const std::string& name, bool direct,
+                        std::vector<Stackage*>& deps)
+{
+  if(!stackages_.count(name))
+  {
+    log_error("librospack", std::string("no such package ") + name);
+    return false;
+  }
+  Stackage* stackage = stackages_[name];
+  try
+  {
+    computeDeps(stackage);
+    std::vector<Stackage*> deps_vec;
+    gatherDeps(stackage, direct, POSTORDER, deps_vec);
+    for(std::vector<Stackage*>::const_iterator it = deps_vec.begin();
+        it != deps_vec.end();
+        ++it)
+      deps.push_back(*it);
+  }
+  catch(Exception& e)
+  {
+    log_error("librospack", e.what());
+    return false;
+  }
+  return true;
+}
+bool
+Rosstackage::dependsOnDetail(const std::string& name, bool direct,
+                             std::vector<Stackage*>& deps)
+{
+  if(!stackages_.count(name))
+    log_warn("librospack", std::string("no such package ") + name);
+  try
+  {
+    for(std::tr1::unordered_map<std::string, Stackage*>::const_iterator it = stackages_.begin();
+        it != stackages_.end();
+        ++it)
+    {
+      computeDeps(it->second, true);
+      std::vector<Stackage*> deps_vec;
+      gatherDeps(it->second, direct, POSTORDER, deps_vec);
+      for(std::vector<Stackage*>::const_iterator iit = deps_vec.begin();
+          iit != deps_vec.end();
+          ++iit)
+      {
+        if((*iit)->name_ == name)
+        {
+          deps.push_back(it->second);
+          break;
+        }
+      }
+    }
+  }
+  catch(Exception& e)
+  {
+    log_error("librospack", e.what());
+    return false;
+  }
+  return true;
+}
+
 bool
 Rosstackage::isStackage(const std::string& path)
 {
@@ -743,6 +829,7 @@ Rosstackage::gatherDeps(Stackage* stackage, bool direct,
 }
 
 // Pre-condition: computeDeps(stackage) succeeded
+// TODO: possibly cache results
 void
 Rosstackage::gatherDepsFull(Stackage* stackage, bool direct, 
                             traversal_order_t order, int depth, 

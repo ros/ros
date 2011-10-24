@@ -417,9 +417,24 @@ main(int argc, char** argv)
   // COMMAND: plugins --attrib=<attrib> [--top=<toppkg>] [package]
   else if(command == "plugins")
   {
-    rospack::log_error("rospack", 
-                       std::string("command ") + command + " not implemented");
-    return 1;
+    if(!package.size() || !attrib.size())
+    {
+      rospack::log_error("rospack", "no package / attrib given");
+      return 1;
+    }
+    if(target.size() || length_str.size() || zombie_only)
+    {
+      rospack::log_error("rospack", "invalid option(s) given");
+      return 1;
+    }
+    std::vector<std::string> flags;
+    if(!rp.plugins(package, attrib, top, flags))
+      return 1;
+    for(std::vector<std::string>::const_iterator it = flags.begin();
+        it != flags.end();
+        ++it)
+      printf("%s\n", it->c_str());
+    return 0;
   }
   // COMMAND: cflags-only-I [--deps-only] [package]
   else if(command == "cflags-only-I")

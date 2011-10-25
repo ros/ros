@@ -87,7 +87,6 @@ main(int argc, char** argv)
   std::vector<std::string> search_path;
   if(!rospack::get_search_path_from_env(search_path))
     return 1;
-  rp.crawl(search_path, force);
 
   if(vm.count("package"))
   {
@@ -127,18 +126,27 @@ main(int argc, char** argv)
   // COMMAND: profile
   if(command == "profile")
   {
-    if(package_given || target.size() || top.size() || length_str.size() || 
-       zombie_only || deps_only || lang.size() || attrib.size())
+    if(package_given || target.size() || top.size() || 
+       deps_only || lang.size() || attrib.size())
     {
       rospack::log_error("rospack", "invalid option(s) given");
       return 1;
     }
-    rospack::log_error("rospack", "profile output not yet implemented");
-    // TODO
+    std::vector<std::string> dirs;
+    if(rp.profile(search_path, zombie_only, length, dirs))
+      return 1;
+    for(std::vector<std::string>::const_iterator it = dirs.begin();
+        it != dirs.end();
+        ++it)
+      printf("%s\n", (*it).c_str());
     return 0;
   }
+
+  // We crawl here because profile (above) does its own special crawl.
+  rp.crawl(search_path, force);
+  
   // COMMAND: find [package]
-  else if(command == "find")
+  if(command == "find")
   {
     if(!package.size())
     {

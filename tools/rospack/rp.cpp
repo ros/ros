@@ -40,6 +40,7 @@
   #include <limits.h>
   #include <pwd.h>
   #include <unistd.h>
+  #include <sys/time.h>
 #endif
 
 #include <sys/stat.h>
@@ -86,6 +87,7 @@ static const double DEFAULT_MAX_CACHE_AGE = 60.0;
 static bool QUIET = false;
 
 rospack_tinyxml::TiXmlElement* get_manifest_root(Stackage* stackage);
+double time_since_epoch();
 
 class Exception : public std::runtime_error
 {
@@ -124,6 +126,29 @@ class Stackage
 
 };
 
+class DirectoryCrawlRecord
+{
+  public:
+    std::string path_;
+    bool zombie_;
+    double start_time_;
+    double crawl_time_;
+    size_t start_num_pkgs_;
+    DirectoryCrawlRecord(std::string path, 
+                         double start_time, 
+                         size_t start_num_pkgs) :
+            path_(path),
+            zombie_(false),
+            start_time_(start_time),
+            crawl_time_(0.0),
+            start_num_pkgs_(start_num_pkgs) {}
+};
+bool cmpDirectoryCrawlRecord(DirectoryCrawlRecord* i,
+                             DirectoryCrawlRecord* j)
+{
+  return (i->crawl_time_ < j->crawl_time_);
+}
+
 /////////////////////////////////////////////////////////////
 // Rosstackage methods (public/protected)
 /////////////////////////////////////////////////////////////
@@ -139,6 +164,25 @@ Rosstackage::Rosstackage(std::string manifest_name,
   QUIET = quiet;
 }
 
+bool
+Rosstackage::isStackage(const std::string& path)
+{
+  if(!fs::is_directory(path))
+    return false;
+
+  for(fs::directory_iterator dit = fs::directory_iterator(path);
+      dit != fs::directory_iterator();
+      ++dit)
+  {
+    if(!fs::is_regular_file(dit->path()))
+      continue;
+    
+    if(dit->path().filename() == manifest_name_)
+      return true;
+  }
+  return false;
+}
+
 void
 Rosstackage::crawl(const std::vector<std::string>& search_path,
                    bool force)
@@ -151,11 +195,13 @@ Rosstackage::crawl(const std::vector<std::string>& search_path,
        return;
   }
 
+  std::vector<DirectoryCrawlRecord*> dummy;
+  std::tr1::unordered_set<std::string> dummy2;
   for(std::vector<std::string>::const_iterator p = search_path.begin();
       p != search_path.end();
       ++p)
   {
-    crawlDetail(*p, force, 1);
+    crawlDetail(*p, force, 1, false, dummy, dummy2);
   }
   
   crawled_ = true;
@@ -603,6 +649,7 @@ Rosstackage::depsDetail(const std::string& name, bool direct,
   }
   return true;
 }
+
 bool
 Rosstackage::dependsOnDetail(const std::string& name, bool direct,
                              std::vector<Stackage*>& deps)
@@ -639,22 +686,63 @@ Rosstackage::dependsOnDetail(const std::string& name, bool direct,
 }
 
 bool
-Rosstackage::isStackage(const std::string& path)
+Rosstackage::profile(const std::vector<std::string>& search_path,
+                     bool zombie_only,
+                     int length,
+                     std::vector<std::string>& dirs)
 {
-  if(!fs::is_directory(path))
-    return false;
-
-  for(fs::directory_iterator dit = fs::directory_iterator(path);
-      dit != fs::directory_iterator();
-      ++dit)
+  double start = time_since_epoch();
+  std::vector<DirectoryCrawlRecord*> dcrs;
+  std::tr1::unordered_set<std::string> dcrs_hash;
+  for(std::vector<std::string>::const_iterator p = search_path.begin();
+      p != search_path.end();
+      ++p)
   {
-    if(!fs::is_regular_file(dit->path()))
-      continue;
-    
-    if(dit->path().filename() == manifest_name_)
-      return true;
+    crawlDetail(*p, true, 1, true, dcrs, dcrs_hash);
   }
-  return false;
+  if(!zombie_only)
+  {
+    double total = time_since_epoch() - start;
+    char buf[16];
+    snprintf(buf, sizeof(buf), "%.6f", total);
+    dirs.push_back(std::string("Full tree crawl took ") + buf + " seconds.");
+    dirs.push_back("Directories marked with (*) contain no manifest.  You may");
+    dirs.push_back("want to delete these directories.");
+    dirs.push_back("To get just of list of directories without manifests,");
+    dirs.push_back("re-run the profile with --zombie-only");
+    dirs.push_back("-------------------------------------------------------------");
+  }
+  std::sort(dcrs.begin(), dcrs.end(), cmpDirectoryCrawlRecord);
+  std::reverse(dcrs.begin(), dcrs.end());
+  int i=0;
+  for(std::vector<DirectoryCrawlRecord*>::const_iterator it = dcrs.begin();
+      it != dcrs.end();
+      ++it)
+  {
+    if(zombie_only)
+    {
+      if((*it)->zombie_)
+      {
+        if(length < 0 || i < length)
+          dirs.push_back((*it)->path_);
+        i++;
+      }
+    }
+    else
+    {
+      char buf[16];
+      snprintf(buf, sizeof(buf), "%.6f", (*it)->crawl_time_);
+      if(length < 0 || i < length)
+        dirs.push_back(std::string(buf) + " " + 
+                       ((*it)->zombie_ ? "* " : "  ") +
+                       (*it)->path_);
+      i++;
+    }
+    delete *it;
+  }
+
+  writeCache();
+  return 0;
 }
 
 void
@@ -679,7 +767,10 @@ Rosstackage::addStackage(const std::string& path)
 void
 Rosstackage::crawlDetail(const std::string& path,
                          bool force,
-                         int depth)
+                         int depth,
+                         bool collect_profile_data,
+                         std::vector<DirectoryCrawlRecord*>& profile_data,
+                         std::tr1::unordered_set<std::string>& profile_hash)
 {
   if(depth > MAX_CRAWL_DEPTH)
     throw Exception("maximum depth exceeded during crawl");
@@ -696,6 +787,19 @@ Rosstackage::crawlDetail(const std::string& path,
   fs::path nosubdirs = fs::path(path) / ROSPACK_NOSUBDIRS;
   if(fs::is_regular_file(nosubdirs))
     return;
+
+  DirectoryCrawlRecord* dcr = NULL;
+  if(collect_profile_data)
+  {
+    if(profile_hash.find(path) == profile_hash.end())
+    {
+      dcr = new DirectoryCrawlRecord(path,
+                                     time_since_epoch(),
+                                     stackages_.size());
+      profile_data.push_back(dcr);
+      profile_hash.insert(path);
+    }
+  }
 
   if(crawl_dir_ == CRAWL_DOWN)
   {
@@ -715,7 +819,8 @@ Rosstackage::crawlDetail(const std::string& path,
         if(name.size() == 0 || name[0] == '.')
           continue;
 
-        crawlDetail(dit->path().string(), force, depth+1);
+        crawlDetail(dit->path().string(), force, depth+1,
+                    collect_profile_data, profile_data, profile_hash);
       }
     }
   }
@@ -723,7 +828,18 @@ Rosstackage::crawlDetail(const std::string& path,
   {
     std::string parent = boost::filesystem::path(path).parent_path().string();
     if(parent.size())
-      crawlDetail(parent, force, depth+1);
+      crawlDetail(parent, force, depth+1,
+                  collect_profile_data, profile_data, profile_hash);
+  }
+
+  if(collect_profile_data && dcr != NULL)
+  {
+    // Measure the elapsed time
+    dcr->crawl_time_ = time_since_epoch() - dcr->start_time_;
+    // If the number of packages didn't change while crawling, 
+    // then this directory is a zombie
+    if(stackages_.size() == dcr->start_num_pkgs_)
+      dcr->zombie_ = true;
   }
 }
 
@@ -818,7 +934,6 @@ Rosstackage::gatherDeps(Stackage* stackage, bool direct,
 }
 
 // Pre-condition: computeDeps(stackage) succeeded
-// TODO: possibly cache results
 void
 Rosstackage::gatherDepsFull(Stackage* stackage, bool direct, 
                             traversal_order_t order, int depth, 
@@ -846,16 +961,19 @@ Rosstackage::gatherDepsFull(Stackage* stackage, bool direct,
         indented_deps.push_back(indented_dep);
       }
 
-      deps_hash.insert(*it);
-      // We maintain the vector because the original rospack guaranteed
-      // ordering in dep reporting.
-      if(first && order == PREORDER)
-        deps.push_back(*it);
-      if(!direct)
-        gatherDepsFull(*it, direct, order, depth+1, deps_hash, deps,
-                       get_indented_deps, indented_deps);
-      if(first && order == POSTORDER)
-        deps.push_back(*it);
+      if(first)
+      {
+        deps_hash.insert(*it);
+        // We maintain the vector because the original rospack guaranteed
+        // ordering in dep reporting.
+        if(order == PREORDER)
+          deps.push_back(*it);
+        if(!direct)
+          gatherDepsFull(*it, direct, order, depth+1, deps_hash, deps,
+                         get_indented_deps, indented_deps);
+        if(order == POSTORDER)
+          deps.push_back(*it);
+      }
     }
   }
 }
@@ -1239,6 +1357,32 @@ get_manifest_root(Stackage* stackage)
     throw Exception(errmsg);
   }
   return ele;
+}
+
+double 
+time_since_epoch()
+{
+#if defined(WIN32)
+  #if defined(_MSC_VER) || defined(_MSC_EXTENSIONS)
+    #define DELTA_EPOCH_IN_MICROSECS  11644473600000000Ui64
+  #else
+    #define DELTA_EPOCH_IN_MICROSECS  11644473600000000ULL
+  #endif
+  FILETIME ft;
+  unsigned __int64 tmpres = 0;
+
+  GetSystemTimeAsFileTime(&ft);
+  tmpres |= ft.dwHighDateTime;
+  tmpres <<= 32;
+  tmpres |= ft.dwLowDateTime;
+  tmpres /= 10;
+  tmpres -= DELTA_EPOCH_IN_MICROSECS;
+  return static_cast<double>(tmpres) / 1e6;
+#else
+  struct timeval tod;
+  gettimeofday(&tod, NULL);
+  return tod.tv_sec + 1e-6 * tod.tv_usec;
+#endif
 }
 
 

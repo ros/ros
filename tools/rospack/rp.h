@@ -52,6 +52,7 @@ typedef enum
 } traversal_order_t;
 
 class Stackage;
+class DirectoryCrawlRecord;
 
 class Rosstackage
 {
@@ -65,7 +66,10 @@ class Rosstackage
     void addStackage(const std::string& path);
     void crawlDetail(const std::string& path,
                      bool force,
-                     int depth);
+                     int depth,
+                     bool collect_profile_data,
+                     std::vector<DirectoryCrawlRecord*>& profile_data,
+                     std::tr1::unordered_set<std::string>& profile_hash);
     bool dependsOnDetail(const std::string& name, bool direct,
                          std::vector<Stackage*>& deps);
     bool depsDetail(const std::string& name, bool direct,
@@ -124,6 +128,10 @@ class Rosstackage
     bool plugins(const std::string& name, const std::string& attrib, 
                  const std::string& top,
                  std::vector<std::string>& flags);
+    bool profile(const std::vector<std::string>& search_path,
+                 bool zombie_only,
+                 int length,
+                 std::vector<std::string>& dirs);
 };
 
 class Rospack : public Rosstackage

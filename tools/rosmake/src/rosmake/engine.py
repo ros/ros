@@ -662,7 +662,7 @@ class RosMakeAll:
         parser.add_option("-a", "--all", dest="build_all", default=False,
                           action="store_true", help="select all packages")
         parser.add_option("-i", "--mark-installed", dest="mark_installed", default=False,
-                          action="store_true", help="On successful build, mark packages as installed with ROS_NOBUILD")
+                          action="store_true", help="On successful build, mark specified packages as installed with ROS_NOBUILD")
         parser.add_option("-u", "--unmark-installed", dest="unmark_installed", default=False,
                           action="store_true", help="Remove ROS_NOBUILD from the specified packages.  This will not build anything.")
         parser.add_option("-v", dest="verbose", default=False,

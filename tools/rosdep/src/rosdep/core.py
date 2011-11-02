@@ -286,7 +286,8 @@ class RosdepLookupPackage:
 
 
                 if override:
-                    print( "ROSDEP_OVERRIDE: %s being overridden with %s from %s"%(key, yaml_dict[key], source_path), file=sys.stderr)
+                    if "ROSDEP_DEBUG" in os.environ:
+                        print( "ROSDEP_OVERRIDE: %s being overridden with %s from %s"%(key, yaml_dict[key], source_path), file=sys.stderr)
                     self.rosdep_source[key].append("Overriding with "+source_path)
                     self.rosdep_map[key] = rosdep_entry
                 else:

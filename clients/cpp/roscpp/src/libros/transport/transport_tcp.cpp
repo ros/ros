@@ -554,9 +554,8 @@ TransportTCPPtr TransportTCP::accept()
 
 void TransportTCP::socketUpdate(int events)
 {
+  boost::recursive_mutex::scoped_lock lock(close_mutex_);
   {
-    boost::recursive_mutex::scoped_lock lock(close_mutex_);
-
     if (closed_)
     {
       return;

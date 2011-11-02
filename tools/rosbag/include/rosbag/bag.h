@@ -282,7 +282,7 @@ private:
     uint64_t  curr_chunk_data_pos_;
 
     std::map<std::string, uint32_t>                topic_connection_ids_;
-    std::map<ros::M_string*, uint32_t>             header_connection_ids_;
+    std::map<ros::M_string, uint32_t>              header_connection_ids_;
     std::map<uint32_t, ConnectionInfo*>            connections_;
 
     std::vector<ChunkInfo>                         chunks_;
@@ -478,8 +478,7 @@ void Bag::doWrite(std::string const& topic, ros::Time const& time, T const& msg,
     // Get ID for connection header
     ConnectionInfo* connection_info = NULL;
     uint32_t conn_id = 0;
-    ros::M_string* header_address = connection_header.get();
-    if (header_address == NULL) {
+    if (!connection_header) {
         // No connection header: we'll manufacture one, and store by topic
 
         std::map<std::string, uint32_t>::iterator topic_connection_ids_iter = topic_connection_ids_.find(topic);
@@ -495,10 +494,10 @@ void Bag::doWrite(std::string const& topic, ros::Time const& time, T const& msg,
     else {
         // Store the connection info by the address of the connection header
 
-        std::map<ros::M_string*, uint32_t>::iterator header_connection_ids_iter = header_connection_ids_.find(header_address);
+        std::map<ros::M_string, uint32_t>::iterator header_connection_ids_iter = header_connection_ids_.find(*connection_header);
         if (header_connection_ids_iter == header_connection_ids_.end()) {
             conn_id = connections_.size();
-            header_connection_ids_[header_address] = conn_id;
+            header_connection_ids_[*connection_header] = conn_id;
         }
         else {
             conn_id = header_connection_ids_iter->second;

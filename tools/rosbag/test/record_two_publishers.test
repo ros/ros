@@ -1,0 +1,10 @@
+<launch>
+  <node pkg="rostopic" type="rostopic" name="rostopic_pub1" 
+        args="pub -r 10 chatter std_msgs/String chatter1"/>
+  <node pkg="rostopic" type="rostopic" name="rostopic_pub2" 
+        args="pub -r 10 chatter std_msgs/String chatter2"/>
+  <node name="recorder" pkg="rosbag" type="record" 
+        args="chatter -O /tmp/test_rosbag_record_two_publishers --duration=5"/>
+  <test test-name="connection_count" pkg="rosbag" type="connection_count.py"/>
+</launch>
+

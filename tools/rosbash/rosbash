@@ -274,6 +274,68 @@ function _msg_opts {
     fi
 }
 
+function _srv_opts {
+    local arg pkgs pkgname srvname searchsrv path count opts
+
+    if [[ $1 =~ .+/.* ]]; then
+        pkgname=${1%%/*}
+        srvname=${1#*/}
+        searchsrv=1
+    else
+        pkgname=${1}
+    fi
+
+    if [[ -z ${searchsrv} ]]; then
+        pkgs=(`rospack list | grep "^${pkgname}"`)
+        count=0
+
+        opts=""
+
+        for (( i = 0 ; i < ${#pkgs[@]} ; i=i+2 )); do
+            if [[ -d ${pkgs[i+1]}/srv ]]; then
+                opts="$opts ${pkgs[i]}/"
+                pkgname=${pkgs[i]}
+                count=$((count+1))
+            fi
+        done
+
+        if [[ $count -gt 1 ]]; then
+            echo $opts
+            return 0
+        fi
+    fi
+
+    path=`rospack find ${pkgname} 2> /dev/null`
+
+    if [ $? -eq 0 ] && [ -d ${path}/srv ]; then
+        echo `find -L ${path}/srv -maxdepth 1 -mindepth 1 -name *.srv ! -regex ".*/[.].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.srv/${pkgname}\/\1/g"`
+    fi
+}
+
+function _roscomplete_rossrv {
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+
+    if [[ $COMP_CWORD == 1 ]]; then
+        opts="show users md5 package packages"
+        COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+    elif [[ $COMP_CWORD == 2 ]]; then
+        case ${COMP_WORDS[1]} in
+            show|users|md5)
+                opts=`_srv_opts ${COMP_WORDS[$COMP_CWORD]}`
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                ;;
+            package)
+                opts=`rospack list-names`
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                ;;
+            packages)
+                # This shouldn't really have a completion rule
+                ;;
+        esac
+    fi
+}
+
 function _roscomplete_search_dir {
     local arg opts pkgdir
     COMPREPLY=()
@@ -567,4 +629,5 @@ complete -F "_roscomplete_rosparam" "rosparam"
 complete -F "_roscomplete_rostopic" "rostopic"
 complete -F "_roscomplete_rosservice" "rosservice"
 complete -F "_roscomplete_rosmsg" "rosmsg"
+complete -F "_roscomplete_rossrv" "rossrv"
 complete -F "_roscomplete_roscreate_pkg" "roscreate-pkg"

@@ -234,6 +234,7 @@ class RoslibStacksTest(unittest.TestCase):
             
     def test_get_stack_version(self):
         from roslib.stacks import get_stack_version
+        
 
         test_dir = os.path.join(roslib.packages.get_pkg_dir('test_roslib'), 'test', 'stack_tests', 's1')
         env = os.environ.copy()

@@ -33,6 +33,11 @@ complete rosmsg \
    'n@{show,users}@`rostopic list -v | grep " \* " | cut -f 4 -d " " | grep -v unknown | sed -e "s/[\d93\d91]//g"`@' \
    'n/{package,packages}/`rospack list-names`/'
 
+complete rossrv \
+   'p/1/(show users package packages)/' \
+   'n@{show,users}@`rostopic list -v | grep " \* " | cut -f 4 -d " +" | grep -v unknown | sed -e "s/[\d93\d91]//g"`@' \
+   'n/{package,packages}/`rospack list-names`/'
+
 complete rosrun \
    'p/1/`rospack list-names`/' \
    'p@2@`rospack find $:1 | xargs -I 1 find 1 -perm /a+x -type f -printf "%f\n"`@'

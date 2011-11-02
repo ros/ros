@@ -93,80 +93,24 @@ def get_stack_dir(stack, env=None):
     @rtype: str
     @raise InvalidROSStackException: if stack cannot be located.
     """
-    
-    # it's possible to get incorrect results from this cache
-    # implementation by manipulating the environment and calling this
-    # from multiple threads.  as that is an unusual use case and would
-    # require a slower implmentation, it's not supported. the
-    # interpretation of this routine is get_stack_dir for the
-    # environment this process was launched in.
-    global _dir_cache_marker 
-
-    if env is None:
-        env = os.environ
-    if stack in _dir_cache:
-        ros_root = env[ROS_ROOT]
-        ros_package_path = env.get(ROS_PACKAGE_PATH, '')
-
-        # we don't attempt to be thread-safe to environment changes,
-        # however we do need to be threadsafe to cache invalidation.
-        try:
-            if _dir_cache_marker == (ros_root, ros_package_path):
-                d = _dir_cache[stack]
-                if os.path.isfile(os.path.join(d, STACK_FILE)):
-                    return d
-                else:
-                    # invalidate the cache
-                    _dir_cache_marker = None
-                    _dir_cache.clear()
-        except KeyError:
-            pass
-    _update_stack_cache(env=env) #update cache
+    _init_rosstack(env=env)
     try:
-        val = _dir_cache[stack]
-    except KeyError:
-        raise InvalidROSStackException("Cannot location installation of stack %s. ROS_ROOT[%s] ROS_PACKAGE_PATH[%s]"%(stack, env[ROS_ROOT], env.get(ROS_PACKAGE_PATH, '')))
-    return val
+        return _rosstack.get_path(stack)
+    except rospkg.ResourceNotFound:
+        # preserve old signature
+        raise InvalidROSStackException(stack)
 
-# rosstack directory cache
-_dir_cache = {}
-# stores ROS_ROOT, ROS_PACKAGE_PATH of _dir_cache
-_dir_cache_marker = None
+_rosstack = None
+_ros_paths = None
 
-def _update_stack_cache(force=False, env=None):
-    """
-    Update _dir_cache if environment has changed since last cache build.
-    
-    @param env: override environment variables
-    @type  env: {str: str}
-    @param force: force cache rebuild regardless of environment variables
-    @type  force: bool
-    """
-    global _dir_cache_marker
+def _init_rosstack(env=None):
+    global _rosstack, _ros_paths
     if env is None:
         env = os.environ
-    ros_root = env[ROS_ROOT]
-    ros_package_path = env.get(ROS_PACKAGE_PATH, '')
-    
-    if _dir_cache_marker == (ros_root, ros_package_path):
-        return
-    _dir_cache.clear()
-    _dir_cache_marker = ros_root, ros_package_path
-
-    pkg_dirs = rospkg.environment.compute_package_paths(ros_root, ros_package_path)
-    pkg_dirs.reverse() # cpp has reverse precedence order
-    # ros is assumed to be at ROS_ROOT
-    if os.path.exists(os.path.join(ros_root, 'stack.xml')):
-        _dir_cache['ros'] = ros_root
-        pkg_dirs.remove(ros_root)
-
-    # pass in accumulated stacks list to each call. This ensures
-    # precedence (i.e. that stacks first on pkg_dirs path win). 
-    stacks = []
-    for pkg_root in pkg_dirs:
-        # list_stacks_by_path will append list into stacks, so that
-        # each call accumulates in it.
-        list_stacks_by_path(pkg_root, stacks, cache=_dir_cache)
+    ros_paths = rospkg.get_ros_paths(env)
+    if ros_paths != _ros_paths:
+        _ros_paths = ros_paths
+        _rosstack = rospkg.RosStack(ros_paths)
     
 def list_stacks(env=None):
     """
@@ -179,8 +123,8 @@ def list_stacks(env=None):
     @return: complete list of stacks names in ROS environment
     @rtype: [str]
     """
-    _update_stack_cache(env=env)
-    return list(_dir_cache.keys()) #py3k
+    _init_rosstack(env=env)
+    return _rosstack.list()
 
 def list_stacks_by_path(path, stacks=None, cache=None):
     """
@@ -243,8 +187,9 @@ def expand_to_packages(names, env=None):
     """
     if env is None:
         env = os.environ
-    rospack = rospkg.RosPack(ros_root=rospkg.get_ros_root(env), ros_package_path=rospkg.get_ros_package_path(env))
-    rosstack = rospkg.RosStack(ros_root=rospkg.get_ros_root(env), ros_package_path=rospkg.get_ros_package_path(env))
+    ros_paths = rospkg.get_ros_paths(env)
+    rospack = rospkg.RosPack(ros_paths)
+    rosstack = rospkg.RosStack(ros_paths)
     return rospkg.expand_to_packages(names, rospack, rosstack)
 
 def get_stack_version(stack, env=None):
@@ -255,7 +200,8 @@ def get_stack_version(stack, env=None):
     @return: version number of stack, or None if stack is unversioned.
     @rtype: str
     """
-    return get_stack_version_by_dir(get_stack_dir(stack, env=env))
+    _init_rosstack(env=env)
+    return _rosstack.get_stack_version(stack)
 
 def get_stack_version_by_dir(stack_dir):
     """

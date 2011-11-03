@@ -1433,8 +1433,8 @@ Prefix argument allows you to edit the rosrun command before executing it."
           (set-process-sentinel process '(lambda (proc event)
                                            (let ((buf (process-buffer proc)))
                                              (message "%s has terminated; restarting" ros-run-executable)
-                                             (rosrun/restart))))
-          (rosemacs/terminate-process process))
+                                             (rosrun/restart (current-buffer)))))
+          (rosemacs/terminate-process))
       (error "Buffer does not contain a running process"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -4,7 +4,7 @@ tinyxml:
   osxbrew:
     homebrew:
       packages: [ tinyxml ]
-      formula_uri: 'https://kforge.ros.org/rososx/homebrew/file/tip/electric/tinyxml.rb'
+      formula_uri: 'https://kforge.ros.org/rososx/homebrew/raw-file/tip/electric/tinyxml.rb'
   fedora: tinyxml-devel
 python:
   ubuntu: python-dev

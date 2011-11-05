@@ -376,13 +376,21 @@ class PipInstaller(InstallerAPI):
     def generate_package_install_command(self, default_yes = False, execute = True, display = True):
         packages_to_install = self.get_packages_to_install()
         script = '!#/bin/bash\n#no script'
+
+        # Check to see if sudo is needed for pip
+        pip_cmd = "#!/bin/bash\n#Packages %s\nsudo pip install -U "
+        if 'ROS_NO_SUDO_PIP' in os.environ:
+            pip_cmd = "#!/bin/bash\n#Packages %s\npip install -U "
+
+        # Generate pip command
         if not packages_to_install:
             script =  "#!/bin/bash\n#No PIP Packages to install"
         if self.alt_install_cmd:
-            script = "#!/bin/bash\n#Packages %s\npip install -U "%packages_to_install + ' ' + self.alt_install_cmd
+            script = pip_cmd%packages_to_install + ' ' + self.alt_install_cmd
         else:
-            script = "#!/bin/bash\n#Packages %s\npip install -U "%packages_to_install + ' '.join(packages_to_install)
+            script = pip_cmd%packages_to_install + ' '.join(packages_to_install)
 
+        # Execute pip command
         if execute:
             return rosdep.core.create_tempfile_from_string_and_execute(script)
         elif display:

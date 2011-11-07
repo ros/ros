@@ -43,6 +43,7 @@ The common entry point for most libraries is the L{XmlRpcNode} class.
 """
 
 import logging
+import select
 import socket
 import string
 

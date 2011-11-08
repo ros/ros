@@ -40,10 +40,7 @@ gcoverage: all
 
 eclipse-project: 
 	mv Makefile Makefile.ros
-	cmake -G"Eclipse CDT4 - Unix Makefiles" -Wno-dev .
-	rm Makefile
-	rm CMakeCache.txt
-	rm -rf CMakeFiles
+	if ! (cmake -G"Eclipse CDT4 - Unix Makefiles" -Wno-dev . && rm Makefile && rm CMakeCache.txt && rm -rf CMakeFiles); then mv Makefile.ros Makefile && echo "**ERROR building Eclipse project!**" && false; fi
 	mv Makefile.ros Makefile
 	mv .project .project-cmake
 	awk -f $(shell rospack find mk)/eclipse.awk .project-cmake > .project

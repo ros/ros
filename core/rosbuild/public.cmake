@@ -624,22 +624,6 @@ macro(rosbuild_add_gtest_labeled label)
   endif("$ENV{ROS_BUILD_TEST_LABEL}" STREQUAL "" OR "${label}" STREQUAL "$ENV{ROS_BUILD_TEST_LABEL}")
 endmacro(rosbuild_add_gtest_labeled)
 
-# A helper to create test programs that are expected to fail for the near
-# future.  It calls rosbuild_add_executable() to
-# create the program, and augments a test target that was created in the
-# call rospack()
-macro(rosbuild_add_gtest_future exe)
-  _rosbuild_add_gtest(${ARGV})
-  # Create a legal target name, in case the target name has slashes in it
-  string(REPLACE "/" "_" _testname ${exe})
-
-  # Redeclaration of target is to workaround bug in 2.4.6
-  if(CMAKE_MINOR_VERSION LESS 6)
-    add_custom_target(test-future)
-  endif(CMAKE_MINOR_VERSION LESS 6)
-  add_dependencies(test-future test_${_testname})
-endmacro(rosbuild_add_gtest_future)
-
 # A helper to run rostests. It generates a command to run rostest on
 # the specified file and makes this target a dependency of test. 
 macro(rosbuild_add_rostest file)
@@ -659,19 +643,6 @@ macro(rosbuild_add_rostest_labeled label)
     rosbuild_add_rostest(${ARGN})
   endif("$ENV{ROS_BUILD_TEST_LABEL}" STREQUAL "" OR "${label}" STREQUAL "$ENV{ROS_BUILD_TEST_LABEL}")
 endmacro(rosbuild_add_rostest_labeled)
-
-# A helper to run rostests that are expected to fail for the near future. 
-# It generates a command to run rostest on
-# the specified file and makes this target a dependency of test. 
-macro(rosbuild_add_rostest_future file)
-  string(REPLACE "/" "_" _testname ${file})
-  _rosbuild_add_rostest(${file})
-  # Redeclaration of target is to workaround bug in 2.4.6
-  if(CMAKE_MINOR_VERSION LESS 6)
-    add_custom_target(test-future)
-  endif(CMAKE_MINOR_VERSION LESS 6)
-  add_dependencies(test-future rostest_${_testname})
-endmacro(rosbuild_add_rostest_future)
 
 # A helper to run Python unit tests. It generates a command to run python
 # the specified file 
@@ -693,19 +664,6 @@ macro(rosbuild_add_pyunit_labeled label)
     rosbuild_add_pyunit(${ARGN})
   endif("$ENV{ROS_BUILD_TEST_LABEL}" STREQUAL "" OR "${label}" STREQUAL "$ENV{ROS_BUILD_TEST_LABEL}")
 endmacro(rosbuild_add_pyunit_labeled)
-
-# A helper to run Python unit tests that are expected to fail for the near
-# future. It generates a command to run python
-# the specified file 
-macro(rosbuild_add_pyunit_future file)
-  string(REPLACE "/" "_" _testname ${file})
-  _rosbuild_add_pyunit(${file})
-  # Redeclaration of target is to workaround bug in 2.4.6
-  if(CMAKE_MINOR_VERSION LESS 6)
-    add_custom_target(test-future)
-  endif(CMAKE_MINOR_VERSION LESS 6)
-  add_dependencies(test-future pyunit_${_testname})
-endmacro(rosbuild_add_pyunit_future)
 
 # Declare as a unit test a check of a roslaunch file, or a directory
 # containing roslaunch files.  Following the file/directory, you can
@@ -1244,4 +1202,20 @@ macro(rosbuild_get_stack_version _var stackname)
     set(${_var} ${__version})
   endif(_rosversion_failed OR NOT __version)
 endmacro(rosbuild_get_stack_version _var stackname)
+
+# *_future() calls are deprecated
+macro(rosbuild_add_gtest_future exe)
+  _rosbuild_warn("The *_future() macros are deprecated.")
+  # Still need to create the executable, just in case somebody is using
+  # this macro, then doing something that refers to the executable target.
+  _rosbuild_add_gtest(${ARGV})
+endmacro(rosbuild_add_gtest_future)
+
+macro(rosbuild_add_rostest_future file)
+  _rosbuild_warn("The *_future() macros are deprecated.")
+endmacro(rosbuild_add_rostest_future)
+
+macro(rosbuild_add_pyunit_future file)
+  _rosbuild_warn("The *_future() macros are deprecated.")
+endmacro(rosbuild_add_pyunit_future)
 

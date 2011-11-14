@@ -1,3 +1,7 @@
+if(CATKIN)
+  include(catkin.cmake OPTIONAL)
+  return()
+endif()
 if(ROSBUILD)
   include(rosbuild.cmake OPTIONAL)
   return()

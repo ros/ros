@@ -95,6 +95,8 @@ add_library(roscpp SHARED
   src/libros/this_node.cpp
   )
 
+add_dependencies(roscpp roscpp_gencpp)
+
 target_link_libraries(${PROJECT_NAME}
   ${roscpp_serialization_LIBRARIES}
   ${rostime_LIBRARIES}

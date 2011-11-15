@@ -1,5 +1,5 @@
 if(CATKIN)
-  include(catkin.cmake OPTIONAL)
+  include(catkin.cmake)
   return()
 endif()
 if(ROSBUILD)

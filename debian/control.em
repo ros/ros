@@ -11,5 +11,5 @@ Depends: ${misc:Depends}
 Description: <insert up to 60 chars description>
  <insert long description, indented with spaces>
 X-ROS-Pkg-Name: ros_comm
-X-ROS-Pkg-Depends: catkin, roscpp_core
+X-ROS-Pkg-Depends: catkin, roscpp_core, std_msgs
 X-ROS-System-Depends:

@@ -285,7 +285,8 @@ def _rosparam_cmd_get_param(param, pretty=False, verbose=False):
         if dump.endswith('\n...\n'):
             dump = dump[:-5]
 
-        sys.stdout.write(dump)
+        # #3761 add newline in output
+        sys.stdout.write("%s\n"%(dump))
 
 def dump_params(filename, param, verbose=False):
     """

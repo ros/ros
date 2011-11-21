@@ -215,8 +215,300 @@ function _roscomplete_file {
     _roscomplete_search_dir "-type f ! -regex .*/[.].* ! -regex .*[.][oa]$"
 }
 
+function _roscomplete_launchfile {
+    _roscomplete_search_dir "-type f -regex .*\.launch$\|.*\.test$"
+}
+
+function _roscomplete_rosbag {
+    reply=()
+
+
+    if [[ ${CURRENT} == 2 ]]; then
+        opts="check compress decompress filter fix help info play record reindex"
+        reply=(${=opts})
+    else
+        reply=()
+    fi
+
+}
+
+function _roscomplete_rospack {
+    reply=()
+    if [[ ${CURRENT} == 2 ]]; then
+        opts="help find list list-names langs depends depends-manifests depends1 depends-indent depends-why rosdep rosdep0 vcs vcs0 depends-on depends-on1 export plugins cflags-only-I cflags-only-other libs-only-L libs-only-l libs-only-other profile"
+        reply=(${=opts})
+    else
+        opts=`rospack list-names`
+        reply=(${=opts})
+    fi
+}
+
+function _roscomplete_rosnode {
+    reply=()
+
+
+    if [[ ${CURRENT} == 2 ]]; then
+        opts="ping list info machine kill"
+        reply=(${=opts})
+    elif [[ ${CURRENT} == 3 ]]; then
+        case ${=${(s: :)words}[2]} in
+            ping|info|list|kill)
+                opts=`rosnode list 2> /dev/null`
+                reply=(${=opts})
+                ;;
+            machine)
+                # This takes more logic to determine which machines are present.
+                ;;
+        esac
+    else
+        case ${=${(s: :)words}[2]} in
+            kill)
+                # complete on node name
+                opts=`rosnode list 2> /dev/null`
+                reply=(${=opts})
+                ;;
+        esac
+    fi
+
+}
+function _roscomplete_rosparam {
+    reply=()
+
+
+    if [[ ${CURRENT} == 2 ]]; then
+        opts="set get load dump delete list"
+        reply=(${=opts})
+    elif [[ ${CURRENT} == 3 ]]; then
+        case ${=${(s: :)words}[2]} in
+            set|get|delete|list)
+                opts=`rosparam list 2> /dev/null`
+                reply=(${=opts})
+                ;;
+            load|dump)
+                # complete on files
+                reply=(${=opts})
+                ;;
+        esac
+    elif [[ ${CURRENT} == 4 ]]; then
+        case ${=${(s: :)words}[2]} in
+            load|dump)
+                # complete on namespace
+                opts=`rosparam list 2> /dev/null`
+                reply=(${=opts})
+                ;;
+        esac
+    fi
+
+}
+function _roscomplete_rostopic {
+    reply=()
+
+
+    if [[ ${CURRENT} == 2 ]]; then
+        opts="bw echo hz list pub type find info"
+        reply=(${=opts})
+    elif [[ ${CURRENT} > 2 ]]; then
+        case ${=${(s: :)words}[2]} in
+            bw|echo|hz|list|type|info)
+                if [[ ${=${(s: :)words}[$(( ${CURRENT} -1 ))]} == "-b" ]]; then
+                    opts=`find . -maxdepth 1 -type f -not -name ".*" -not -name "*[~#]" | sed 's!.*/!!'`
+                    reply=(${=opts})
+                else
+                    opts=`rostopic list 2> /dev/null`
+                    reply=(${=opts})
+                fi
+                ;;
+            find)
+                opts=`_msg_opts ${=${(s: :)words[-1]}}`
+                reply=(${=opts})
+                ;;
+            pub)
+                if [[ ${CURRENT} == 3 ]]; then
+		                opts=`rostopic list 2> /dev/null`
+                    reply=(${=opts})
+                elif [[ ${CURRENT} == 4 ]]; then
+                    opts=`_msg_opts ${=${(s: :)words[-1]}}`
+                    reply=(${=opts})
+                fi
+                ;;
+        esac
+    fi
+}
+
+function _roscomplete_rosservice {
+    reply=()
+
+
+    if [[ ${CURRENT} == 2 ]]; then
+        opts="list call type find uri"
+        reply=(${=opts})
+    elif [[ ${CURRENT} == 3 ]]; then
+        case ${=${(s: :)words}[2]} in
+            uri|list|type|call)
+                opts=`rosservice list 2> /dev/null`
+                IFS=$'\n'
+                reply=(${=opts})
+                unset IFS
+                ;;
+            find)
+                opts=`_srv_opts ${=${(s: :)words[-1]}}`
+                reply=(${=opts})
+                ;;
+        esac
+    fi
+
+}
+
+function _msg_opts {
+    unset searchmsg
+
+    if [[ $1 =~ .+/.* ]]; then
+        pkgname=${1%%/*}
+        msgname=${1#*/}
+        searchmsg=1
+    else
+        pkgname=${1}
+    fi
+
+    if [[ -z ${searchmsg} ]]; then
+        pkgs=`command rospack list | grep "^${pkgname}"`
+        count=0
+
+        opts=""
+
+        for pkg in ${(f)pkgs}; do
+            pkgdir=${=${(s: :)pkg}[2]}
+            if [[ -d $pkgdir/msg ]]; then
+                pkgname2=${=${(s: :)pkg}[1]}
+                opts="$opts $pkgname2/"
+                count=$((count+1))
+            fi
+        done
+
+        if [[ $count > 0 ]]; then
+            echo $opts
+            return 0
+        fi
+    fi
+
+    pkgpath=`rospack find ${pkgname} 2> /dev/null`
+    if [[ $?  == 0 ]] && [[ -d ${pkgpath}/msg ]]; then
+        result=`find -L ${pkgpath}/msg -maxdepth 1 -mindepth 1 -name \*.msg ! -regex ".\*/[.].\*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.msg/${pkgname}\/\1/g"`
+        echo $result
+    fi
+}
+
+function _roscomplete_rosmsg {
+    reply=()
+
+
+    if [[ ${CURRENT} == 2 ]]; then
+        opts="show users md5 package packages"
+        reply=(${=opts})
+    elif [[ ${CURRENT} == 3 ]]; then
+        case ${=${(s: :)words}[2]} in
+            show|users|md5)
+                opts=`_msg_opts ${=${(s: :)words[-1]}}`
+                reply=(${=opts})
+                ;;
+            package)
+                opts=`rospack list-names`
+                reply=(${=opts})
+                ;;
+            packages)
+                # This shouldn't really have a completion rule
+                ;;
+        esac
+    fi
+}
+
+function _srv_opts {
+    unset searchsrv
+
+    if [[ $1 =~ .+/.* ]]; then
+        pkgname=${1%%/*}
+        srvname=${1#*/}
+        searchsrv=1
+    else
+        pkgname=${1}
+    fi
+
+    if [[ -z ${searchsrv} ]]; then
+        pkgs=`command rospack list | grep "^${pkgname}"`
+        count=0
+
+        opts=""
+
+        for pkg in ${(f)pkgs}; do
+            pkgdir=${=${(s: :)pkg}[2]}
+            if [[ -d $pkgdir/srv ]]; then
+                pkgname2=${=${(s: :)pkg}[1]}
+                opts="$opts $pkgname2/"
+                count=$((count+1))
+            fi
+        done
+
+        if [[ $count > 0 ]]; then
+            echo $opts
+            return 0
+        fi
+    fi
+
+    pkgpath=`rospack find ${pkgname} 2> /dev/null`
+    if [[ $?  == 0 ]] && [[ -d ${pkgpath}/srv ]]; then
+        result=`find -L ${pkgpath}/srv -maxdepth 1 -mindepth 1 -name \*.srv ! -regex ".\*/[.].\*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.srv/${pkgname}\/\1/g"`
+        echo $result
+    fi
+}
+
+function _roscomplete_rossrv {
+    reply=()
+
+
+    if [[ ${CURRENT} == 2 ]]; then
+        opts="show users md5 package packages"
+        reply=(${=opts})
+    elif [[ ${CURRENT} == 3 ]]; then
+        case ${=${(s: :)words}[2]} in
+            show|users|md5)
+                opts=`_srv_opts ${=${(s: :)words[-1]}}`
+                reply=(${=opts})
+                ;;
+            package)
+                opts=`rospack list-names`
+                reply=(${=opts})
+                ;;
+            packages)
+                # This shouldn't really have a completion rule
+                ;;
+        esac
+    fi
+}
+
+
+
+function _roscomplete_roscreate_pkg {
+    reply=()
+
+
+    if [[ ${CURRENT} > 2 ]]; then
+        opts=`rospack list-names`
+        reply=(${=opts})
+    fi
+}
 compctl -K "_roscomplete_sub_dir" -S / "roscd" "rospd" "rosls"
-compctl -K "_roscomplete" "rosmake" "rosupdate"
+compctl -K "_roscomplete" "rosmake"
 
 compctl -f -x 'p[1]' -K "_roscomplete" - 'p[2]' -K _roscomplete_file -- "rosed" "roscp"
 compctl -f -x 'p[1]' -K "_roscomplete" - 'p[2]' -K _roscomplete_exe -- "rosrun"
+compctl -f -x 'p[1]' -K "_roscomplete" - 'p[2]' -K _roscomplete_launchfile -- "roslaunch"
+compctl -f -x 'p[1]' -K "_roscomplete" - 'p[2]' -K _roscomplete_launchfile -- "rostest"
+compctl -K "_roscomplete_rospack" "rospack"
+compctl -K "_roscomplete_rosbag" "rosbag"
+compctl -K "_roscomplete_rosnode" "rosnode"
+compctl -K "_roscomplete_rosparam" "rosparam"
+compctl -K "_roscomplete_rostopic" "rostopic"
+compctl -K "_roscomplete_rosservice" "rosservice"
+compctl -K "_roscomplete_rosmsg" "rosmsg"
+compctl -K "_roscomplete_rossrv" "rossrv"
+compctl -K "_roscomplete_roscreate_pkg" "roscreate-pkg"

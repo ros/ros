@@ -1,0 +1,27 @@
+#
+#  TDS: 11/2011
+#  PROTOTYPE - PROTOTYPE - PROTOTYPE
+#  If you are surprised to see this here, just ignore it.
+#  Many fields are probably inaccurate.
+#
+Package: ros-comm
+Version: 3.4.5
+Section: misc
+Priority: extra
+Architecture: all
+Depends: ${misc:Depends} python-empy, cmake, make, 
+         @(CATKIN_PACKAGE_PREFIX)genmsg, @(CATKIN_PACKAGE_PREFIX)genpy, @(CATKIN_PACKAGE_PREFIX)gencpp,
+         @(CATKIN_PACKAGE_PREFIX)roscpp-core
+Build-Depends: debhelper (>= 7), cmake, gcc, make, python, python-empy, python-setuptools, 
+               @(CATKIN_PACKAGE_PREFIX)catkin, @(CATKIN_PACKAGE_PREFIX)genmsg, 
+               @(CATKIN_PACKAGE_PREFIX)genpy, @(CATKIN_PACKAGE_PREFIX)gencpp,
+               @(CATKIN_PACKAGE_PREFIX)roscpp-core
+Description: ROS Communications
+Author: Troy Straszheim <straszheim@willowgarage.com>, Morten Kjaergaard, Ken Conley
+Maintainer: Troy Straszheim <straszheim@willowgarage.com>
+Homepage: http://www.ros.org
+
+Catkin-ProjectName: ros_comm
+Catkin-CopyrightType:  willowgarage
+Catkin-Depends: catkin, genmsg, std_msgs, roscpp_core
+Catkin-DebRulesType: cmake

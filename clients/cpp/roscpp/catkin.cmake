@@ -3,32 +3,11 @@ project(roscpp)
 find_package(catkin)
 find_package(genmsg)
 
-#find_package(ROS COMPONENTS cpp_common rostime rosconsole roscpp_serialization roscpp_traits std_msgs rosgraph_msgs XmlRpc)
-#inclure_directories(${ROS}_INCLUDE_DIRS)
-
-find_package(cpp_common)
-include_directories(${cpp_common_INCLUDE_DIRS})
-
-find_package(rostime)
-include_directories(${rostime_INCLUDE_DIRS})
-
-find_package(rosconsole)
-include_directories(${rosconsole_INCLUDE_DIRS})
-
-find_package(roscpp_serialization)
-include_directories(${roscpp_serialization_INCLUDE_DIRS})
-
-find_package(roscpp_traits)
-include_directories(${roscpp_traits_INCLUDE_DIRS})
-
-find_package(std_msgs)
-include_directories(${std_msgs_INCLUDE_DIRS})
-
-find_package(rosgraph_msgs)
-include_directories(${rosgraph_msgs_INCLUDE_DIRS})
-
-find_package(XmlRpc)
-include_directories(${XmlRpc_INCLUDE_DIRS})
+find_package(ROS COMPONENTS 
+  cpp_common rostime rosconsole roscpp_serialization 
+  roscpp_traits std_msgs rosgraph_msgs XmlRpc
+  )
+include_directories(${ROS_INCLUDE_DIRS})
 
 find_package(Boost COMPONENTS signals filesystem)
 
@@ -97,14 +76,12 @@ add_library(roscpp SHARED
 
 add_dependencies(roscpp roscpp_gencpp)
 
-target_link_libraries(${PROJECT_NAME}
-  ${roscpp_serialization_LIBRARIES}
-  ${rostime_LIBRARIES}
-  ${XmlRpc_LIBRARIES}
-  ${rosconsole_LIBRARIES}
-  ${Boost_LIBRARIES})
+target_link_libraries(roscpp
+  ${ROS_LIBRARIES}
+  ${Boost_LIBRARIES}
+  )
 
-generate_msgs(${PROJECT_NAME}
+generate_msgs(roscpp
   PATH msg
   MESSAGES msg/Logger.msg
   SERVICES srv/Empty.srv srv/GetLoggers.srv srv/SetLoggerLevel.srv

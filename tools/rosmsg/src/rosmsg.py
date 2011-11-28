@@ -266,7 +266,7 @@ def rosmsg_debug(mode, type_, raw=False):
     elif mode == MODE_MSG:
         print(get_msg_text(type_, raw=raw))
     else:
-        raise ROSMsgException("invalid mode: %s"%mode)
+        raise ROSMsgException("Invalid mode for debug: %s"%mode)
     
 def list_srvs(package):
     """
@@ -304,7 +304,7 @@ def list_types(package, mode=MODE_MSG):
     elif mode == MODE_SRV:
         return [genmsg.resource_name(package, t) for t in _list_types(rospack, package, 'srv', '.srv')]
     else:
-        raise ValueError('mode')
+        raise ValueError('Unknown mode for list_types: %s'%mode)
 
 def _msg_filter(ext):
     def mfilter(f):
@@ -352,7 +352,7 @@ def iterate_packages(mode):
     elif mode == MODE_SRV:
         subdir = 'srv'
     else:
-        raise ValueError('mode')
+        raise ValueError('Unknown mode for iterate_packages: %s'%mode)
 
     rospack = rospkg.RosPack()
     pkgs = rospack.list()
@@ -532,15 +532,17 @@ def rosmsgmain(mode=MODE_MSG):
     @param mode: MODE_MSG or MODE_SRV
     @type  mode: str
     """
-    if len(sys.argv) == 1:
-        print(fullusage('ros'+mode[1:]))
-        sys.exit(0)        
-    if mode == MODE_MSG:
-        ext, full = mode, "message type"
-    else:
-        ext, full = mode, "service type"
-        
     try:
+        if mode == MODE_MSG:
+            ext, full = mode, "message type"
+        elif mode == MODE_SRV:
+            ext, full = mode, "service type"
+        else:
+            raise ROSMsgException("Invalid mode: %s"%mode)
+        if len(sys.argv) == 1:
+            print(fullusage('ros'+mode[1:]))
+            sys.exit(0)
+
         command = sys.argv[1]
         if command == 'users':
             rosmsg_cmd_users(ext, full)

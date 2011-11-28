@@ -1,0 +1,22 @@
+#
+#  TDS: 11/2011
+#  PROTOTYPE - PROTOTYPE - PROTOTYPE
+#  If you are surprised to see this here, just ignore it.
+#  Many fields are probably inaccurate.
+#
+Package: ros
+Version: 3.4.5
+Section: misc
+Priority: extra
+Architecture: any
+Depends: ${misc:Depends} python-empy, cmake, make, 
+Build-Depends: debhelper (>= 7), cmake, gcc, make, python, python-empy, python-setuptools 
+Description: ROS Core
+Author: Ken Conley et al
+Maintainer: Ken Conley
+Homepage: http://www.ros.org
+
+Catkin-ProjectName: ros
+Catkin-CopyrightType:  willowgarage
+Catkin-Depends: catkin
+Catkin-DebRulesType: python_distutils

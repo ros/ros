@@ -1,3 +1,8 @@
+if(CATKIN)
+  include(catkin.cmake)
+  return()
+endif()
+
 if(ROSBUILD)
   # this is for rosbuild2 integration, you can ignore this
   include(rosbuild.cmake OPTIONAL)

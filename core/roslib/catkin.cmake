@@ -7,7 +7,4 @@ install_cmake_infrastructure(roslib
   PYTHONPATH src
   )
 
-catkin_package(roslib)
 enable_python(roslib)
-
-

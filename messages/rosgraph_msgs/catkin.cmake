@@ -16,4 +16,3 @@ install_cmake_infrastructure(rosgraph_msgs
   MSG_DIRS msg
   )
 
-catkin_package(graph_msgs)

@@ -81,11 +81,17 @@ target_link_libraries(roscpp
   ${Boost_LIBRARIES}
   )
 
-generate_msgs(roscpp
-  PATH msg
-  MESSAGES msg/Logger.msg
-  SERVICES srv/Empty.srv srv/GetLoggers.srv srv/SetLoggerLevel.srv
-  )
+add_message_files(
+  DIRECTORY msg
+  FILES Logger.msg
+)
+
+add_service_files(
+  DIRECTORY srv
+  FILES Empty.srv GetLoggers.srv SetLoggerLevel.srv
+)
+
+generate_messages()
 
 install_cmake_infrastructure(roscpp
   VERSION 0.0.1

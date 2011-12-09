@@ -55,6 +55,8 @@ import roslib.manifest
 import roslib.os_detect
 
 SRC_DIR = 'src'
+CATKIN_SOURCE_DIR = 'CATKIN_SOURCE_DIR'
+CATKIN_BINARY_DIR = 'CATKIN_BINARY_DIR'
 
 # aliases
 ROS_PACKAGE_PATH = rospkg.environment.ROS_PACKAGE_PATH
@@ -480,24 +482,70 @@ def find_resource(pkg, resource_name, filter_fn=None, ros_root=None, ros_package
     @rtype: [str]
     @raise roslib.packages.InvalidROSPkgException: If package does not exist 
     """
-    d = get_pkg_dir(pkg, required=True, \
-                    ros_root=ros_root, ros_package_path=ros_package_path)
-    #UNIXONLY
-    matches = []
-    node_exe = None
-    for p, dirs, files in os.walk(d):
-        if resource_name in files:
-            test_path = os.path.join(p, resource_name)
-            if filter_fn is not None:
-                if filter_fn(test_path):
-                    matches.append(test_path)
+
+    # New resource-location policy in Fuerte, induced by the new catkin 
+    # build system:
+    #   (1) If CATKIN_SOURCE_DIR is set, look recursively there.  If the
+    #       resource is found, done.  Else continue:
+    #   (2) If CATKIN_BINARY_DIR is set, look recursively there.  If the
+    #       resource is found, done.  Else continue:
+    #   (3) If the package was found in (1) or (2), then fail (i.e., if the
+    #       package exists in the source or build tree, don't go looking
+    #       somewhere else).  Else continue:
+    #   (4) Do the traditional search (using ROS_ROOT:ROS_PACKAGE_PATH).
+
+    rrs = []
+    rpps = []
+    if CATKIN_SOURCE_DIR in os.environ:
+        rrs.append(None)
+        rpps.append(os.environ[CATKIN_SOURCE_DIR])
+    if CATKIN_BINARY_DIR in os.environ:
+        rrs.append(None)
+        rpps.append(os.environ[CATKIN_BINARY_DIR])
+
+    rrs.append(ros_root)
+    rpps.append(ros_package_path)
+
+    found = False
+    i = 0
+    for rr, rpp in zip(rrs, rpps):
+        on_last_search_step = (i == len(rrs) - 1)
+        i += 1
+        # If we've previously found the package, but not the resource, then
+        # don't do the last search step.
+        if on_last_search_step and found:
+            return []    
+                
+        try:
+            d = get_pkg_dir(pkg, required=True, \
+                            ros_root=rr, ros_package_path=rpp)
+        except roslib.packages.InvalidROSPkgException as e:
+            if on_last_search_step:
+                # If we're at the last search step, re-raise
+                raise
             else:
-                matches.append(test_path)
-        if '.svn' in dirs:
-            dirs.remove('.svn')
-        elif '.git' in dirs:
-            dirs.remove('.git')
-    return matches
+                # Keep looking
+                continue
+        found = True
+
+        #UNIXONLY
+        matches = []
+        node_exe = None
+        for p, dirs, files in os.walk(d):
+            if resource_name in files:
+                test_path = os.path.join(p, resource_name)
+                if filter_fn is not None:
+                    if filter_fn(test_path):
+                        matches.append(test_path)
+                else:
+                    matches.append(test_path)
+            if '.svn' in dirs:
+                dirs.remove('.svn')
+            elif '.git' in dirs:
+                dirs.remove('.git')
+        # If we found anything, or if we're on the last step, we're done
+        if matches or on_last_search_step:
+            return matches
 
 def rosdeps_of(packages):
     """

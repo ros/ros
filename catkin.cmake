@@ -4,6 +4,7 @@ find_package(catkin)
 
 foreach(subdir
     core/roslib
+    tools/rosbash
     )
   add_subdirectory(${subdir})
 endforeach()

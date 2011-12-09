@@ -4,10 +4,12 @@ find_package(catkin)
 
 foreach(subdir
     messages/rosgraph_msgs
+    messages/std_srvs
     utilities/xmlrpcpp
     tools/rosconsole
     clients/cpp/roscpp
     clients/rospy
+    utilities/message_filters
     )
   add_subdirectory(${subdir})
 endforeach()

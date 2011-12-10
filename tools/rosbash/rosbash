@@ -533,6 +533,8 @@ function _roscomplete_rosservice {
                 ;;
             find)
                 # Need a clever way to do message searching
+                opts=`_srv_opts ${COMP_WORDS[$COMP_CWORD]}`
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))
                 ;;
         esac
     fi

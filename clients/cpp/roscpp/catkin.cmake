@@ -9,7 +9,7 @@ find_package(ROS COMPONENTS
   )
 include_directories(${ROS_INCLUDE_DIRS})
 
-find_package(Boost COMPONENTS signals filesystem)
+find_package(Boost COMPONENTS signals filesystem system)
 
 include_directories(include)
 

@@ -10,6 +10,7 @@ foreach(subdir
     clients/cpp/roscpp
     clients/rospy
     utilities/message_filters
+    tools/rosgraph
     )
   add_subdirectory(${subdir})
 endforeach()

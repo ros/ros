@@ -1,5 +1,5 @@
-if(ROSBUILD)
-  include(rosbuild.cmake OPTIONAL)
+if(CATKIN)
+  include(catkin.cmake)
   return()
 endif()
 cmake_minimum_required(VERSION 2.4.6)

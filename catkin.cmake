@@ -11,3 +11,13 @@ foreach(subdir
 endforeach()
 
 catkin_package(ros)
+
+install(PROGRAMS 
+  bin/roscore 
+  bin/rosrun
+  bin/roslaunch
+  bin/rostopic
+  bin/rxconsole
+  bin/rosbag
+  DESTINATION bin
+  )

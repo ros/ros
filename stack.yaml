@@ -9,8 +9,8 @@ Version: 3.4.5
 Section: misc
 Priority: extra
 Architecture: any
-Depends: ${misc:Depends} python-empy, cmake, make, @(CATKIN_PACKAGE_PREFIX)catkin
-Build-Depends: debhelper (>= 7), cmake, gcc, make, python, python-empy, python-setuptools, @(CATKIN_PACKAGE_PREFIX)catkin 
+Depends: ${misc:Depends} python-empy, cmake, make, @(PackagePrefix)catkin
+Build-Depends: debhelper (>= 7), cmake, gcc, make, python, python-empy, python-setuptools, @(PackagePrefix)catkin 
 Description: ROS Core
 Author: Ken Conley et al
 Maintainer: Ken Conley <kwc@willowgarage.com>

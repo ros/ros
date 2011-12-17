@@ -10,13 +10,13 @@ Section: misc
 Priority: extra
 Architecture: any
 Depends: ${misc:Depends} python-empy, cmake, make, 
-         @(CATKIN_PACKAGE_PREFIX)genmsg, @(CATKIN_PACKAGE_PREFIX)genpy, @(CATKIN_PACKAGE_PREFIX)gencpp,
-         @(CATKIN_PACKAGE_PREFIX)roscpp-core, @(CATKIN_PACKAGE_PREFIX)std-msgs,
+         @(PackagePrefix)genmsg, @(PackagePrefix)genpy, @(PackagePrefix)gencpp,
+         @(PackagePrefix)roscpp-core, @(PackagePrefix)std-msgs,
          libapr1-dev, libaprutil1-dev, liblog4cxx10-dev, libboost-dev, libboost-all-dev
 Build-Depends: debhelper (>= 7), cmake, gcc, make, python, python-empy, python-setuptools, 
-               @(CATKIN_PACKAGE_PREFIX)catkin, @(CATKIN_PACKAGE_PREFIX)genmsg, 
-               @(CATKIN_PACKAGE_PREFIX)genpy, @(CATKIN_PACKAGE_PREFIX)gencpp,
-               @(CATKIN_PACKAGE_PREFIX)roscpp-core, @(CATKIN_PACKAGE_PREFIX)std-msgs,
+               @(PackagePrefix)catkin, @(PackagePrefix)genmsg, 
+               @(PackagePrefix)genpy, @(PackagePrefix)gencpp,
+               @(PackagePrefix)roscpp-core, @(PackagePrefix)std-msgs,
                libapr1-dev, libaprutil1-dev, liblog4cxx10-dev, libboost-dev, libboost-all-dev
 Description: ROS Communications
 Author: Troy Straszheim <straszheim@willowgarage.com>, Ken Conley, Josh Faust et al

@@ -97,4 +97,5 @@ install_cmake_infrastructure(roscpp
   VERSION 0.0.1
   LIBRARIES roscpp
   INCLUDE_DIRS include
+  DEPENDS roscpp_traits roscpp_serialization cpp_common std_msgs rosgraph_msgs
   )

@@ -288,17 +288,21 @@ def rosnode_ping(node_name, max_count=None, verbose=False):
                     print("xmlrpc reply from %s\ttime=%fms"%(node_api, dur))
                 # 1s between pings
             except socket.error as e:
-                # #3659
-                errnum, msg = e
-                if errnum == -2: #name/service unknown
-                    p = urlparse.urlparse(node_api)
-                    print("ERROR: Unknown host [%s] for node [%s]"%(p.hostname, node_name), file=sys.stderr)
-                elif errnum == errno.ECONNREFUSED:
-                    p = urlparse.urlparse(node_api)
-                    print("ERROR: connection refused to [%s]"%(node_api), file=sys.stderr)
-                else:
-                    print("connection to [%s] timed out"%node_name, file=sys.stderr)
-                return False
+                # 3786: catch ValueError on unpack as socket.error is not always a tuple
+                try:
+                    # #3659
+                    errnum, msg = e
+                    if errnum == -2: #name/service unknown
+                        p = urlparse.urlparse(node_api)
+                        print("ERROR: Unknown host [%s] for node [%s]"%(p.hostname, node_name), file=sys.stderr)
+                    elif errnum == errno.ECONNREFUSED:
+                        p = urlparse.urlparse(node_api)
+                        print("ERROR: connection refused to [%s]"%(node_api), file=sys.stderr)
+                    else:
+                        print("connection to [%s] timed out"%node_name, file=sys.stderr)
+                    return False
+                except ValueError:
+                    print("unknown network error contacting node: %s"%(str(e)))
             if max_count and count >= max_count:
                 break
             time.sleep(1.0)

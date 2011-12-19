@@ -74,7 +74,7 @@ add_library(roscpp SHARED
   src/libros/this_node.cpp
   )
 
-add_dependencies(roscpp roscpp_gencpp)
+add_dependencies(roscpp roscpp_gencpp rosgraph_msgs_gencpp)
 
 target_link_libraries(roscpp
   ${ROS_LIBRARIES}

@@ -110,7 +110,7 @@ function rosls {
     ls ${rosvals[2]}${rosvals[3]}${rosvals[4]} $2
 }
 
-function roscmd {
+function _roscmd {
     local pkgdir exepath opt
     pkgdir=`export ROS_CACHE_TIMEOUT=-1.0 && rospack find $1 2> /dev/null`
     if [[ $? != 0 ]] ; then
@@ -135,7 +135,7 @@ function roscmd {
 
 function rosed {
     local arg
-    roscmd ${1} ${2}
+    _roscmd ${1} ${2}
     if [[ -z $EDITOR ]]; then
         vim ${arg}
     else
@@ -145,7 +145,7 @@ function rosed {
 
 function roscp {
     local arg
-    roscmd ${1} ${2}
+    _roscmd ${1} ${2}
     cp ${arg} ${3}
 }
 

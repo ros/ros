@@ -34,6 +34,8 @@
 
 from __future__ import print_function
 
+__version__ = '1.7.0'
+
 import os
 import sys
 import platform

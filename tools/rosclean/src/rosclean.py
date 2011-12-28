@@ -41,16 +41,15 @@ import subprocess
 
 import rospkg
 
-class ROSCleanException(Exception): pass
+class CleanupException(Exception): pass
 
 def _ask_and_call(cmds, cwd=None):
     """
     Pretty print cmds, ask if they should be run, and if so, runs
     them using subprocess.check_call.
 
-    @param cwd: (optional) set cwd of command that is executed
-    @type  cwd: str
-    @return: True if cmds were run.
+    :param cwd: (optional) set cwd of command that is executed, ``str``
+    :returns: ``True`` if cmds were run.
     """
     # Pretty-print a string version of the commands
     def quote(s):
@@ -94,42 +93,39 @@ def _rosclean_cmd_check(argv):
 def get_human_readable_disk_usage(d):
     """
     Get human-readable disk usage for directory
-    @param d: directory path
-    @type  d: str
-    @return: human-readable disk usage (du -h)
-    @rtype: str
+
+    :param d: directory path, ``str`
+    :returns: human-readable disk usage (du -h), ``str``
     """
     # only implemented on Linux and FreeBSD for now. Should work on OS X but need to verify first (du is not identical)
     if platform.system() in ['Linux', 'FreeBSD']:
         try:
             return subprocess.Popen(['du', '-sh', d], stdout=subprocess.PIPE).communicate()[0].split()[0]
         except:
-            raise ROSCleanException("rosclean is not supported on this platform")
+            raise CleanupException("rosclean is not supported on this platform")
     else:
-        raise ROSCleanException("rosclean is not supported on this platform")
+        raise CleanupException("rosclean is not supported on this platform")
     
 def get_disk_usage(d):
     """
     Get disk usage in bytes for directory
-    @param d: directory path
-    @type  d: str
-    @return: disk usage in bytes (du -b) or (du -A) * 1024
-    @rtype: int
-    @raise ROSCleanException: if get_disk_usage() cannot be used on this platform
+    :param d: directory path, ``str``
+    :returns: disk usage in bytes (du -b) or (du -A) * 1024, ``int``
+    :raises: :exc:`CleanupException` If get_disk_usage() cannot be used on this platform
     """
     # only implemented on Linux and FreeBSD for now. Should work on OS X but need to verify first (du is not identical)
     if platform.system() == 'Linux':
         try:
             return int(subprocess.Popen(['du', '-sb', d], stdout=subprocess.PIPE).communicate()[0].split()[0])
         except:
-            raise ROSCleanException("rosclean is not supported on this platform")
+            raise CleanupException("rosclean is not supported on this platform")
     elif platform.system() == 'FreeBSD':
         try:
             return int(subprocess.Popen(['du', '-sA', d], stdout=subprocess.PIPE).communicate()[0].split()[0]) * 1024
         except:
-            raise ROSCleanException("rosclean is not supported on this platform")
+            raise CleanupException("rosclean is not supported on this platform")
     else:
-        raise ROSCleanException("rosclean is not supported on this platform")
+        raise CleanupException("rosclean is not supported on this platform")
 
 def _rosclean_cmd_purge(argv):
     dirs = _get_check_dirs()

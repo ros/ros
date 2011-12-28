@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 
-from distutils.core import setup
+from setuptools import setup
 
 import sys
 sys.path.insert(0, 'src')
 
-from genmsg import __version__
+from rosclean import __version__
 
 setup(name='rosclean',
       version= __version__,
       py_modules=['rosclean'],
       package_dir = {'':'src'},
-      scripts = [],
+      install_requires=['rospkg'],
+      scripts = ['scripts/rosclean'],
       author = "Ken Conley",
       author_email = "kwc@willowgarage.com",
       url = "http://www.ros.org/wiki/rosclean",

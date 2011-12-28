@@ -8,7 +8,6 @@ import curses
 
 from rosgraph_msgs.msg import Log
 import roslib.network
-import rospy
 import roslaunch.netapi as netapi
 from roslaunch.netapi import NetProcess
 
@@ -266,14 +265,7 @@ def roslaunch_console():
     try:
         stdscr = _init_curses()
         
-        rospy.init_node(NAME, anonymous=True)
-
         console = ROSLaunchConsole(stdscr)
-
-        console.add_logger(Log.INFO, rospy.loginfo)
-        console.add_logger(Log.FATAL, rospy.logerr)
-        console.add_logger(Log.ERROR, rospy.logerr)
-        console.add_logger(Log.DEBUG, rospy.logdebug)          
             
         exit = False
         console.redraw_scr()

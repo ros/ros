@@ -79,7 +79,8 @@ def create_master_process(run_id, type_, ros_root, port):
         raise RLException("invalid port assignment: %s"%port)
 
     _logger.info("create_master_process: %s, %s, %s", type_, ros_root, port)
-    master = os.path.join(ros_root, 'bin', type_)
+    # catkin/fuerte: no longer use ROS_ROOT-relative executables, search path instead
+    master = type_
     # zenmaster is deprecated and aliased to rosmaster
     if type_ in [Master.ROSMASTER, Master.ZENMASTER]:        
         package = 'rosmaster'        

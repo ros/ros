@@ -16,3 +16,4 @@ install_cmake_infrastructure(rosgraph_msgs
   MSG_DIRS msg
   )
 
+enable_python(rosgraph_msgs)

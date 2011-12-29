@@ -39,7 +39,7 @@ import roslib; roslib.load_manifest('rostest')
 import os
 import sys
 
-import roslib.packages
+import rospkg
 
 import roslaunch.rlutil
 
@@ -80,7 +80,9 @@ if __name__ == '__main__':
         var, val = e.split('=')
         os.environ[var] = val
 
-    pkg_dir, pkg = roslib.packages.get_dir_pkg(roslaunch_path) 
+    pkg = rospkg.get_package_name(roslaunch_path)
+    r = rospkg.RosPack()
+    pkg_dir = r.get_path(pkg)
 
     if os.path.isfile(roslaunch_path):
         error_msg = check_roslaunch_file(roslaunch_path)

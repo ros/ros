@@ -44,8 +44,8 @@ import unittest
 import logging
 
 import roslaunch
-import roslib.packages 
-import roslib.roslogging
+import rospkg
+import rosgraph.roslogging
 
 from rostest.rostestutil import createXMLRunner, printRostestSummary, \
     xmlResultsFile, rostest_name_from_path
@@ -58,7 +58,7 @@ _NAME = 'rostest'
 def configure_logging():
     import socket
     logfile_basename = 'rostest-%s-%s.log'%(socket.gethostname(), os.getpid())
-    logfile_name = roslib.roslogging.configure_logging('rostest', filename=logfile_basename)
+    logfile_name = rosgraph.roslogging.configure_logging('rostest', filename=logfile_basename)
     if logfile_name:
         print("... logging to %s"%logfile_name)
     return logfile_name
@@ -118,7 +118,9 @@ def rostestmain():
         # instead of shelling back out to rospack
         pkg_dir, pkg = options.pkg_dir, options.package
     else:
-        pkg_dir, pkg = roslib.packages.get_dir_pkg(test_file)
+        pkg = rospkg.get_package_name(test_file)
+        r = rospkg.RosPack()
+        pkg_dir = r.get_path(pkg)
 
     outname = rostest_name_from_path(pkg_dir, test_file)
 

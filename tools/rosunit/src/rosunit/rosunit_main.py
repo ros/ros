@@ -41,7 +41,6 @@ import unittest
 import logging
 
 import roslib.packages 
-import roslib.roslogging
 
 from . import pmon
 from . core import xml_results_file, create_xml_runner
@@ -51,13 +50,6 @@ from .baretest import BareTestCase, print_runner_summary
 
 
 _NAME = 'rosunit'
-
-def configure_logging(test_name):
-    logfile_basename = 'rosunit-%s.log'%(test_name)
-    logfile_name = roslib.roslogging.configure_logging('rosunit-%s'%(test_name), filename=logfile_basename)
-    if logfile_name:
-        print "... logging to %s"%logfile_name
-    return logfile_name
 
 def rosunitmain():
     from optparse import OptionParser
@@ -86,10 +78,6 @@ def rosunitmain():
             test_name = test_name[:test_name.rfind('.')]
     time_limit = float(options.time_limit) if options.time_limit else None
 
-    logfile_name = configure_logging(test_name)
-    logger = logging.getLogger('rosunit')
-    logger.info('rosunit starting with options %s, args %s'%(options, args))
-
     # compute some common names we'll be using to generate test names and files
     pkg_dir, pkg = roslib.packages.get_dir_pkg(test_file) 
 
@@ -113,9 +101,7 @@ def rosunitmain():
                                                is_rostest=True)
             runner_result = xml_runner.run(suite)
     finally:
-        logger.info("calling pmon_shutdown")
         pmon.pmon_shutdown()
-        logger.info("... done calling pmon_shutdown")
 
     # summary is worthless if textMode is on as we cannot scrape .xml results
     results = test_case.results
@@ -124,9 +110,6 @@ def rosunitmain():
     else:
         print "WARNING: overall test result is not accurate when --text is enabled"
 
-    if logfile_name:
-        print "rosunit log file is in %s"%logfile_name
-        
     if runner_result is not None and not runner_result.wasSuccessful():
         sys.exit(1)
     elif results.num_errors or results.num_failures:

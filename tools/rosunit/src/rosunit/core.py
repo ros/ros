@@ -42,23 +42,19 @@ from .xmlrunner import XMLTestRunner
 
 XML_OUTPUT_FLAG = '--gtest_output=xml:' #use gtest-compatible flag
 
-_logger = logging.getLogger('runner')
 def printlog(msg, *args):
     if args:
         msg = msg%args
-    _logger.info(msg)
     print "[ROSUNIT]"+msg
     
 def printlog_bold(msg, *args):
     if args:
         msg = msg%args
-    _logger.info(msg)
     print '\033[1m[ROSUNIT]%s\033[0m'%msg
     
 def printerrlog(msg, *args):
     if args:
         msg = msg%args
-    _logger.error(msg)
     print >> sys.stderr, "[ROSUNIT]"+msg
 
 # this is a copy of the roslogging utility. it's been moved here as it is a common

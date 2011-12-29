@@ -40,7 +40,6 @@ executables. These do not run in a ROS environment.
 import os
 import cStringIO
 import unittest
-import logging
 import time
 import signal
 import subprocess
@@ -54,8 +53,6 @@ from .core import xml_results_file, rostest_name_from_path, create_xml_runner, p
 
 from . import pmon
 from . import junitxml
-
-_logger = logging.getLogger('rosunit')
 
 BARE_TIME_LIMIT = 60.
 TIMEOUT_SIGINT  = 15.0 #seconds
@@ -293,10 +290,6 @@ class LocalProcess(pmon.Process):
         super(LocalProcess, self).start()
         try:
             self.lock.acquire()
-            if self.started:
-                _logger.info("process[%s]: restarting os process", self.name)
-            else:
-                _logger.info("process[%s]: starting os process", self.name)
             self.started = self.stopped = False
 
             full_env = self.env
@@ -304,8 +297,7 @@ class LocalProcess(pmon.Process):
             # _configure_logging() can mutate self.args
             try:
                 logfileout, logfileerr = self._configure_logging()
-            except Exception, e:
-                _logger.error(traceback.format_exc())
+            except Exception as e:
                 printerrlog("[%s] ERROR: unable to configure logging [%s]"%(self.name, str(e)))
                 # it's not safe to inherit from this process as
                 # rostest changes stdout to a StringIO, which is not a
@@ -321,14 +313,10 @@ class LocalProcess(pmon.Process):
             else:
                 cwd = rospkg.get_ros_home()
 
-            _logger.info("process[%s]: start w/ args [%s]", self.name, self.args)
-            _logger.info("process[%s]: cwd will be [%s]", self.name, cwd)
-
             try:
                 self.popen = subprocess.Popen(self.args, cwd=cwd, stdout=logfileout, stderr=logfileerr, env=full_env, close_fds=True, preexec_fn=os.setsid)
             except OSError, (errno, msg):
                 self.started = True # must set so is_alive state is correct
-                _logger.error("OSError(%d, %s)", errno, msg)
                 if errno == 8: #Exec format error
                     raise pmon.FatalProcessLaunch("Unable to launch [%s]. \nIf it is a script, you may be missing a '#!' declaration at the top."%self.name)
                 elif errno == 2: #no such file or directory
@@ -399,7 +387,6 @@ executable permission. This is often caused by a bad launch-prefix."""%(msg, ' '
         """
         self.exit_code = self.popen.poll() 
         if self.exit_code is not None:
-            _logger.debug("process[%s].stop(): process has already returned %s", self.name, self.exit_code)
             #print "process[%s].stop(): process has already returned %s"%(self.name, self.exit_code)                
             self.popen = None
             self.stopped = True
@@ -407,13 +394,10 @@ executable permission. This is often caused by a bad launch-prefix."""%(msg, ' '
 
         pid = self.popen.pid
         pgid = os.getpgid(pid)
-        _logger.info("process[%s]: killing os process with pid[%s] pgid[%s]", self.name, pid, pgid)
 
         try:
             # Start with SIGINT and escalate from there.
-            _logger.info("[%s] sending SIGINT to pgid [%s]", self.name, pgid)                                    
             os.killpg(pgid, signal.SIGINT)
-            _logger.info("[%s] sent SIGINT to pgid [%s]", self.name, pgid)
             timeout_t = time.time() + TIMEOUT_SIGINT
             retcode = self.popen.poll()                
             while time.time() < timeout_t and retcode is None:
@@ -424,33 +408,21 @@ executable permission. This is often caused by a bad launch-prefix."""%(msg, ' '
                 printerrlog("[%s] escalating to SIGTERM"%self.name)
                 timeout_t = time.time() + TIMEOUT_SIGTERM
                 os.killpg(pgid, signal.SIGTERM)                
-                _logger.info("[%s] sent SIGTERM to pgid [%s]"%(self.name, pgid))
                 retcode = self.popen.poll()
                 while time.time() < timeout_t and retcode is None:
                     time.sleep(0.2)
-                    _logger.debug('poll for retcode')
                     retcode = self.popen.poll()
                 if retcode is None:
                     printerrlog("[%s] escalating to SIGKILL"%self.name)
                     errors.append("process[%s, pid %s]: required SIGKILL. May still be running."%(self.name, pid))
                     try:
                         os.killpg(pgid, signal.SIGKILL)
-                        _logger.info("[%s] sent SIGKILL to pgid [%s]"%(self.name, pgid))
                         # #2096: don't block on SIGKILL, because this results in more orphaned processes overall
-                        #self.popen.wait()
-                        #os.wait()
-                        _logger.info("process[%s]: sent SIGKILL", self.name)
-                    except OSError, e:
+                    except OSError as e:
                         if e.args[0] == 3:
                             printerrlog("no [%s] process with pid [%s]"%(self.name, pid))
                         else:
-                            printerrlog("errors shutting down [%s], see log for details"%self.name)
-                            _logger.error(traceback.format_exc())
-                else:
-                    _logger.info("process[%s]: SIGTERM killed with return value %s", self.name, retcode)
-            else:
-                _logger.info("process[%s]: SIGINT killed with return value %s", self.name, retcode)
-                
+                            printerrlog("errors shutting down [%s]: %s"%(self.name, e))
         finally:
             self.popen = None
 
@@ -465,15 +437,13 @@ executable permission. This is often caused by a bad launch-prefix."""%(msg, ' '
         self.lock.acquire()        
         try:
             try:
-                _logger.debug("process[%s].stop() starting", self.name)
                 if self.popen is None:
-                    _logger.debug("process[%s].stop(): popen is None, nothing to kill") 
                     return
                 #NOTE: currently POSIX-only. Need to add in Windows code once I have a test environment:
                 # http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/347462
                 self._stop_unix(errors)
             except:
-                _logger.error("[%s] EXCEPTION %s", self.name, traceback.format_exc())                                
+                printerrlog("[%s] EXCEPTION %s"%(self.name, traceback.format_exc()))
         finally:
             self.stopped = True
             self.lock.release()

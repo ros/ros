@@ -35,8 +35,7 @@
 
 import sys
 import time
-import roslib.roslogging
-import roslib.scriptutil
+import rosgraph.roslogging
 import rosgraph.impl.graph
 import rosgraph.masterapi
 
@@ -57,7 +56,7 @@ def rosgraph_main():
         fullusage()
         sys.exit(-1)
     
-    roslib.roslogging.configure_logging('rosgraph')
+    rosgraph.roslogging.configure_logging('rosgraph')
 
     # make sure master is available
     master = rosgraph.masterapi.Master('rosgraph')

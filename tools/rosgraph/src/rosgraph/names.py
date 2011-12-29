@@ -45,9 +45,6 @@ from .rosenv import ROS_NAMESPACE
 MSG_EXT = '.msg'
 SRV_EXT = '.srv'
 
-#TODO: deprecate PRN_SEPARATOR
-PRN_SEPARATOR = '/'
-TYPE_SEPARATOR = PRN_SEPARATOR #alias
 SEP = '/'
 GLOBALNS = '/'
 PRIV_NAME = '~'
@@ -185,7 +182,7 @@ def ns_join(ns, name):
 def load_mappings(argv):
     """
     Load name mappings encoded in command-line arguments. This will filter
-    out any parameter assignment mappings (see roslib.param.load_param_mappings()).
+    out any parameter assignment mappings.
 
     @param argv: command-line arguments
     @type  argv: [str]
@@ -204,6 +201,7 @@ def load_mappings(argv):
                     else:
                         mappings[src] = dst
             except:
+                #TODO: remove
                 sys.stderr.write("ERROR: Invalid remapping argument '%s'\n"%arg)
     return mappings
 

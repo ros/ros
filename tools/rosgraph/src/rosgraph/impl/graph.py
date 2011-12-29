@@ -32,6 +32,8 @@
 #
 # Revision $Id$
 
+from __future__ import print_function
+
 """
 Data structures and library for representing ROS Computation Graph state.
 """
@@ -45,7 +47,7 @@ import traceback
 import xmlrpclib
 import socket
 
-import roslib.scriptutil 
+import rosgraph.masterapi
 
 logger = logging.getLogger('rosgraph.graph')
 
@@ -228,7 +230,7 @@ class Graph(object):
     """
     
     def __init__(self, node_ns='/', topic_ns='/'):
-        self.master = roslib.scriptutil.get_master()
+        self.master = rosgraph.masterapi.Master(_ROS_NAME)
 
         self.node_ns = node_ns or '/'
         self.topic_ns = topic_ns or '/'
@@ -290,15 +292,14 @@ class Graph(object):
         """
         logger.debug("master refresh: starting")
         updated = False
-        #TODO: getSystemState probably needs to return URIs instead
         try:
-            code, msg, val = self.master.getSystemState(_ROS_NAME)
-        except socket.error, msg:
-            print >> sys.stderr, "Unable to contact master", msg
+            val = self.master.getSystemState()
+        except rosgraph.masterapi.MasterException as e:
+            print("Unable to contact master", msg, file=sys.stderr)
             logger.error("unable to contact master: %s", msg)
             return False
         if code != 1:
-            print >> sys.stderr, "Unable to contact master: %s"%msg
+            print("Unable to contact master: %s"%msg, file=sys.stderr)
             logger.error("unable to contact master: %s", msg)
             updated = False
         else:
@@ -392,7 +393,7 @@ class Graph(object):
             code, msg, bus_info = api.getBusInfo(_ROS_NAME)
             
             socket.setdefaulttimeout(old_timeout)
-        except Exception, e:
+        except Exception as e:
             # node is (still) bad
             self._mark_bad_node(node, str(e))
             code = -1
@@ -454,13 +455,13 @@ class Graph(object):
             if uri:
                 api = xmlrpclib.ServerProxy(uri)
                 updated = self._node_refresh_businfo(node, api, bad_node)
-        except KeyError, e:
+        except KeyError as e:
             logger.warn('cannot contact node [%s] as it is not in the lookup table'%node)
         return updated
 
     def _node_uri_refresh(self, node):
         try:
-            code, msg, uri = self.master.lookupNode(_ROS_NAME, node)
+            code, msg, uri = self.master.lookupNode(node)
         except:
             code = -1
             msg = traceback.format_exc()

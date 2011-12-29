@@ -10,14 +10,14 @@ from setuptools import setup
 import sys
 sys.path.insert(0, 'src')
 
-#from genpy import __version__
+from rosgraph import __version__
 
 setup(name='rosgraph',
-      version= "6.6.6",
+      version= __version__,
       packages=['rosgraph'],
       package_dir = {'':'src'},
       install_requires=[],
-      scripts = [],
+      scripts = ['scripts/rosgraph', 'scripts/rxgraph'],
       author = "Ken Conley", 
       author_email = "kwc@willowgarage.com",
       url = "http://www.ros.org/wiki/rosgraph",

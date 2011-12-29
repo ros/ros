@@ -1,7 +1,6 @@
-#!/usr/bin/env python
 # Software License Agreement (BSD License)
 #
-# Copyright (c) 2008, Willow Garage, Inc.
+# Copyright (c) 2009, Willow Garage, Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -30,9 +29,34 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id: rxgraph 3804 2009-02-11 02:16:00Z rob_wheeler $
 
-import roslib; roslib.load_manifest('rosgraph')
-import rosgraph.rxgraph
-rosgraph.rxgraph.rxgraph_main()
+import os
+import struct
+import sys
+import unittest
+
+def test_XmlRpcHandler():
+    from rosgraph.xmlrpc import XmlRpcHandler    
+    # tripwire
+    h = XmlRpcHandler()
+    # noop
+    h._ready('http://localhost:1234')
+    
+def test_XmlRpcNode():
+    from rosgraph.xmlrpc import XmlRpcNode
+    # not a very comprehensive test (yet)
+    #port, handler
+    tests = [
+        (None, None, None),
+        (8080, None, 8080),
+        ('8080', None, 8080),
+        (u'8080', None, 8080),
+      ]
+    for port, handler,true_port in tests:
+        n = XmlRpcNode(port, handler)
+        assert true_port == n.port
+        assert handler == n.handler
+        assert None == n.uri
+        assert None == n.server
+        n.set_uri('http://fake:1234')
+        assert 'http://fake:1234' == n.uri

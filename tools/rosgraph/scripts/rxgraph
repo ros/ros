@@ -31,9 +31,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id: rosgraph 3804 2009-02-11 02:16:00Z rob_wheeler $
+# Revision $Id: rxgraph 3804 2009-02-11 02:16:00Z rob_wheeler $
 
-import roslib; roslib.load_manifest('rosgraph')
-import rosgraph.rosgraph_main
-rosgraph.rosgraph_main.rosgraph_main()
-
+import rosgraph.rxgraph
+rosgraph.rxgraph.rxgraph_main()

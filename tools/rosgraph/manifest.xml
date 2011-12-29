@@ -9,19 +9,10 @@ rosgraph contains the rosgraph command-line tool, which prints information about
   <license>BSD</license>
   <review status="Doc reviewed" notes="2009/12/30"/>
   <url>http://ros.org/wiki/rosgraph</url>
-  <depend package="roslib"/>
 
   <export>
       <rosdoc config="rosdoc.yaml"/>
   </export>
-  <platform os="ubuntu" version="9.04"/>
-  <platform os="ubuntu" version="9.10"/>
-  <platform os="ubuntu" version="10.04"/>
-  <platform os="macports" version="macports"/>
-
-  <rosbuild2>
-    <depend package="roslib"/>
-  </rosbuild2>
 
 </package>
 

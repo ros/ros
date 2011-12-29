@@ -8,28 +8,28 @@ include(AddFileDependencies)
 # Used to check if a function exists
 include(CheckFunctionExists)
 
-# Find a ros package. 
-macro(rosbuild_find_ros_package pkgname) 
-  # catch the error output to suppress it 
-  execute_process( 
-    COMMAND rospack find ${pkgname} 
-    ERROR_VARIABLE __rospack_err_ignore 
-    OUTPUT_VARIABLE __pkg_dir 
-    OUTPUT_STRIP_TRAILING_WHITESPACE) 
-  # todo: catch return code and be smart about it 
-  set(${pkgname}_PACKAGE_PATH ${__pkg_dir}) 
-endmacro(rosbuild_find_ros_package) 
+# Find a ros package.
+macro(rosbuild_find_ros_package pkgname)
+  # catch the error output to suppress it
+  execute_process(
+    COMMAND rospack find ${pkgname}
+    ERROR_VARIABLE __rospack_err_ignore
+    OUTPUT_VARIABLE __pkg_dir
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+  # todo: catch return code and be smart about it
+  set(${pkgname}_PACKAGE_PATH ${__pkg_dir})
+endmacro(rosbuild_find_ros_package)
 
-# Find a ros stack. 
-macro(rosbuild_find_ros_stack stackname) 
-  # catch the error output to suppress it 
-  execute_process( 
-    COMMAND rosstack find ${stackname} 
-    ERROR_VARIABLE __rospack_err_ignore 
-    OUTPUT_VARIABLE __stack_dir 
-    OUTPUT_STRIP_TRAILING_WHITESPACE) 
-  # todo: catch return code and be smart about it 
-  set(${stackname}_STACK_PATH ${__stack_dir}) 
+# Find a ros stack.
+macro(rosbuild_find_ros_stack stackname)
+  # catch the error output to suppress it
+  execute_process(
+    COMMAND rosstack find ${stackname}
+    ERROR_VARIABLE __rospack_err_ignore
+    OUTPUT_VARIABLE __stack_dir
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+  # todo: catch return code and be smart about it
+  set(${stackname}_STACK_PATH ${__stack_dir})
 endmacro(rosbuild_find_ros_stack)
 
 # Retrieve the current COMPILE_FLAGS for the given target, append the new
@@ -197,7 +197,7 @@ macro(rosbuild_init)
   set(_prefix ${PROJECT_NAME})
   set(${_prefix}_INCLUDEDIR "" CACHE INTERNAL "")
 
-  # Get the full paths to the manifests for all packages on which 
+  # Get the full paths to the manifests for all packages on which
   # we depend
   rosbuild_invoke_rospack(${PROJECT_NAME} _rospack deps_manifests_invoke_result deps-manifests)
   rosbuild_invoke_rospack(${PROJECT_NAME} _rospack msgsrv_gen_invoke_result deps-msgsrv)
@@ -226,18 +226,18 @@ macro(rosbuild_init)
     rosbuild_invoke_rospack(${PROJECT_NAME} ${_prefix} INCLUDE_DIRS cflags-only-I --deps-only)
     #message("${pkgname} include dirs: ${${_prefix}_INCLUDE_DIRS}")
     set(${_prefix}_INCLUDE_DIRS ${${_prefix}_INCLUDE_DIRS} CACHE INTERNAL "")
-  
+
     # Get the other cflags
     rosbuild_invoke_rospack(${PROJECT_NAME} ${_prefix} temp cflags-only-other --deps-only)
     _rosbuild_list_to_string(${_prefix}_CFLAGS_OTHER "${${_prefix}_temp}")
     #message("${pkgname} other cflags: ${${_prefix}_CFLAGS_OTHER}")
     set(${_prefix}_CFLAGS_OTHER ${${_prefix}_CFLAGS_OTHER} CACHE INTERNAL "")
-  
+
     # Get the lib dirs
     rosbuild_invoke_rospack(${PROJECT_NAME} ${_prefix} LIBRARY_DIRS libs-only-L --deps-only)
     #message("${pkgname} library dirs: ${${_prefix}_LIBRARY_DIRS}")
     set(${_prefix}_LIBRARY_DIRS ${${_prefix}_LIBRARY_DIRS} CACHE INTERNAL "")
-  
+
     # Get the libs
     rosbuild_invoke_rospack(${PROJECT_NAME} ${_prefix} LIBRARIES libs-only-l --deps-only)
     #
@@ -247,13 +247,13 @@ macro(rosbuild_init)
     list(REVERSE ${_prefix}_LIBRARIES)
     list(REMOVE_DUPLICATES ${_prefix}_LIBRARIES)
     list(REVERSE ${_prefix}_LIBRARIES)
-  
+
     # Also throw in the libs that we want to link everything against (only
     # use case for this so far is -lgcov when building with code coverage
     # support).
     list(APPEND ${_prefix}_LIBRARIES "${ROS_LINK_LIBS}")
     set(${_prefix}_LIBRARIES ${${_prefix}_LIBRARIES} CACHE INTERNAL "")
-  
+
     # Get the other lflags
     rosbuild_invoke_rospack(${PROJECT_NAME} ${_prefix} temp libs-only-other --deps-only)
     _rosbuild_list_to_string(${_prefix}_LDFLAGS_OTHER "${${_prefix}_temp}")
@@ -313,7 +313,7 @@ macro(rosbuild_init)
   if(NOT rosbuild_test_nobuild)
     add_dependencies(test tests)
   endif(NOT rosbuild_test_nobuild)
-  
+
   # Clean out previous test results before running tests.  Use bash
   # conditional to ignore failures (most often happens when a stale NFS
   # handle lingers in the test results directory), because CMake doesn't
@@ -369,10 +369,10 @@ macro(rosbuild_init)
   # and will eventually be removed.
   add_custom_target(rospack_genmsg_libexe)
   add_dependencies(rosbuild_precompile rospack_genmsg_libexe)
-  
+
   # ${gendeps_exe} is a convenience variable that roslang cmake rules
   # must reference as a dependency of msg/srv generation
-  set(gendeps_exe ${roslib_path}/scripts/gendeps) 
+  set(gendeps_exe ${roslib_path}/scripts/gendeps)
 
   # If the roslang package is available, pull in cmake/roslang.cmake from
   # there; it will in turn include message-generation logic from client
@@ -495,15 +495,15 @@ macro(rosbuild_add_executable exe)
 
   # Add explicit dependency of each file on our manifest.xml and those of
   # our dependencies.
-  get_target_property(_srclist ${exe} SOURCES) 
-  foreach(_src ${_srclist}) 
+  get_target_property(_srclist ${exe} SOURCES)
+  foreach(_src ${_srclist})
     set(_file_name _file_name-NOTFOUND)
     find_file(_file_name ${_src} ${CMAKE_CURRENT_SOURCE_DIR} /)
     if(NOT _file_name)
       message("[rosbuild] Couldn't find source file ${_src}; assuming that it is in ${CMAKE_CURRENT_SOURCE_DIR} and will be generated later")
       set(_file_name ${CMAKE_CURRENT_SOURCE_DIR}/${_src})
     endif(NOT _file_name)
-    add_file_dependencies(${_file_name} ${ROS_MANIFEST_LIST}) 
+    add_file_dependencies(${_file_name} ${ROS_MANIFEST_LIST})
   endforeach(_src)
 
   rosbuild_add_compile_flags(${exe} ${${PROJECT_NAME}_CFLAGS_OTHER})
@@ -625,7 +625,7 @@ macro(rosbuild_add_gtest_labeled label)
 endmacro(rosbuild_add_gtest_labeled)
 
 # A helper to run rostests. It generates a command to run rostest on
-# the specified file and makes this target a dependency of test. 
+# the specified file and makes this target a dependency of test.
 macro(rosbuild_add_rostest file)
   string(REPLACE "/" "_" _testname ${file})
   _rosbuild_add_rostest(${file})
@@ -645,7 +645,7 @@ macro(rosbuild_add_rostest_labeled label)
 endmacro(rosbuild_add_rostest_labeled)
 
 # A helper to run Python unit tests. It generates a command to run python
-# the specified file 
+# the specified file
 macro(rosbuild_add_pyunit file)
   string(REPLACE "/" "_" _testname ${file})
   _rosbuild_add_pyunit(${ARGV})
@@ -740,8 +740,8 @@ macro(rosbuild_gendeps _pkg _msgfile)
     execute_process(
       COMMAND ${roslib_path}/scripts/gendeps ${_input}
       OUTPUT_VARIABLE __other_msgs
-      ERROR_VARIABLE __rospack_err_ignore 
-      OUTPUT_STRIP_TRAILING_WHITESPACE) 
+      ERROR_VARIABLE __rospack_err_ignore
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
     # For some reason, the output from gendeps has escaped spaces in it.
     # Converting to a string and then back to a list removes them.
     _rosbuild_list_to_string(${_pkg}_${_msgfile}_GENDEPS "${__other_msgs}")
@@ -825,26 +825,26 @@ macro(rosbuild_genmsg)
 endmacro(rosbuild_genmsg)
 
 macro(rosbuild_add_boost_directories)
-  set(_sysroot "--sysroot=${CMAKE_FIND_ROOT_PATH}") 
+  set(_sysroot "--sysroot=${CMAKE_FIND_ROOT_PATH}")
   execute_process(COMMAND "rosboost-cfg" ${_sysroot} "--include_dirs"
                   OUTPUT_VARIABLE BOOST_INCLUDE_DIRS
                   RESULT_VARIABLE _boostcfg_failed
                   OUTPUT_STRIP_TRAILING_WHITESPACE)
-                  
+
   if (_boostcfg_failed)
     message(FATAL_ERROR "rosboost-cfg --include_dirs failed")
   endif(_boostcfg_failed)
-  
-  set(_sysroot "--sysroot=${CMAKE_FIND_ROOT_PATH}") 
+
+  set(_sysroot "--sysroot=${CMAKE_FIND_ROOT_PATH}")
   execute_process(COMMAND "rosboost-cfg" ${_sysroot} "--lib_dirs"
                   OUTPUT_VARIABLE BOOST_LIB_DIRS
                   RESULT_VARIABLE _boostcfg_failed
                   OUTPUT_STRIP_TRAILING_WHITESPACE)
-                  
+
   if (_boostcfg_failed)
     message(FATAL_ERROR "rosboost-cfg --lib_dirs failed")
   endif(_boostcfg_failed)
-  
+
   add_definitions(-DBOOST_CB_DISABLE_DEBUG)
   include_directories(${BOOST_INCLUDE_DIRS})
   link_directories(${BOOST_LIB_DIRS})
@@ -861,13 +861,13 @@ macro(rosbuild_link_boost target)
       set(_libs "${_libs},${arg}")
     endif(_first)
   endforeach(arg)
-  set(_sysroot "--sysroot=${CMAKE_FIND_ROOT_PATH}") 
+  set(_sysroot "--sysroot=${CMAKE_FIND_ROOT_PATH}")
   execute_process(COMMAND "rosboost-cfg" ${_sysroot} "--libs" ${_libs}
                   OUTPUT_VARIABLE BOOST_LIBS
 		  ERROR_VARIABLE _boostcfg_error
                   RESULT_VARIABLE _boostcfg_failed
                   OUTPUT_STRIP_TRAILING_WHITESPACE)
-  
+
   if (_boostcfg_failed)
     message(FATAL_ERROR "[rosboost-cfg --libs ${_libs}] failed with error: ${_boostcfg_error}")
   endif(_boostcfg_failed)
@@ -887,7 +887,7 @@ macro(rosbuild_download_test_data _url _filename)
 
   # Create a legal target name, in case the target name has slashes in it
   string(REPLACE "/" "_" _testname download_data_${_filename})
-  add_custom_command(OUTPUT ${PROJECT_SOURCE_DIR}/${_filename} 
+  add_custom_command(OUTPUT ${PROJECT_SOURCE_DIR}/${_filename}
                      COMMAND $ENV{ROS_ROOT}/core/rosbuild/bin/download_checkmd5.py ${_url} ${PROJECT_SOURCE_DIR}/${_filename} ${ARGN}
                      VERBATIM)
   add_custom_target(${_testname} DEPENDS ${PROJECT_SOURCE_DIR}/${_filename})
@@ -951,7 +951,7 @@ macro(rosbuild_add_openmp_flags target)
   if("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
     _rosbuild_warn("because ROS_TEST_COVERAGE is set, OpenMP support is disabled")
   else("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
-  
+
   # First, try to use the standard FindOpenMP module (#3184).  If that
   # fails, fall back on manual detection.  I don't know why the standard
   # detection would ever fail; it's possible that the manual
@@ -970,30 +970,30 @@ macro(rosbuild_add_openmp_flags target)
       "-omp" # Tru64
       "-qsmp=omp" # AIX
       )
-  
+
   # backup for a variable we will change
     set(_rospack_openmp_flags_backup ${CMAKE_REQUIRED_FLAGS})
-  
+
   # mark the fact we do not yet know the flag
     set(_rospack_openmp_flag_found FALSE)
     set(_rospack_openmp_flag_value)
-  
+
   # find an OpenMP flag that works
     foreach(_rospack_openmp_test_flag ${_rospack_check_openmp_flags})
-      if(NOT _rospack_openmp_flag_found)      
+      if(NOT _rospack_openmp_flag_found)
         set(CMAKE_REQUIRED_FLAGS ${_rospack_openmp_test_flag})
         check_function_exists(omp_set_num_threads _rospack_openmp_function_found${_rospack_openmp_test_flag})
-   
+
         if(_rospack_openmp_function_found${_rospack_openmp_test_flag})
   	set(_rospack_openmp_flag_value ${_rospack_openmp_test_flag})
   	set(_rospack_openmp_flag_found TRUE)
         endif(_rospack_openmp_function_found${_rospack_openmp_test_flag})
       endif(NOT _rospack_openmp_flag_found)
     endforeach(_rospack_openmp_test_flag ${_rospack_check_openmp_flags})
-  
+
   # restore the CMake variable
     set(CMAKE_REQUIRED_FLAGS ${_rospack_openmp_flags_backup})
-    
+
   # add the flags or warn
     if(_rospack_openmp_flag_found)
       rosbuild_add_compile_flags(${target} ${_rospack_openmp_flag_value})
@@ -1011,7 +1011,7 @@ macro(rosbuild_make_distribution)
 endmacro(rosbuild_make_distribution)
 
 # Compute the number of hardware cores on the machine.  Intended to use for
-# gating tests that have heavy processor requirements. 
+# gating tests that have heavy processor requirements.
 include($ENV{ROS_ROOT}/core/rosbuild/ProcessorCount.cmake)
 macro(rosbuild_count_cores num)
   ProcessorCount(${num})
@@ -1047,17 +1047,17 @@ endmacro(rosbuild_check_for_display)
 macro(rosbuild_add_swigpy_library target lib)
   rosbuild_add_library(${target} ${ARGN})
   # swig python needs a shared library named _<modulename>.[so|dll|...]
-  # this renames the output file to conform to that by prepending 
+  # this renames the output file to conform to that by prepending
   # an underscore in place of the "lib" prefix.
-  # If on Darwin, force the suffix so ".so", because the MacPorts 
+  # If on Darwin, force the suffix so ".so", because the MacPorts
   # version of Python won't find _foo.dylib for 'import _foo'
   if(APPLE)
     set_target_properties(${target}
-                          PROPERTIES OUTPUT_NAME ${lib} 
+                          PROPERTIES OUTPUT_NAME ${lib}
                           PREFIX "_" SUFFIX ".so")
   else(APPLE)
     set_target_properties(${target}
-                          PROPERTIES OUTPUT_NAME ${lib} 
+                          PROPERTIES OUTPUT_NAME ${lib}
                           PREFIX "_")
   endif(APPLE)
 endmacro(rosbuild_add_swigpy_library)
@@ -1067,11 +1067,11 @@ macro(rosbuild_check_for_sse)
   include(CheckCXXSourceRuns)
   if( CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX )
    set(SSE_FLAGS)
-  
+
    set(CMAKE_REQUIRED_FLAGS "-msse3")
    check_cxx_source_runs("
     #include <pmmintrin.h>
-  
+
     int main()
     {
        __m128d a, b;
@@ -1082,11 +1082,11 @@ macro(rosbuild_check_for_sse)
        return 0;
     }"
     HAS_SSE3_EXTENSIONS)
-  
+
    set(CMAKE_REQUIRED_FLAGS "-msse2")
    check_cxx_source_runs("
     #include <emmintrin.h>
-  
+
     int main()
     {
         __m128d a, b;
@@ -1097,7 +1097,7 @@ macro(rosbuild_check_for_sse)
         return 0;
      }"
      HAS_SSE2_EXTENSIONS)
-  
+
    set(CMAKE_REQUIRED_FLAGS "-msse")
    check_cxx_source_runs("
     #include <xmmintrin.h>
@@ -1112,9 +1112,9 @@ macro(rosbuild_check_for_sse)
         return 0;
     }"
     HAS_SSE_EXTENSIONS)
-  
+
    set(CMAKE_REQUIRED_FLAGS)
-  
+
    if(HAS_SSE3_EXTENSIONS)
     set(SSE_FLAGS "-msse3 -mfpmath=sse")
     message(STATUS "[rosbuild] Found SSE3 extensions, using flags: ${SSE_FLAGS}")
@@ -1128,7 +1128,7 @@ macro(rosbuild_check_for_sse)
   elseif(MSVC)
    check_cxx_source_runs("
     #include <emmintrin.h>
-  
+
     int main()
     {
         __m128d a, b;
@@ -1176,12 +1176,12 @@ macro(rosbuild_include pkg module)
 endmacro(rosbuild_include)
 
 macro(rosbuild_get_package_version _var pkgname)
-  execute_process( 
-    COMMAND rosstack contains ${pkgname} 
-    ERROR_VARIABLE __rosstack_err_ignore 
+  execute_process(
+    COMMAND rosstack contains ${pkgname}
+    ERROR_VARIABLE __rosstack_err_ignore
     OUTPUT_VARIABLE __stack
     RESULT_VARIABLE _rosstack_failed
-    OUTPUT_STRIP_TRAILING_WHITESPACE) 
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
   if(_rosstack_failed OR NOT __stack)
     message(FATAL_ERROR "[rosbuild] Failed to find stack containing package ${pkgname}")
   else(_rosstack_failed OR NOT __stack)
@@ -1190,12 +1190,12 @@ macro(rosbuild_get_package_version _var pkgname)
 endmacro(rosbuild_get_package_version)
 
 macro(rosbuild_get_stack_version _var stackname)
-  execute_process( 
-    COMMAND rosversion ${stackname} 
-    ERROR_VARIABLE __rosversion_err_ignore 
+  execute_process(
+    COMMAND rosversion ${stackname}
+    ERROR_VARIABLE __rosversion_err_ignore
     OUTPUT_VARIABLE __version
     RESULT_VARIABLE _rosversion_failed
-    OUTPUT_STRIP_TRAILING_WHITESPACE) 
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
   if(_rosversion_failed OR NOT __version)
     message(FATAL_ERROR "[rosbuild] Failed to find version of stack ${stackname}")
   else(_rosversion_failed OR NOT __version)

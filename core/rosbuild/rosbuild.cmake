@@ -1,4 +1,26 @@
+
 cmake_minimum_required(VERSION 2.4.6)
+
+#
+#  Catkin-compat thunks
+#
+cmake_policy(SET CMP0011 OLD)
+
+macro(rosbuild_catkinize)
+  if(CATKIN)
+    message(STATUS "thunking from rosbuild in ${CMAKE_CURRENT_SOURCE_DIR}")
+    if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/catkin.cmake)
+      include(catkin.cmake)
+    else()
+      message(STATUS "warning: Directory ${CMAKE_CURRENT_SOURCE_DIR} contains rosbuild_catkinize but no catkin.cmake")
+    endif()
+    return()
+  endif()
+endmacro()
+
+if(CATKIN)
+  return()
+endif()
 
 # Policy settings to prevent warnings on 2.6 but ensure proper operation on
 # 2.4.

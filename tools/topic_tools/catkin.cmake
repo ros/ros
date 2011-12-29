@@ -1,5 +1,6 @@
-
 project(topic_tools)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
+
 include_directories(include)
 find_package(ROS COMPONENTS roscpp rosconsole XmlRpc)
 include_directories(${ROS_INCLUDE_DIRS})

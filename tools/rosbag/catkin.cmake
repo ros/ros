@@ -1,4 +1,6 @@
 project(rosbag)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
+
 find_package(ROS REQUIRED COMPONENTS cpp_common roscpp_serialization roscpp rosconsole XmlRpc topic_tools)
 find_package(Boost REQUIRED COMPONENTS program_options)
 find_package(BZip2 REQUIRED)
@@ -8,7 +10,7 @@ add_definitions(-D_FILE_OFFSET_BITS=64)
 include_directories(include ${BZIP2_INCLUDE_DIR} ${ROS_INCLUDE_DIRS} ${roscpp_INCLUDE_DIRS})
 add_definitions(${BZIP2_DEFINITIONS})
 
-add_library(rosbag
+add_library(rosbag SHARED
   src/bag.cpp src/buffer.cpp src/bz2_stream.cpp src/chunked_file.cpp
   src/message_instance.cpp src/player.cpp
   src/query.cpp src/recorder.cpp src/stream.cpp src/time_translator.cpp

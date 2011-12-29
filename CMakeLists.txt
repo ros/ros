@@ -1,9 +1,6 @@
-if(CATKIN)
-  include(catkin.cmake)
-  return()
-endif()
 cmake_minimum_required(VERSION 2.4.6)
 include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
+rosbuild_catkinize()
 
 # Append to CPACK_SOURCE_IGNORE_FILES a semicolon-separated list of
 # directories (or patterns, but directories should suffice) that should

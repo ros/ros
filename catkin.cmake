@@ -8,9 +8,9 @@ foreach(subdir
     utilities/xmlrpcpp
     tools/rosconsole
     clients/cpp/roscpp
+    tools
     clients/rospy
     utilities/message_filters
-    tools
     )
   add_subdirectory(${subdir})
 endforeach()

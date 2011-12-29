@@ -28,11 +28,14 @@ target_link_libraries(play rosbag)
 #target_link_libraries(example_write rosbag)
 
 INSTALL(TARGETS record play
-        RUNTIME DESTINATION $ENV{ROS_ROOT}/bin)
+        RUNTIME DESTINATION bin)
 
-rosbuild_download_test_data(http://pr.willowgarage.com/data/rosbag/test_indexed_1.2.bag test/test_indexed_1.2.bag 523cc0deb66269c84be4a7c605ff5eb3)
-rosbuild_download_test_data(http://pr.willowgarage.com/data/rosbag/chatter_50hz.bag test/chatter_50hz.bag 00844db3729b1b5f34e767dc691bd531)
-rosbuild_download_test_data(http://pr.willowgarage.com/data/rosbag/test_future_version_2.1.bag test/test_future_version_2.1.bag ddcb5e8711b16514eb640330ed93c332)
+rosbuild_download_test_data(http://pr.willowgarage.com/data/rosbag/test_indexed_1.2.bag
+  test/test_indexed_1.2.bag 523cc0deb66269c84be4a7c605ff5eb3)
+rosbuild_download_test_data(http://pr.willowgarage.com/data/rosbag/chatter_50hz.bag
+  test/chatter_50hz.bag 00844db3729b1b5f34e767dc691bd531)
+rosbuild_download_test_data(http://pr.willowgarage.com/data/rosbag/test_future_version_2.1.bag
+  test/test_future_version_2.1.bag ddcb5e8711b16514eb640330ed93c332)
 
 rosbuild_add_pyunit(test/test_bag.py)
 

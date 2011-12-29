@@ -41,8 +41,12 @@ import sys
 import time
 import xmlrpclib
 
-import roslib.rosenv
-import roslib.network
+import rospkg.environment
+
+import rosgraph
+import rosgraph.rosenv
+import rosgraph.network
+
 import roslib.scriptutil
 import rosnode
 import rosservice
@@ -103,12 +107,12 @@ def ping_check(ctx):
 
 def simtime_check(ctx):
     if ctx.use_sim_time:
-        master = roslib.scriptutil.get_master()
+        master = rosgraph.Master('/roswtf')
         try:
-            code, msg, pubtopics = master.getPublishedTopics('/roswtf', '/')
-        except:
+            pubtopics = master.getPublishedTopics('/')
+        except rosgraph.MasterException:
             ctx.errors.append(WtfError("Cannot talk to ROS master"))
-            raise WtfException("roswtf lost connection to the ROS Master at %s"%roslib.rosenv.get_master_uri())
+            raise WtfException("roswtf lost connection to the ROS Master at %s"%rosgraph.rosenv.get_master_uri())
 
         if code != 1:
             raise WtfException("cannot get published topics from master: %s"%msg)
@@ -119,26 +123,23 @@ def simtime_check(ctx):
     
 ## contact each service and make sure it returns a header
 def probe_all_services(ctx):
-    master = roslib.scriptutil.get_master()
+    master = rosgraph.Master('/roswtf')
     errors = []
     for service_name in ctx.services:
         try:
-            code, msg, service_uri = master.lookupService('/rosservice', service_name)
+            service_uri = master.lookupService(service_name)
         except:
-            ctx.errors.append(WtfError("cannot contact ROS Master at %s"%roslib.rosenv.get_master_uri()))
-            raise WtfException("roswtf lost connection to the ROS Master at %s"%roslib.rosenv.get_master_uri())
+            ctx.errors.append(WtfError("cannot contact ROS Master at %s"%rosgraph.rosenv.get_master_uri()))
+            raise WtfException("roswtf lost connection to the ROS Master at %s"%rosgraph.rosenv.get_master_uri())
         
-        if code != 1:
-            ctx.warnings.append(WtfWarning("Unable to lookup service [%s]"%service_name))
-        else:
-            try:
-                headers = rosservice.get_service_headers(service_name, service_uri)
-                if not headers:
-                    errors.append("service [%s] did not return service headers"%service_name)
-            except roslib.network.ROSHandshakeException, e:
-                errors.append("service [%s] appears to be malfunctioning"%service_name)
-            except Exception, e:
-                errors.append("service [%s] appears to be malfunctioning: %s"%(service_name, e))
+        try:
+            headers = rosservice.get_service_headers(service_name, service_uri)
+            if not headers:
+                errors.append("service [%s] did not return service headers"%service_name)
+        except rosgraph.network.ROSHandshakeException as e:
+            errors.append("service [%s] appears to be malfunctioning"%service_name)
+        except Exception as e:
+            errors.append("service [%s] appears to be malfunctioning: %s"%(service_name, e))
     return errors
                 
 def unconnected_subscriptions(ctx):
@@ -199,20 +200,23 @@ node_warnings = [
 
 ## cache sim_time calculation sot that multiple rules can use
 def _compute_sim_time(ctx):
-    param_server = roslib.scriptutil.get_param_server()
-    code, msg, val = simtime = param_server.getParam('/roswtf', '/use_sim_time')
-    if code == 1 and val:
-        ctx.use_sim_time = True
-    else:
-        ctx.use_sim_time = False        
+    param_server = rosgraph.Master('/roswtf')
+    ctx.use_sim_time = False        
+    try:
+        val = simtime = param_server.getParam('/use_sim_time')
+        if val:
+            ctx.use_sim_time = True
+    except:
+        pass
     
 def _compute_system_state(ctx):
     socket.setdefaulttimeout(3.0)
-    master = roslib.scriptutil.get_master()
+    master = rosgraph.Master('/roswtf')
 
     # store system state
-    code, msg, val = master.getSystemState('/roswtf')
-    if code != 1:
+    try:
+        val = master.getSystemState()
+    except rosgraph.MasterException:
         return
     ctx.system_state = val
 
@@ -244,14 +248,11 @@ def _compute_system_state(ctx):
     for n in ctx.nodes:
         count += 1
         try:
-            code, msg, val = master.lookupNode('/roswtf', n)
+            val = master.lookupNode(n)
         except socket.error:
-            ctx.errors.append(WtfError("cannot contact ROS Master at %s"%roslib.rosenv.get_master_uri()))
-            raise WtfException("roswtf lost connection to the ROS Master at %s"%roslib.rosenv.get_master_uri())
-        if code == 1:
-            ctx.uri_node_map[val] = n
-        else:
-            ctx.warnings.append(WtfWarning("Inconsistent state on master for node [%s]"%n))
+            ctx.errors.append(WtfError("cannot contact ROS Master at %s"%rosgraph.rosenv.get_master_uri()))
+            raise WtfException("roswtf lost connection to the ROS Master at %s"%rosgraph.rosenv.get_master_uri())
+        ctx.uri_node_map[val] = n
     end = time.time()
     # - time thresholds currently very arbitrary
     if count:
@@ -313,7 +314,7 @@ class NodeInfoThread(threading.Thread):
 ## the network
 def _compute_connectivity(ctx):
     socket.setdefaulttimeout(3.0)
-    master = roslib.scriptutil.get_master()
+    master = rosgraph.Master('/roswtf')
 
     # Compute list of expected edges and unconnected subscriptions
     pubs, subs, _ = ctx.system_state
@@ -327,10 +328,7 @@ def _compute_connectivity(ctx):
     # - iterate through subscribers and add edge to each publisher of topic
     for t, sub_list in subs:
         for sub in sub_list:
-            if sub == '/rosout' and t == '/rosout':
-                # special case this self-subscription
-                continue
-            elif t in pub_dict:
+            if t in pub_dict:
                 expected_edges.extend([(t, pub, sub) for pub in pub_dict[t]])
             elif sub in unconnected_subscriptions:
                 unconnected_subscriptions[sub].append(t)
@@ -369,10 +367,10 @@ def wtf_check_graph(ctx, names=None):
     
     # TODO: get the type for each topic from each publisher and see if they match up
 
-    master = roslib.scriptutil.get_master()
+    master = rosgraph.Master('/roswtf')
     try:
-        master.getPid('/roswtf')
-    except:
+        master.getPid()
+    except rospkg.MasterException:
         warning_rule((True, "Cannot communicate with master, ignoring online checks"), True, ctx)
         return
             

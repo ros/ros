@@ -40,14 +40,11 @@ APIs to pass state.
 import os
 import sys
 
-import roslib.manifest
-import roslib.packages
-import roslib.stacks
-import roslib.rosenv
-import roslib.rospack
-import roslib.substitution_args
+import rospkg
+import rospkg.environment
 
 import rosgraph
+import rosgraph.substitution_args
 
 import roslaunch.depends
 
@@ -72,8 +69,6 @@ class WtfContext(object):
                  'env', 'ros_root', 'ros_package_path', 'pythonpath',
                  'ros_master_uri',
                  'roslaunch_uris',
-                 'ros_bindeps_path',
-                 'ros_boost_root',
                  'launch_files',
                  'launch_file_deps',
                  'launch_file_missing_deps',
@@ -112,8 +107,6 @@ class WtfContext(object):
         self.ros_root = None
         self.ros_package_path = None
         self.pythonpath = None
-        self.ros_bindeps_path = None        
-        self.ros_boost_root = None        
         
         # launch file that is being run
         self.launch_files = None
@@ -181,8 +174,9 @@ class WtfContext(object):
         ctx = WtfContext()
         _load_stack(ctx, stack)
         try:
-            ctx.pkgs = roslib.stacks.packages_of(stack)
-        except roslib.stacks.InvalidROSStackException:
+            r = rospkg.RosStack()
+            ctx.pkgs = r.packages_of(stack)
+        except rospkg.ResourceNotFound:
             # this should be handled elsewhere
             ctx.pkgs = []
         _load_env(ctx, env)
@@ -199,7 +193,8 @@ class WtfContext(object):
         """
         ctx = WtfContext()
         _load_pkg(ctx, pkg)
-        stack = roslib.stacks.stack_of(pkg)
+        r = rospkg.RosPack()
+        stack = r.stack_of(pkg)
         if stack:
             _load_stack(ctx, stack)
         _load_env(ctx, env)
@@ -225,9 +220,9 @@ def _load_roslaunch(ctx, roslaunch_files):
         ctx.pkg = base_pkg
         ctx.launch_file_deps = file_deps
         ctx.launch_file_missing_deps = missing
-    except roslib.substitution_args.SubstitutionException as se:
+    except rosgraph.substitution_args.SubstitutionException as se:
         raise WtfException("Cannot load roslaunch file(s): "+str(se))
-    except roslaunch.depends.RoslaunchDepsException, e:
+    except roslaunch.depends.RoslaunchDepsException as e:
         raise WtfException(str(e))
 
 def _load_pkg(ctx, pkg):
@@ -235,15 +230,16 @@ def _load_pkg(ctx, pkg):
     Utility for initializing WtfContext state
     @raise WtfException: if context state cannot be initialized
     """
+    r = rospkg.RosPack()
     ctx.pkg = pkg
-    ctx.pkgs = [pkg] + roslib.rospack.rospack_depends(pkg)
+    ctx.pkgs = [pkg] + r.get_depends(pkg)
     try:
-        ctx.pkg_dir = roslib.packages.get_pkg_dir(pkg)
-        ctx.manifest_file = roslib.manifest.manifest_file(pkg)
-        ctx.manifest = roslib.manifest.parse_file(roslib.manifest.manifest_file(pkg))        
-    except roslib.packages.InvalidROSPkgException:
+        ctx.pkg_dir = r.get_path(pkg)
+        ctx.manifest_file = os.path.join(ctx.pkg_dir, 'manifest.xml')
+        ctx.manifest = r.get_manifest(pkg)
+    except rospkg.ResourceNotFound:
         raise WtfException("Cannot locate manifest file for package [%s]"%pkg)
-    except roslib.manifest.ManifestException as e:
+    except rospkg.InvalidManifest as e:
         raise WtfException("Package [%s] has an invalid manifest: %s"%(pkg, e))
 
 def _load_stack(ctx, stack):
@@ -252,13 +248,11 @@ def _load_stack(ctx, stack):
     @raise WtfException: if context state cannot be initialized
     """
     try:
+        r = rospkg.RosStack()
         ctx.stack = stack
-        ctx.stacks = [stack] + roslib.rospack.rosstack_depends(stack)
-        try:
-            ctx.stack_dir = roslib.stacks.get_stack_dir(stack)
-        except roslib.stacks.InvalidROSStackException:
-            raise WtfException("[%s] appears to be a stack, but it's not on your ROS_PACKAGE_PATH"%stack)
-    except roslib.stacks.InvalidROSStackException:
+        ctx.stacks = [stack] + r.get_depends(stack, implicit=True)
+        ctx.stack_dir = r.get_path(stack)
+    except rospkg.ResourceNotFound:
         raise WtfException("[%s] appears to be a stack, but it's not on your ROS_PACKAGE_PATH"%stack)
     
     
@@ -270,12 +264,11 @@ def _load_env(ctx, env):
     """
     ctx.env = env
     try:
-        ctx.ros_root = env[roslib.rosenv.ROS_ROOT]
+        ctx.ros_root = env[rospkg.environment.ROS_ROOT]
     except KeyError:
         raise WtfException("ROS_ROOT is not set")
-    ctx.ros_package_path = env.get(roslib.rosenv.ROS_PACKAGE_PATH, None)
+    ctx.ros_package_path = env.get(rospkg.environment.ROS_PACKAGE_PATH, None)
     ctx.pythonpath = env.get('PYTHONPATH', None)
     ctx.ros_master_uri = env.get(rosgraph.ROS_MASTER_URI, None)
-    ctx.ros_bindeps_path = env.get(roslib.rosenv.ROS_BINDEPS_PATH, None)
-    ctx.ros_boost_root = env.get(roslib.rosenv.ROS_BOOST_ROOT, None)    
+
     

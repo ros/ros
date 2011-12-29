@@ -42,9 +42,7 @@ import sys
 import traceback
 
 import rospkg
-
-import roslib.packages
-import roslib.scriptutil
+import rosgraph.names
     
 def yaml_results(ctx):
     cd = ctx.as_dictionary()
@@ -122,7 +120,7 @@ def _roswtf_main():
             # disable names for now as don't have any rules yet
             launch_files = [a for a in args if os.path.isfile(a)]
             names = [a for a in args if not a in launch_files]
-            names = [roslib.scriptutil.script_resolve_name('/roswtf', n) for n in names]
+            names = [rosgraph.names.script_resolve_name('/roswtf', n) for n in names]
 
     from roswtf.context import WtfContext
     from roswtf.environment import wtf_check_environment, invalid_url, ros_root_check
@@ -150,7 +148,7 @@ def _roswtf_main():
         ctx = WtfContext.from_roslaunch(launch_files)
         #TODO: allow specifying multiple roslaunch files
     else:
-        curr_package_dir, curr_package = roslib.packages.get_dir_pkg('.')
+        curr_package = rospkg.get_package_name('.')
         if curr_package:
             print "Package:",curr_package
             ctx = WtfContext.from_package(curr_package)
@@ -189,12 +187,12 @@ def _roswtf_main():
     print "="*80
 
     try:
-        online_checks = False
+
         if options.offline or not ctx.ros_master_uri or invalid_url(ctx.ros_master_uri) or not rosgraph.is_master_online():
-            master = None
+            online_checks = False
         else:
-            master = roslib.scriptutil.get_master()
-        if master is not None:
+            online_checks = True
+        if online_checks:
             online_checks = True
             print "Beginning tests of your ROS graph. These may take awhile..."
             

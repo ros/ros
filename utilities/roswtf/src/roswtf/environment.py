@@ -174,12 +174,6 @@ def ros_master_uri_hostname(ctx):
     except socket.gaierror, e:
         return "Unknown host %s"%splits[0]
     
-def boost_check(ctx):
-    import subprocess
-    retcode = subprocess.call(['rosboost-cfg', '--cflags'], stdout=subprocess.PIPE)
-    if retcode != 0:
-        return "Unable to locate boost" 
-
 # Error/Warning Rules
 
 environment_warnings = [
@@ -220,10 +214,6 @@ environment_errors = [
     (ros_home_check, "ROS_HOME is invalid: "),
     (ros_log_dir_check, "ROS_LOG_DIR is invalid: "),    
     (ros_test_results_dir_check, "ROS_TEST_RESULTS_DIR is invalid: "),    
-
-    (lambda ctx: ctx.ros_bindeps_path and not isdir(ctx.ros_bindeps_path),
-     "ROS_BINDEPS_PATH [%(ros_bindeps_path)s] does not point to a directory"),
-    (boost_check, "Cannot locate boost. Please see installation instructions. "),
 
     (lambda ctx: invalid_url(ctx.ros_master_uri),
      "ROS_MASTER_URI [%(ros_master_uri)s] is not a valid URL: "),

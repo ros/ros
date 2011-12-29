@@ -15,14 +15,14 @@ add_library(rosbag SHARED
   src/message_instance.cpp src/player.cpp
   src/query.cpp src/recorder.cpp src/stream.cpp src/time_translator.cpp
   src/uncompressed_stream.cpp src/view.cpp)
-target_link_libraries(rosbag ${BZIP2_LIBRARIES})
+target_link_libraries(rosbag ${ROS_LIBRARIES} ${Boost_LIBRARIES} ${BZIP2_LIBRARIES})
 rosbuild_link_boost(rosbag regex program_options)
 
 add_executable(record src/record.cpp)
-target_link_libraries(record rosbag ${ROS_LIBRARIES} ${Boost_LIBRARIES} ${BZIP2_LIBRARIES})
+target_link_libraries(record rosbag)
 
 add_executable(play src/play.cpp)
-target_link_libraries(play rosbag ${ROS_LIBRARIES} ${Boost_LIBRARIES} ${BZIP2_LIBRARIES})
+target_link_libraries(play rosbag)
 
 #rosbuild_add_executable(example_write examples/write.cpp)
 #target_link_libraries(example_write rosbag)

@@ -40,6 +40,8 @@ state of the ROS Parameter Server using YAML files.
 
 from __future__ import print_function
 
+__version__ = '1.7.0'
+
 NAME = 'rosparam'
 
 ## namespace key. Use of this in a YAML document specifies the
@@ -64,12 +66,12 @@ import yaml
 import rosgraph
 from rosgraph.names import script_resolve_name, ns_join, get_ros_namespace, make_caller_id, make_global_ns, GLOBALNS
 
-class ROSParamException(Exception):
+class RosParamException(Exception):
     """
     rosparam base exception type
     """
     pass
-class ROSParamIOException(ROSParamException):
+class RosParamIOException(RosParamException):
     """
     Exception for communication-based (i/o) errors.
     """
@@ -110,7 +112,7 @@ def construct_angle_radians(loader, node):
     try:
         return float(eval(exprvalue))
     except SyntaxError as e:
-        raise ROSParamException("invalid radian expression: %s"%value)
+        raise RosParamException("invalid radian expression: %s"%value)
 
 def construct_angle_degrees(loader, node):
     """
@@ -123,15 +125,14 @@ def construct_angle_degrees(loader, node):
     try:
         return float(exprvalue) * math.pi / 180.0
     except ValueError:
-        raise ROSParamException("invalid degree value: %s"%value)
+        raise RosParamException("invalid degree value: %s"%value)
 
 
 # utilities
 
 def _get_caller_id():
     """
-    @return: caller ID for rosparam ROS client calls
-    @rtype: str
+    :returns: caller ID for rosparam ROS client calls, ``str``
     """
     return make_caller_id('rosparam-%s'%os.getpid())
 
@@ -154,16 +155,14 @@ def load_file(filename, default_namespace=None, verbose=False):
     """
     Load the YAML document from the specified file
     
-    @param filename: name of filename
-    @type  filename: str
-    @param default_namespace: namespace to load filename into
-    @type  default_namespace: str
-    @return [(dict, str)...]: list of parameter dictionary and
-    corresponding namespaces for each YAML document in the file
-    @raise ROSParamException: if unable to load contents of filename
+    :param filename: name of filename, ``str``
+    :param default_namespace: namespace to load filename into, ``str``
+    :returns [(dict, str)...]: list of parameter dictionary and
+      corresponding namespaces for each YAML document in the file
+    :raises: :exc:`RosParamException`: if unable to load contents of filename
     """
     if not os.path.isfile(filename):
-        raise ROSParamException("file [%s] does not exist"%filename)
+        raise RosParamException("file [%s] does not exist"%filename)
     if verbose:
         print("reading parameters from [%s]"%filename)
     f = open(filename, 'r')
@@ -176,15 +175,11 @@ def load_str(str, filename, default_namespace=None, verbose=False):
     """
     Load the YAML document as a string
     
-    @param filename: name of filename, only used for debugging    
-    @type  filename: str
-    @param default_namespace: namespace to load filename into
-    @type  default_namespace: str
-    @param str: YAML text
-    @type  str: str
-    @return: list of parameter dictionary and
-        corresponding namespaces for each YAML document in the file
-    @rtype: [(dict, str)...]
+    :param filename: name of filename, only used for debugging, ``str``
+    :param default_namespace: namespace to load filename into, ``str``
+    :param str: YAML text, ``str``
+    :returns: list of parameter dictionary and
+        corresponding namespaces for each YAML document in the file, ``[(dict, str)...]``
     """
     paramlist = []
     default_namespace = default_namespace or get_ros_namespace()
@@ -209,23 +204,21 @@ def get_param(param):
     """
     Download a parameter from Parameter Server
 
-    @param param: parameter name to retrieve from parameter
+    :param param: parameter name to retrieve from parameter
         server. If param is a parameter namespace, entire parameter
-        subtree will be downloaded.
-    @type  param: str
+        subtree will be downloaded, ``str``
     """
     try:
         return get_param_server().getParam(param)
     except socket.error:
-        raise ROSParamIOException("Unable to communicate with master!")
+        raise RosParamIOException("Unable to communicate with master!")
     
 # #698
 def _pretty_print(value, indent=''):
     """
     Pretty print get value
-    @param value: value to print
-    @param indent: indent level, used for recursive calls
-    @type  indent: str
+    :param value: value to print
+    :param indent: indent level, used for recursive calls, ``str``
     """
     keys = value.keys()
     keys.sort()
@@ -256,10 +249,9 @@ def _pretty_print(value, indent=''):
 def _rosparam_cmd_get_param(param, pretty=False, verbose=False):
     """
     Download a parameter tree and print to screen
-    @param param: parameter name to retrieve from Parameter
+    :param param: parameter name to retrieve from Parameter
         Server. If param is a parameter namespace, entire parameter
-        subtree will be downloaded.
-    @type  param: str
+        subtree will be downloaded, ``str``
     """
     # yaml.dump has a \n at the end, so use stdout.write instead of print
     if verbose:
@@ -291,12 +283,10 @@ def _rosparam_cmd_get_param(param, pretty=False, verbose=False):
 def dump_params(filename, param, verbose=False):
     """
     Download a parameter tree from the Parameter Server and store in a yaml file
-    @param filename: name of file to save YAML representation
-    @type  filename: str
-    @param param: name of parameter/namespace to dump
-    @type  param: str
-    @param verbose: print verbose output for debugging
-    @type  verbose: bool
+
+    :param filename: name of file to save YAML representation, ``str``
+    :param param: name of parameter/namespace to dump, ``str``
+    :param verbose: print verbose output for debugging, ``bool``
     """
     tree = get_param(param)
     if verbose:
@@ -311,10 +301,9 @@ def dump_params(filename, param, verbose=False):
 def delete_param(param, verbose=False):
     """
     Delete a parameter from the Parameter Server
-    @param param: parameter name
-    @type  param: str
-    @param verbose: print verbose output for debugging
-    @type  verbose: bool
+
+    :param param: parameter name, ``str``
+    :param verbose: print verbose output for debugging, ``bool``
     """
     try:
         if param == GLOBALNS:
@@ -329,7 +318,7 @@ def delete_param(param, verbose=False):
             if verbose:
                 print("deleted parameter [%s]"%param)
     except socket.error:
-        raise ROSParamIOException("Unable to communicate with master!")
+        raise RosParamIOException("Unable to communicate with master!")
     
 # LOAD/SET
 
@@ -338,10 +327,8 @@ def set_param_raw(param, value, verbose=False):
     Set param on the Parameter Server. Unlike L{set_param()}, this
     takes in a Python value to set instead of YAML.
     
-    @param param: parameter name
-    @type  param: str
-    @param value XmlRpcLegalValue: value to upload
-    @type  value: XmlRpcLegalValue
+    :param param: parameter name, ``str``
+    :param value XmlRpcLegalValue: value to upload, ``XmlRpcLegalValue``
     """
     if type(value) == dict:
         # #1098 changing dictionary behavior to be an update, rather
@@ -351,16 +338,16 @@ def set_param_raw(param, value, verbose=False):
             if isinstance(k, str):
                 set_param_raw(ns_join(param, k), v, verbose=verbose)
             else:
-                raise ROSParamException("YAML dictionaries must have string keys. Invalid dictionary is:\n%s"%value)
+                raise RosParamException("YAML dictionaries must have string keys. Invalid dictionary is:\n%s"%value)
     else:
         if type(value) == long:
             if value > sys.maxint:
-                raise ROSParamException("Overflow: Parameter Server integers must be 32-bit signed integers:\n\t-%s <= value <= %s"%(sys.maxint-1, sys.maxint))
+                raise RosParamException("Overflow: Parameter Server integers must be 32-bit signed integers:\n\t-%s <= value <= %s"%(sys.maxint-1, sys.maxint))
             
         try:
             get_param_server().setParam(param, value)
         except socket.error:
-            raise ROSParamIOException("Unable to communicate with master!")
+            raise RosParamIOException("Unable to communicate with master!")
         if verbose:
             print("set parameter [%s] to [%s]"%(param, value))
 
@@ -368,23 +355,19 @@ def set_param(param, value, verbose=False):
     """
     Set param on the ROS parameter server using a YAML value.
     
-    @param param: parameter name
-    @type  param: str
-    @param value: yaml-encoded value
-    @type  value: str
+    :param param: parameter name, ``str``
+    :param value: yaml-encoded value, ``str``
     """
     set_param_raw(param, yaml.load(value), verbose=verbose)
 
 def upload_params(ns, values, verbose=False):
     """
     Upload params to the Parameter Server
-    @param values: key/value dictionary, where keys are parameter names and values are parameter values
-    @type  values: dict
-    @param ns: namespace to load parameters into        
-    @type  ns: str
+    :param values: key/value dictionary, where keys are parameter names and values are parameter values, ``dict``
+    :param ns: namespace to load parameters into, ``str``
     """
     if ns == '/' and not type(values) == dict:
-        raise ROSParamException("global / can only be set to a dictionary")
+        raise RosParamException("global / can only be set to a dictionary")
     if verbose:
         print_params(values, ns)
     set_param_raw(ns, values)
@@ -395,8 +378,8 @@ def upload_params(ns, values, verbose=False):
 def list_params(ns):
     """
     Get list of parameters in ns
-    @param ns: namespace to match
-    @type  ns: str
+
+    :param ns: namespace to match, ``str``
     """
     try:
         ns = make_global_ns(ns)
@@ -404,7 +387,7 @@ def list_params(ns):
         names.sort()
         return [n for n in names if n.startswith(ns)]
     except socket.error:
-        raise ROSParamIOException("Unable to communicate with master!")
+        raise RosParamIOException("Unable to communicate with master!")
 
 # COMMAND-LINE PARSING
     
@@ -413,11 +396,9 @@ def _rosparam_cmd_get_dump(cmd, argv):
     Process command line for rosparam get/dump, e.g.::
       rosparam get param
       rosparam dump file.yaml [namespace]
-    @param cmd: command ('get' or 'dump')
-    @type  cmd: str
-    @param argv: command-line args
-    @type  argv: str    
-    
+
+    :param cmd: command ('get' or 'dump'), ``str``
+    :param argv: command-line args, ``str``
     """
     # get and dump are equivalent functionality, just different arguments
     if cmd == 'dump':
@@ -488,10 +469,9 @@ def _rosparam_cmd_set_load(cmd, argv):
     Process command line for rosparam set/load, e.g.::
       rosparam load file.yaml [namespace]
       rosparam set param value
-    @param cmd: command name
-    @type  cmd: str
-    @param argv: command-line args
-    @type  argv: str    
+
+    :param cmd: command name, ``str``
+    :param argv: command-line args, ``str``
     """
     if cmd == 'load':
         parser = OptionParser(usage="usage: %prog load [options] file [namespace]", prog=NAME)
@@ -558,8 +538,8 @@ def _rosparam_cmd_list(argv):
     Process command line for rosparam set/load, e.g.::
       rosparam load file.yaml [namespace]
       rosparam set param value
-    @param argv: command-line args
-    @type  argv: str
+
+    :param argv: command-line args, ``str``
     """
     parser = OptionParser(usage="usage: %prog list [namespace]", prog=NAME)
     options, args = parser.parse_args(argv[2:])
@@ -577,10 +557,9 @@ def _rosparam_cmd_delete(argv):
     """
     Process command line for rosparam delete, e.g.::
       rosparam delete param 
-    @param cmd: command name
-    @type  cmd: str
-    @param argv: command-line args
-    @type  argv: str
+
+    :param cmd: command name, ``str``
+    :param argv: command-line args, ``str``
     """
     parser = OptionParser(usage="usage: %prog delete [options] parameter", prog=NAME)
     parser.add_option("-v", dest="verbose", default=False,
@@ -617,8 +596,7 @@ def yamlmain(argv=None):
     """
     Command-line main routine. Loads in one or more input files
     
-    @param argv: command-line arguments or None to use sys.argv
-    @type  argv: [str]
+    :param argv: command-line arguments or None to use sys.argv, ``[str]``
     """
     if argv is None:
         argv = sys.argv
@@ -636,7 +614,7 @@ def yamlmain(argv=None):
             _rosparam_cmd_list(argv)
         else:
             _fullusage()
-    except ROSParamException as e:
+    except RosParamException as e:
         print("ERROR: "+str(e), file=sys.stderr)
         sys.exit(1)
 

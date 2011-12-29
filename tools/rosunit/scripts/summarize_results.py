@@ -46,7 +46,7 @@ import os
 import sys
 import cStringIO
 
-import roslib.rospack
+import rospkg
 import rosunit.junitxml as junitxml
 
 def create_summary(result, packages):
@@ -96,10 +96,11 @@ def main():
         parser.error("Only one package may be specified")
     
     package = args[0]
+    r = rospkg.RosPack()
     if options.no_deps:
         packages = [package]
     else:
-        packages = [package] + roslib.rospack.rospackexec(['depends-on', package]).split('\n')
+        packages = [package] + r.get_depends_on(package, implicit=True)
         packages = [p for p in packages if p]
 
     result = junitxml.read_all(packages)

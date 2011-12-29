@@ -29,9 +29,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
-# $Author$
 
 """
 Library for configuring python logging to standard ROS locations (e.g. ROS_LOG_DIR).
@@ -45,21 +42,17 @@ import logging.config
 from rospkg import get_ros_root, get_log_dir
 from rospkg.environment import ROS_LOG_DIR
 
-import roslib.exceptions
-    
+class LoggingException: pass
+
 def configure_logging(logname, level=logging.INFO, filename=None, env=None):
     """
     Configure Python logging package to send log files to ROS-specific log directory
-    @param logname str: name of logger
-    @type  logname: str
-    @param filename: filename to log to. If not set, a log filename
-        will be generated using logname
-    @type filename: str
-    @param env: override os.environ dictionary
-    @type  env: dict
-    @return: log file name
-    @rtype: str
-    @raise roslib.exceptions.ROSLibException: if logging cannot be configured as specified
+    :param logname str: name of logger, ``str``
+    :param filename: filename to log to. If not set, a log filename
+        will be generated using logname, ``str``
+    :param env: override os.environ dictionary, ``dict``
+    :returns: log file name, ``str``
+    :raises: :exc:`LoggingException` If logging cannot be configured as specified
     """
     if env is None:
         env = os.environ
@@ -82,7 +75,7 @@ def configure_logging(logname, level=logging.INFO, filename=None, env=None):
             sys.stderr.write("WARNING: cannot create log directory [%s]. Please set %s to a writable location.\n"%(logfile_dir, ROS_LOG_DIR))
             return None
     elif os.path.isfile(logfile_dir):
-        raise roslib.exceptions.ROSLibException("Cannot save log files: file [%s] is in the way"%logfile_dir)
+        raise LoggingException("Cannot save log files: file [%s] is in the way"%logfile_dir)
 
     if 'ROS_PYTHON_LOG_CONFIG_FILE' in os.environ:
         config_file = os.environ['ROS_PYTHON_LOG_CONFIG_FILE']
@@ -105,8 +98,7 @@ def makedirs_with_parent_perms(p):
     Create the directory using the permissions of the nearest
     (existing) parent directory. This is useful for logging, where a
     root process sometimes has to log in the user's space.
-    @param p: directory to create
-    @type  p: str
+    :param p: directory to create, ``str``
     """    
     p = os.path.abspath(p)
     parent = os.path.dirname(p)

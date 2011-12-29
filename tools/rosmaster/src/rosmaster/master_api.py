@@ -60,10 +60,10 @@ import threading
 import time
 import traceback
 
-from roslib.xmlrpc import XmlRpcHandler
+from rosgraph.xmlrpc import XmlRpcHandler
 
-import roslib.names
-from roslib.names import resolve_name
+import rosgraph.names
+from rosgraph.names import resolve_name
 import rosmaster.paramserver
 import rosmaster.threadpool
 
@@ -248,7 +248,7 @@ class ROSMasterHandler(object):
         
     def _ready(self, uri):
         """
-        Initialize the handler with the XMLRPC URI. This is a standard callback from the roslib.xmlrpc.XmlRpcNode API.
+        Initialize the handler with the XMLRPC URI. This is a standard callback from the XmlRpcNode API.
 
         @param uri: XML-RPC URI
         @type  uri: str
@@ -684,7 +684,7 @@ class ROSMasterHandler(object):
 
             # ROS 1.1: subscriber can now set type if it is not already set
             #  - don't let '*' type squash valid typing
-            if not topic in self.topics_types and topic_type != roslib.names.ANYTYPE:
+            if not topic in self.topics_types and topic_type != rosgraph.names.ANYTYPE:
                 self.topics_types[topic] = topic_type
 
             mloginfo("+SUB [%s] %s %s",topic, caller_id, caller_api)
@@ -739,7 +739,7 @@ class ROSMasterHandler(object):
             self.ps_lock.acquire()
             self.reg_manager.register_publisher(topic, caller_id, caller_api)
             # don't let '*' type squash valid typing
-            if topic_type != roslib.names.ANYTYPE or not topic in self.topics_types:
+            if topic_type != rosgraph.names.ANYTYPE or not topic in self.topics_types:
                 self.topics_types[topic] = topic_type
             pub_uris = self.publishers.get_apis(topic)
             self._notify_topic_subscribers(topic, pub_uris)
@@ -821,8 +821,8 @@ class ROSMasterHandler(object):
         try:
             self.ps_lock.acquire()
             # force subgraph to be a namespace with trailing slash
-            if subgraph and subgraph[-1] != roslib.names.SEP:
-                subgraph = subgraph + roslib.names.SEP
+            if subgraph and subgraph[-1] != rosgraph.names.SEP:
+                subgraph = subgraph + rosgraph.names.SEP
             #we don't bother with subscribers as subscribers don't report topic types. also, the intended
             #use case is for subscribe-by-topic-type
             retval = [[t, self.topics_types[t]] for t in self.publishers.iterkeys() if t.startswith(subgraph)]

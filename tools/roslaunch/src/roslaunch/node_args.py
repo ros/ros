@@ -45,10 +45,11 @@ import time
 
 import rospkg
 import rosgraph
+import rosgraph.names
+from rosgraph.names import script_resolve_name
 
 import roslib.packages
 import roslib.substitution_args
-from roslib.scriptutil import script_resolve_name
 
 from roslaunch.core import setup_env, local_machine, RLException
 from roslaunch.config import load_config_default
@@ -113,7 +114,7 @@ def _resolved_name(node):
         if node.name.startswith('$'):
             return node.name
         else:
-            return roslib.names.ns_join(node.namespace, node.name)
+            return rosgraph.names.ns_join(node.namespace, node.name)
     else:
         return None
 

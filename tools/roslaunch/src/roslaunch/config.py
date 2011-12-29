@@ -44,6 +44,9 @@ import types
 
 import roslib.names
 
+import rosgraph.names
+import rosgraph.network
+
 from roslaunch.core import Master, local_machine, get_ros_root, is_machine_local, RLException
 from roslaunch.rlutil import namespaces_of
 import roslaunch.loader
@@ -283,8 +286,7 @@ class ROSLaunchConfig(object):
         """
         name = m.name
         if m.address == 'localhost': #simplify address comparison
-            import roslib.network
-            address = roslib.network.get_local_address()
+            address = rosgraph.network.get_local_address()
             self.logger.info("addMachine[%s]: remapping localhost address to %s"%(name, address))
         if name in self.machines:
             if m != self.machines[name]:
@@ -315,7 +317,7 @@ class ROSLaunchConfig(object):
         """
         if node.name:
             # check for duplicates
-            resolved_name = roslib.names.ns_join(node.namespace, node.name)
+            resolved_name = rosgraph.names.ns_join(node.namespace, node.name)
             matches = [n for n in self.resolved_node_names if n == resolved_name]
             if matches:
                 raise RLException("roslaunch file contains multiple nodes named [%s].\nPlease check all <node> 'name' attributes to make sure they are unique.\nAlso check that $(anon id) use different ids."%resolved_name)

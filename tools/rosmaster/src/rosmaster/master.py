@@ -42,7 +42,7 @@ single interface for running and stopping the ROS Master.
 import logging
 import time
 
-import roslib.xmlrpc
+import rosgraph.xmlrpc
 
 import rosmaster.master_api
 
@@ -58,7 +58,7 @@ class Master(object):
         Start the ROS Master.
         """
         handler = rosmaster.master_api.ROSMasterHandler()
-        master_node = roslib.xmlrpc.XmlRpcNode(self.port, handler)
+        master_node = rosgraph.xmlrpc.XmlRpcNode(self.port, handler)
         master_node.start()
 
         # poll for initialization

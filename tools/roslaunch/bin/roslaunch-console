@@ -1,13 +1,10 @@
 #!/usr/bin/env python
 
-import roslib; roslib.load_manifest('roslaunch')
-
 import os
 import sys
 import curses
 
 from rosgraph_msgs.msg import Log
-import roslib.network
 import roslaunch.netapi as netapi
 from roslaunch.netapi import NetProcess
 

@@ -43,10 +43,9 @@ import sys
 import time
 import traceback
 
-import roslib.network 
-
 import rosgraph
 import rosgraph.names
+import rosgraph.network 
 
 from roslaunch.core import *
 from roslaunch.config import ROSLaunchConfig
@@ -76,7 +75,7 @@ def validate_master_launch(m, is_core):
     # misconfigurations. If the user types roslaunch, we will
     # auto-start a new master if it is achievable, i.e. if the
     # master is local.
-    if not roslib.network.is_local_address(m.get_host()):
+    if not rosgraph.network.is_local_address(m.get_host()):
         # The network configuration says that the intended
         # hostname is not local, so...
         if is_core:
@@ -85,7 +84,7 @@ def validate_master_launch(m, is_core):
             # non-local.
             try:
                 reverse_ip = socket.gethostbyname(m.get_host())
-                local_addrs = roslib.network.get_local_addresses()
+                local_addrs = rosgraph.network.get_local_addresses()
                 printerrlog("""WARNING: IP address %s for local hostname '%s' does not appear to match
     any local IP address (%s). Your ROS nodes may fail to communicate.
 
@@ -104,9 +103,9 @@ def validate_master_launch(m, is_core):
         # User wants to start a master, and our configuration does
         # point to the local host.
         env_uri = rosgraph.get_master_uri()
-        env_host, env_port = roslib.network.parse_http_host_and_port(env_uri)
+        env_host, env_port = rosgraph.network.parse_http_host_and_port(env_uri)
 
-        if not roslib.network.is_local_address(env_host):
+        if not rosgraph.network.is_local_address(env_host):
             # The ROS_MASTER_URI points to a different machine, warn user
             printerrlog("WARNING: ROS_MASTER_URI [%s] host is not set to this machine"%(env_uri))
         elif env_port != m.get_port():
@@ -407,7 +406,7 @@ class ROSLaunchRunner(object):
         if self.server_uri:
             # store parent XML-RPC URI on param server
             # - param name is the /roslaunch/hostname:port so that multiple roslaunches can store at once
-            hostname, port = roslib.network.parse_http_host_and_port(self.server_uri)
+            hostname, port = rosgraph.network.parse_http_host_and_port(self.server_uri)
             hostname = _hostname_to_rosname(hostname)
             self.logger.info("setting /roslaunch/uris/%s__%s' to %s"%(hostname, port, self.server_uri))
             param_server.setParam(_ID, '/roslaunch/uris/%s__%s'%(hostname, port),self.server_uri)

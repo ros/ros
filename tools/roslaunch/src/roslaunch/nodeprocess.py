@@ -46,8 +46,6 @@ import traceback
 
 import rospkg
 
-import roslib.network 
-
 from roslaunch.core import *
 from roslaunch.node_args import create_local_process_env, create_local_process_args
 from roslaunch.pmon import Process, FatalProcessLaunch
@@ -125,7 +123,7 @@ def create_node_process(run_id, node, master_uri):
     # we have to include the counter to prevent potential name
     # collisions between the two branches
 
-    name = "%s-%s"%(roslib.names.ns_join(node.namespace, node.name), _next_counter())
+    name = "%s-%s"%(rosgraph.names.ns_join(node.namespace, node.name), _next_counter())
     if name[0] == '/':
         name = name[1:]
 

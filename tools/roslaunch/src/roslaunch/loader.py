@@ -36,8 +36,6 @@
 General routines and representations for loading roslaunch model.
 """
 
-from __future__ import with_statement
-
 import os
 import sys
 from copy import deepcopy
@@ -45,11 +43,7 @@ from copy import deepcopy
 from roslaunch.core import Param, RosbinExecutable, Node, Test, Machine, \
     RLException, PHASE_SETUP
 
-try:
-    from roslib.names import make_global_ns, ns_join, PRIV_NAME, load_mappings, is_legal_name, canonicalize_name
-except ImportError:
-    raise ImportError('Cannot import new roslib libraries.\nThis is probably due to incompatible "roslib" directories on your PYTHONPATH.\nPlease check your PYTHONPATH and try again')
-
+from rosgraph.names import make_global_ns, ns_join, PRIV_NAME, load_mappings, is_legal_name, canonicalize_name
 
 #lazy-import global for yaml and rosparam
 yaml = None

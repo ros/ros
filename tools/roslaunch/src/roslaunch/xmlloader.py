@@ -45,15 +45,15 @@ import sys
 from xml.dom.minidom import parse, parseString
 from xml.dom import Node as DomNode #avoid aliasing
 
-from roslib.names import make_global_ns, ns_join, is_global, is_private, PRIV_NAME
-import roslib.substitution_args
+from rosgraph.names import make_global_ns, ns_join, is_global, is_private, PRIV_NAME, is_legal_name
+import rosgraph.substitution_args
 
 from roslaunch.core import Param, Node, Test, Machine, RLException, get_ros_package_path
 import roslaunch.loader
 
 # use in our namespace
-SubstitutionException = roslib.substitution_args.SubstitutionException
-ArgException = roslib.substitution_args.ArgException
+SubstitutionException = rosgraph.substitution_args.SubstitutionException
+ArgException = rosgraph.substitution_args.ArgException
 
 NS='ns'
 CLEAR_PARAMS='clear_params'
@@ -151,11 +151,11 @@ class XmlLoader(roslaunch.loader.Loader):
 
     def resolve_args(self, args, context):
         """
-        Wrapper around roslib.substitution_args.resolve_args to set common parameters
+        Wrapper around rosgraph.substitution_args.resolve_args to set common parameters
         """
         # resolve_args gets called a lot, so we optimize by testing for dollar sign before resolving
         if args and '$' in args:
-            return roslib.substitution_args.resolve_args(args, context=context.resolve_dict, resolve_anon=self.resolve_anon)
+            return rosgraph.substitution_args.resolve_args(args, context=context.resolve_dict, resolve_anon=self.resolve_anon)
         else:
             return args
 
@@ -267,10 +267,10 @@ class XmlLoader(roslaunch.loader.Loader):
             
             context.add_arg(name, value=value, default=default)
 
-        except roslib.substitution_args.ArgException, e:
+        except rosgraph.substitution_args.ArgException as e:
             raise XmlParseException(
                 "arg '%s' is not defined. \n\nArg xml is %s"%(e, tag.toxml()))
-        except Exception, e:
+        except Exception as e:
             raise XmlParseException(
                 "Invalid <arg> tag: %s. \n\nArg xml is %s"%(e, tag.toxml()))
 
@@ -333,7 +333,7 @@ class XmlLoader(roslaunch.loader.Loader):
                 self._check_attrs(tag, context, ros_config, XmlLoader.NODE_ATTRS)
                 (name,) = self.reqd_attrs(tag, context, ('name',))
 
-            if not roslib.names.is_legal_name(name):
+            if not is_legal_name(name):
                 ros_config.add_config_error("WARN: illegal <node> name '%s'.\nhttp://ros.org/wiki/Names\nThis will likely cause problems with other ROS tools.\nNode xml is %s"%(name, tag.toxml()))
                     
             child_ns = self._ns_clear_params_attr('node', tag, context, ros_config, node_name=name)

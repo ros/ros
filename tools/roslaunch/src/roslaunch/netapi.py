@@ -39,8 +39,8 @@ Convience methods for manipulating XML-RPC APIs
 import socket
 import xmlrpclib
 
-import roslib.network
-import roslib.scriptutil
+import rosgraph
+import rosgraph.network
 
 _ID = '/roslaunch_netapi'
 def get_roslaunch_uris():
@@ -50,11 +50,10 @@ def get_roslaunch_uris():
     @rtype: [str]
     """
     try:
-        param_server = roslib.scriptutil.get_param_server()
-        code, msg, vals = param_server.getParam(_ID, '/roslaunch/uris')
-        if code == 1 and vals:
-            return vals.values()
-    except socket.error: pass
+        m = rosgraph.Master(_ID)
+        vals = param_server.getParam('/roslaunch/uris')
+        return vals.values()
+    except rosgraph.MasterException: pass
     return None
 
 class NetProcess(object):
@@ -64,7 +63,7 @@ class NetProcess(object):
         self.name = name
         
         self.roslaunch_uri = roslaunch_uri
-        self.machine, _ = roslib.network.parse_http_host_and_port(roslaunch_uri)
+        self.machine, _ = rosgraph.network.parse_http_host_and_port(roslaunch_uri)
 
 def list_processes(roslaunch_uris=None):
     """
@@ -95,8 +94,3 @@ def list_processes(roslaunch_uris=None):
             pass 
     return procs
 
-if __name__ == "__main__":
-    import roslib; roslib.load_manifest('roslaunch')
-    print list_processes()
-    print "done"
-    

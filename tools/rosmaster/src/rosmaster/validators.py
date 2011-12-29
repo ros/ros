@@ -34,7 +34,7 @@
 
 """Internal-use Python decorators for parameter validation"""
 
-from roslib.names import ANYTYPE, TYPE_SEPARATOR, resolve_name
+from rosgraph.names import ANYTYPE, TYPE_SEPARATOR, resolve_name
 
 ROSRPC = "rosrpc://"
 

@@ -8,7 +8,6 @@ roslaunch is a tool for easily launching multiple ROS <a href="http://ros.org/wi
   <license>BSD</license>
   <review status="Doc reviewed" notes="01/18/2010"/>
   <url>http://ros.org/wiki/roslaunch</url>
-  <depend package="roslib"/>
   <depend package="rosclean"/>
   <depend package="rosgraph"/>
   <depend package="rosgraph_msgs"/>
@@ -24,17 +23,5 @@ roslaunch is a tool for easily launching multiple ROS <a href="http://ros.org/wi
   <platform os="ubuntu" version="9.10"/>
   <platform os="ubuntu" version="10.04"/>
   <platform os="macports" version="macports"/>
-  <rosbuild2>
-    <depend package="roslib"/>
-    <depend package="rosclean"/>
-    <depend package="rosgraph"/>
-    <depend package="rosgraph_msgs"/>
-    <depend package="rospy"/>
-    <depend package="rosmaster"/>  
-    <depend package="rosout"/>
-    <pythondir>
-      src
-    </pythondir>
-  </rosbuild2>
 </package>
 

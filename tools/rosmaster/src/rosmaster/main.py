@@ -48,9 +48,9 @@ def configure_logging():
     """
     filename = 'master.log'
     # #988 __log command-line remapping argument
-    import roslib.names
+    import rosgraph.names
     import roslib.roslogging
-    mappings = roslib.names.load_mappings(sys.argv)
+    mappings = rosgraph.names.load_mappings(sys.argv)
     if '__log' in mappings:
         logfilename_remap = mappings['__log']
         filename = os.path.abspath(logfilename_remap)

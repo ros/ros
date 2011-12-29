@@ -37,8 +37,6 @@ Utility module of roslaunch that extracts dependency information from
 roslaunch files, including calculating missing package dependencies.
 """
 
-import roslib; roslib.load_manifest('roslaunch')
-
 import os
 import sys
 

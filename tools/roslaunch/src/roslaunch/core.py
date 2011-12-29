@@ -43,19 +43,15 @@ import sys
 import xmlrpclib
 
 import rospkg
+
 import rosgraph
 import rosgraph.names 
-
-import roslib.network
-import roslib.substitution_args
-
-#TODO:temporary until xacro is ported after next ROS stable release
-resolve_args = roslib.substitution_args.resolve_args
+import rosgraph.network
+import rosgraph.substitution_args
 
 class RLException(Exception):
     """Base roslaunch exception type"""
     pass
-
 
 ## Phases allow executables to be assigned to a particular run period
 PHASE_SETUP    = 'setup'
@@ -91,7 +87,7 @@ def is_machine_local(machine):
         machine_addr = socket.gethostbyname(machine.address)
     except socket.gaierror:
         raise RLException("cannot resolve host address for machine [%s]"%machine.address)
-    local_addresses = ['localhost'] + roslib.network.get_local_addresses()
+    local_addresses = ['localhost'] + rosgraph.network.get_local_addresses()
     # check 127/8 and local addresses
     is_local = machine_addr.startswith('127.') or machine_addr in local_addresses
 
@@ -208,7 +204,8 @@ def setup_env(node, machine, master_uri):
     if machine.ros_ip: #optional
         d[rosgraph.ROS_IP] = machine.ros_ip
 
-    # roslib depends on PYTHONPATH being set.  This environment needs
+    # fuerte/catkin: backwards compatibility.
+    # use of roslib depends on PYTHONPATH being set.  This environment needs
     # to be setup correctly for roslaunch through ssh to work
     d['PYTHONPATH'] = os.path.join(d[rospkg.environment.ROS_ROOT],'core','roslib', 'src')
 
@@ -255,9 +252,9 @@ def remap_localhost_uri(uri, force_localhost=False):
     @param force_localhost: if True, URI is mapped onto the local machine no matter what
     @type  force_localhost: bool
     """
-    hostname, port = roslib.network.parse_http_host_and_port(uri)
+    hostname, port = rosgraph.network.parse_http_host_and_port(uri)
     if force_localhost or hostname == 'localhost':
-        return roslib.network.create_local_xmlrpc_uri(port)
+        return rosgraph.network.create_local_xmlrpc_uri(port)
     else:
         return uri
 
@@ -288,7 +285,7 @@ class Master:
         
     def get_host(self):
         # parse from the URI
-        host, _ = roslib.network.parse_http_host_and_port(self.uri)
+        host, _ = rosgraph.network.parse_http_host_and_port(self.uri)
         return host
     
     def get_port(self):
@@ -296,7 +293,7 @@ class Master:
         Get the port this master is configured for.
         """
         # parse from the URI
-        _, urlport = roslib.network.parse_http_host_and_port(self.uri)
+        _, urlport = rosgraph.network.parse_http_host_and_port(self.uri)
         return urlport
             
     def __eq__(self, m2):
@@ -458,7 +455,7 @@ def local_machine():
     if _local_m is None:
         _local_m = Machine('', get_ros_root(), \
                            get_ros_package_path(), 'localhost',\
-                           ros_ip=roslib.network.get_address_override())
+                           ros_ip=rosgraph.network.get_address_override())
     return _local_m
 
 class Node(object):

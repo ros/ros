@@ -39,8 +39,10 @@ __version__ = '1.7.0'
 import os
 import logging
 import sys
+import traceback
 
-import roslib.packages
+import rospkg
+
 import roslaunch.core
 import roslaunch.param_dump
 
@@ -68,10 +70,10 @@ def configure_logging(uuid):
     """
     try:
         import socket
-        import roslib.roslogging
+        import rosgraph.roslogging
         logfile_basename = os.path.join(uuid, '%s-%s-%s.log'%(NAME, socket.gethostname(), os.getpid()))
         # additional: names of python packages we depend on that may also be logging
-        logfile_name = roslib.roslogging.configure_logging(NAME, filename=logfile_basename)
+        logfile_name = rosgraph.roslogging.configure_logging(NAME, filename=logfile_basename)
         if logfile_name:
             print "... logging to %s"%logfile_name
 
@@ -83,7 +85,6 @@ def configure_logging(uuid):
         print >> sys.stderr, "WARNING: unable to configure logging. No log files will be generated"
         
 def write_pid_file(options_pid_fn, options_core, port):
-    from roslib.rosenv import get_ros_home
     if options_pid_fn or options_core:
         if options_pid_fn:
             pid_fn = options_pid_fn
@@ -92,7 +93,7 @@ def write_pid_file(options_pid_fn, options_core, port):
             if port is None:
                 port = DEFAULT_MASTER_PORT
             #2987
-            pid_fn = os.path.join(get_ros_home(), 'roscore-%s.pid'%(port))
+            pid_fn = os.path.join(rospkg.get_ros_home(), 'roscore-%s.pid'%(port))
         with open(pid_fn, "w") as f:
             f.write(str(os.getpid()))
 
@@ -266,11 +267,7 @@ def main(argv=sys.argv):
         # TODO: need to trap better than this high-level trap
         roslaunch.core.printerrlog(str(e))
         sys.exit(1)
-    except roslib.packages.InvalidROSPkgException, e:
-        roslaunch.core.printerrlog(str(e))        
-        sys.exit(1)
-    except Exception, e:
-        import traceback
+    except Exception as e:
         traceback.print_exc()
         sys.exit(1)
 

@@ -35,7 +35,7 @@
 """
 XML-RPC servers for parent and children
 
-Following typical roslib-based XMLRPC code, code is divided into:
+Following typical XmlRpcNode code, code is divided into:
 
  a) Handlers: these actually define and execute the XML-RPC API
  b) Nodes: these run the XML-RPC server
@@ -55,8 +55,8 @@ import traceback
 import urlparse
 import xmlrpclib
 
-import roslib.network as network
-import roslib.xmlrpc as xmlrpc
+import rosgraph.network as network
+import rosgraph.xmlrpc as xmlrpc
 
 import roslaunch.config 
 from roslaunch.pmon import ProcessListener, Process

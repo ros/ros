@@ -9,7 +9,8 @@
   <review status="doc reviewed" notes="originally part of rospy"/>
   <url>http://ros.org/wiki/rosmaster</url>
 
-  <depend package="roslib" />
+  <depend package="rosgraph" />
+
   <export>
     <rosdoc config="rosdoc.yaml"/>    
   </export>
@@ -18,10 +19,7 @@
   <platform os="ubuntu" version="9.10"/>
   <platform os="ubuntu" version="10.04"/>
   <platform os="macports" version="macports"/>
-  <rosbuild2>
-    <depend package="roslib" />
-    <pythondir>src</pythondir>
-  </rosbuild2>
+
 </package>
 
 

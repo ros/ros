@@ -141,7 +141,7 @@ def compute_stack_depends_and_licenses(stack_dir):
     stack = os.path.basename(os.path.abspath(stack_dir))    
     if os.path.exists(stack_dir):
         # create scoped rospack in the directory just to list packages that are there
-        rospack = rospkg.RosPack(ros_root=os.path.abspath(stack_dir), ros_package_path='')
+        rospack = rospkg.RosPack(ros_paths=[os.path.abspath(stack_dir)])
         packages = rospack.list()
         depends, licenses = _compute_stack_depends_and_licenses(stack, packages)
     else:

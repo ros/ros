@@ -295,47 +295,43 @@ class Graph(object):
         try:
             val = self.master.getSystemState()
         except rosgraph.masterapi.MasterException as e:
-            print("Unable to contact master", msg, file=sys.stderr)
-            logger.error("unable to contact master: %s", msg)
+            print("Unable to contact master", str(e), file=sys.stderr)
+            logger.error("unable to contact master: %s", str(e))
             return False
-        if code != 1:
-            print("Unable to contact master: %s"%msg, file=sys.stderr)
-            logger.error("unable to contact master: %s", msg)
-            updated = False
-        else:
-            pubs, subs, srvs = val
 
-            nodes = []
-            nt_all_edges = self.nt_all_edges
-            nt_nodes = self.nt_nodes
-            for state, direction in ((pubs, 'o'), (subs, 'i')):
-                for topic, l in state:
-                    if topic.startswith(self.topic_ns):
-                        nodes.extend([n for n in l if n.startswith(self.node_ns)])
-                        nt_nodes.add(topic_node(topic))
-                        for node in l:
-                            updated = nt_all_edges.add_edges(
-                                node, topic_node(topic), direction) or updated
-                            
-            nodes = set(nodes)
+        pubs, subs, srvs = val
 
-            srvs = set([s for s, _ in srvs])
-            purge = None
-            if nodes ^ self.nn_nodes:
-                purge = self.nn_nodes - nodes
-                self.nn_nodes = nodes
-                updated = True
-            if srvs ^ self.srvs:
-                self.srvs = srvs
-                updated = True
+        nodes = []
+        nt_all_edges = self.nt_all_edges
+        nt_nodes = self.nt_nodes
+        for state, direction in ((pubs, 'o'), (subs, 'i')):
+            for topic, l in state:
+                if topic.startswith(self.topic_ns):
+                    nodes.extend([n for n in l if n.startswith(self.node_ns)])
+                    nt_nodes.add(topic_node(topic))
+                    for node in l:
+                        updated = nt_all_edges.add_edges(
+                            node, topic_node(topic), direction) or updated
 
-            if purge:
-                logger.debug("following nodes and related edges will be purged: %s", ','.join(purge))
-                for p in purge:
-                    logger.debug('purging edges for node %s', p)
-                    self.nn_edges.delete_all(p)
-                    self.nt_edges.delete_all(p)
-                    self.nt_all_edges.delete_all(p)                    
+        nodes = set(nodes)
+
+        srvs = set([s for s, _ in srvs])
+        purge = None
+        if nodes ^ self.nn_nodes:
+            purge = self.nn_nodes - nodes
+            self.nn_nodes = nodes
+            updated = True
+        if srvs ^ self.srvs:
+            self.srvs = srvs
+            updated = True
+
+        if purge:
+            logger.debug("following nodes and related edges will be purged: %s", ','.join(purge))
+            for p in purge:
+                logger.debug('purging edges for node %s', p)
+                self.nn_edges.delete_all(p)
+                self.nt_edges.delete_all(p)
+                self.nt_all_edges.delete_all(p)                    
             
         logger.debug("master refresh: done, updated[%s]", updated)
         return updated
@@ -429,7 +425,7 @@ class Graph(object):
 
                     # update node->node graph edges
                     if dest_id.startswith('http://'):
-                        #print "FOUND URI", dest_id
+                        #print("FOUND URI", dest_id)
                         dest_name = self.uri_node_map.get(dest_id, None)
                         updated = self.nn_edges.add_edges(node, dest_name, direction, topic) or updated
                 else:
@@ -466,8 +462,6 @@ class Graph(object):
             code = -1
             msg = traceback.format_exc()
         if code != 1:
-            #TODO:REMOVE
-            print >> sys.stderr, "Unknown node reported: %s"%msg
             logger.warn("master reported error in node lookup: %s"%msg)
             return None
         else:
@@ -521,7 +515,7 @@ class Graph(object):
             # small yield to keep from torquing the processor
             time.sleep(0.01)
         end_time = time.time()
-        #print "Update (bad nodes) took %ss for %s nodes"%((end_time-start_time), num_nodes)
+        #print("Update (bad nodes) took %ss for %s nodes"%((end_time-start_time), num_nodes))
         logger.debug("ROS stats (bad nodes) update took %ss"%(end_time-start_time))
         return updated
             
@@ -579,7 +573,7 @@ class Graph(object):
             # small yield to keep from torquing the processor
             time.sleep(0.01)
         end_time = time.time()
-        #print "Update took %ss for %s nodes"%((end_time-start_time), num_nodes)
+        #print("Update took %ss for %s nodes"%((end_time-start_time), num_nodes))
         logger.debug("ROS stats update took %ss"%(end_time-start_time))
         return updated
     

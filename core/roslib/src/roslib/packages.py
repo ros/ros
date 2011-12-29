@@ -86,20 +86,11 @@ MANIFEST_FILE = 'manifest.xml'
 # Map package/directory structure
 #
 
-def is_pkg_dir(d):
-    """
-    @param d: directory location
-    @type  d: str
-    @return: True if d is the root directory of a ROS Package
-    @rtype: bool
-    """
-    return os.path.isfile(os.path.join(d, MANIFEST_FILE))
-
 def get_dir_pkg(d):
     """
     Get the package that the directory is contained within. This is
     determined by finding the nearest parent manifest.xml file. This
-    isn't 100% reliable, but symlinks can full any heuristic that
+    isn't 100% reliable, but symlinks can fool any heuristic that
     relies on ROS_ROOT.
     @param d: directory path
     @type  d: str

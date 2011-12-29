@@ -55,7 +55,6 @@ import rospkg
 import roslib.msgs 
 from roslib.msgs import MsgSpecException
 import roslib.names 
-import roslib.packages 
 import roslib.srvs 
 
 # name of the Header type as gentools knows it
@@ -265,7 +264,7 @@ def get_file_dependencies(f, stdout=sys.stdout, stderr=sys.stderr):
     instance.
     @rtype: dict
     """
-    _, package = roslib.packages.get_dir_pkg(f)
+    package = rospkg.get_package_name(f)
     spec = None
     if f.endswith(roslib.msgs.EXT):
         _, spec = roslib.msgs.load_from_file(f)

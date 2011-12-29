@@ -113,28 +113,6 @@ class EnvTest(unittest.TestCase):
     # make sure test works with os.environ
     self.assertEquals(os.environ.get('ROS_MASTER_URI', None), get_master_uri(required=False))
 
-  def test_get_log_dir(self):
-    from roslib.roslogging import get_log_dir
-    from roslib.rosenv import get_ros_root
-    import tempfile, os
-    base = tempfile.gettempdir()
-    ros_log_dir = os.path.join(base, 'ros_log_dir')
-    ros_home_dir = os.path.join(base, 'ros_home_dir')
-    home_dir = os.path.expanduser('~')
-
-    # ROS_LOG_DIR has precedence
-    env = {'ROS_ROOT': get_ros_root(), 'ROS_LOG_DIR': ros_log_dir, 'ROS_HOME': ros_home_dir }
-    self.assertEquals(ros_log_dir, get_log_dir(env=env))
-
-    env = {'ROS_ROOT': get_ros_root(), 'ROS_HOME': ros_home_dir }
-    self.assertEquals(os.path.join(ros_home_dir, 'log'), get_log_dir(env=env))
-
-    env = {'ROS_ROOT': get_ros_root()}
-    self.assertEquals(os.path.join(home_dir, '.ros', 'log'), get_log_dir(env=env))
-
-    # test default assignment of env. Don't both checking return value as we would duplicate get_log_dir
-    self.assert_(get_log_dir() is not None)
-
   def test_get_test_results_dir(self):
     from roslib.rosenv import get_ros_root, get_test_results_dir
     import tempfile, os

@@ -41,6 +41,10 @@ import sys
 import time
 import UserDict
 
+import rospkg
+
+import roslib.message
+
 from bag import Bag, Compression, ROSBagException, ROSBagFormatException, ROSBagUnindexedException
 from migration import MessageMigrator, fixbag2, checkbag
 
@@ -111,7 +115,8 @@ def record_cmd(argv):
 
     cmd.extend(args)
 
-    recordpath = os.path.join(roslib.rospack.rospackexec(['find', 'rosbag']), 'bin', 'record')
+    rospack = rospkg.RosPack()
+    recordpath = os.path.join(rospack.get_path('rosbag'), 'bin', 'record')
     os.execv(recordpath, cmd)
 
 def info_cmd(argv):
@@ -210,7 +215,8 @@ def play_cmd(argv):
 
     cmd.extend(args)
 
-    playpath = os.path.join(roslib.rospack.rospackexec(['find', 'rosbag']), 'bin', 'play')
+    rospack = rospkg.RosPack()
+    playpath = os.path.join(rospack.get_path('rosbag'), 'bin', 'play')
     os.execv(playpath, cmd)
 
 def filter_cmd(argv):

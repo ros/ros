@@ -36,7 +36,7 @@ import roslib
 roslib.load_manifest('rosbag')
 
 import unittest
-import rostest
+import rosunit
 import sys
 import time
 import subprocess
@@ -64,4 +64,4 @@ class ConnectionCount(unittest.TestCase):
     self.assertEqual(conns, 2)
 
 if __name__ == '__main__':
-  rostest.unitrun('test_rosbag', 'connection_count', ConnectionCount, sys.argv)
+  rosunit.unitrun('test_rosbag', 'connection_count', ConnectionCount, sys.argv)

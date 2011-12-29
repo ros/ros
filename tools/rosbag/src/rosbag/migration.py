@@ -42,7 +42,7 @@ import os
 import string
 import sys
 
-import roslib.rospack
+import rospkg
 import roslib.message
 import roslib.msgs
 
@@ -520,12 +520,12 @@ class MessageMigrator(object):
         # Alternatively the preferred method is to load definitions
         # from the migration ruleset export flag.
         if plugins:
+            rospack = rospkg.RosPack()
             for dep,export in [('rosbagmigration','rule_file'),('rosbag','migration_rule_file')]:
-                for pkg in roslib.rospack.rospack_depends_on_1(dep):
-                    m_file = roslib.manifest.manifest_file(pkg, True)
-                    m = roslib.manifest.parse_file(m_file)
+                for pkg in rospack.get_depends_on(dep, implicit=False):
+                    m = rospack.get_manifest(pkg)
                     p_rules = m.get_export(dep,export)
-                    pkg_dir = roslib.packages.get_pkg_dir(pkg)
+                    pkg_dir = rospack.get_path(pkg)
                     for r in p_rules:
                         if dep == 'rosbagmigration':
                             print >> sys.stderr, """WARNING: The package: [%s] is using a deprecated rosbagmigration export.

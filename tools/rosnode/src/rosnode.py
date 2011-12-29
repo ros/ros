@@ -40,6 +40,8 @@ library for retrieving ROS Node information.
 
 from __future__ import print_function
 
+__version__ = '1.7.0'
+
 import os
 import errno
 import sys

@@ -1,33 +1,26 @@
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
-rosbuild_catkinize()
-
-set(ROS_BUILD_TYPE RelWithDebInfo)
-#set(ROS_BUILD_TYPE Debug)
-
-rosbuild_init()
-
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-
-SET(CMAKE_SKIP_BUILD_RPATH FALSE)
-SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-SET(CMAKE_INSTALL_RPATH "${PROJECT_SOURCE_DIR}/lib")
-SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-
+project(rosbag)
+find_package(ROS REQUIRED COMPONENTS cpp_common roscpp_serialization roscpp rosconsole XmlRpc topic_tools)
+find_package(Boost REQUIRED COMPONENTS program_options)
+find_package(BZip2 REQUIRED)
 # Support large bags (>2GB) on 32-bit systems
 add_definitions(-D_FILE_OFFSET_BITS=64)
 
-rosbuild_add_library(rosbag
-	src/bag.cpp src/buffer.cpp src/bz2_stream.cpp src/chunked_file.cpp src/message_instance.cpp src/player.cpp
-	src/query.cpp src/recorder.cpp src/stream.cpp src/time_translator.cpp src/uncompressed_stream.cpp src/view.cpp)
-target_link_libraries(rosbag bz2)
+include_directories(include ${BZIP2_INCLUDE_DIR} ${ROS_INCLUDE_DIRS} ${roscpp_INCLUDE_DIRS})
+add_definitions(${BZIP2_DEFINITIONS})
+
+add_library(rosbag
+  src/bag.cpp src/buffer.cpp src/bz2_stream.cpp src/chunked_file.cpp
+  src/message_instance.cpp src/player.cpp
+  src/query.cpp src/recorder.cpp src/stream.cpp src/time_translator.cpp
+  src/uncompressed_stream.cpp src/view.cpp)
+target_link_libraries(rosbag ${BZIP2_LIBRARIES})
 rosbuild_link_boost(rosbag regex program_options)
 
-rosbuild_add_executable(record src/record.cpp)
-target_link_libraries(record rosbag)
+add_executable(record src/record.cpp)
+target_link_libraries(record rosbag ${ROS_LIBRARIES} ${Boost_LIBRARIES} ${BZIP2_LIBRARIES})
 
-rosbuild_add_executable(play src/play.cpp)
-target_link_libraries(play rosbag)
+add_executable(play src/play.cpp)
+target_link_libraries(play rosbag ${ROS_LIBRARIES} ${Boost_LIBRARIES} ${BZIP2_LIBRARIES})
 
 #rosbuild_add_executable(example_write examples/write.cpp)
 #target_link_libraries(example_write rosbag)
@@ -50,4 +43,3 @@ rosbuild_add_rostest(test/latched_pub.test)
 rosbuild_add_rostest(test/latched_sub.test)
 rosbuild_add_rostest(test/record_two_publishers.test)
 add_dependencies(rostest_test_latched_sub.test rostest_test_latched_pub.test)
-

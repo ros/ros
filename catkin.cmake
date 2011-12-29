@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 project(ros_comm)
-find_package(catkin)
+find_package(ROS COMPONENTS catkin genmsg cpp_common rostime roscpp_serialization roscpp_traits)
 
 foreach(subdir
     messages/rosgraph_msgs
@@ -10,7 +10,7 @@ foreach(subdir
     clients/cpp/roscpp
     clients/rospy
     utilities/message_filters
-    tools/rosgraph
+    tools
     )
   add_subdirectory(${subdir})
 endforeach()

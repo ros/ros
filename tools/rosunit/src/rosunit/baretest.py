@@ -76,7 +76,7 @@ class BareTestCase(unittest.TestCase):
         """
         super(BareTestCase, self).__init__()
         self.text_mode = text_mode
-        _, self.package = roslib.packages.get_dir_pkg(exe)
+        self.package = rospkg.get_package_name(exe)
         self.exe = os.path.abspath(exe)
         if test_name is None:
             self.test_name = os.path.basename(exe)

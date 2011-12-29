@@ -37,23 +37,23 @@
 Writes a test failure out to test file if it doesn't exist.
 """
 
-from __future__ import with_statement
+from __future__ import print_function
 PKG='rosunit'
 NAME="check_test_ran.py"
 import roslib; roslib.load_manifest(PKG)
 import os
 import sys
 
-import roslib.packages
+import rospkg
 import rosunit
 
 def usage():
-    print >> sys.stderr, """Usage:
+    print("""Usage:
 \t%s test-file.xml
 or
 \t%s --rostest pkg-name test-file.xml
-"""%(NAME, NAME)
-    print sys.argv
+"""%(NAME, NAME), file=sys.stderr)
+    print(sys.argv)
     sys.exit(os.EX_USAGE)
 
 def check_main():
@@ -65,7 +65,9 @@ def check_main():
         test_pkg, test_file = [a for a in sys.argv[1:] if a != '--rostest']
         # this logic derives the output filename that rostest uses
 
-        pkg_dir, _ = roslib.packages.get_dir_pkg(test_file)
+        r = rospkg.RosPack()
+        pkg_name = rospkg.get_package_name(test_file)
+        pkg_dir = r.get_path(pkg_name)
 
         # compute test name for friendlier reporting
         outname = rosunit.rostest_name_from_path(pkg_dir, test_file)
@@ -76,13 +78,13 @@ def check_main():
             usage()
         test_file = sys.argv[1]
         
-    print "Checking for test results in %s"%test_file
+    print("Checking for test results in %s"%test_file)
     
     if not os.path.exists(test_file):
         if not os.path.exists(os.path.dirname(test_file)):
             os.makedirs(os.path.dirname(test_file))
             
-        print "Cannot find results, writing failure results to", test_file
+        print("Cannot find results, writing failure results to", test_file)
         
         with open(test_file, 'w') as f:
             test_name = os.path.basename(test_file)

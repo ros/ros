@@ -40,7 +40,7 @@ import time
 import unittest
 import logging
 
-import roslib.packages 
+import rospkg
 
 from . import pmon
 from . core import xml_results_file, create_xml_runner
@@ -79,7 +79,7 @@ def rosunitmain():
     time_limit = float(options.time_limit) if options.time_limit else None
 
     # compute some common names we'll be using to generate test names and files
-    pkg_dir, pkg = roslib.packages.get_dir_pkg(test_file) 
+    pkg = rospkg.get_package_name(test_file)
 
     try:
         runner_result = None

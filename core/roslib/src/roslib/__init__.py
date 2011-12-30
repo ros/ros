@@ -29,15 +29,13 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
 
 """
+roslib is largely deprecated starting in the ROS Fuerte release.
+
 roslib has a very important role in all Python code written for ROS:
 it contains the L{load_manifest()} method, which updates the
-PYTHONPATH based on a set of ROS Package manifest.xml files. Because
-of this role, roslib is required to be on the PYTHONPATH of every ROS
-installation.
+PYTHONPATH based on a set of ROS Package manifest.xml files. 
 
 Beyond the important load_manifest() call, most of the rest of roslib
 consists of low-level libraries that 99% of ROS users need not

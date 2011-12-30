@@ -36,10 +36,13 @@
 Plugin loader for roswtf.
 """
 
+from __future__ import print_function
+
 import os
 import sys
 
-import roslib.rospack
+import roslib
+import rospkg
 
 def load_plugins():
     """
@@ -47,17 +50,17 @@ def load_plugins():
     roswtf plugins
     @rtype: [fn], [fn]
     """
-    to_check = roslib.rospack.rospack_depends_on_1('roswtf')
+    rospack = rospkg.RosPack()
+    to_check = rospack.get_depends_on('roswtf', implicit=False)
     static_plugins = []
     online_plugins = []
     for pkg in to_check:
-        m_file = roslib.manifest.manifest_file(pkg, True)
-        m = roslib.manifest.parse_file(m_file)
+        m = rospack.get_manifest(pkg)
         p_module = m.get_export('roswtf', 'plugin')
         if not p_module:
             continue
         elif len(p_module) != 1:
-            print >> sys.stderr, "Cannot load plugin [%s]: invalid 'plugin' attribute"%(pkg)
+            print("Cannot load plugin [%s]: invalid 'plugin' attribute"%(pkg), file=sys.stderr)
             continue
         p_module = p_module[0]
         try:
@@ -82,11 +85,11 @@ def load_plugins():
             if o_attr:
                 online_plugins.append(o_attr)
             if s_attr is None and o_attr is None:
-                print >> sys.stderr, "Cannot load plugin [%s]: no 'roswtf_plugin_static' or 'roswtf_plugin_online' attributes [%s]"%(p_module)
+                print("Cannot load plugin [%s]: no 'roswtf_plugin_static' or 'roswtf_plugin_online' attributes [%s]"%(p_module), file=sys.stderr)
             else:
-                print "Loaded plugin", p_module
+                print("Loaded plugin", p_module)
 
-        except:
-            print >> sys.stderr, "Unable to load plugin [%s] from package [%s]"%(p_module, pkg)
+        except Exception:
+            print("Unable to load plugin [%s] from package [%s]"%(p_module, pkg), file=sys.stderr)
     return static_plugins, online_plugins
 

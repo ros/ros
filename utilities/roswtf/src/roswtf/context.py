@@ -232,7 +232,10 @@ def _load_pkg(ctx, pkg):
     """
     r = rospkg.RosPack()
     ctx.pkg = pkg
-    ctx.pkgs = [pkg] + r.get_depends(pkg)
+    try:
+        ctx.pkgs = [pkg] + r.get_depends(pkg)
+    except rospkg.ResourceNotFound as e:
+        raise WtfException("Cannot dependencies for package [%s]: missing %s"%(pkg, e))
     try:
         ctx.pkg_dir = r.get_path(pkg)
         ctx.manifest_file = os.path.join(ctx.pkg_dir, 'manifest.xml')

@@ -12,7 +12,6 @@
     <cpp cflags="-I${prefix}/msg_gen/cpp/include -I${prefix}/include `rosboost-cfg --cflags`" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lroslib"/>
     <rosdoc config="${prefix}/rosdoc.yaml" />
   </export>
-  <depend package="rospack"/>
 
   <!-- for roslib.params -->
   <rosdep name="python"/>
@@ -24,12 +23,4 @@
   <platform os="ubuntu" version="9.10"/>
   <platform os="ubuntu" version="10.04"/>
   <platform os="macports" version="macports"/>
-  <rosbuild2> 
-    <depend package="rospack"/>
-    <depend package="cpp_common"/>
-    <export>
-      <include_dir>${roslib_SOURCE_DIR}/include</include_dir>
-      <lib>roslib</lib>
-    </export>
-  </rosbuild2>
 </package>

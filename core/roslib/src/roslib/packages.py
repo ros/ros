@@ -52,7 +52,6 @@ from subprocess import Popen, PIPE
 import rospkg
 
 import roslib.manifest
-import roslib.os_detect
 
 SRC_DIR = 'src'
 CATKIN_SOURCE_DIR = 'CATKIN_SOURCE_DIR'
@@ -143,11 +142,9 @@ def get_pkg_dir(package, required=True, ros_root=None, ros_package_path=None):
         elif ROS_ROOT in os.environ:
             # record setting for _pkg_dir_cache
             ros_root = os.environ[ROS_ROOT]
-        if ros_root:
-            rospack = os.path.join(ros_root, 'bin', 'rospack')
-        else:
-            rospack = 'rospack'
 
+        # determine rospack exe name
+        rospack = 'rospack'
         if 'ROS_BUILD' in os.environ:
             rospack = os.path.join(os.environ['ROS_BUILD'], 'bin', 'rospack')
 

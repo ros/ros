@@ -1,23 +1,18 @@
 #!/usr/bin/env python
-#
-#  TDS 2011/11/28
-#  PROTOTYPE FILE USED BY CATKIN
-#  IF YOU DON'T KNOW WHAT THAT MEANS, IGNORE THIS FILE
-#
 
 from setuptools import setup
 
 import sys
 sys.path.insert(0, 'src')
 
-#from genpy import __version__
+from roslib import __version__
 
 setup(name='roslib',
-      version= "6.6.6",
+      version= __version__,
       packages=['roslib'],
       package_dir = {'':'src'},
-      install_requires=[],
-      scripts = [],
+      install_requires=['rospkg'], 
+      scripts = ['scripts/gendeps'],
       author = "Ken Conley", 
       author_email = "kwc@willowgarage.com",
       url = "http://www.ros.org/wiki/roslib",
@@ -26,9 +21,9 @@ setup(name='roslib',
       classifiers = [
         "Programming Language :: Python", 
         "License :: OSI Approved :: BSD License" ],
-      description = "ROS msg/srv Python generation", 
+      description = "roslib", 
       long_description = """\
-roslib!
+This is a deprecated library that is being phased out starting in the ROS Fuerte release.  It contains base dependencies and support libraries for ROS. roslib contains many of the common data structures and tools that are shared across ROS client library implementations.
 """,
       license = "BSD"
       )

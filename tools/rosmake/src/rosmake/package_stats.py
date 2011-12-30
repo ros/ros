@@ -30,13 +30,12 @@
 
 # Author Tully Foote/tfoote@willowgarage.com
 
-from __future__ import with_statement
-
 import os
-import sys, string
+import sys
 import subprocess
 
 import rospkg
+import rospkg.os_detect
 
 def _platform_supported(m, os, version):
     for p in m.platforms:
@@ -59,10 +58,10 @@ class PackageFlagTracker:
   def __init__(self, dependency_tracker, os_name = None, os_version = None):
     if not os_name and not os_version:
         try:
-            osd = rospkg.os_detect.OsDetector()
+            osd = rospkg.os_detect.OsDetect()
             self.os_name = osd.get_codename()
             self.os_version = osd.get_version()
-        except rospkg.OsNotDetected as ex:
+        except rospkg.os_detect.OsNotDetected as ex:
             sys.stderr.write("Could not detect OS. platform detection will not work\n")
     else:
         self.os_name = os_name

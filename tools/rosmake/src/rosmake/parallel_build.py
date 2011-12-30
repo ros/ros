@@ -93,7 +93,10 @@ class DependencyTracker:
   def get_deps_1(self, package):
     if not package in self.deps_1:
       self.deps_1[package] = []
-      potential_dependencies = self.rospack.get_depends(package, implicit=False)
+      try:
+          potential_dependencies = self.rospack.get_depends(package, implicit=False)
+      except rospkg.ResourceNotFound:
+          potential_dependencies = []
       for p in potential_dependencies:
         if p in self.valid_packages:
           self.deps_1[package].append(p)
@@ -103,7 +106,11 @@ class DependencyTracker:
   def get_deps(self, package):
     if not package in self.deps:
       self.deps[package] = []
-      potential_dependencies = self.rospack.get_depends(package) 
+      try:
+          potential_dependencies = self.rospack.get_depends(package) 
+      except rospkg.ResourceNotFound:
+          potential_dependencies = []
+
       for p in potential_dependencies:
         if p in self.valid_packages:
           self.deps[package].append(p)

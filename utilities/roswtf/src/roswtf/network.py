@@ -39,13 +39,12 @@ import string
 import sys
 
 import rosgraph
+import rosgraph.network
 
 from roswtf.rules import warning_rule, error_rule
 
 # #1220
 def ip_check(ctx):
-    import rosgraph.network
-    import socket
     # best we can do is compare roslib's routine against socket resolution and make sure they agree
     addrs = rosgraph.network.get_local_addresses()
 
@@ -58,9 +57,6 @@ def ros_hostname_check(ctx):
     """Make sure that ROS_HOSTNAME resolves to a local IP address"""
     if not rosgraph.ROS_HOSTNAME in ctx.env:
         return
-
-    import rosgraph.network
-    import socket
 
     hostname = ctx.env[rosgraph.ROS_HOSTNAME]
     try:
@@ -78,9 +74,6 @@ def ros_ip_check(ctx):
     """Make sure that ROS_IP is a local IP address"""
     if not rosgraph.ROS_IP in ctx.env:
         return
-
-    import rosgraph.network
-    import socket
 
     ip = ctx.env[rosgraph.ROS_IP]
     

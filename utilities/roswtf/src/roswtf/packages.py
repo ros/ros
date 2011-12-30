@@ -217,12 +217,6 @@ def makefile_exists(ctx):
             missing.append(pkg)
     return missing
 
-def rospack_time(ctx):
-    start = time.time()
-    roslib.rospack.rospackexec(['deps', 'roslib'])
-    # arbitrarily tuned 
-    return (time.time() - start) > 0.5
-
 def cmakelists_package_valid(ctx):
     missing = []
     for pkg in ctx.pkgs:
@@ -259,8 +253,6 @@ warnings = [
     # "The following packages have no Makefile:"),
     (cmakelists_package_valid,
      "The following packages have incorrect rospack() declarations in CMakeLists.txt.\nPlease switch to using rosbuild_init():"),
-    (rospack_time,
-     "rospack is running very slowly. Consider running 'rospack profile' to find slow areas of your code tree."),
     
     (manifest_msg_srv_export,
      'The following packages have msg/srv-related cflags exports that are no longer necessary\n\t<export>\n\t\t<cpp cflags="..."\n\t</export>:'),

@@ -47,9 +47,37 @@ numerous ROS tools (e.g. rostopic).
 
 """
 
+__version__ = '1.7.0'
+
 from roslib.launcher import load_manifest
-from roslib.scriptutil import is_interactive, set_interactive
 
 # this import is necessary due to a bug in purge_build.py in our
 # debian assets.
 import roslib.stacks
+
+_is_interactive = False
+def set_interactive(interactive):
+    """
+    General API for a script specifying that it is being run in an
+    interactive environment. Many libraries may wish to change their
+    behavior based on being interactive (e.g. disabling signal
+    handlers on Ctrl-C).
+
+    @param interactive: True if current script is being run in an interactive shell
+    @type  interactive: bool
+    """
+    global _is_interactive
+    _is_interactive = interactive
+
+def is_interactive():
+    """
+    General API for a script specifying that it is being run in an
+    interactive environment. Many libraries may wish to change their
+    behavior based on being interactive (e.g. disabling signal
+    handlers on Ctrl-C).
+
+    @return: True if interactive flag has been set
+    @rtype: bool
+    """
+    return _is_interactive
+

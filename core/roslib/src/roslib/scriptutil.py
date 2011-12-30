@@ -40,55 +40,30 @@ is relatively immature and much of the functionality here will
 likely be moved elsewhere as the API solidifies.
 """
 
-import itertools
 import os
-import re
-import string
-import subprocess
 import sys
 
 import roslib.names 
-import roslib.network
 
 ## caller ID for master calls where caller ID is not vital
 _GLOBAL_CALLER_ID = '/script'
 
-_is_interactive = False
-def set_interactive(interactive):
-    """
-    General API for a script specifying that it is being run in an
-    interactive environment. Many libraries may wish to change their
-    behavior based on being interactive (e.g. disabling signal
-    handlers on Ctrl-C).
 
-    @param interactive: True if current script is being run in an interactive shell
-    @type  interactive: bool
-    """
-    global _is_interactive
-    _is_interactive = interactive
+import warnings
+def deprecated(func):
+    """This is a decorator which can be used to mark functions
+    as deprecated. It will result in a warning being emmitted
+    when the function is used."""
+    def newFunc(*args, **kwargs):
+        warnings.warn("Call to deprecated function %s." % func.__name__,
+                      category=DeprecationWarning, stacklevel=2)
+        return func(*args, **kwargs)
+    newFunc.__name__ = func.__name__
+    newFunc.__doc__ = func.__doc__
+    newFunc.__dict__.update(func.__dict__)
+    return newFunc
 
-def is_interactive():
-    """
-    General API for a script specifying that it is being run in an
-    interactive environment. Many libraries may wish to change their
-    behavior based on being interactive (e.g. disabling signal
-    handlers on Ctrl-C).
-
-    @return: True if interactive flag has been set
-    @rtype: bool
-    """
-    return _is_interactive
-
-def myargv(argv=None):
-    """
-    Remove ROS remapping arguments from sys.argv arguments.
-    @return: copy of sys.argv with ROS remapping arguments removed
-    @rtype: [str]
-    """
-    if argv is None:
-        argv = sys.argv
-    return [a for a in argv if not roslib.names.REMAP in a]
-
+@deprecated
 def script_resolve_name(script_name, name):
     """
     Name resolver for scripts. Supports ROS_NAMESPACE.  Does not
@@ -111,20 +86,6 @@ def script_resolve_name(script_name, name):
         return ns_join(roslib.names.make_caller_id(script_name), name[1:])
     return roslib.names.get_ros_namespace() + name
 
-import warnings
-def deprecated(func):
-    """This is a decorator which can be used to mark functions
-    as deprecated. It will result in a warning being emmitted
-    when the function is used."""
-    def newFunc(*args, **kwargs):
-        warnings.warn("Call to deprecated function %s." % func.__name__,
-                      category=DeprecationWarning, stacklevel=2)
-        return func(*args, **kwargs)
-    newFunc.__name__ = func.__name__
-    newFunc.__doc__ = func.__doc__
-    newFunc.__dict__.update(func.__dict__)
-    return newFunc
-
 @deprecated
 def get_master():
     """
@@ -143,11 +104,6 @@ def get_master():
     
     # changed this to not look as sys args and remove dependency on roslib.rosenv for cleaner cleanup
     uri = os.environ['ROS_MASTER_URI']
-    # #1730 validate URL for better error messages
-    try:
-        roslib.network.parse_http_host_and_port(uri)
-    except ValueError:
-        raise ValueError("invalid master URI: %s"%uri)
     return xmlrpcclient.ServerProxy(uri)
 
 @deprecated

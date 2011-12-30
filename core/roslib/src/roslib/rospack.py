@@ -57,7 +57,7 @@ def rospackexec(args):
     @rtype: str
     @raise roslib.exceptions.ROSLibException: if rospack command fails
     """
-    rospack_bin = os.path.join(rospkg.get_ros_root(), 'bin', 'rospack')
+    rospack_bin = 'rospack'
     if python3:
         val = subprocess.Popen([rospack_bin] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
         val = val.decode().strip()

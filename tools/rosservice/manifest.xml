@@ -10,6 +10,7 @@ rosservice contains the rosservice command-line tool for listing and querying RO
   <url>http://ros.org/wiki/rosservice</url>
   <depend package="rospy"/>
   <depend package="rosmsg"/>
+  <depend package="rosgraph" />
   <depend package="roslib"/>
   <depend package="rostopic"/>
   <depend package="std_msgs"/>  

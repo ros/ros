@@ -54,7 +54,7 @@ from cStringIO import StringIO
 
 import roslib.message 
 import roslib.names
-import roslib.network
+import rosgraph.network
 import rospy
 import rosmsg
 
@@ -113,8 +113,8 @@ def get_service_headers(service_name, service_uri):
             s.connect((dest_addr, dest_port))
             header = { 'probe':'1', 'md5sum':'*',
                        'callerid':'/rosservice', 'service':service_name}
-            roslib.network.write_ros_handshake_header(s, header)
-            return roslib.network.read_ros_handshake_header(s, StringIO(), 2048)
+            rosgraph.network.write_ros_handshake_header(s, header)
+            return rosgraph.network.read_ros_handshake_header(s, StringIO(), 2048)
         except socket.error:
             raise ROSServiceIOException("Unable to communicate with service [%s], address [%s]"%(service_name, service_uri))
     finally:
@@ -338,6 +338,17 @@ def _rosservice_cmd_find(argv=sys.argv):
         parser.error("you may only specify one message type")
     print('\n'.join(rosservice_find(args[0])))
 
+def _resource_name_package(name):
+    """
+    pkg/typeName -> pkg, typeName -> None
+    
+    :param name: package resource name, e.g. 'std_msgs/String', ``str``
+    :returns: package name of resource, ``str``
+    """    
+    if not '/' in name:
+        return None
+    return name[:name.find('/')]
+
 def get_service_class_by_name(service_name):
     """
     Get the service class using the name of the service. NOTE: this
@@ -368,7 +379,7 @@ def get_service_class_by_name(service_name):
         service_class = roslib.message.get_service_class(service_type)
         
     if service_class is None:
-        pkg = roslib.names.resource_name_package(service_type)
+        pkg = _resource_name_package(service_type)
         raise ROSServiceException("Unable to load type [%s].\n"%service_type+
                                   "Have you typed 'make' in [%s]?"%pkg)
     return service_class

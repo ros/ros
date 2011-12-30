@@ -57,8 +57,6 @@ from . import package_stats
 
 from optparse import OptionParser
 
-import rosdep
-
 def make_command():
     """
     @return: name of 'make' command
@@ -297,10 +295,6 @@ class RosMakeAll:
         self.obey_whitelist = False
         self.obey_whitelist_recursively = False
 
-        self.rosdep_install_result = None
-        self.rosdep_check_result = None
-
-
     def num_packages_built(self):
         """
         @return: number of packages that were built
@@ -310,36 +304,6 @@ class RosMakeAll:
 
     def update_status(self, argument, start_times, right):
         self.printer.rosmake_cache_info(argument, start_times, right)
-
-    def check_rosdep(self, packages):
-        failed_rosdeps = []
-        try:
-            r = rosdep.core.Rosdep(packages, robust=True)
-            failed_rosdeps = r.check()
-        except roslib.exceptions.ROSLibException as ex:
-            return ("rosdep ABORTED: %s"%ex, '')
-
-        return ', '.join(failed_rosdeps)
-        
-    def install_rosdeps(self, packages, default_yes):
-        """
-        Install all rosdeps of packages.
-        @param packages: list of package name
-        @type  packages: [str]
-        @param default_yes: if True, assume 'yes' to all package manager prompts.
-        @type  default_yes: bool
-        """
-        try:
-            r = rosdep.core.Rosdep(packages, robust=True)
-            error = r.install(include_duplicates=False, default_yes=default_yes)
-            if not error:
-                return None
-            else:
-                return "%s"%error
-        except rosdep.core.RosdepException as e:
-            return "%s"%e
-        except roslib.exceptions.ROSLibException as ex:
-            return "%s"%ex
 
     def build_or_recurse(self,p):
         if p in self.build_list:
@@ -524,10 +488,6 @@ class RosMakeAll:
             self.printer.print_all("Tested %d packages with %d failures."%(len(self.result['test']), test_failure_count))
         self.printer.print_all("Summary output to directory")
         self.printer.print_all("%s"%self.log_dir)
-        if self.rosdep_install_result:
-            self.printer.print_all("ERROR: Rosdep installation failed with error: %s"%self.rosdep_install_result)
-        if self.rosdep_check_result:
-            self.printer.print_all("WARNING: Rosdep did not detect the following system dependencies as installed: %s Consider using --rosdep-install option or `rosdep install %s`"%(self.rosdep_check_result, ' '.join(self.specified_packages)))
         if self.rejected_packages:
             self.printer.print_all("WARNING: Skipped command line arguments: %s because they could not be resolved to a stack name or a package name. "%self.rejected_packages)
 
@@ -702,13 +662,6 @@ class RosMakeAll:
                           default=False, action="store_true", 
                           help="deprecated option. it will do nothing, please use platform declarations and --require-platform instead")
 
-        parser.add_option("--rosdep-install", dest="rosdep_install",
-                          action="store_true", help="call rosdep install before running")
-        parser.add_option("--rosdep-yes", dest="rosdep_yes",
-                          action="store_true", help="if calling rosdep install use the default yes argument")
-        parser.add_option("--no-rosdep", dest="rosdep_disabled",
-                          action="store_true", help="disable the default check of rosdep")
-
         parser.add_option("--require-platform", dest="obey_whitelist",
                           action="store_true", help="do not build a package unless it is marked as supported on this platform")
         parser.add_option("--require-platform-recursive", dest="obey_whitelist_recursively",
@@ -856,25 +809,6 @@ class RosMakeAll:
             (buildable, error, str) = self.flag_tracker.can_build(p, self.obey_whitelist, self.obey_whitelist_recursively, self.skip_blacklist, [], False)
             if buildable: 
                 buildable_packages.append(p)
-
-        if options.rosdep_install:
-            self.printer.print_all("Generating Install Script using rosdep then executing. This may take a minute, you will be prompted for permissions. . .")
-            self.rosdep_install_result = self.install_rosdeps(buildable_packages, options.rosdep_yes)
-            if self.rosdep_install_result:
-                self.printer.print_all( "rosdep install failed: %s"%self.rosdep_install_result)
-                return False
-            else:
-                self.printer.print_all("rosdep successfully installed all system dependencies")
-
-
-        elif not options.rosdep_disabled:
-            self.printer.print_all("Checking rosdeps compliance for packages %s.  This may take a few seconds."%(', '.join(packages)))
-            self.rosdep_check_result = self.check_rosdep(buildable_packages)
-
-            if len(self.rosdep_check_result) == 0:
-                self.printer.print_all( "rosdep check passed all system dependencies in packages")# %s"% packages)
-            else:
-                self.printer.print_all("rosdep check failed to find system dependencies: %s"% self.rosdep_check_result)
 
         #generate the list of packages necessary to build(in order of dependencies)
         counter = 0

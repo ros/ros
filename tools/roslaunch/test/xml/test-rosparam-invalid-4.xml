@@ -1,0 +1,4 @@
+<launch>
+  <rosparam command="bad" />
+</launch>
+

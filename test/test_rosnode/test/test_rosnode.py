@@ -50,8 +50,6 @@ import rosunit
 import cStringIO
 from subprocess import Popen, PIPE, check_call, call
 
-from roslib.scriptutil import get_param_server, script_resolve_name
-
 from contextlib import contextmanager
 @contextmanager
 def fakestdout():

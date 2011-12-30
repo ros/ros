@@ -12,10 +12,8 @@ endforeach()
 
 catkin_package(ros)
 
-install(PROGRAMS 
-  bin/roscore 
+install(PROGRAMS
   bin/rosrun
-  bin/roslaunch
   bin/rostopic
   bin/rxconsole
   bin/rosbag

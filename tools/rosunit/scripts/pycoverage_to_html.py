@@ -38,8 +38,6 @@ Generate HTML reports from coverage.py (aka python-coverage). This is
 currently a no-frills backend tool.
 """
 
-from __future__ import with_statement
-
 import sys
 import roslib
 

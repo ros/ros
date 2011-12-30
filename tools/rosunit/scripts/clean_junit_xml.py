@@ -43,7 +43,6 @@ tend to cause Hudson trouble.
 """
 
 PKG = 'rosunit'
-import roslib; roslib.load_manifest(PKG)
 
 import os
 import sys

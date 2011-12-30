@@ -14,9 +14,6 @@
     <rosdoc config="rosdoc.yaml" />
   </export>
   <rosdep name="gtest"/> 
-  <rosbuild2>
-    <depend package="roslib"/>
-  </rosbuild2>
 
 </package>
 

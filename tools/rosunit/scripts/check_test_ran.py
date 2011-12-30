@@ -38,9 +38,8 @@ Writes a test failure out to test file if it doesn't exist.
 """
 
 from __future__ import print_function
-PKG='rosunit'
 NAME="check_test_ran.py"
-import roslib; roslib.load_manifest(PKG)
+
 import os
 import sys
 

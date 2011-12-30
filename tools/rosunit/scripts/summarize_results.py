@@ -38,10 +38,6 @@ Prints summary of aggregated test results to stdout. This is useful
 when running several tests across a package.
 """
 
-
-PKG = 'rosunit'
-import roslib; roslib.load_manifest(PKG)
-
 import os
 import sys
 import cStringIO

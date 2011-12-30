@@ -39,10 +39,10 @@ Library and tools support unit testing in ROS.
 # NOTE: while this makes some forward references to conventions used
 # in rostest, it does not use rostest itself.
 import os
-import roslib
 
 from .core import xml_results_file, rostest_name_from_path, create_xml_runner, XML_OUTPUT_FLAG
 from . import junitxml
 from .baretest import print_runner_summary, print_unittest_summary
 from .pyunit import unitrun
 
+__version__ = '1.7.0'

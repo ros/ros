@@ -45,6 +45,7 @@ import traceback
 
 import roslib.message
 import rosgraph
+import rosgraph.network
 
 from rospy.exceptions import TransportInitError, TransportTerminated, ROSException, ROSInterruptException
 from rospy.service import _Service, ServiceException
@@ -111,7 +112,7 @@ def wait_for_service(service, timeout=None):
             h = { 'probe' : '1', 'md5sum' : '*',
                   'callerid' : rospy.core.get_caller_id(),
                   'service': resolved_name }
-            roslib.network.write_ros_handshake_header(s, h)
+            rosgraph.network.write_ros_handshake_header(s, h)
             return True
         finally:
             if s is not None:

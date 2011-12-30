@@ -45,7 +45,7 @@ import time
 import traceback
 
 import rosgraph
-import roslib.xmlrpc
+import rosgraph.xmlrpc
 
 from ..names import _set_caller_id
 from ..core import is_shutdown, add_log_handler, signal_shutdown, rospyerr
@@ -80,7 +80,7 @@ def start_node(environ, resolved_name, master_uri=None, port=None):
     @param port: override ROS_PORT: port of slave xml-rpc node
     @type  port: int
     @return: node server instance
-    @rtype roslib.xmlrpc.XmlRpcNode
+    @rtype rosgraph.xmlrpc.XmlRpcNode
     @raise ROSInitException: if node has already been started
     """
     init_tcpros()
@@ -93,7 +93,7 @@ def start_node(environ, resolved_name, master_uri=None, port=None):
     _set_caller_id(resolved_name) 
 
     handler = ROSHandler(resolved_name, master_uri)
-    node = roslib.xmlrpc.XmlRpcNode(port, handler, on_run_error=_node_run_error)
+    node = rosgraph.xmlrpc.XmlRpcNode(port, handler, on_run_error=_node_run_error)
     node.start()
     while not node.uri and not is_shutdown():
         time.sleep(0.00001) #poll for XMLRPC init

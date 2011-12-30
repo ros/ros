@@ -41,7 +41,7 @@ UDPROS connection protocol.
 #  http://ros.org/wiki/ROS/UDPROS
 # 
 
-import roslib.network
+import rosgraph.network
 
 import rospy.impl.registration
 import rospy.impl.transport
@@ -69,7 +69,7 @@ class UDPROSHandler(rospy.transport.ProtocolHandler):
         if self.server is not None:
             return
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.bind((roslib.network.get_bind_address(), self.port))
+        s.bind((rosgraph.network.get_bind_address(), self.port))
         if self.port == 0:
             self.port = s.getsockname()[1]
         self.server = s

@@ -50,7 +50,6 @@ import rosgraph
 import rosgraph.names
 
 import roslib
-import roslib.network
 
 import rospy.core
 from rospy.core import logwarn, loginfo, logerr, logdebug

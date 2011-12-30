@@ -55,8 +55,9 @@ import traceback
 import select
 
 import rosgraph
+import rosgraph.network
 from roslib.message import DeserializationError, Message
-from roslib.network import read_ros_handshake_header, write_ros_handshake_header
+from rosgraph.network import read_ros_handshake_header, write_ros_handshake_header
 
 # TODO: remove * import from core
 from rospy.core import *
@@ -177,9 +178,9 @@ class TCPServer(object):
         @return: (ip address, port) of server socket binding
         @rtype: (str, int)
         """
-        # return roslib.network.get_host_name() instead of address so that it
+        # return rosgraph.network.get_host_name() instead of address so that it
         # obeys ROS_IP/ROS_HOSTNAME behavior
-        return (roslib.network.get_host_name(), self.port)
+        return (rosgraph.network.get_host_name(), self.port)
     
     def _create_server_sock(self):
         """
@@ -188,7 +189,7 @@ class TCPServer(object):
         """
         server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        server_sock.bind((roslib.network.get_bind_address(), self.port))
+        server_sock.bind((rosgraph.network.get_bind_address(), self.port))
         (self.addr, self.port) = server_sock.getsockname()
         server_sock.listen(5)
         return server_sock

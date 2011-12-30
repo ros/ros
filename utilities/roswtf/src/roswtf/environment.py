@@ -131,17 +131,11 @@ def ros_test_results_dir_check(ctx):
     return _writable_dir_check(ctx, ctx.env.get('ROS_TEST_RESULTS_DIR', None), 'ROS_TEST_RESULTS_DIR')
 
 def pythonpath_check(ctx):
+    # used to have a lot more checks here, but trying to phase out need for roslib on custom PYTHONPATH
     path = ctx.pythonpath
     roslib_count = len(set([p for p in paths(path) if 'roslib' in p]))
-    if not roslib_count:
-        return "roslib directory is not in PYTHONPATH"
     if roslib_count > 1:
         return "Multiple roslib directories in PYTHONPATH (there should only be one)"
-    rp = os.path.join('roslib', 'src')
-    if not rp in path:
-        return "roslib directory in PYTHONPATH should point to %s"%rp
-    if 'rostools' in path:
-        return "rostools should no longer be set in PYTHONPATH"
 
 def rosconsole_config_file_check(ctx):
     if 'ROSCONSOLE_CONFIG_FILE' in ctx.env:

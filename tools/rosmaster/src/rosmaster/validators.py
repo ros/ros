@@ -34,8 +34,9 @@
 
 """Internal-use Python decorators for parameter validation"""
 
-from rosgraph.names import ANYTYPE, TYPE_SEPARATOR, resolve_name
+from rosgraph.names import resolve_name, ANYTYPE
 
+TYPE_SEPARATOR = '/'
 ROSRPC = "rosrpc://"
 
 class ParameterInvalid(Exception):

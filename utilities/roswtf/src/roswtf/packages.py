@@ -39,7 +39,6 @@ from roswtf.environment import paths, is_executable
 from roswtf.rules import warning_rule, error_rule
 
 import roslib.msgs
-import roslib.packages
 import roslib.srvs
 
 ## look for unknown tags in manifest
@@ -49,40 +48,6 @@ def manifest_valid(ctx):
         errors = ["<%s>"%t.tagName for t in ctx.manifest.unknown_tags]
     return errors
     
-## look for unbuilt .msg files
-def msgs_built(ctx):
-    unbuilt = set([])
-    for pkg in ctx.pkgs:
-        pkg_dir = roslib.packages.get_pkg_dir(pkg)
-        mtypes = roslib.msgs.list_msg_types(pkg, False)
-        for t in mtypes:
-            expected = [os.path.join('msg_gen', 'cpp', 'include', pkg, '%s.h'%t),
-                        # roslisp is no longer builtin
-                        #os.path.join('msg', 'lisp', pkg, '%s.lisp'%t),
-                        os.path.join('src', pkg, 'msg', '_%s.py'%t)]
-            for e in expected:
-                if not os.path.isfile(os.path.join(pkg_dir, e)):
-                    unbuilt.add(pkg)
-    if 'roslib' in unbuilt:
-        unbuilt.remove('roslib')
-    return list(unbuilt)
-
-## look for unbuilt .srv files
-def srvs_built(ctx):
-    unbuilt = set([])
-    for pkg in ctx.pkgs:
-        pkg_dir = roslib.packages.get_pkg_dir(pkg)
-        mtypes = roslib.srvs.list_srv_types(pkg, False)
-        for t in mtypes:
-            expected = [os.path.join('srv_gen', 'cpp', 'include', pkg, '%s.h'%t),
-                        # roslisp is no longer builtin
-                        #os.path.join('srv', 'lisp', pkg, '%s.lisp'%t),
-                        os.path.join('src', pkg, 'srv', '_%s.py'%t)]
-            for e in expected:
-                if not os.path.isfile(os.path.join(pkg_dir, e)):
-                    unbuilt.add(pkg)
-    return list(unbuilt)
-
 def _manifest_msg_srv_export(ctx, type_):
     exist = []
     for pkg in ctx.pkgs:
@@ -169,54 +134,6 @@ def manifest_rpath_flags(ctx):
             warn.append(err_msg)
     return warn
 
-#CMake missing genmsg/gensrv
-def _cmake_genmsg_gensrv(ctx, type_):
-    missing = []
-    cmds = ['rosbuild_gen%s()'%type_, 'gen%s()'%type_]
-    for pkg in ctx.pkgs:
-        pkg_dir = roslib.packages.get_pkg_dir(pkg)
-        d = os.path.join(pkg_dir, type_)
-        if os.path.isdir(d):
-            files = os.listdir(d)
-            if filter(lambda x: x.endswith('.'+type_), files):
-                c_file = os.path.join(pkg_dir, 'CMakeLists.txt')
-                if os.path.isfile(c_file):
-                    f = open(c_file, 'r')
-                    try:
-                        for l in f:
-                            # ignore all whitespace
-                            l = l.strip().replace(' ', '')
-                            found_cmd = False
-                            for cmd in cmds:
-                                if l.startswith(cmd):
-                                    found_cmd = True
-                            if found_cmd:
-                                break
-                        else:
-                            missing.append(pkg)
-                    finally:
-                        f.close()
-
-    if 'roslib' in missing:
-        missing.remove('roslib')
-                        
-    return missing
-
-def cmake_genmsg(ctx):
-    return _cmake_genmsg_gensrv(ctx, 'msg')
-def cmake_gensrv(ctx):
-    return _cmake_genmsg_gensrv(ctx, 'srv')    
-
-#TODO: not sure if we should have this rule or not as it _does_ fail on ros-pkg
-def makefile_exists(ctx):
-    missing = []
-    for pkg in ctx.pkgs:
-        pkg_dir = roslib.packages.get_pkg_dir(pkg)
-        p = os.path.join(pkg_dir, 'Makefile')
-        if not os.path.isfile(p):
-            missing.append(pkg)
-    return missing
-
 def cmakelists_package_valid(ctx):
     missing = []
     for pkg in ctx.pkgs:
@@ -249,23 +166,15 @@ def cmakelists_package_valid(ctx):
 
 warnings = [
     # disabling as it is too common and regular
-    #(makefile_exists,
-    # "The following packages have no Makefile:"),
     (cmakelists_package_valid,
      "The following packages have incorrect rospack() declarations in CMakeLists.txt.\nPlease switch to using rosbuild_init():"),
     
     (manifest_msg_srv_export,
      'The following packages have msg/srv-related cflags exports that are no longer necessary\n\t<export>\n\t\t<cpp cflags="..."\n\t</export>:'),
-    (cmake_genmsg,
-     'The following packages need rosbuild_genmsg() in CMakeLists.txt:'),
-    (cmake_gensrv,     
-     'The following packages need rosbuild_gensrv() in CMakeLists.txt:'),
     (manifest_valid, "%(pkg)s/manifest.xml has unrecognized tags:"),
 
     ]
 errors = [
-    (msgs_built, "Messages have not been built in the following package(s).\nYou can fix this by typing 'rosmake <package-name>':"),
-    (srvs_built, "Services have not been built in the following package(s).\nYou can fix this by typing 'rosmake <package-name>':"),
     (manifest_rpath_flags, "The following packages have rpath issues in manifest.xml:"),
     ]
 

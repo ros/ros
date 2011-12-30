@@ -74,8 +74,9 @@ def manifest_depends(ctx):
                     continue
                 else:
                     pkgs = _packages_of(rosstack, d.name)
-                    if not [p for p in pkgs if p in s_deps]:
-                        errors.append("%s (%s appears to be an unnecessary depend)"%(m_file, d))
+                    # check no longer works due to rosdeps chains
+                    #if not [p for p in pkgs if p in s_deps]:
+                    #    errors.append("%s (%s appears to be an unnecessary depend)"%(m_file, d))
         except rospkg.ResourceNotFound:
             # report with a different rule
             pass

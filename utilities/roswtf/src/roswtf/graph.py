@@ -47,7 +47,6 @@ import rosgraph
 import rosgraph.rosenv
 import rosgraph.network
 
-import roslib.scriptutil
 import rosnode
 import rosservice
 

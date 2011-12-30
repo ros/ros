@@ -140,11 +140,10 @@ class TestDeregister(unittest.TestCase):
         self.assert_(not rostest.is_subscriber(topic, n), "subscription is still active on master")
 
     def test_unservice(self):
-        import roslib.scriptutil
-        master = roslib.scriptutil.get_master()
+        import rosgraph
+        master = rosgraph.Master('/test_dereg')
 
-        code, msg, state = master.getSystemState('/test_dereg')
-        self.assertEquals(1, code, msg)
+        state = master.getSystemState()
         _, _, srv = state
         # filter out rosout services
         #[['/rosout/set_logger_level', ['/rosout']], ['/rosout/get_loggers', ['/rosout']]]
@@ -156,8 +155,7 @@ class TestDeregister(unittest.TestCase):
         # we currently cannot interrogate a node's services, have to rely on master
 
         # verify that master has service
-        code, msg, state = master.getSystemState('/test_dereg')
-        self.assertEquals(1, code, msg)
+        state = master.getSystemState()
         _, _, srv = state
         srv = [s for s in srv if not s[0].startswith('/rosout/')]        
         self.assertEquals(srv, [[rospy.resolve_name(SERVICE), [rospy.get_caller_id()]]])
@@ -167,8 +165,7 @@ class TestDeregister(unittest.TestCase):
 
         time.sleep(1.0) # give API 1 second to sync with master
         
-        code, msg, state = master.getSystemState('/test_dereg')
-        self.assertEquals(1, code, msg)
+        state = master.getSystemState()
         _, _, srv = state
         srv = [s for s in srv if not s[0].startswith('/rosout/')]                
         self.failIf(srv, srv)

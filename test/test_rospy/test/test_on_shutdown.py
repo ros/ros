@@ -45,7 +45,6 @@ import unittest
 
 import rospy
 import rostest
-import roslib.scriptutil as scriptutil
 from std_msgs.msg import String
 
 

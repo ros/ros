@@ -35,7 +35,7 @@ USAGE = "Usage: rosversion <stack> or rosversion -d"
 import os
 import sys
 import re
-import roslib.stacks
+import rospkg
 
 def get_source_version(text):
     for l in text.split('\n'):
@@ -54,8 +54,9 @@ if len(sys.argv) == 2:
         print('fuerte')
         sys.exit(0)
     
+    rosstack = rospkg.RosStack()
     try:
-        d = roslib.stacks.get_stack_dir(stack_name)
+        d = rosstack.get_path(stack_name)
     except Exception as e:
         sys.stderr.write(str(e)+'\n')
         sys.exit(1)

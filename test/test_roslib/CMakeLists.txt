@@ -21,8 +21,6 @@ rosbuild_add_pyunit(test/test_roslib_rospack.py)
 rosbuild_add_pyunit(test/test_roslib_scriptutil.py)
 rosbuild_add_pyunit(test/test_roslib_stacks.py)
 rosbuild_add_pyunit(test/test_roslib_stack_manifest.py)
-rosbuild_add_pyunit(test/test_roslib_substitution_args.py)
-rosbuild_add_pyunit(test/test_roslib_xmlrpc.py)
  
 #integration tests
 

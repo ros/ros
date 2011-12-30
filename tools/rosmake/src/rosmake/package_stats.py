@@ -35,11 +35,23 @@ from __future__ import with_statement
 import os
 import sys, string
 import subprocess
-import roslib.rospack
-import roslib.rosenv
-import roslib.stacks
 
+import rospkg
 
+def _platform_supported(m, os, version):
+    for p in m.platforms:
+        if os == p.os and version == p.version:
+            return True
+    return False
+
+def platform_supported(rospack, pkg, os, version):
+    """
+    Return whether the platform defined by os and version is marked as supported in the package
+    @param pkg The package to test for support
+    @param os The os name to test for support
+    @param version The os version to test for support
+    """
+    return _platform_supported(rospack.get_manifest(pkg), os, version)
 
 class PackageFlagTracker:
   """ This will use the dependency tracker to test if packages are
@@ -47,15 +59,16 @@ class PackageFlagTracker:
   def __init__(self, dependency_tracker, os_name = None, os_version = None):
     if not os_name and not os_version:
         try:
-            osd = roslib.os_detect.OSDetect()
-            self.os_name = osd.get_name()
+            osd = rospkg.os_detect.OsDetector()
+            self.os_name = osd.get_codename()
             self.os_version = osd.get_version()
-        except roslib.os_detect.OSDetectException as ex:
+        except rospkg.OsNotDetected as ex:
             sys.stderr.write("Could not detect OS. platform detection will not work\n")
     else:
         self.os_name = os_name
         self.os_version = os_version
 
+    self.rospack = rospkg.RosPack()
     self.blacklisted = {}
     self.blacklisted_osx = {}
     self.nobuild = set()
@@ -67,7 +80,7 @@ class PackageFlagTracker:
 
   def get_path(self, package):
     if not package in self.paths:
-      self.paths[package] = roslib.packages.get_pkg_dir(package)
+      self.paths[package] = self.rospack.get_path(package)
     return self.paths[package]
 
   def register_blacklisted(self, blacklisted_package, dependent_package):
@@ -87,12 +100,12 @@ class PackageFlagTracker:
       return 
     if os.path.exists(os.path.join(self.get_path(package), "ROS_BUILD_BLACKLIST")):
       self.register_blacklisted(package, package)
-      for p in roslib.rospack.rospack_depends_on(package):
+      for p in self.rospack.get_depends_on(package, implicit=True):
         self.register_blacklisted(package, p)
         
     if os.path.exists(os.path.join(self.get_path(package), "ROS_BUILD_BLACKLIST_OSX")):
       self.register_blacklisted_osx(package, package)
-      for p in roslib.rospack.rospack_depends_on(package):
+      for p in self.rospack.get_depends_on(package, implicit=True):
         self.register_blacklisted_osx(package, p)
 
     if os.path.exists(os.path.join(self.get_path(package), "ROS_NOBUILD")):
@@ -177,7 +190,7 @@ class PackageFlagTracker:
       return package in self.build_failed
 
   def is_whitelisted(self, package):
-      return roslib.packages.platform_supported(package, self.os_name, self.os_version)
+      return platform_supported(self.rospack, package, self.os_name, self.os_version)
         
   def can_build(self, pkg, use_whitelist = False, use_whitelist_recursive = False, use_blacklist = False, failed_packages = [], use_makefile = True):
     """

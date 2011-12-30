@@ -33,17 +33,14 @@ from __future__ import print_function
 
 import os
 import re
+import signal
 import sys
 import subprocess
 import time
-
-import rospkg
-
-import roslib
-import roslib.rospack
 import threading
 import traceback
-import signal
+
+import rospkg
 
 try: 
     from exceptions import SystemExit #Python 2.x
@@ -722,12 +719,12 @@ class RosMakeAll:
         else:      # no need to extend if all already selected   
             if options.buildtest:
               for p in options.buildtest:
-                packages.extend(roslib.rospack.rospack_depends_on(p)) 
+                packages.extend(self.rospack.get_depends_on(p)) 
                 self.printer.print_all( "buildtest requested for package %s adding it and all dependent packages: "%p)
 
             if options.buildtest1:
               for p in options.buildtest1:
-                packages.extend(roslib.rospack.rospack_depends_on_1(p)) 
+                packages.extend(self.rospack.get_depends_on(p, implicit=False)) 
                 self.printer.print_all( "buildtest1 requested for package %s adding it and all depends-on1 packages: "%p)
 
         if len(packages) == 0 and len(args) == 0:

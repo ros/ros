@@ -36,8 +36,7 @@ import sys
 import subprocess
 import time
 
-import roslib
-import roslib.rospack
+import rospkg
 import threading
 
 if sys.hexversion > 0x03000000: #Python3
@@ -73,11 +72,10 @@ def num_cpus():
       return ncpus
   return 1 # Default
 
-
-
+#TODO: may no longer need this now that we've ported to rospkg
 class DependencyTracker:
   """ Track dependencies between packages.  This is basically a
-  caching way to call roslib. It also will allow you to specifiy a
+  caching way to call rospkg. It also will allow you to specifiy a
   range of packages over which to track dependencies.  This is useful
   if you are only building a subset of the tree. For example with the
   --specified-only option. """
@@ -85,8 +83,9 @@ class DependencyTracker:
     """
     @param valid_packages: defaults to rospack list
     """
+    self.rospack = rospkg.RosPack()
     if valid_packages is None:
-      valid_packages = roslib.rospack.rospackexec(["list-names"]).split()
+      valid_packages = self.rospack.list()
     self.valid_packages = valid_packages
     self.deps_1 = {}
     self.deps = {}
@@ -94,7 +93,7 @@ class DependencyTracker:
   def get_deps_1(self, package):
     if not package in self.deps_1:
       self.deps_1[package] = []
-      potential_dependencies = roslib.rospack.rospack_depends_1(package) 
+      potential_dependencies = self.rospack.get_depends(package, implicit=False)
       for p in potential_dependencies:
         if p in self.valid_packages:
           self.deps_1[package].append(p)
@@ -104,7 +103,7 @@ class DependencyTracker:
   def get_deps(self, package):
     if not package in self.deps:
       self.deps[package] = []
-      potential_dependencies = roslib.rospack.rospack_depends(package) 
+      potential_dependencies = self.rospack.get_depends(package) 
       for p in potential_dependencies:
         if p in self.valid_packages:
           self.deps[package].append(p)

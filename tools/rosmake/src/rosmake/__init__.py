@@ -33,3 +33,4 @@ is very likely to change in future releases and is not stable.
 
 from .engine import RosMakeAll, Printer
 
+__version__ = '1.7.0'

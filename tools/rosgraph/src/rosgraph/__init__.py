@@ -29,8 +29,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
 
 __version__ = '1.7.0'
 
@@ -40,3 +38,14 @@ from . masterapi import is_online as is_master_online
 
 # bring in names submodule
 from . import names
+
+def myargv(argv=None):
+    """
+    Remove ROS remapping arguments from sys.argv arguments.
+    
+    :returns: copy of sys.argv with ROS remapping arguments removed, ``[str]``
+    """
+    if argv is None:
+        argv = sys.argv
+    return [a for a in argv if not names.REMAP in a]
+

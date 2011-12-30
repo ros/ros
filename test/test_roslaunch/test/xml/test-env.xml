@@ -11,7 +11,7 @@
 
   <node name="n3" pkg="package" type="test_one_two" />
   
-  <include file="$(find test_roslaunch)/test/xml/test-env-include.xml"> 
+  <include file="$(find roslaunch)/test/xml/test-env-include.xml"> 
     <env name="INCLUDE" value="include" />
   </include>
   

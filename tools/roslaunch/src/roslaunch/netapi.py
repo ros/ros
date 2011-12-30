@@ -51,10 +51,10 @@ def get_roslaunch_uris():
     """
     try:
         m = rosgraph.Master(_ID)
-        vals = param_server.getParam('/roslaunch/uris')
+        vals = m.getParam('/roslaunch/uris')
         return vals.values()
-    except rosgraph.MasterException: pass
-    return None
+    except rosgraph.MasterException: 
+        return None
 
 class NetProcess(object):
     def __init__(self, name, respawn_count, is_alive, roslaunch_uri):

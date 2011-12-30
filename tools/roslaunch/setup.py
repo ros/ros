@@ -23,7 +23,7 @@ setup(name='roslaunch',
         "License :: OSI Approved :: BSD License" ],
       description = "roslaunch multi-process launchers", 
       long_description = """\
-roslaunch is a tool for running multiple ROS processes easily across one or moremachines.
+roslaunch is a tool for easily launching multiple ROS nodes locally and remotely via SSH, as well as setting parameters on the Parameter Server. It includes options to automatically respawn processes that have already died. roslaunch takes in one or more XML configuration files (with the .launch extension) that specify the parameters to set and nodes to launch, as well as the machines that they should be run on.
 """,
       license = "BSD"
       )

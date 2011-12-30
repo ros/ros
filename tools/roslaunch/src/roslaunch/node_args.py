@@ -187,14 +187,16 @@ def get_node_args(node_name, roslaunch_files):
     # join environment vars are bash prefix args
     return ["%s=%s"%(k, v) for k, v in env.iteritems()] + args
     
-def create_local_process_env(node, machine, master_uri, env=os.environ):
+def create_local_process_env(node, machine, master_uri, env=None):
     """
     Setup environment for locally launched process. The local
     environment includes the default os environment, with any
     ROS-specific environment variables overriding this enviornment.
-    @return: environment variables
-    @rtype: dict
+
+    :returns: environment variables, ``dict``
     """
+    if env is None:
+        env = os.environ
 
     # #1029: generate environment for the node. unset
     # #ROS-related environment vars before

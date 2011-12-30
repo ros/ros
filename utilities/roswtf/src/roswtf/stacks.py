@@ -41,11 +41,11 @@ from roswtf.rules import warning_rule, error_rule
 import rospkg
 
 _packages_of_cache = {}
-def _packages_of(r, d):
+def _packages_of(rosstack, d):
     if d in _packages_of_cache:
         return _packages_of_cache[d]
     else:
-        _packages_of_cache[d] = pkgs = r.packages_of(d)
+        _packages_of_cache[d] = pkgs = rosstack.packages_of(d)
         return pkgs
                 
 def manifest_depends(ctx):
@@ -73,7 +73,7 @@ def manifest_depends(ctx):
                     # we ignore.
                     continue
                 else:
-                    pkgs = _packages_of(d.name)
+                    pkgs = _packages_of(rosstack, d.name)
                     if not [p for p in pkgs if p in s_deps]:
                         errors.append("%s (%s appears to be an unnecessary depend)"%(m_file, d))
         except rospkg.ResourceNotFound:

@@ -7,4 +7,8 @@ install_cmake_infrastructure(rosgraph
   PYTHONPATH src
   )
 
+install(FILES scripts/rosgraph scripts/rxgraph
+  DESTINATION share/rosgraph/bin
+  )
+
 enable_python(rosgraph)

@@ -57,7 +57,6 @@ import roslib.message
 import rosgraph
 #TODO: lazy-import rospy or move rospy-dependent routines to separate location
 import rospy
-import rosbag
 
 class ROSTopicException(Exception):
     """
@@ -632,6 +631,7 @@ def _rostopic_echo_bag(callback_echo, bag_file):
         raise ROSTopicException("bag file [%s] does not exist"%bag_file)
     first = True
     
+    import rosbag
     with rosbag.Bag(bag_file) as b:
         for t, msg, timestamp in b.read_messages():
         # bag files can have relative paths in them, this respects any
@@ -1611,6 +1611,7 @@ Type rostopic <command> -h for more detailed usage, e.g. 'rostopic echo -h'
     sys.exit(os.EX_USAGE)
 
 def rostopicmain(argv=None):
+    import rosbag
     if argv is None:
         argv=sys.argv
     # filter out remapping arguments in case we are being invoked via roslaunch

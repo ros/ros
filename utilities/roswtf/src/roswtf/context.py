@@ -44,9 +44,9 @@ import rospkg
 import rospkg.environment
 
 import rosgraph
-import rosgraph.substitution_args
 
 import roslaunch.depends
+import roslaunch.substitution_args
 
 from roswtf.model import WtfWarning
 
@@ -220,7 +220,7 @@ def _load_roslaunch(ctx, roslaunch_files):
         ctx.pkg = base_pkg
         ctx.launch_file_deps = file_deps
         ctx.launch_file_missing_deps = missing
-    except rosgraph.substitution_args.SubstitutionException as se:
+    except roslaunch.substitution_args.SubstitutionException as se:
         raise WtfException("Cannot load roslaunch file(s): "+str(se))
     except roslaunch.depends.RoslaunchDepsException as e:
         raise WtfException(str(e))

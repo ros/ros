@@ -44,10 +44,10 @@ from roswtf.rules import warning_rule, error_rule
 
 # #1220
 def ip_check(ctx):
-    import roslib.network
+    import rosgraph.network
     import socket
     # best we can do is compare roslib's routine against socket resolution and make sure they agree
-    addrs = roslib.network.get_local_addresses()
+    addrs = rosgraph.network.get_local_addresses()
 
     resolved = socket.gethostbyname(socket.gethostname())
     if not resolved.startswith('127.') and resolved not in addrs:
@@ -59,7 +59,7 @@ def ros_hostname_check(ctx):
     if not rosgraph.ROS_HOSTNAME in ctx.env:
         return
 
-    import roslib.network
+    import rosgraph.network
     import socket
 
     hostname = ctx.env[rosgraph.ROS_HOSTNAME]
@@ -69,7 +69,7 @@ def ros_hostname_check(ctx):
         return "ROS_HOSTNAME [%s] cannot be resolved to an IP address"%(hostname)
     
     # best we can do is compare roslib's routine against socket resolution and make sure they agree
-    addrs = roslib.network.get_local_addresses()
+    addrs = rosgraph.network.get_local_addresses()
 
     if resolved not in addrs:
         return "ROS_HOSTNAME [%s] resolves to [%s], which does not appear to be a local IP address %s."%(hostname, resolved, str(addrs))
@@ -79,13 +79,13 @@ def ros_ip_check(ctx):
     if not rosgraph.ROS_IP in ctx.env:
         return
 
-    import roslib.network
+    import rosgraph.network
     import socket
 
     ip = ctx.env[rosgraph.ROS_IP]
     
     # best we can do is compare roslib's routine against socket resolution and make sure they agree
-    addrs = roslib.network.get_local_addresses()
+    addrs = rosgraph.network.get_local_addresses()
 
     if ip not in addrs:
         return "ROS_IP [%s] does not appear to be a local IP address %s."%(ip, str(addrs))

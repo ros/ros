@@ -1,22 +1,22 @@
-if(CATKIN)
-  include(catkin.cmake)
-  return()
-endif()
+cmake_minimum_required(VERSION 2.8)
+project(roslib)
+find_package(catkin)
 
-if(ROSBUILD)
-  # this is for rosbuild2 integration, you can ignore this
-  include(rosbuild.cmake OPTIONAL)
-  return()
-endif()
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
-rosbuild_init()
+install_cmake_infrastructure(roslib
+  VERSION 0.0.1
+  PYTHONPATH src
+  )
 
+enable_python(roslib)
+
+# Avoid a boost warning that pops up when using msvc compiler
+if(MSVC)
+  add_definitions(-D_SCL_SECURE_NO_WARNINGS)
+endif()
 rosbuild_add_boost_directories()
-
 rosbuild_add_library(roslib src/package.cpp)
 rosbuild_link_boost(roslib thread)
 
-if (NOT APPLE)
-target_link_libraries(roslib rt)
-endif (NOT APPLE)
+if(NOT (APPLE OR WIN32 OR MINGW))
+  target_link_libraries(roslib rt)
+endif()

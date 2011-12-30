@@ -9,7 +9,6 @@
   <review status="Doc reviewed" notes="12/16/2009"/>
   <url>http://ros.org/wiki/rosmsg</url>
   <depend package="roslib"/>
-  <depend package="rospy"/>
   <depend package="rosbag"/>
   <export>
     <rosdoc config="rosdoc.yaml"/>    

@@ -40,6 +40,8 @@ and roslib.srvs libraries and can be found there instead.
 
 from __future__ import print_function
 
+__version__ = '1.7.0'
+
 import os
 import platform
 import sys
@@ -188,12 +190,9 @@ def rosmsg_users(mode, type_):
 def get_srv_text(type_, raw=False):
     """
     Get .srv file for type_ as text
-    @param type_: service type
-    @type  type_: str
-    @param raw: if True, include comments and whitespace (default False)
-    @type  raw: bool
-    @return: text of .srv file
-    @rtype: str
+    :param type_: service type, ``str``
+    :param raw: if True, include comments and whitespace (default False), ``bool``
+    :returns: text of .srv file, ``str``
     @raise ROSMsgException: if type_ is unknown
     """
     package, base_type = genmsg.package_resource_name(type_)
@@ -211,15 +210,11 @@ def get_srv_text(type_, raw=False):
 def get_msg_text(type_, raw=False, full_text=None):
     """
     Get .msg file for type_ as text
-    @param type_: message type
-    @type  type_: str
-    @param raw: if True, include comments and whitespace (default False)
-    @type  raw: bool
-    @param full_text: if not None, contains full text of message definition
-    @type  full_text: str
-    @return: text of .msg file
-    @rtype: str
-    @raise ROSMsgException: if type_ is unknown
+    :param type_: message type, ``str``
+    :param raw: if True, include comments and whitespace (default False), ``bool``
+    :param full_text: if not None, contains full text of message definition, ``str``
+    :returns: text of .msg file, ``str``
+    :raises :exc:`ROSMsgException` If type_ is unknown
     """
     package, base_type = genmsg.package_resource_name(type_)
     
@@ -258,8 +253,7 @@ def get_msg_text(type_, raw=False, full_text=None):
 def rosmsg_debug(mode, type_, raw=False):
     """
     Prints contents of msg/srv file
-    @param mode: MODE_MSG or MODE_SRV
-    @type  mode: str
+    :param mode: MODE_MSG or MODE_SRV, ``str``
     """
     if mode == MODE_SRV:
         print(get_srv_text(type_, raw=raw))
@@ -271,32 +265,25 @@ def rosmsg_debug(mode, type_, raw=False):
 def list_srvs(package):
     """
     List srvs contained in package
-    @param package: package name
-    @type  package: str
-    @return: list of srvs in package
-    @rtype: [str]
+    :param package: package name, ``str``
+    :returns: list of srvs in package, ``[str]``
     """
     return list_types(package, mode=MODE_SRV)
 
 def list_msgs(package):
     """
     List msgs contained in package
-    @param package: package name
-    @type  package: str
-    @return: list of msgs in package
-    @rtype: [str]
+    :param package: package name, ``str``
+    :returns: list of msgs in package, ``[str]``
     """
     return list_types(package)
     
 def list_types(package, mode=MODE_MSG):
     """
     Lists msg/srvs contained in package
-    @param package: package name
-    @type  package: str
-    @param mode: MODE_MSG or MODE_SRV. Defaults to msgs.
-    @type  mode: str
-    @return: list of msgs/srv in package
-    @rtype: [str]
+    :param package: package name, ``str``
+    :param mode: MODE_MSG or MODE_SRV. Defaults to msgs, ``str``
+    :returns: list of msgs/srv in package, ``[str]``
     """
     rospack = rospkg.RosPack()
     if mode == MODE_MSG:
@@ -310,8 +297,7 @@ def _msg_filter(ext):
     def mfilter(f):
         """
         Predicate for filtering directory list. matches message files
-        @param f: filename
-        @type  f: str
+        :param f: filename, ``str``
         """
         return os.path.isfile(f) and f.endswith(ext)
     return mfilter
@@ -319,9 +305,9 @@ def _msg_filter(ext):
 def _list_types(rospack, package, subdir, ext):
     """
     List all messages in the specified package
-    @param package str: name of package to search
-    @param include_depends bool: if True, will also list messages in package dependencies
-    @return [str]: message type names
+    :param package str: name of package to search
+    :param include_depends bool: if True, will also list messages in package dependencies
+    :returns [str]: message type names
     """
     path = os.path.join(rospack.get_path(package), subdir)
     types = _list_resources(package, path, _msg_filter(ext))
@@ -331,8 +317,7 @@ def _list_resources(package, path, rfilter=os.path.isfile):
     """
     List resources in a package directory within a particular
     subdirectory. This is useful for listing messages, services, etc...
-    @param rfilter: resource filter function that returns true if filename is the desired resource type
-    @type  rfilter: fn(filename)->bool
+    :param rfilter: resource filter function that returns true if filename is the desired resource type, ``fn(filename)->bool``
     """
     resources = []
     if os.path.isdir(path):
@@ -344,8 +329,7 @@ def _list_resources(package, path, rfilter=os.path.isfile):
 def iterate_packages(mode):
     """
     Iterator for packages that contain messages/services
-    @param mode: .msg or .srv
-    @type  mode: str
+    :param mode: .msg or .srv, ``str``
     """
     if mode == MODE_MSG:
         subdir = 'msg'
@@ -369,15 +353,13 @@ def list_packages(mode=MODE_MSG):
     """
     List all packages that contain messages/services. This is a convenience
     function of iterate_packages
-    @param mode: MODE_MSG or MODE_SRV. Defaults to msgs
-    @type  mode: str
-    @return: list of packages that contain messages/services (depending on mode)
-    @rtype: [str]
+    :param mode: MODE_MSG or MODE_SRV. Defaults to msgs, ``str``
+    :returns: list of packages that contain messages/services (depending on mode), ``[str]``
     """
     return [p for p in iterate_packages(mode)]
 
 ## iterator for all packages that contain a message matching base_type
-## @param base_type str: message base type to match, e.g. 'String' would match std_msgs/String
+## :param base_type str: message base type to match, e.g. 'String' would match std_msgs/String
 def rosmsg_search(mode, base_type):
     if mode == MODE_MSG:
         res_file = roslib.msgs.msg_file
@@ -508,10 +490,8 @@ def rosmsg_cmd_packages(mode, full):
 
 def fullusage(cmd):
     """
-    @param cmd: command name
-    @type  cmd: str
-    @return: usage text for cmd
-    @rtype: str
+    :param cmd: command name, ``str``
+    :returns: usage text for cmd, ``str``
     """
     return """Commands:
 \t%(cmd)s show\tShow message description
@@ -529,8 +509,7 @@ def rosmsgmain(mode=MODE_MSG):
     
     rosmsg can interact with either ros messages or ros services. The mode
     param indicates which
-    @param mode: MODE_MSG or MODE_SRV
-    @type  mode: str
+    :param mode: MODE_MSG or MODE_SRV, ``str``
     """
     try:
         if mode == MODE_MSG:

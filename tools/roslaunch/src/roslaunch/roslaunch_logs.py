@@ -32,6 +32,8 @@
 #
 # Revision $Id$
 
+from __future__ import print_function
+
 """
 Implementation for roslaunch-logs command-line utility.
 """
@@ -41,17 +43,15 @@ import sys
 import time
 import traceback
 
-import roslib.rosenv
-import roslib.scriptutil
+import rospkg
+import rosgraph
 
 NAME = 'roslaunch-logs'
 
 def get_run_id():
     try:
-        param_server = roslib.scriptutil.get_param_server()
-        code, msg, val = param_server.getParam('/roslaunch', '/run_id')
-        if code == 1:
-            return val
+        param_server = rosgraph.Master('/roslaunch')
+        return param_server.getParam('/run_id')
     except: # cannot contact parameter server
         pass
 
@@ -62,7 +62,7 @@ def logs_main():
     if args:
         parser.error("%s takes no arguments"%NAME)
         
-    log_dir = roslib.rosenv.get_log_dir()
+    log_dir = rospkg.get_log_dir()
     if not log_dir:
         print >> sys.stderr, "Cannot determine ROS log directory"
         sys.exit(1)
@@ -70,13 +70,8 @@ def logs_main():
     run_id = get_run_id()
     if not run_id:
         # go ahead and print the log directory
-        print >> sys.stderr, "No active roscore"
-        print log_dir
+        print("No active roscore", file=sys.stderr)
+        print(log_dir)
         sys.exit(2)
 
-    print os.path.join(log_dir, run_id)
-        
-
-    
-if __name__ == '__main__':
-    logs_main()
+    print(os.path.join(log_dir, run_id))

@@ -1,7 +1,5 @@
-project(rosnode)
+project(rosunit)
 find_package(catkin)
-
-#add_subdirectory(scripts)
 
 install_cmake_infrastructure(${PROJECT_NAME}
   VERSION 0.0.1
@@ -9,3 +7,7 @@ install_cmake_infrastructure(${PROJECT_NAME}
   )
 
 enable_python(${PROJECT_NAME})
+
+install(DIRECTORY scripts 
+  DESTINATION share/rosunit/bin
+  )

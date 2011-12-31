@@ -43,6 +43,7 @@ import xmlrpclib
 
 from . names import make_caller_id
 from . rosenv import get_master_uri
+from . network import parse_http_host_and_port
 
 class MasterException(Exception):
     """
@@ -109,6 +110,12 @@ class Master(object):
         """
         if master_uri is None:
             raise ValueError("ROS master URI is not set")
+        # #1730 validate URL for better error messages
+        try:
+            parse_http_host_and_port(master_uri)
+        except ValueError:
+            raise ValueError("invalid master URI: %s"%(master_uri))
+
         self.master_uri = master_uri
         self.handle = xmlrpclib.ServerProxy(self.master_uri)
         

@@ -126,6 +126,12 @@ class XmlRpcHandler(object):
         """
         pass
     
+    def _shutdown(self, reason):
+        """
+        callback into handler to inform it of shutdown
+        """
+        pass
+
 class XmlRpcNode(object):
     """
     Generic XML-RPC node. Handles the additional complexity of binding
@@ -197,11 +203,8 @@ class XmlRpcNode(object):
             else:
                 raise
 
-    def _run(self):
-        """
-        Main processing thread body.
-        :raises: :exc:`socket.error` If server cannot bind
-        """
+    # separated out for easier testing
+    def _run_init(self):
         logger = logging.getLogger('xmlrpc')            
         try:
             log_requests = 0
@@ -236,7 +239,6 @@ class XmlRpcNode(object):
                 uri = 'http://%s:%s/'%(rosgraph.network.get_local_address(), self.port)
             self.set_uri(uri)
             
-            #print "... started XML-RPC Server", self.uri
             logger.info("Started XML-RPC server [%s]", self.uri)
 
             self.server.register_multicall_functions()
@@ -255,6 +257,14 @@ class XmlRpcNode(object):
         if self.handler is not None:
             self.handler._ready(self.uri)
         logger.info("xml rpc node: starting XML-RPC server")
+        
+    def _run(self):
+        """
+        Main processing thread body.
+        :raises: :exc:`socket.error` If server cannot bind
+        
+        """
+        self._run_init()
         while not self.is_shutdown:
             try:
                 self.server.serve_forever()
@@ -267,5 +277,5 @@ class XmlRpcNode(object):
                     pass
                 elif errno != 4:
                     self.is_shutdown = True
-                    logger.error("serve forever IOError: %s, %s"%(errno, errstr))
+                    logging.getLogger('xmlrpc').error("serve forever IOError: %s, %s"%(errno, errstr))
                     

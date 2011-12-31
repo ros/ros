@@ -32,6 +32,8 @@
 
 __version__ = '1.7.0'
 
+import sys
+
 from . rosenv import get_master_uri, ROS_MASTER_URI, ROS_NAMESPACE, ROS_HOSTNAME, ROS_IP
 from . masterapi import Master, MasterFailure, MasterError, MasterException
 from . masterapi import is_online as is_master_online

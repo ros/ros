@@ -1,11 +1,10 @@
-if(CATKIN)
-  include(catkin.cmake)
-  return()
-endif()
-if(ROSBUILD)
-  include(rosbuild.cmake)
-  return()
-endif()
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
-rosbuild_init()
+cmake_minimum_required(VERSION 2.8)
+project(rospy)
+find_package(catkin)
+
+install_cmake_infrastructure(rospy
+  PYTHONPATH src
+  )
+
+enable_python(rospy)
+

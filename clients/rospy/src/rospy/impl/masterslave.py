@@ -66,7 +66,7 @@ try:
 except ImportError:
     import urlparse
 
-from roslib.xmlrpc import XmlRpcHandler
+from rosgraph.xmlrpc import XmlRpcHandler
 
 import rospy.names
 import rospy.rostime

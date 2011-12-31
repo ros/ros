@@ -243,7 +243,7 @@ def init_node(name, argv=None, anonymous=False, log_level=INFO, disable_rostime=
     # check for name override
     mappings = rospy.names.get_mappings()
     if '__name' in mappings:
-        # use roslib version of resolve_name to avoid remapping
+        # use rosgraph version of resolve_name to avoid remapping
         name = rosgraph.names.resolve_name(mappings['__name'], rospy.core.get_caller_id())
         if anonymous:
             logdebug("[%s] WARNING: due to __name setting, anonymous setting is being changed to false"%name)

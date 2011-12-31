@@ -86,6 +86,7 @@ from itertools import chain
 import traceback
 
 import roslib.message
+import rosgraph.names
 
 from rospy.core import *
 from rospy.exceptions import ROSSerializationException, TransportTerminated
@@ -137,7 +138,7 @@ class Topic(object):
         if not issubclass(data_class, roslib.message.Message):
             raise ValueError("data_class [%s] is not a message data class"%data_class.__class__.__name__)
         # #2202
-        if not roslib.names.is_legal_name(name):
+        if not rosgraph.names.is_legal_name(name):
             import warnings
             warnings.warn("'%s' is not a legal ROS graph resource name. This may cause problems with other ROS tools"%name, stacklevel=2)
         

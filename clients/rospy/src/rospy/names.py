@@ -41,11 +41,10 @@ See: U{http://www.ros.org/wiki/Names}
 import sys
 import os
 
-
-from roslib.names import namespace, get_ros_namespace, ns_join, make_global_ns, load_mappings, \
-     SEP, GLOBALNS, TYPE_SEPARATOR, REMAP, ANYTYPE, \
+from rosgraph.names import namespace, get_ros_namespace, ns_join, make_global_ns, load_mappings, \
+     SEP, GLOBALNS, REMAP, ANYTYPE, \
      is_global, is_private
-import roslib.names
+import rosgraph.names
 
 from rospy.exceptions import ROSException
 from rospy.impl.validators import ParameterInvalid
@@ -109,12 +108,12 @@ def initialize_mappings(node_name):
     global _resolved_mappings
     _resolved_mappings = {}
     for m,v in _mappings.items():
-        # resolve both parts of the mappings. use the roslib.names
+        # resolve both parts of the mappings. use the rosgraph.names
         # version of resolve_name to avoid circular mapping.
         if m.startswith('__'): # __name, __log, etc...
             _resolved_mappings[m] = v
         else:
-            _resolved_mappings[roslib.names.resolve_name(m, node_name)] = roslib.names.resolve_name(v, node_name)
+            _resolved_mappings[rosgraph.names.resolve_name(m, node_name)] = rosgraph.names.resolve_name(v, node_name)
 
 def resolve_name_without_node_name(name):
     """
@@ -130,16 +129,16 @@ def resolve_name_without_node_name(name):
     if is_private(name):
         raise ValueError("~name topics cannot be created before init_node() has been called")
 
-    # we use the underlying roslib.names.resolve_name to avoid dependencies on nodename/remappings
+    # we use the underlying rosgraph.names.resolve_name to avoid dependencies on nodename/remappings
     fake_caller_id = ns_join(get_namespace(), 'node')
-    fake_resolved = roslib.names.resolve_name(name, fake_caller_id)
+    fake_resolved = rosgraph.names.resolve_name(name, fake_caller_id)
 
     for m, v in _mappings.items():
-        if roslib.names.resolve_name(m, fake_caller_id) == fake_resolved:
+        if rosgraph.names.resolve_name(m, fake_caller_id) == fake_resolved:
             if is_private(name):
                 raise ROSInitException("due to the way this node is written, %s cannot be remapped to a ~name. \nThe declaration of topics/services must be moved after the call to init_node()"%name)
             else:
-                return roslib.names.resolve_name(v, fake_caller_id)
+                return rosgraph.names.resolve_name(v, fake_caller_id)
     return fake_resolved
 
 def get_mappings():
@@ -160,7 +159,7 @@ def get_resolved_mappings():
     """
     return _resolved_mappings
 
-#TODO: port to a wrapped call to roslib.names.resolve_name
+#TODO: port to a wrapped call to rosgraph.names.resolve_name
 def resolve_name(name, caller_id=None):
     """
     Resolve a ROS name to its global, canonical form. Private ~names
@@ -214,7 +213,7 @@ def remap_name(name, caller_id=None, resolved=True):
     if not caller_id:
         caller_id = get_caller_id()
     if name in _mappings:
-        return roslib.names.resolve_name(_mappings[name], caller_id)
+        return rosgraph.names.resolve_name(_mappings[name], caller_id)
     return name
 
 def scoped_name(caller_id, name):
@@ -251,7 +250,8 @@ def valid_name_validator_resolved(param_name, param_value, caller_id):
     if ':' in param_value or ' ' in param_value:
         raise ParameterInvalid("ERROR: parameter [%s] contains illegal chars"%param_name) 
     #don't use our own resolve_name because we do not want to remap
-    return roslib.names.resolve_name(param_value, caller_id, remappings=None)
+    return rosgraph.names.resolve_name(param_value, caller_id, remappings=None)
+
 def valid_name_validator_unresolved(param_name, param_value, caller_id):
     if not param_value or not isstring(param_value):
         raise ParameterInvalid("ERROR: parameter [%s] must be a non-empty string"%param_name)            

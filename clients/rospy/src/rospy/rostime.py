@@ -55,7 +55,7 @@ _rostime_initialized = False
 _rostime_current = None
 _rostime_cond = threading.Condition()
 
-# subclass roslib to provide abstraction layer
+# subclass genpy to provide abstraction layer
 class Duration(genpy.Duration):
     """
     Duration represents the ROS 'duration' primitive type, which

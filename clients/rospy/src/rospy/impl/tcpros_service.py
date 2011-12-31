@@ -45,6 +45,7 @@ import traceback
 
 import roslib.message
 import rosgraph
+import rosgraph.names
 import rosgraph.network
 
 from rospy.exceptions import TransportInitError, TransportTerminated, ROSException, ROSInterruptException
@@ -543,7 +544,7 @@ class ServiceImpl(_Service):
         if not name or not isstring(name):
             raise ValueError("service name is not a non-empty string")
         # #2202
-        if not roslib.names.is_legal_name(name):
+        if not rosgraph.names.is_legal_name(name):
             import warnings
             warnings.warn("'%s' is not a legal ROS graph resource name. This may cause problems with other ROS tools"%name, stacklevel=2)
 

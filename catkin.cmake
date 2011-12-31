@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(ros)
 find_package(catkin)
+find_package(Boost COMPONENTS thread)
 
 foreach(subdir
     core/roslib

@@ -1,11 +1,7 @@
-cmake_minimum_required(VERSION 2.8)
 project(roslib)
-find_package(catkin)
+find_package(ROS COMPONENTS catkin rospack)
 
-install_cmake_infrastructure(roslib
-  VERSION 0.0.1
-  PYTHONPATH src
-  )
+include_directories(include ${Boost_INCLUDE_DIRS} ${ROS_INCLUDE_DIRS})
 
 enable_python(roslib)
 
@@ -13,10 +9,15 @@ enable_python(roslib)
 if(MSVC)
   add_definitions(-D_SCL_SECURE_NO_WARNINGS)
 endif()
-rosbuild_add_boost_directories()
-rosbuild_add_library(roslib src/package.cpp)
-rosbuild_link_boost(roslib thread)
+
+add_library(roslib src/package.cpp)
+target_link_libraries(roslib ${Boost_LIBRARIES})
 
 if(NOT (APPLE OR WIN32 OR MINGW))
   target_link_libraries(roslib rt)
 endif()
+install_cmake_infrastructure(roslib
+  VERSION 0.0.1
+  PYTHONPATH src
+  )
+

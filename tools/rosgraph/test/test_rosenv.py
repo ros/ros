@@ -1,6 +1,6 @@
 # Software License Agreement (BSD License)
 #
-# Copyright (c) 2009, Willow Garage, Inc.
+# Copyright (c) 2011, Willow Garage, Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -32,53 +32,46 @@
 
 import os
 import sys
-import time
-import mock
 
-def test_XmlRpcHandler():
-    from rosgraph.xmlrpc import XmlRpcHandler    
-    # tripwire
-    h = XmlRpcHandler()
-    # noop
-    h._ready('http://localhost:1234')
+def test_vars():
+    import rosgraph.rosenv
+    assert 'ROS_MASTER_URI' == rosgraph.rosenv.ROS_MASTER_URI
+    assert rosgraph.rosenv.ROS_IP == 'ROS_IP'
+    assert rosgraph.rosenv.ROS_HOSTNAME == 'ROS_HOSTNAME'
+    assert rosgraph.rosenv.ROS_NAMESPACE == 'ROS_NAMESPACE'
     
-def test_XmlRpcNode():
-    from rosgraph.xmlrpc import XmlRpcNode, XmlRpcHandler
-    # not a very comprehensive test (yet)
-    #port, handler
-    tests = [
-        (None, None, None),
-        (8080, None, 8080),
-        ('8080', None, 8080),
-        (u'8080', None, 8080),
-      ]
+def test_get_master_uri():
+    from rosgraph.rosenv import get_master_uri
+    val = get_master_uri()
+    if 'ROS_MASTER_URI' in os.environ:
+        assert val == os.environ['ROS_MASTER_URI']
+
+    # environment override
+    val = get_master_uri(env=dict(ROS_MASTER_URI='foo'))
+    assert val == 'foo'
+
+    # argv override precedence, first arg wins
+    val = get_master_uri(env=dict(ROS_MASTER_URI='foo'), argv=['__master:=bar', '__master:=bar2'])
+    assert val == 'bar'
+
+    # empty env
+    assert None == get_master_uri(env={})
     
-    for port, handler,true_port in tests:
-        n = XmlRpcNode(port, handler)
-        assert true_port == n.port
-        assert handler == n.handler
-        assert None == n.uri
-        assert None == n.server
-        n.set_uri('http://fake:1234')
-        assert 'http://fake:1234' == n.uri
+    # invalid argv
+    try:
+        val = get_master_uri(argv=['__master:='])
+        assert False, "should have failed"
+    except ValueError:
+        pass
+    # invalid argv
+    try:
+        val = get_master_uri(argv=['__master:=foo:=bar'])
+        assert False, "should have failed"
+    except ValueError:
+        pass
 
-        n.start()
-        start = time.time()
-        while not n.uri and time.time() - start < 5.:
-            time.sleep(0.00001) #poll for XMLRPC init
+    
+    
 
-        assert n.uri
-        n.shutdown('test case')
-
-    # get coverage on run init
-    n = XmlRpcNode(0, XmlRpcHandler())
-    n._run_init()
-    n.shutdown('test case')
-
-    # mock in server in order to play with _run()
-    n.server = mock.Mock()
-    n.is_shutdown = False
-    n._run_init = mock.Mock()
-    n.server.serve_forever.side_effect = IOError(1, 'boom')
-    n._run()
-
+    
+    

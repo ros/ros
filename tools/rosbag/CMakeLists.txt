@@ -7,6 +7,8 @@ set(ROS_BUILD_TYPE RelWithDebInfo)
 
 rosbuild_init()
 
+add_subdirectory(scripts)
+
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 
 SET(CMAKE_SKIP_BUILD_RPATH FALSE)

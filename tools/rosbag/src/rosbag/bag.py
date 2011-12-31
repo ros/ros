@@ -38,9 +38,6 @@ Provides serialization of bag files.
 
 from __future__ import print_function
 
-PKG = 'rosbag'
-import roslib; roslib.load_manifest(PKG)
-
 import bisect
 import bz2
 import heapq

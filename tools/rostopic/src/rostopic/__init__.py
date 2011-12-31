@@ -38,6 +38,8 @@ from __future__ import division, print_function
 
 NAME='rostopic'
 
+__version__ = '1.7.0'
+
 import os
 import sys
 import itertools
@@ -52,7 +54,6 @@ from urlparse import urlparse
 
 import genpy
 
-import roslib.names
 import roslib.message
 import rosgraph
 #TODO: lazy-import rospy or move rospy-dependent routines to separate location
@@ -1113,6 +1114,17 @@ def _rostopic_cmd_find(argv=sys.argv):
     print('\n'.join(find_by_type(args[0])))
     
 
+def _resource_name_package(name):
+    """
+    pkg/typeName -> pkg, typeName -> None
+    
+    :param name: package resource name, e.g. 'std_msgs/String', ``str``
+    :returns: package name of resource, ``str``
+    """    
+    if not '/' in name:
+        return None
+    return name[:name.find('/')]
+
 def create_publisher(topic_name, topic_type, latch):
     """
     Create rospy.Publisher instance from the string topic name and
@@ -1131,7 +1143,7 @@ def create_publisher(topic_name, topic_type, latch):
     except:
         raise ROSTopicException("invalid topic type: %s"%topic_type)
     if msg_class is None:
-        pkg = roslib.names.resource_name_package(topic_type)
+        pkg = _resource_name_package(topic_type)
         raise ROSTopicException("invalid message type: %s.\nIf this is a valid message type, perhaps you need to type 'rosmake %s'"%(topic_type, pkg))
     # disable /rosout and /rostime as this causes blips in the pubsub network due to rostopic pub often exiting quickly
     rospy.init_node('rostopic', anonymous=True, disable_rosout=True, disable_rostime=True)

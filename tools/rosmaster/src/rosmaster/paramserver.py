@@ -32,7 +32,7 @@
 
 from threading import RLock
 
-from roslib.names import ns_join, GLOBALNS, SEP, is_global, is_private, canonicalize_name
+from rosgraph.names import ns_join, GLOBALNS, SEP, is_global, is_private, canonicalize_name
 
 def _get_param_names(names, key, d):
     """

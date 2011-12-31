@@ -6,7 +6,7 @@
 #
 Catkin-ProjectName: ros
 Version: 0.0.1
-Depends: catkin
+Depends: catkin, rospack
 Description: ROS Core
 Author: Ken Conley et al
 Maintainer: Ken Conley <kwc@willowgarage.com>

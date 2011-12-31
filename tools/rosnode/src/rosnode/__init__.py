@@ -56,6 +56,7 @@ except ImportError:
 
 from optparse import OptionParser
 import rosgraph
+import rosgraph.names
 
 NAME='rosnode'
 ID = '/rosnode'
@@ -117,8 +118,7 @@ def get_node_names(namespace=None):
     import itertools
     if namespace:
         # canonicalize namespace with leading/trailing slash
-        import roslib.names
-        g_ns = roslib.names.make_global_ns(namespace)
+        g_ns = rosgraph.names.make_global_ns(namespace)
         for s in state:
             for t, l in s:
                 nodes.extend([n for n in l if n.startswith(g_ns) or n == namespace])

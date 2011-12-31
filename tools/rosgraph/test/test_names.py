@@ -284,3 +284,44 @@ def test_resolve_name():
           ]
       for name, node_name, v in tests:
           assert v == resolve_name(name, node_name)
+
+def test_anonymous_name():
+    from rosgraph.names import anonymous_name, is_legal_name
+    val = anonymous_name('foo')
+    assert 'foo' in val
+    assert 'foo' != val
+    assert val != anonymous_name('foo')
+    assert not '/' in val
+    assert is_legal_name(val)
+    
+    
+def test_script_resolve_name():
+    from rosgraph.names import script_resolve_name, get_ros_namespace, ns_join
+
+    assert '/global' == script_resolve_name('/myscript', '/global')
+    val = script_resolve_name('/myscript', '')    
+    assert get_ros_namespace() == val, val
+    val = script_resolve_name('/myscript', 'foo')    
+    assert ns_join(get_ros_namespace(), 'foo') == val, val
+    assert '/myscript/private' == script_resolve_name('/myscript', '~private')    
+    
+def test_canonicalize_name():
+    from rosgraph.names import canonicalize_name
+    tests = [
+        ('', ''),
+        ('/', '/'),
+        ('foo', 'foo'),          
+        ('/foo', '/foo'),          
+        ('/foo/', '/foo'),
+        ('/foo/bar', '/foo/bar'),
+        ('/foo/bar/', '/foo/bar'),
+        ('/foo/bar//', '/foo/bar'),
+        ('/foo//bar', '/foo/bar'),
+        ('//foo/bar', '/foo/bar'),
+        ('foo/bar', 'foo/bar'),
+        ('foo//bar', 'foo/bar'),
+        ('foo/bar/', 'foo/bar'),
+        ('/foo/bar', '/foo/bar'),
+        ]
+    for t, v in tests:
+        assert v == canonicalize_name(t)

@@ -41,7 +41,7 @@ import socket
 import sys
 import time
 
-import roslib.network as network
+import rosgraph.network as network
 
 import roslaunch.config 
 import roslaunch.remoteprocess 

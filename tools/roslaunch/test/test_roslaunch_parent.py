@@ -40,6 +40,7 @@ import time
 
 from xmlrpclib import ServerProxy
 
+import rosgraph.parent
 import roslaunch.parent
 
 ## Fake Process object
@@ -165,7 +166,7 @@ class TestRoslaunchParent(unittest.TestCase):
         self.assert_(p.config is None)
         p._load_config()
         # - make sure port got passed into master
-        _, port = roslib.network.parse_http_host_and_port(p.config.master.uri)
+        _, port = rosgraph.network.parse_http_host_and_port(p.config.master.uri)
         self.assertEquals(11312, port)
 
         # try again with bad file

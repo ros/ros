@@ -82,7 +82,7 @@ _caller_apis = {}
 def get_api_uri(master, caller_id):
     """
     @param master: XMLRPC handle to ROS Master
-    @type  master: xmlrpclib.ServerProxy
+    @type  master: rosgraph.Master
     @param caller_id: node name
     @type  caller_id: str
     @return: xmlrpc URI of caller_id

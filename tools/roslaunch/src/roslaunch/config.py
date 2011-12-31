@@ -42,8 +42,7 @@ import logging
 import sys
 import types
 
-import roslib.names
-
+import rospkg
 import rosgraph.names
 import rosgraph.network
 
@@ -58,7 +57,8 @@ except:
     DEFAULT_MASTER_PORT = 11311
     
 def get_roscore_filename():
-    return os.path.join(roslib.packages.get_pkg_dir('roslaunch'), 'roscore.xml')
+    r = rospkg.RosPack()
+    return os.path.join(r.get_path('roslaunch'), 'roscore.xml')
 
 def load_roscore(loader, config, verbose=True):
     """
@@ -66,7 +66,6 @@ def load_roscore(loader, config, verbose=True):
     @param config ROSLaunchConfig
     @param loader XmlLoader
     """
-    import roslib.packages
     f_roscore = get_roscore_filename()
     logging.getLogger('roslaunch').info('loading roscore config file %s'%f_roscore)            
     loader.load(f_roscore, config, core=True, verbose=verbose)    
@@ -386,7 +385,7 @@ def load_config_default(roslaunch_files, port, roslaunch_strs=None, loader=None,
             
     config = ROSLaunchConfig()
     if port:
-        config.master.uri = roslib.network.create_local_xmlrpc_uri(port)
+        config.master.uri = rosgraph.network.create_local_xmlrpc_uri(port)
 
     loader = loader or roslaunch.xmlloader.XmlLoader()
 

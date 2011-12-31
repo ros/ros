@@ -31,15 +31,5 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-# As rostopic is used in tab completion, we manually calculate the
-# sys.path to reduce load latency
-
-import os, sys, roslib.stacks
-d = roslib.stacks.get_stack_dir('ros_comm')
-paths = [os.path.join(d, 'tools', p, 'src') for p in ['rosmsg', 'rosbag', 'rostopic', 'rosgraph']]
-paths.append(os.path.join(d, 'clients', 'rospy', 'src'))
-paths.append(os.path.join(d, 'messages', 'rosgraph_msgs', 'src'))
-paths.append(os.path.join(d, 'messages', 'std_msgs', 'src'))
-sys.path = paths + sys.path
 import rostopic
 rostopic.rostopicmain()

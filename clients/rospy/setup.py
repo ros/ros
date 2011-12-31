@@ -19,12 +19,21 @@ except:
     """)
     __version__ = "6.6.6"
 
+sys.stderr.write("""
+
+    TDS hackaround:  should there be a scripts/rospy?
+
+""")
+
 setup(name='rospy',
       version= __version__,
       packages=['rospy'],
       package_dir = {'':'src'},
       install_requires=['rosgraph', 'roslib'],
-      scripts = ['scripts/rospy'],
+      #
+      #  Hmm, this script doesn't exist...  Commented out by TDS...
+      #
+      #scripts = ['scripts/rospy'],
       author = "Ken Conley",
       author_email = "kwc@willowgarage.com",
       url = "http://www.ros.org/wiki/rospy",

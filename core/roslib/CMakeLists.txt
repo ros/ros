@@ -3,8 +3,6 @@ find_package(ROS COMPONENTS catkin rospack)
 
 include_directories(include ${Boost_INCLUDE_DIRS} ${ROS_INCLUDE_DIRS})
 
-enable_python(roslib)
-
 # Avoid a boost warning that pops up when using msvc compiler
 if(MSVC)
   add_definitions(-D_SCL_SECURE_NO_WARNINGS)
@@ -16,8 +14,11 @@ target_link_libraries(roslib ${Boost_LIBRARIES})
 if(NOT (APPLE OR WIN32 OR MINGW))
   target_link_libraries(roslib rt)
 endif()
+
 install_cmake_infrastructure(roslib
   VERSION 0.0.1
   PYTHONPATH src
   )
+
+enable_python(roslib)
 

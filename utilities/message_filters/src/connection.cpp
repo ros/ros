@@ -32,7 +32,7 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#include "connection.h"
+#include "message_filters/connection.h"
 
 namespace message_filters
 {

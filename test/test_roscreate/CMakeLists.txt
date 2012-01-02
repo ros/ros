@@ -6,6 +6,12 @@ macro(append_project_cache CACHENAME)
   if(NOT ${PROJECT_NAME}_CACHE)
     file(WRITE ${cachefile} "#\n# This is ${cachefile}\n#\n")
     set(${PROJECT_NAME}_CACHE TRUE)
+    # TODO: find catkin somehow
+    set(runtests_path ${CMAKE_SOURCE_DIR}/catkin/scripts/runtests.py)
+    add_custom_target(${PROJECT_NAME}_run_tests
+                      COMMAND ${runtests_path} ${cachefile})
+    add_custom_target(test)
+    add_dependencies(test ${PROJECT_NAME}_run_tests)
   endif()
 
   # gotcha:  you need a newline or the message doesn't appear
@@ -35,20 +41,11 @@ function(add_pyunit file)
     set(_covarg)
   endif("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
 
-  # Create target for this test
-  # We use rostest to call the executable to get process control, #1629
-  #add_custom_target(pyunit_${_testname}
-  #                  COMMAND ${rosunit_path}/bin/rosunit --name=${_testname} --time-limit=${_pyunit_TIMEOUT} -- ${file} ${_covarg}
-  #                  DEPENDS ${file}
-  #                  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-  #                  VERBATIM)
   # TODO: find rosunit somehow
   set(rosunit_path ${CMAKE_SOURCE_DIR}/ros/tools/rosunit)
   # Create a legal test name, in case the target name has slashes in it
   string(REPLACE "/" "_" _testname ${file})
-  if(NOT IS_DIRECTORY ${PROJECT_BINARY_DIR}/catkin-tests)
-    file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/catkin-tests)
-  endif()
+  # We use rostest to call the executable to get process control, #1629
   append_project_cache(catkin-tests "${rosunit_path}/bin/rosunit --name=${_testname} --time-limit=${_pyunit_TIMEOUT} -- ${_file_name} ${_covarg}")
 endfunction(add_pyunit)
 

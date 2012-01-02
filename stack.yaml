@@ -6,7 +6,7 @@
 #
 Catkin-ProjectName: ros_comm
 Version: 1.6.7
-Depends: catkin, genmsg, std_msgs, roscpp_core
+Depends: catkin, genmsg, std_msgs, roscpp_core,
          libapr1-dev, libaprutil1-dev, liblog4cxx10-dev, libboost-dev, libboost-all-dev
 Description: ROS Communications
 Author: Troy Straszheim <straszheim@willowgarage.com>, Ken Conley, Josh Faust et al

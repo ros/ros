@@ -27,6 +27,12 @@ if(NOT LOG4CXX_LIBRARY)
 endif()
 target_link_libraries(rosconsole ${ROS_LIBRARIES} ${LOG4CXX_LIBRARY} ${Boost_LIBRARIES})
 
+install(TARGETS rosconsole
+    DESTINATION lib)
+
+install(DIRECTORY include/
+    DESTINATION include)
+
 catkin_project(rosconsole
   VERSION 0.0.1
   LIBRARIES rosconsole

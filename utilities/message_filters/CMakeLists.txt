@@ -10,7 +10,7 @@ include_directories(${Boost_INCLUDE_DIRS})
 add_library(message_filters SHARED src/connection.cpp)
 target_link_libraries(message_filters ${Boost_LIBRARIES})
 
-install_cmake_infrastructure(message_filters
+catkin_project(message_filters
   VERSION 0.0.0
   INCLUDE_DIRS include
   LIBRARIES message_filters

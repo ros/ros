@@ -33,7 +33,7 @@ add_service_files(DIRECTORY srv
 
 generate_messages(DEPENDENCIES std_msgs)
 
-install_cmake_infrastructure(topic_tools
+catkin_project(topic_tools
   VERSION 0.0.0
   LIBRARIES topic_tools
   INCLUDE_DIRS include

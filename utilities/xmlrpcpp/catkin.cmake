@@ -49,7 +49,7 @@ foreach(header
     )
 endforeach()
 
-install_cmake_infrastructure(XmlRpc
+catkin_project(XmlRpc
   VERSION 0.0.1
   INCLUDE_DIRS src
   LIBRARIES XmlRpc

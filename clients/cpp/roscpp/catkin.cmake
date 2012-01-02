@@ -93,7 +93,7 @@ add_service_files(
 
 generate_messages()
 
-install_cmake_infrastructure(roscpp
+catkin_project(roscpp
   VERSION 0.0.1
   LIBRARIES roscpp
   INCLUDE_DIRS include

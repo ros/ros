@@ -93,9 +93,19 @@ add_service_files(
 
 generate_messages()
 
-install_cmake_infrastructure(roscpp
+#explicitly install library and includes
+install(TARGETS roscpp
+  DESTINATION lib
+ )
+
+install(DIRECTORY include
+  DESTINATION include
+  FILES_MATCHING PATTERN "*.h"
+  )
+
+catkin_project(roscpp
   VERSION 0.0.1
   LIBRARIES roscpp
   INCLUDE_DIRS include
-  DEPENDS roscpp_traits roscpp_serialization cpp_common std_msgs rosgraph_msgs
+  DEPENDS roscpp_traits roscpp_serialization cpp_common std_msgs rosgraph_msgs #EAR are these needed?  doesn't the stack.yaml declare these?
   )

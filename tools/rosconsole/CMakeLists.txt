@@ -27,7 +27,7 @@ if(NOT LOG4CXX_LIBRARY)
 endif()
 target_link_libraries(rosconsole ${ROS_LIBRARIES} ${LOG4CXX_LIBRARY} ${Boost_LIBRARIES})
 
-install_cmake_infrastructure(rosconsole
+catkin_project(rosconsole
   VERSION 0.0.1
   LIBRARIES rosconsole
   INCLUDE_DIRS include

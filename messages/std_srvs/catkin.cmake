@@ -7,7 +7,7 @@ add_service_files(DIRECTORY srv
 
 generate_messages(DEPENDENCIES std_msgs)
 
-install_cmake_infrastructure(std_srvs
+catkin_project(std_srvs
   VERSION 0.0.1
   )
 

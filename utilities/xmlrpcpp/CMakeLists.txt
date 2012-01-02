@@ -28,26 +28,10 @@ if(WIN32)
   target_link_libraries(XmlRpc ws2_32)
 endif()
 
-foreach(header
-    src/base64.h	      
-    src/XmlRpcException.h	    
-    src/XmlRpcServer.h	      
-    src/XmlRpcSource.h
-    src/XmlRpcClient.h    
-    src/XmlRpc.h		    
-    src/XmlRpcServerMethod.h  
-    src/XmlRpcUtil.h
-    src/XmlRpcDispatch.h  
-    src/XmlRpcServerConnection.h  
-    src/XmlRpcSocket.h	      
-    src/XmlRpcValue.h)
-  get_filename_component(base ${header} NAME)
-
-  install(FILES ${header}
+install(DIRECTORY src/
     DESTINATION include
-    RENAME ${base}
+    FILES_MATCHING PATTERN "*.h"
     )
-endforeach()
 
 #explicitly install library and includes
 install(TARGETS XmlRpc

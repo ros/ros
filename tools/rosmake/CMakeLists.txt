@@ -3,7 +3,7 @@ find_package(catkin)
 
 add_subdirectory(scripts)
 
-install_cmake_infrastructure(rosmake
+catkin_project(rosmake
   VERSION 1.7.0
   PYTHONPATH src
   )

@@ -15,9 +15,22 @@ if(NOT (APPLE OR WIN32 OR MINGW))
   target_link_libraries(roslib rt)
 endif()
 
-install_cmake_infrastructure(roslib
+
+#explicitly install library and includes
+install(TARGETS roslib
+  DESTINATION lib
+  )
+
+install(DIRECTORY include
+  DESTINATION include
+  FILES_MATCHING PATTERN "*.h"
+  )
+
+catkin_project(roslib
   VERSION 0.0.1
   PYTHONPATH src
+  LIBRARIES roslib
+  INCLUDES include
   )
 
 enable_python(roslib)

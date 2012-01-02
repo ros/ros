@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 2.4.6)
-rosbuild_catkinize()
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
+project(rosout)
 
-rosbuild_init()
 rosbuild_add_executable(rosout rosout.cpp)
+target_link_libraries(rosout ${ROS_LIBRARIES})
+install(TARGETS rosout
+  RUNTIME DESTINATION share/rosout/bin)

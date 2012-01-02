@@ -29,7 +29,9 @@ setup(name='rospy',
       version= __version__,
       packages=['rospy'],
       package_dir = {'':'src'},
-      install_requires=['rosgraph', 'roslib'],
+      install_requires=['rosgraph',
+                        'roslib'
+                        ],
       #
       #  Hmm, this script doesn't exist...  Commented out by TDS...
       #

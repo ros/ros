@@ -1,29 +1,19 @@
-if(CATKIN)
-  include(catkin.cmake)
-  return()
-endif()
+cmake_minimum_required(VERSION 2.8)
+project(message_filters)
+find_package(Boost COMPONENTS signals)
 
-if(ROSBUILD)
-  include(rosbuild.cmake OPTIONAL)
-  return()
-endif()
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
-rosbuild_init()
+include_directories(include)
+include_directories(include/message_filters) # <-weird
+include_directories(${ROS_INCLUDE_DIRS})
+include_directories(${Boost_INCLUDE_DIRS})
 
-include_directories(include/message_filters)
+add_library(message_filters SHARED src/connection.cpp)
+target_link_libraries(message_filters ${Boost_LIBRARIES})
 
-rosbuild_add_boost_directories()
-rosbuild_add_library(message_filters src/connection.cpp)
-rosbuild_link_boost(message_filters thread signals)
-
-#rosbuild_add_executable(filter_example src/filter_example.cpp)
-#target_link_libraries(filter_example message_filters)
-
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-
-add_subdirectory(test EXCLUDE_FROM_ALL)
-rosbuild_add_rostest(test/time_sequencer_unittest.xml)
-rosbuild_add_rostest(test/test_subscriber.xml)
+install_cmake_infrastructure(message_filters
+  VERSION 0.0.0
+  INCLUDE_DIRS include
+  LIBRARIES message_filters
+  )
 
 

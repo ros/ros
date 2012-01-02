@@ -1,9 +1,5 @@
 project(rosgraph_msgs)
 
-find_package(catkin)
-find_package(genmsg)
-find_package(std_msgs)
-
 add_message_files(DIRECTORY msg
   FILES Clock.msg Log.msg
   )

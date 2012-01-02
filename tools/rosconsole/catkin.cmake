@@ -11,13 +11,9 @@ IF(${CMAKE_SYSTEM} MATCHES "Darwin-11.*")
   ENDIF(EXISTS "/usr/bin/g++-4.2")
 ENDIF(${CMAKE_SYSTEM} MATCHES "Darwin-11.*")
 
-find_package(catkin)
+find_package(ROS COMPONENTS catkin cpp_common rostime)
 
-find_package(cpp_common)
-include_directories(${cpp_common_INCLUDE_DIRS})
-
-find_package(rostime)
-include_directories(${rostime_INCLUDE_DIRS})
+include_directories(${ROS_INCLUDE_DIRS})
 
 find_package(Boost COMPONENTS regex thread)
 
@@ -29,7 +25,8 @@ find_library(LOG4CXX_LIBRARY log4cxx)
 if(NOT LOG4CXX_LIBRARY)
   message(FATAL_ERROR "Couldn't find log4cxx library")
 endif()
-target_link_libraries(rosconsole rostime ${LOG4CXX_LIBRARY} ${Boost_LIBRARIES})
+target_link_libraries(rosconsole
+  ${ROS_LIBRARIES} ${LOG4CXX_LIBRARY} ${Boost_LIBRARIES})
 
 install_cmake_infrastructure(rosconsole
   VERSION 0.0.1

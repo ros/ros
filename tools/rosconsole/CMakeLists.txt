@@ -1,19 +1,4 @@
-if(CATKIN)
-  include(catkin.cmake)
-  return()
-endif()
-if(ROSBUILD)
-  include(rosbuild.cmake)
-  return()
-endif()
-
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
-
-set(ROS_BUILD_TYPE RelWithDebInfo)
-#set(ROS_BUILD_TYPE Debug)
-
-rosbuild_init()
+project(rosconsole)
 
 # See ticket: https://code.ros.org/trac/ros/ticket/3626
 # On mac use g++-4.2
@@ -26,36 +11,24 @@ IF(${CMAKE_SYSTEM} MATCHES "Darwin-11.*")
   ENDIF(EXISTS "/usr/bin/g++-4.2")
 ENDIF(${CMAKE_SYSTEM} MATCHES "Darwin-11.*")
 
-include_directories(include/rosconsole)
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
+find_package(ROS COMPONENTS catkin cpp_common rostime)
 
-rosbuild_add_boost_directories()
+include_directories(${ROS_INCLUDE_DIRS})
 
-rosbuild_add_library(${PROJECT_NAME} src/rosconsole/rosconsole.cpp)
-target_link_libraries(${PROJECT_NAME} log4cxx)
-rosbuild_link_boost(${PROJECT_NAME} thread regex)
+find_package(Boost COMPONENTS regex thread)
 
-rosbuild_add_executable(example examples/example.cpp)
-target_link_libraries(example ${PROJECT_NAME})
-# static libraries all need to be called for mingw. 
-if(MINGW) 
-  rosbuild_link_boost(example thread regex)
-  target_link_libraries(example log4cxx aprutil-1 expat apr-1 rpcrt4 shell32 ws2_32 advapi32 kernel32 msvcrt)
+include_directories(include)
+
+add_library(rosconsole SHARED src/rosconsole/rosconsole.cpp)
+
+find_library(LOG4CXX_LIBRARY log4cxx)
+if(NOT LOG4CXX_LIBRARY)
+  message(FATAL_ERROR "Couldn't find log4cxx library")
 endif()
-set_target_properties(example PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/examples)
+target_link_libraries(rosconsole ${ROS_LIBRARIES} ${LOG4CXX_LIBRARY} ${Boost_LIBRARIES})
 
-rosbuild_add_gtest(test/utest test/utest.cpp)
-target_link_libraries(test/utest ${PROJECT_NAME})
-
-if(${CMAKE_SYSTEM_NAME} STREQUAL Linux)
-  rosbuild_add_gtest(test/assertion_test test/assertion_test.cpp)
-  target_link_libraries(test/assertion_test ${PROJECT_NAME})
-endif(${CMAKE_SYSTEM_NAME} STREQUAL Linux)
-
-rosbuild_add_gtest(test/thread_test test/thread_test.cpp)
-target_link_libraries(test/thread_test ${PROJECT_NAME})
-
-#rosbuild_add_executable(speed_test test/speed_test.cpp)
-#target_link_libraries(speed_test ${PROJECT_NAME})
-#set_target_properties(speed_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/test)
-
+install_cmake_infrastructure(rosconsole
+  VERSION 0.0.1
+  LIBRARIES rosconsole
+  INCLUDE_DIRS include
+  )

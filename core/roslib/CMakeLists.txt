@@ -21,7 +21,7 @@ install(TARGETS roslib
   DESTINATION lib
   )
 
-install(DIRECTORY include
+install(DIRECTORY include/
   DESTINATION include
   FILES_MATCHING PATTERN "*.h"
   )

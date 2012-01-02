@@ -6,6 +6,7 @@ find_package(ROS COMPONENTS roscpp rosconsole XmlRpc)
 include_directories(${ROS_INCLUDE_DIRS})
 
 rosbuild_add_library(topic_tools src/shape_shifter.cpp src/parse.cpp)
+target_link_libraries(topic_tools ${ROS_LIBRARIES})
 
 rosbuild_add_executable(switch_mux src/switch_mux.cpp)
 target_link_libraries(switch_mux topic_tools ${ROS_LIBRARIES})

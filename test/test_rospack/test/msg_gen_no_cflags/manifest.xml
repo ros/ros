@@ -1,5 +1,0 @@
-<package>
-  <export>
-    <cpp lflags="-lfoo"/>
-  </export>
-</package>

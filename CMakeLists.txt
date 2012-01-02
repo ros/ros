@@ -6,7 +6,9 @@ find_package(Boost COMPONENTS thread)
 foreach(subdir
     core/roslib
     tools/rosbash
+    tools/rosunit
     tools/rosclean
+    test/test_roscreate
     )
   add_subdirectory(${subdir})
 endforeach()

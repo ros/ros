@@ -62,7 +62,7 @@ class TestTimeoutException(Exception): pass
 
 class BareTestCase(unittest.TestCase):
 
-    def __init__(self, exe, args, retry=0, time_limit=None, test_name=None, text_mode=False):
+    def __init__(self, exe, args, retry=0, time_limit=None, test_name=None, text_mode=False, package_name=None):
         """
         @param exe: path to executable to run
         @type  exe: str
@@ -73,10 +73,15 @@ class BareTestCase(unittest.TestCase):
         @type  time_limit: float
         @param test_name: (optional) override automatically generated test name
         @type  test_name: str
+        @param package_name: (optional) override automatically inferred package name
+        @type  package_name: str
         """
         super(BareTestCase, self).__init__()
         self.text_mode = text_mode
-        self.package = rospkg.get_package_name(exe)
+        if package_name:
+            self.package = package_name
+        else:
+            self.package = rospkg.get_package_name(exe)
         self.exe = os.path.abspath(exe)
         if test_name is None:
             self.test_name = os.path.basename(exe)

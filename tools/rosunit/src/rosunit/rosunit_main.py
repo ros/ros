@@ -63,6 +63,9 @@ def rosunitmain():
     parser.add_option("--name", metavar="TEST_NAME",
                       dest="test_name", default=None,
                       help="Test name")
+    parser.add_option("--package", metavar="PACKAGE_NAME",
+                      dest="pkg", default=None,
+                      help="Package name (optional)")
     (options, args) = parser.parse_args()
 
     if len(args) < 1:
@@ -78,8 +81,14 @@ def rosunitmain():
             test_name = test_name[:test_name.rfind('.')]
     time_limit = float(options.time_limit) if options.time_limit else None
 
+    # If the caller didn't tell us the package name, we'll try to infer it.
     # compute some common names we'll be using to generate test names and files
-    pkg = rospkg.get_package_name(test_file)
+    pkg = options.pkg
+    if not pkg:
+        pkg = rospkg.get_package_name(test_file)
+    if not pkg:
+        print "Error: failed to determine package name for file '%s'; maybe you should supply the --package argument to rosunit?"%(test_file)
+        sys.exit(1)
 
     try:
         runner_result = None
@@ -87,7 +96,7 @@ def rosunitmain():
 
         test_case = BareTestCase(test_file, args[1:], \
                                  retry=0, time_limit=time_limit, \
-                                 test_name=test_name, text_mode=options.text_mode)
+                                 test_name=test_name, text_mode=options.text_mode, package_name=pkg)
         suite = unittest.TestSuite()
         suite.addTest(test_case)
 

@@ -34,28 +34,16 @@ from __future__ import print_function
 import os
 import sys
 import subprocess
-
-def assert_rospack_built():
-    if os.path.exists(os.path.join(os.environ["ROS_ROOT"], "tools/rospack", "ROS_NOBUILD")):
-        # Do not try to build rospack if a ROS_NOBUILD flag is present
-        return True
-
-    #cmd = ["make", "-C", os.path.join(os.environ["ROS_ROOT"], "tools/rospack")] Doesn't work with cmake 2.6, will trigger rebuilds due to different paths.  Fixed in 2.8.
-    cmd = ["bash", "-c", "cd %s && make"%(os.path.join(os.environ["ROS_ROOT"], "tools/rospack"))]
-    if subprocess.call(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE) :
-        print("Rospack failed to build")
-        return False
-
-    if subprocess.call(["which", "rospack"], stdout=subprocess.PIPE, stderr=subprocess.PIPE):
-        print("Rospack not in path.  Please add ROS_ROOT/bin to PATH")
-        return False
-    return True
-    
-## make sure that rospack is built, it is a requirement for rosmake
-if not assert_rospack_built():
-    sys.exit(-1)
+import threading
 
 import rosmake
+
+## make sure that rospack is built, it is a requirement for rosmake
+def assert_rospack_built():
+    if subprocess.call(["rospack","help"], stdout=subprocess.PIPE, stderr=subprocess.PIPE):
+        print("rospack not available.\nPlease install rospack before using rosmake and make sure it is available on your path.", file=sys.stderr)
+        sys.exit(-1)
+
 result = 1
 with rosmake.Printer():
     rma = rosmake.RosMakeAll()
@@ -65,7 +53,6 @@ with rosmake.Printer():
 
 #make sure the thread is done
 rosmake.Printer().join()
-import threading
 for t in threading.enumerate():
     if t != threading.currentThread():
         # Join all threads before exiting

@@ -8,8 +8,8 @@ if(MSVC)
   add_definitions(-D_SCL_SECURE_NO_WARNINGS)
 endif()
 
-add_library(roslib src/package.cpp)
-target_link_libraries(roslib ${Boost_LIBRARIES})
+add_library(roslib SHARED src/package.cpp)
+target_link_libraries(roslib ${Boost_LIBRARIES} ${ROS_LIBRARIES})
 
 if(NOT (APPLE OR WIN32 OR MINGW))
   target_link_libraries(roslib rt)
@@ -30,7 +30,7 @@ catkin_project(roslib
   VERSION 0.0.1
   PYTHONPATH src
   LIBRARIES roslib
-  INCLUDES include
+  INCLUDE_DIRS include
   )
 
 enable_python(roslib)

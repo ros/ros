@@ -1,13 +1,3 @@
-project(rosunit)
-find_package(catkin)
-
-catkin_project(${PROJECT_NAME}
-  VERSION 0.0.1
-  PYTHONPATH src
-  )
-
-enable_python(${PROJECT_NAME})
-
-install(DIRECTORY scripts 
+install(FILES scripts/rosunit
   DESTINATION share/rosunit/bin
   )

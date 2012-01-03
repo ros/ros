@@ -17,4 +17,3 @@ foreach(subdir
   add_subdirectory(${subdir})
 endforeach()
 
-catkin_package(ros_comm)

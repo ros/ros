@@ -38,7 +38,6 @@ install(DIRECTORY include/
     )
 
 catkin_project(topic_tools
-  VERSION 0.0.0
   LIBRARIES topic_tools
   INCLUDE_DIRS include
   )

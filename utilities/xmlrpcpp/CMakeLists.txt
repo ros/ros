@@ -13,14 +13,14 @@ if(WIN32)
 endif()
 
 add_library(XmlRpc SHARED
-  src/XmlRpcClient.cpp 
-  src/XmlRpcDispatch.cpp 
-  src/XmlRpcServer.cpp 
-  src/XmlRpcServerConnection.cpp 
-  src/XmlRpcServerMethod.cpp 
-  src/XmlRpcSocket.cpp 
-  src/XmlRpcSource.cpp 
-  src/XmlRpcUtil.cpp 
+  src/XmlRpcClient.cpp
+  src/XmlRpcDispatch.cpp
+  src/XmlRpcServer.cpp
+  src/XmlRpcServerConnection.cpp
+  src/XmlRpcServerMethod.cpp
+  src/XmlRpcSocket.cpp
+  src/XmlRpcSource.cpp
+  src/XmlRpcUtil.cpp
   src/XmlRpcValue.cpp
   )
 
@@ -39,7 +39,6 @@ install(TARGETS XmlRpc
  )
 
 catkin_project(XmlRpc
-  VERSION 0.0.1
   INCLUDE_DIRS src
   LIBRARIES XmlRpc
   )

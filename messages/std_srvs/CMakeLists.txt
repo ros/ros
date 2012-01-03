@@ -7,7 +7,5 @@ add_service_files(DIRECTORY srv
 
 generate_messages(DEPENDENCIES std_msgs)
 
-catkin_project(std_srvs
-  VERSION 0.0.1
-  )
+catkin_project(std_srvs)
 

@@ -3,7 +3,6 @@ project(rosgraph)
 find_package(catkin)
 
 catkin_project(rosgraph
-  VERSION 0.0.1
   PYTHONPATH src
   )
 

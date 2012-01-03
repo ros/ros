@@ -15,10 +15,9 @@ install(TARGETS message_filters
 install(DIRECTORY include/
   DESTINATION include
   FILES_MATCHING PATTERN "*.h"
-  ) 
+  )
 
 catkin_project(message_filters
-  VERSION 0.0.0
   INCLUDE_DIRS include
   LIBRARIES message_filters
   )

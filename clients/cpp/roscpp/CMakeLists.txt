@@ -1,10 +1,8 @@
 project(roscpp)
 
-find_package(catkin)
-find_package(genmsg)
-
-find_package(ROS COMPONENTS 
-  cpp_common rostime rosconsole roscpp_serialization 
+find_package(ROS COMPONENTS
+  catkin genmsg
+  cpp_common rostime rosconsole roscpp_serialization
   roscpp_traits std_msgs rosgraph_msgs XmlRpc
   )
 include_directories(${ROS_INCLUDE_DIRS})
@@ -25,7 +23,7 @@ CHECK_FUNCTION_EXISTS(trunc HAVE_TRUNC)
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/src/libros/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-add_library(roscpp SHARED 
+add_library(roscpp SHARED
   src/libros/master.cpp
   src/libros/network.cpp
   src/libros/subscriber.cpp
@@ -104,7 +102,6 @@ install(DIRECTORY include/
   )
 
 catkin_project(roscpp
-  VERSION 0.0.1
   LIBRARIES roscpp
   INCLUDE_DIRS include
   DEPENDS roscpp_traits roscpp_serialization cpp_common std_msgs rosgraph_msgs #EAR are these needed?  doesn't the stack.yaml declare these?

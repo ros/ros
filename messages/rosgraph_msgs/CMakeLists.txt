@@ -7,7 +7,6 @@ add_message_files(DIRECTORY msg
 generate_messages(DEPENDENCIES std_msgs)
 
 catkin_project(rosgraph_msgs
-  VERSION 0.0.1
   MSG_DIRS msg
   )
 

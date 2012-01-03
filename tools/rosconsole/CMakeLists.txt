@@ -34,7 +34,6 @@ install(DIRECTORY include/
     DESTINATION include)
 
 catkin_project(rosconsole
-  VERSION 0.0.1
   LIBRARIES rosconsole
   INCLUDE_DIRS include
   )

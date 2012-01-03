@@ -122,7 +122,7 @@ def rosstackexec(args):
     @rtype:  str
     @raise roslib.exceptions.ROSLibException: if rosstack command fails
     """
-    rosstack_bin = os.path.join(rospkg.get_ros_root(), 'bin', 'rosstack')
+    rosstack_bin = 'rosstack'
     if python3:
         val = subprocess.Popen([rosstack_bin] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
         val = val.decode().strip()

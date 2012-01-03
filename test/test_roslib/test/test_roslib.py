@@ -54,7 +54,8 @@ class RoslibTest(unittest.TestCase):
         for v in [True, False]:
             roslib.set_interactive(v)        
             self.assertEquals(v, roslib.is_interactive())
-            self.assertEquals(v, roslib.scriptutil.is_interactive())
+            # roslib.scriptutil seems to be on its way out
+            #self.assertEquals(v, roslib.scriptutil.is_interactive())
         
 if __name__ == '__main__':
     rosunit.unitrun('test_roslib', 'test_roslib_module', RoslibTest, coverage_packages=['roslib'])

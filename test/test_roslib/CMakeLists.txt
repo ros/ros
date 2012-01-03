@@ -1,5 +1,8 @@
 project(test_roslib)
 find_package(catkin)
+find_package(Boost COMPONENTS thread)
+find_package(ROS COMPONENTS roslib)
+
 add_pyunit(test/test_roslib.py)
 add_pyunit(test/test_roslib_exceptions.py)
 add_pyunit(test/test_roslib_manifest.py)
@@ -15,10 +18,9 @@ add_pyunit(test/test_roslib_stack_manifest.py)
  
 #integration tests
 
-#rosbuild_add_boost_directories()
-#rosbuild_add_gtest(test/utest test/utest.cpp)
-#rosbuild_link_boost(test/utest thread)
-#
-#
-#rosbuild_add_gtest(test_package test/package.cpp)
-#target_link_libraries(test_package roslib)
+include_directories(${Boost_INCLUDE_DIRS} ${ROS_INCLUDE_DIRS})
+add_gtest(${PROJECT_NAME}-utest test/utest.cpp)
+target_link_libraries(${PROJECT_NAME}-utest ${Boost_LIBRARIES} ${ROS_LIBRARIES})
+
+add_gtest(${PROJECT_NAME}-test_package test/package.cpp)
+target_link_libraries(${PROJECT_NAME}-test_package ${ROS_LIBRARIES})

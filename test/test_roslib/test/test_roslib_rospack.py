@@ -45,10 +45,10 @@ class RoslibRospackTest(unittest.TestCase):
         rospack_depends_on, rospack_depends_on_1
     
     val = rospackexec(['list'])
-    self.assertEquals(set(['rospack']), set(rospack_depends('roslib')))
-    self.assertEquals(set(['rospack']), set(rospack_depends_1('roslib')))    
-    self.assertEquals(set(['roslib', 'rosdep']), set(rospack_depends_1('rosmake')))
-    self.assertEquals(set(['roslib', 'rosdep', 'rospack']), set(rospack_depends('rosmake')))
+    self.assertEquals(set(['roslib', 'rosunit']), set(rospack_depends('test_roslib')))
+    self.assertEquals(set(['roslib', 'rosunit']), set(rospack_depends_1('test_roslib')))    
+    self.assertEquals(set(['roslib']), set(rospack_depends_1('rosclean')))
+    self.assertEquals(set(['roslib']), set(rospack_depends('rosclean')))
 
   def test_rosstack(self):
     from roslib.rospack import rosstackexec, rosstack_depends, rosstack_depends_1,\

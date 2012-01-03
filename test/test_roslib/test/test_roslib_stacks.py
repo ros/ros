@@ -228,7 +228,8 @@ class RoslibStacksTest(unittest.TestCase):
         # TODO: setup directory tree so that this can be more precisely calculated
         valid, invalid = expand_to_packages(['ros', 'bogus_one'])
         self.assertEquals(['bogus_one'], invalid)
-        check = ['rosbuild', 'rospack', 'rosunit', 'test_roslib']
+        check = ['rosbuild', 'rosunit', 'test_roslib']
+        print valid
         for c in check:
             self.assert_(c in valid, "expected [%s] to be in ros expansion"%c)
             

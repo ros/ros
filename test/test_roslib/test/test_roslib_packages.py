@@ -105,18 +105,18 @@ class RoslibPackagesTest(unittest.TestCase):
     x = rp.depends1(['test_roslib'])
     self.assertEquals(['test_roslib'], x.keys())
     self.assertEquals(set(['roslib', 'rosunit']), set(x['test_roslib']))
-    x = rp.depends1(['test_rospack'])
-    self.assertEquals(['test_rospack'], x.keys())
-    self.assertEquals(set(['rospack', 'rosunit']), set(x['test_rospack']))
+    x = rp.depends1(['test_roscreate'])
+    self.assertEquals(['test_roscreate'], x.keys())
+    self.assertEquals(set(['roslib', 'rosunit', 'roscreate']), set(x['test_roscreate']))
     # uncache
     rp = ROSPackages()
-    x = rp.depends1(['test_roslib', 'test_rospack'])    
-    self.assertEquals(set(['test_rospack', 'test_roslib']), set(x.keys()))
-    self.assertEquals(set(['rospack', 'rosunit']), set(x['test_rospack']))
+    x = rp.depends1(['test_roslib', 'test_roscreate'])    
+    self.assertEquals(set(['test_roscreate', 'test_roslib']), set(x.keys()))
+    self.assertEquals(set(['roslib', 'rosunit', 'roscreate']), set(x['test_roscreate']))
     self.assertEquals(set(['roslib', 'rosunit']), set(x['test_roslib']))
 
     # DEPENDS
-    test_roslib_depends = ['rospack', 'roslib', 'rosunit']
+    test_roslib_depends = ['roslib', 'rosunit']
     x = rp.depends(['test_roslib'])
     self.assertEquals(['test_roslib'], x.keys())
     s1 = set(test_roslib_depends)

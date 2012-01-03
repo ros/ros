@@ -14,7 +14,6 @@ foreach(subdir
   add_subdirectory(${subdir})
 endforeach()
 
-catkin_package(ros)
 
 install(PROGRAMS
   bin/rosrun

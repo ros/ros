@@ -166,13 +166,19 @@ function rosls {
 }
 
 function _roscmd {
-    local pkgdir exepath opt
+    local pkgdir exepath opt catkin_source_dir catkin_binary_dir
+    if [[ -n $CATKIN_SOURCE_DIR ]]; then
+        catkin_source_dir=`ROS_ROOT=$CATKIN_SOURCE_DIR ROS_PACKAGE_PATH= _ros_package_find $1`
+    fi 
+    if [[ -n $CATKIN_BINARY_DIR ]]; then
+        catkin_binary_dir=`ROS_ROOT=$CATKIN_BINARY_DIR ROS_PACKAGE_PATH= _ros_package_find $1`
+    fi 
     pkgdir=`_ros_package_find $1`
-    if [[ $? != 0 ]] ; then
+    if [[ -z $catkin_source_dir && -z $catkin_binary_dir && -z $pkgdir ]]; then
         echo "Couldn't find package [$1]"
         return 1
     fi
-    exepath=(`find -L $pkgdir -name $2 -type f ! -regex .*/[.].* ! -regex .*$pkgdir\/build\/.*`)
+    exepath=(`find -L $catkin_source_dir $catkin_binary_dir $pkgdir -name $2 -type f ! -regex .*/[.].* ! -regex .*$pkgdir\/build\/.*`)
     if [[ ${#exepath[@]} == 0 ]] ; then
         echo "That file does not exist in that package."
         return 1
@@ -337,7 +343,7 @@ function _roscomplete_rossrv {
 }
 
 function _roscomplete_search_dir {
-    local arg opts pkgdir
+    local arg opts pkgdir catkin_source_dir catkin_binary_dir
     COMPREPLY=()
     arg="${COMP_WORDS[COMP_CWORD]}"
     if [[ $COMP_CWORD == 1 ]]; then
@@ -346,9 +352,15 @@ function _roscomplete_search_dir {
         COMPREPLY=($(compgen -W "${opts}" -- ${arg}))
         unset IFS
     elif [[ $COMP_CWORD == 2 ]]; then
+        if [[ -n "$CATKIN_SOURCE_DIR" ]]; then
+            catkin_source_dir=`ROS_ROOT=$CATKIN_SOURCE_DIR ROS_PACKAGE_PATH= _ros_package_find ${COMP_WORDS[1]}`
+        fi 
+        if [[ -n "$CATKIN_BINARY_DIR" ]]; then
+            catkin_binary_dir=`ROS_ROOT=$CATKIN_BINARY_DIR ROS_PACKAGE_PATH= _ros_package_find ${COMP_WORDS[1]}`
+        fi 
         pkgdir=`_ros_package_find ${COMP_WORDS[1]}`
-        if [[ $? == 0 ]]; then
-            opts=`find -L $pkgdir ${1} ! -regex ".*/[.].*" ! -regex ".*$pkgdir\/build\/.*"  -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
+        if [[ -n "$catkin_source_dir" || -n "$catkin_binary_dir" || -n "$pkgdir" ]]; then
+            opts=`find -L $catkin_source_dir $catkin_binary_dir $pkgdir ${1} ! -regex ".*/[.].*" ! -regex ".*$pkgdir\/build\/.*"  -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
         else
             opts=""
         fi

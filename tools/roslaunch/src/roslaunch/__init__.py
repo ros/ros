@@ -43,19 +43,19 @@ import traceback
 
 import rospkg
 
-import roslaunch.core
-import roslaunch.param_dump
+from . import core as roslaunch_core
+from . import param_dump as roslaunch_param_dump
 
 # symbol exports
-from roslaunch.core import Node, Test, Master, RLException
-from roslaunch.config import ROSLaunchConfig
-from roslaunch.launch import ROSLaunchRunner
-from roslaunch.xmlloader import XmlLoader, XmlParseException
+from .core import Node, Test, Master, RLException
+from .config import ROSLaunchConfig
+from .launch import ROSLaunchRunner
+from .xmlloader import XmlLoader, XmlParseException
 
 
 # script api
-from roslaunch.scriptapi import ROSLaunch
-from roslaunch.pmon import Process
+from .scriptapi import ROSLaunch
+from .pmon import Process
 
 try:
     from rosmaster import DEFAULT_MASTER_PORT
@@ -79,8 +79,8 @@ def configure_logging(uuid):
 
         # add logger to internal roslaunch logging infrastructure
         logger = logging.getLogger('roslaunch')
-        roslaunch.core.add_printlog_handler(logger.info)
-        roslaunch.core.add_printerrlog_handler(logger.error)
+        roslaunch_core.add_printlog_handler(logger.info)
+        roslaunch_core.add_printerrlog_handler(logger.error)
     except:
         print >> sys.stderr, "WARNING: unable to configure logging. No log files will be generated"
         
@@ -182,48 +182,49 @@ def _validate_args(parser, options, args):
 def main(argv=sys.argv):
     options = None
     try:
-        import roslaunch.rlutil
+        from . import rlutil
         parser = _get_optparse()
         
         (options, args) = parser.parse_args(argv[1:])
-        args = roslaunch.rlutil.resolve_launch_arguments(args)
+        args = rlutil.resolve_launch_arguments(args)
         _validate_args(parser, options, args)
 
         # node args doesn't require any roslaunch infrastructure, so process it first
         if any([options.node_args, options.node_list, options.find_node, options.dump_params, options.file_list]):
             if options.node_args and not args:
                 parser.error("please specify a launch file")
-            import roslaunch.node_args
+
+            from . import node_args
             if options.node_args:
-                roslaunch.node_args.print_node_args(options.node_args, args)
+                node_args.print_node_args(options.node_args, args)
             elif options.find_node:
-                roslaunch.node_args.print_node_filename(options.find_node, args)
+                node_args.print_node_filename(options.find_node, args)
             # Dump parameters, #2685
             elif options.dump_params:
-                roslaunch.param_dump.dump_params(args)
+                roslaunch_param_dump.dump_params(args)
             elif options.file_list:
-                roslaunch.rlutil.print_file_list(args)
+                rlutil.print_file_list(args)
             else:
-                roslaunch.node_args.print_node_list(args)
+                node_args.print_node_list(args)
             return
 
         # we have to wait for the master here because we don't have the run_id yet
         if options.wait_for_master:
             if options.core:
                 parser.error("--wait cannot be used with roscore")
-            roslaunch.rlutil._wait_for_master()            
+            rlutil._wait_for_master()            
 
         # write the pid to a file
         write_pid_file(options.pid_fn, options.core, options.port)
 
         # spin up the logging infrastructure. have to wait until we can read options.run_id
-        uuid = roslaunch.rlutil.get_or_generate_uuid(options.run_id, options.wait_for_master)
+        uuid = rlutil.get_or_generate_uuid(options.run_id, options.wait_for_master)
         configure_logging(uuid)
 
         # #3088: don't check disk usage on remote machines
         if not options.child_name:
             # #2761
-            roslaunch.rlutil.check_log_disk_usage()
+            rlutil.check_log_disk_usage()
 
         logger = logging.getLogger('roslaunch')
         logger.info("roslaunch starting with args %s"%str(argv))
@@ -235,23 +236,23 @@ def main(argv=sys.argv):
             # This is a roslaunch child, spin up client server.
             # client spins up an XML-RPC server that waits for
             # commands and configuration from the server.
-            import roslaunch.child
-            c = roslaunch.child.ROSLaunchChild(uuid, options.child_name, options.server_uri)
+            from . import child as roslaunch_child
+            c = roslaunch_child.ROSLaunchChild(uuid, options.child_name, options.server_uri)
             c.run()
         else:
             logger.info('starting in server mode')
 
             # #1491 change terminal name
-            roslaunch.rlutil.change_terminal_name(args, options.core)
+            rlutil.change_terminal_name(args, options.core)
             
             # This is a roslaunch parent, spin up parent server and launch processes.
             # args are the roslaunch files to load
-            import roslaunch.parent
+            from . import parent as roslaunch_parent
             try:
                 # force a port binding spec if we are running a core
                 if options.core:
                     options.port = options.port or DEFAULT_MASTER_PORT
-                p = roslaunch.parent.ROSLaunchParent(uuid, args, is_core=options.core, port=options.port, local_only=options.local_only, verbose=options.verbose, force_screen=options.force_screen)
+                p = roslaunch_parent.ROSLaunchParent(uuid, args, is_core=options.core, port=options.port, local_only=options.local_only, verbose=options.verbose, force_screen=options.force_screen)
                 p.start()
                 p.spin()
             finally:
@@ -260,12 +261,12 @@ def main(argv=sys.argv):
                     try: os.unlink(options.pid_fn)
                     except os.error, reason: pass
 
-    except RLException, e:
-        roslaunch.core.printerrlog(str(e))
+    except RLException as e:
+        roslaunch_core.printerrlog(str(e))
         sys.exit(1)
-    except ValueError, e:
+    except ValueError as e:
         # TODO: need to trap better than this high-level trap
-        roslaunch.core.printerrlog(str(e))
+        roslaunch_core.printerrlog(str(e))
         sys.exit(1)
     except Exception as e:
         traceback.print_exc()

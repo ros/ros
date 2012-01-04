@@ -46,14 +46,14 @@ from xml.dom.minidom import parse, parseString
 from xml.dom import Node as DomNode #avoid aliasing
 
 from rosgraph.names import make_global_ns, ns_join, is_global, is_private, PRIV_NAME, is_legal_name
-import rosgraph.substitution_args
 
-from roslaunch.core import Param, Node, Test, Machine, RLException, get_ros_package_path
-import roslaunch.loader
+from .core import Param, Node, Test, Machine, RLException, get_ros_package_path
+from . import loader
+from . import substitution_args
 
 # use in our namespace
-SubstitutionException = rosgraph.substitution_args.SubstitutionException
-ArgException = rosgraph.substitution_args.ArgException
+SubstitutionException = substitution_args.SubstitutionException
+ArgException = substitution_args.ArgException
 
 NS='ns'
 CLEAR_PARAMS='clear_params'
@@ -73,11 +73,11 @@ def ifunless_test(obj, tag, context):
     if if_val is not None and unless_val is not None:
         raise XmlParseException("cannot set both 'if' and 'unless' on the same tag")
     if if_val is not None:
-        if_val = roslaunch.loader.convert_value(if_val, 'bool')
+        if_val = loader.convert_value(if_val, 'bool')
         if if_val:
             return True
     elif unless_val is not None:
-        unless_val = roslaunch.loader.convert_value(unless_val, 'bool')
+        unless_val = loader.convert_value(unless_val, 'bool')
         if not unless_val:
             return True
     else:
@@ -134,7 +134,7 @@ _assignable = {'true': True, 'false': True, 'never': False }
 # NOTE: code is currently in a semi-refactored state. I'm slowly
 # migrating common routines into the Loader class in the hopes it will
 # make it easier to write alternate loaders and also test.
-class XmlLoader(roslaunch.loader.Loader):
+class XmlLoader(loader.Loader):
     """
     Parser for roslaunch XML format. Loads parsed representation into ROSConfig model.
     """
@@ -151,11 +151,11 @@ class XmlLoader(roslaunch.loader.Loader):
 
     def resolve_args(self, args, context):
         """
-        Wrapper around rosgraph.substitution_args.resolve_args to set common parameters
+        Wrapper around substitution_args.resolve_args to set common parameters
         """
         # resolve_args gets called a lot, so we optimize by testing for dollar sign before resolving
         if args and '$' in args:
-            return rosgraph.substitution_args.resolve_args(args, context=context.resolve_dict, resolve_anon=self.resolve_anon)
+            return substitution_args.resolve_args(args, context=context.resolve_dict, resolve_anon=self.resolve_anon)
         else:
             return args
 
@@ -209,8 +209,8 @@ class XmlLoader(roslaunch.loader.Loader):
             cmd = cmd or 'load'
             self.load_rosparam(context, ros_config, cmd, param, file, _get_text(tag), verbose=verbose)
 
-        except ValueError, e:
-            raise roslaunch.loader.LoadException("error loading <rosparam> tag: \n\t"+str(e)+"\nXML is %s"%tag.toxml())
+        except ValueError as e:
+            raise loader.LoadException("error loading <rosparam> tag: \n\t"+str(e)+"\nXML is %s"%tag.toxml())
 
     PARAM_ATTRS = ('name', 'value', 'type', 'value', 'textfile', 'binfile', 'command')
     @ifunless
@@ -243,10 +243,10 @@ class XmlLoader(roslaunch.loader.Loader):
                 ros_config.add_param(Param(ns_join(context.ns, name), value), filename=context.filename, verbose=verbose)
             return p
 
-        except KeyError, e:
+        except KeyError as e:
             raise XmlParseException(
                 "<param> tag is missing required attribute: %s. \n\nParam xml is %s"%(e, tag.toxml()))
-        except ValueError, e:
+        except ValueError as e:
             raise XmlParseException(
                 "Invalid <param> tag: %s. \n\nParam xml is %s"%(e, tag.toxml()))
 
@@ -267,7 +267,7 @@ class XmlLoader(roslaunch.loader.Loader):
             
             context.add_arg(name, value=value, default=default)
 
-        except rosgraph.substitution_args.ArgException as e:
+        except substitution_args.ArgException as e:
             raise XmlParseException(
                 "arg '%s' is not defined. \n\nArg xml is %s"%(e, tag.toxml()))
         except Exception as e:
@@ -583,7 +583,7 @@ class XmlLoader(roslaunch.loader.Loader):
                     "WARN: unrecognized '%s' tag in <%s> tag"%(t.tagName, tag.tagName)
 
         # setup arg passing
-        roslaunch.loader.process_include_args(child_ns)
+        loader.process_include_args(child_ns)
                 
         try:
             launch = self._parse_launch(inc_filename, verbose=verbose)
@@ -594,7 +594,7 @@ class XmlLoader(roslaunch.loader.Loader):
                                        default_machine, is_core, verbose)
 
             # check for unused args
-            roslaunch.loader.post_process_include_args(child_ns)
+            loader.post_process_include_args(child_ns)
 
         except ArgException, e:
             raise XmlParseException("included file [%s] requires the '%s' arg to be set"%(inc_filename, str(e)))
@@ -681,8 +681,8 @@ class XmlLoader(roslaunch.loader.Loader):
             argv = sys.argv
 
         self._launch_tag(launch, ros_config, filename)
-        self.root_context = roslaunch.loader.LoaderContext('', filename)
-        roslaunch.loader.load_sysargs_into_context(self.root_context, argv)
+        self.root_context = loader.LoaderContext('', filename)
+        loader.load_sysargs_into_context(self.root_context, argv)
 
         if len(launch.getElementsByTagName('master')) > 0:
             print >> sys.stderr, "WARNING: ignoring defunct <master /> tag"
@@ -693,7 +693,7 @@ class XmlLoader(roslaunch.loader.Loader):
             if verbose:            
                 print "... loading XML file [%s]"%filename
             root = parse(filename).getElementsByTagName('launch')
-        except Exception, e:
+        except Exception as e:
             raise XmlParseException("Invalid roslaunch XML syntax: %s"%e)
         if len(root) != 1:
             raise XmlParseException("Invalid roslaunch XML syntax: no root <launch> tag")
@@ -715,9 +715,9 @@ class XmlLoader(roslaunch.loader.Loader):
             launch = self._parse_launch(filename, verbose)
             ros_config.add_roslaunch_file(filename)            
             self._load_launch(launch, ros_config, is_core=core, filename=filename, argv=argv, verbose=verbose)
-        except ArgException, e:
+        except ArgException as e:
             raise XmlParseException("[%s] requires the '%s' arg to be set"%(filename, str(e)))
-        except SubstitutionException, e:
+        except SubstitutionException as e:
             raise XmlParseException(str(e))
 
     def load_string(self, xml_text, ros_config, core=False, verbose=True):
@@ -734,7 +734,7 @@ class XmlLoader(roslaunch.loader.Loader):
             if verbose:
                 print "... loading XML"
             root = parseString(xml_text).getElementsByTagName('launch')
-        except Exception, e:
+        except Exception as e:
             import traceback
             import logging
             logging.getLogger('roslaunch').error("Invalid roslaunch XML syntax:\nstring[%s]\ntraceback[%s]"%(xml_text, traceback.format_exc()))

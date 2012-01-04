@@ -40,7 +40,7 @@ import time
 
 from xmlrpclib import ServerProxy
 
-import rosgraph.parent
+import rosgraph.network
 import roslaunch.parent
 
 ## Fake Process object

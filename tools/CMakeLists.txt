@@ -10,6 +10,7 @@ foreach(subdir
     rosgraph
     rosout
     rosservice
+    rostopic
     )
   add_subdirectory(${subdir})
 endforeach()

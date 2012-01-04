@@ -50,10 +50,9 @@ setup(name='ros_comm',
           'tools/rosmsg/scripts/rossrv',
 
           'tools/rosnode/scripts/rosnode',
-          
           'tools/rosparam/scripts/rosparam',
-
           'tools/rosservice/scripts/rosservice',
+          'tools/rostopic/scripts/rostopic',
                  ],
       author = "Maintained by Ken Conley", 
       author_email = "kwc@willowgarage.com",

@@ -47,7 +47,8 @@ import rospkg
 import rosgraph
 import rosgraph.names 
 import rosgraph.network
-import rosgraph.substitution_args
+
+from . import substitution_args
 
 class RLException(Exception):
     """Base roslaunch exception type"""

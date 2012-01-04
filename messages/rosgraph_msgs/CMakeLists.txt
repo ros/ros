@@ -9,5 +9,3 @@ generate_messages(DEPENDENCIES std_msgs)
 catkin_project(rosgraph_msgs
   MSG_DIRS msg
   )
-
-enable_python(rosgraph_msgs)

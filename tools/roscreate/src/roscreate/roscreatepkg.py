@@ -35,8 +35,6 @@
 
 from __future__ import print_function
 
-import roslib; roslib.load_manifest('roscreate')
-
 NAME='roscreate-pkg'
 
 import os
@@ -126,6 +124,3 @@ def roscreatepkg_main():
     if not on_ros_path(os.getcwd()):
         print('!'*80+"\nWARNING: current working directory is not on ROS_PACKAGE_PATH!\nPlease update your ROS_PACKAGE_PATH environment variable.\n"+'!'*80, file=sys.stderr)
     create_package(package, author_name(), depends, uses_roscpp=uses_roscpp, uses_rospy=uses_rospy)
-
-if __name__ == "__main__":
-    roscreatepkg_main()

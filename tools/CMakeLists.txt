@@ -9,6 +9,7 @@ foreach(subdir
     rosbag
     rosgraph
     rosout
+    rosservice
     )
   add_subdirectory(${subdir})
 endforeach()

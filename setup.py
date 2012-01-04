@@ -34,7 +34,7 @@ setup(name='ros_comm',
           'rosservice': 'tools/rosservice/src/rosservice',
           'rostopic': 'tools/rostopic/src/rostopic',
                      },
-      install_requires=['rospkg', 'genmsg', 'genpy'],
+      install_requires=['rospkg', 'genmsg', 'genpy', 'roslib'],
       scripts = [
           'tools/rosbag/scripts/rosbag',
           'tools/rosgraph/scripts/rosgraph',

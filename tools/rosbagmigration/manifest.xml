@@ -12,7 +12,4 @@
   <platform os="macports" version="macports"/>
   <depend package="rosbag"/>
 
-  <rosbuild2>
-    <depend package="rosbag"/>
-  </rosbuild2>
 </package>

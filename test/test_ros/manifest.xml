@@ -18,8 +18,4 @@
   <platform os="ubuntu" version="10.04"/>
   <platform os="macports" version="macports"/>
 
-  <rosbuild2>
-    <msgs></msgs>
-  </rosbuild2>
-
 </package>

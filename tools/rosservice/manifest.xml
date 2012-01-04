@@ -13,17 +13,16 @@ rosservice contains the rosservice command-line tool for listing and querying RO
   <depend package="rosgraph" />
   <depend package="roslib"/>
   <depend package="rostopic"/>
-  <depend package="std_msgs"/>  
-  
+  <depend package="std_msgs"/>
+
   <export>
-    <rosdoc config="rosdoc.yaml"/>    
+    <rosdoc config="rosdoc.yaml"/>
   </export>
-  
+
   <platform os="ubuntu" version="9.04"/>
   <platform os="ubuntu" version="9.10"/>
   <platform os="ubuntu" version="10.04"/>
   <platform os="macports" version="macports"/>
-  <rosbuild2><export></export></rosbuild2>
 </package>
 
 

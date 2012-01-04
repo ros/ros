@@ -10,21 +10,11 @@ Time and Duration implementations for C++ libraries, including roscpp.
   <url>http://ros.org/wiki/rostime</url>
 
   <depend package="cpp_common"/>
-  
+
   <export>
     <cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib -Wl,-rpath,${prefix}/lib -lrostime"/>
   </export>
 
-  <rosbuild2>
-    
-    <depend package="cpp_common"/>
-
-    <export>
-      <include_dir>${rostime_SOURCE_DIR}/include</include_dir>
-      <lib>rostime</lib>
-    </export>
-    <msgs></msgs>
-  </rosbuild2>
 </package>
 
 

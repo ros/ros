@@ -1,7 +1,7 @@
 <package>
   <description brief="Common ROS Messages">
 
-std_msgs contains common message types representing primitive data types and other basic message constructs, such as multiarrays. For common, generic robot-specific message types, please see <a href="http://www.ros.org/wiki/common_msgs">common_msgs</a>. 
+std_msgs contains common message types representing primitive data types and other basic message constructs, such as multiarrays. For common, generic robot-specific message types, please see <a href="http://www.ros.org/wiki/common_msgs">common_msgs</a>.
 
   </description>
   <author>Morgan Quigley/mquigley@cs.stanford.edu, Ken Conley/kwc@willowgarage.com, Jeremy Leibs/leibs@willowgarage.com</author>
@@ -16,27 +16,5 @@ std_msgs contains common message types representing primitive data types and oth
   <platform os="ubuntu" version="9.10"/>
   <platform os="ubuntu" version="10.04"/>
   <platform os="macports" version="macports"/>
-  <rosbuild2>
-
-    <export>
-      <include_dir>${std_msgs_SOURCE_DIR}/include</include_dir>
-    </export>
-
-    <depend package="roslib"/>
-
-    <msgs>
-      msg/Bool.msg msg/Header.msg msg/String.msg msg/Byte.msg
-      msg/Int16.msg msg/Time.msg msg/ByteMultiArray.msg
-      msg/Int16MultiArray.msg msg/UInt16.msg msg/Char.msg
-      msg/Int32.msg msg/UInt16MultiArray.msg msg/ColorRGBA.msg
-      msg/Int32MultiArray.msg msg/UInt32.msg msg/Duration.msg
-      msg/Int64.msg msg/UInt32MultiArray.msg msg/Empty.msg
-      msg/Int64MultiArray.msg msg/UInt64.msg msg/Float32.msg
-      msg/Int8.msg msg/UInt64MultiArray.msg msg/Float32MultiArray.msg
-      msg/Int8MultiArray.msg msg/UInt8.msg msg/Float64.msg
-      msg/MultiArrayDimension.msg msg/UInt8MultiArray.msg
-      msg/Float64MultiArray.msg msg/MultiArrayLayout.msg
-    </msgs>
-  </rosbuild2>
 </package>
 

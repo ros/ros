@@ -37,29 +37,4 @@
   <platform os="ubuntu" version="10.04"/>
   <platform os="macports" version="macports"/>
 
-  <rosbuild2>
-    <depend package="roslang"/>
-    <depend package="roscpp_traits"/>
-    <depend package="roscpp_serialization"/>
-    <depend package="rostime"/>
-    <depend package="roslib"/>
-    <depend package="xmlrpcpp"/>
-    <depend package="rosconsole"/>
-    <depend package="std_msgs"/>
-    <depend package="rosgraph_msgs"/>
-    <msgs>
-      msg/Logger.msg
-    </msgs>
-    <srvs>
-      srv/Empty.srv
-      srv/GetLoggers.srv
-      srv/SetLoggerLevel.srv
-    </srvs>
-    <export>
-      <roslang cmake="${roscpp_SOURCE_DIR}/cmake/rosbuild2.cmake"/>
-      <include_dir>${roscpp_SOURCE_DIR}/include</include_dir>
-      <lib>ros</lib>
-    </export>
-  </rosbuild2>
-
 </package>

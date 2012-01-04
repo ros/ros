@@ -1,10 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 project(XmlRpc)
 
-find_package(catkin)
-
-find_package(cpp_common)
-include_directories(${cpp_common_INCLUDE_DIRS})
+find_package(ROS COMPONENTS catkin cpp_common)
+include_directories(${ROS_INCLUDE_DIRS})
 
 include_directories(src)
 

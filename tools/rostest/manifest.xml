@@ -3,7 +3,7 @@
 
 <p>
      Integration test suite based on roslaunch that is compatible with xUnit frameworks.
-</p>     
+</p>
   </description>
   <author>Ken Conley/kwc@willowgarage.com</author>
   <license>BSD</license>
@@ -23,10 +23,5 @@
   <platform os="ubuntu" version="9.10"/>
   <platform os="ubuntu" version="10.04"/>
   <platform os="macports" version="macports"/>
-  <rosbuild2>
-    <depend package="roslaunch"/>
-    <depend package="roslib"/>
-    <depend package="rosunit"/>
-  </rosbuild2>
 </package>
 

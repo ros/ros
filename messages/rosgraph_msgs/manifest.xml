@@ -10,13 +10,7 @@
   <url>http://ros.org/wiki/rosgraph_msgs</url>
 
   <depend package="std_msgs" />
-  
-  <rosbuild2>
-    <msgs>
-      msg/Clock.msg
-      msg/Log.msg
-    </msgs>
-  </rosbuild2>
+
 </package>
 
 

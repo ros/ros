@@ -32,16 +32,11 @@
   <depend package="roslang"/>
   <export>
     <roslang cmake="${prefix}/cmake/rospy.cmake"/>
-    <rosdoc config="rosdoc.yaml"/>    
+    <rosdoc config="rosdoc.yaml"/>
   </export>
   <platform os="ubuntu" version="9.04"/>
   <platform os="ubuntu" version="9.10"/>
   <platform os="ubuntu" version="10.04"/>
   <platform os="macports" version="macports"/>
-  <rosbuild2>
-    <export>
-      <roslang cmake="${rospy_SOURCE_DIR}/cmake/rosbuild2.cmake"/>
-    </export>
-  </rosbuild2>
 </package>
 

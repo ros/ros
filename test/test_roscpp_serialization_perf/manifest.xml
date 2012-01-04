@@ -10,12 +10,4 @@
   <platform os="ubuntu" version="9.10"/>
   <platform os="ubuntu" version="10.04"/>
   <platform os="macports" version="macports"/>
-  <rosbuild2>
-    <depend package="roscpp"/>
-    <msgs>
-      msg/ChannelFloat32.msg
-      msg/Point32.msg
-      msg/PointCloud.msg
-    </msgs>
-  </rosbuild2>
 </package>

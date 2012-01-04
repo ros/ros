@@ -14,35 +14,6 @@
   <platform os="ubuntu" version="9.10"/>
   <platform os="ubuntu" version="10.04"/>
   <platform os="macports" version="macports"/>
-  <rosbuild2>
-    <depend package="roscpp"/>
-    <depend package="std_msgs"/>
-    <depend package="rosgraph_msgs"/>
-    <export>
-      <include_dir>${test_roscpp_serialization_perf_SOURCE_DIR}/include</include_dir>
-    </export>
-    <msgs>
-      msg/ArrayOfFixedLength.msg
-      msg/ArrayOfVariableLength.msg
-      msg/Constants.msg
-      msg/CustomHeader.msg
-      msg/EmbeddedExternal.msg
-      msg/EmbeddedFixedLength.msg
-      msg/EmbeddedVariableLength.msg
-      msg/FixedLengthArrayOfExternal.msg
-      msg/FixedLength.msg
-      msg/FixedLengthStringArray.msg
-      msg/HeaderNotFirstMember.msg
-      msg/VariableLengthArrayOfExternal.msg
-      msg/VariableLength.msg
-      msg/VariableLengthStringArray.msg
-      msg/WithDuration.msg
-      msg/WithHeader.msg
-      msg/WithMemberNamedHeaderThatIsNotAHeader.msg
-      msg/WithTime.msg
-    </msgs>
-  </rosbuild2>
-
 </package>
 
 

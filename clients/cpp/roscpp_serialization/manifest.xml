@@ -20,20 +20,6 @@ This package is a component of <a href="http://www.ros.org/wiki/roscpp">roscpp</
     <cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib -Wl,-rpath,${prefix}/lib -lroscpp_serialization"/>
   </export>
 
-  <rosbuild2>
-    
-    <depend package="roscpp_traits"/>
-    <depend package="cpp_common"/>
-    <depend package="rostime"/>
-
-    <export>
-      <include_dir>${roscpp_serialization_SOURCE_DIR}/include</include_dir>
-      <lib>roscpp_serialization</lib>
-    </export>
-
-    <msgs></msgs>
-
-  </rosbuild2>
 </package>
 
 

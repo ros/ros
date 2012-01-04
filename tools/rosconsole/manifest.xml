@@ -15,17 +15,4 @@
   <platform os="ubuntu" version="10.04"/>
   <platform os="macports" version="macports"/>
 
-  <rosbuild2>
-
-    <depend package="rostime"/>
-    <depend thirdparty="log4cxx"/>
-
-    <export>
-      <include_dir>${rosconsole_SOURCE_DIR}/include</include_dir>
-      <lib>rosconsole</lib>
-    </export>
-
-    <msgs></msgs>
-
-  </rosbuild2>
 </package>

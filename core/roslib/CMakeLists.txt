@@ -28,12 +28,11 @@ install(DIRECTORY include/
 
 catkin_project(roslib
   VERSION 0.0.1
-  PYTHONPATH src
   LIBRARIES roslib
   INCLUDE_DIRS include
   )
 
-# enable_python(roslib)
+catkin_export_python(src)
 # We have to set ros_PYTHONPATH to get the 'ros' module copied into the
 # buildspace.  Not sure what will happen if multiple packages do this...
 # set(ros_PYTHONPATH src)

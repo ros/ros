@@ -7,8 +7,6 @@ foreach(subdir
     core/roslib
     tools/rosbash
     tools/rosunit
-    tools/rosclean
-    test/test_roscreate
     test/test_roslib
     )
   add_subdirectory(${subdir})

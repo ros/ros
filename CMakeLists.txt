@@ -6,7 +6,7 @@ find_package(Boost COMPONENTS thread)
 foreach(subdir
     core/roslib
     tools/rosbash
-    tools/rosunit
+#    tools/rosunit
     test/test_roslib
     )
   add_subdirectory(${subdir})
@@ -21,3 +21,4 @@ install(PROGRAMS
   DESTINATION bin
   )
 
+enable_python(ros)

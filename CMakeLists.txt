@@ -17,7 +17,6 @@ install(PROGRAMS
   bin/rosrun
   bin/rostopic
   bin/rxconsole
-  bin/rosbag
   DESTINATION bin
   )
 

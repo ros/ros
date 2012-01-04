@@ -30,13 +30,8 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id: test_core.py 11927 2010-10-27 08:48:11Z kwc $
 
-PKG = 'roslaunch'
 NAME = 'test_core'
-
-import roslib; roslib.load_manifest(PKG)
 
 import os
 import sys

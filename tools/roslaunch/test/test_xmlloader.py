@@ -30,10 +30,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id: test_xmlloader.py 15165 2011-10-10 20:35:59Z kwc $
-
-import roslib; roslib.load_manifest('test_roslaunch')
 
 import os
 import sys

@@ -33,11 +33,6 @@
 #
 # Revision $Id: roslaunch_node_args.py 5229 2009-07-16 22:31:17Z sfkwc $
 
-PKG = 'roslaunch'
-NAME = 'roslaunch_rlutil'
-
-import roslib; roslib.load_manifest(PKG)
-
 import os
 import sys
 import unittest

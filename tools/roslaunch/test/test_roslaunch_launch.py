@@ -30,11 +30,6 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-PKG = 'roslaunch'
-NAME = 'roslaunch_launch'
-
-import roslib; roslib.load_manifest(PKG)
-
 import os
 import sys
 import unittest

@@ -17,3 +17,4 @@ foreach(subdir
   add_subdirectory(${subdir})
 endforeach()
 
+enable_python(ros_comm)

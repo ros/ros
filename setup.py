@@ -1,0 +1,72 @@
+#!/usr/bin/env python
+
+from setuptools import setup
+
+import sys
+sys.path.insert(0, 'src')
+
+setup(name='ros_comm',
+      version= '1.7.0',
+      packages=['rosbag',
+                'rosgraph',
+                'rosgraph.impl',
+                'roslaunch',
+                'rosmaster', 
+                'rosmsg',
+                'rosnode',
+                'rosparam',
+                'rospy',
+                'rospy.impl',
+                'rosservice',
+                'rostopic',
+                ],
+      package_dir = {
+          'rosbag':'tools/rosbag/src/rosbag',
+          'rosgraph':'tools/rosgraph/src/rosgraph',
+          'rosgraph.impl':'tools/rosgraph/src/rosgraph/impl',
+          'roslaunch': 'tools/roslaunch/src/roslaunch',
+          'rosmaster': 'tools/rosmaster/src/rosmaster',
+          'rosmsg': 'tools/rosmsg/src/rosmsg',
+          'rosnode': 'tools/rosnode/src/rosnode',
+          'rosparam': 'tools/rosparam/src/rosparam',
+          'rospy': 'clients/rospy/src/rospy',
+          'rospy.impl': 'clients/rospy/src/rospy/impl',
+          'rosservice': 'tools/rosservice/src/rosservice',
+          'rostopic': 'tools/rostopic/src/rostopic',
+                     },
+      install_requires=['rospkg', 'genmsg', 'genpy'],
+      scripts = [
+          'tools/rosbag/scripts/rosbag',
+          'tools/rosgraph/scripts/rosgraph',
+
+          'tools/roslaunch/scripts/roslaunch',
+          'tools/roslaunch/scripts/roscore',
+          'tools/roslaunch/scripts/roslaunch-logs',
+          'tools/roslaunch/scripts/roslaunch-deps',
+
+          'tools/rosmaster/scripts/rosmaster',
+
+          'tools/rosmsg/scripts/rosmsg',
+          'tools/rosmsg/scripts/rossrv',
+
+          'tools/rosnode/scripts/rosnode',
+          
+          'tools/rosparam/scripts/rosparam',
+
+          'tools/rosservice/scripts/rosservice',
+                 ],
+      author = "Maintained by Ken Conley", 
+      author_email = "kwc@willowgarage.com",
+      url = "http://www.ros.org/wiki/ros_comm",
+      download_url = "http://pr.willowgarage.com/downloads/ros_comm/", 
+      keywords = ["ROS"],
+      classifiers = [
+        "Programming Language :: Python", 
+        "License :: OSI Approved :: BSD License" ],
+      description = "ros_comm Python libraries and tools",
+      long_description = """\
+Python libraries and toolchain for ROS communications-related packages, including core rospy client libraries and graph introspection tools (rostopic, rosnode, rosservice, rosparam).
+""",
+      license = "BSD"
+      )
+

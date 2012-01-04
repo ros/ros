@@ -57,6 +57,10 @@ class Master(object):
         """
         Start the ROS Master.
         """
+        self.handler = None
+        self.master_node = None
+        self.uri = None
+
         handler = rosmaster.master_api.ROSMasterHandler()
         master_node = rosgraph.xmlrpc.XmlRpcNode(self.port, handler)
         master_node.start()

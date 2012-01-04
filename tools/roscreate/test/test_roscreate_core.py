@@ -1,7 +1,6 @@
-#!/usr/bin/env python
 # Software License Agreement (BSD License)
 #
-# Copyright (c) 2009, Willow Garage, Inc.
+# Copyright (c) 2012, Willow Garage, Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,50 +30,21 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import print_function
-
-import os
-import sys
-
-import rospkg
-import pkg_resources
-
-def print_warning(msg):
-    """print warning to screen (bold red)"""
-    print('\033[31m%s\033[0m'%msg, file=sys.stderr)
+def test_author_name():
+    from roscreate.core import author_name
+    assert author_name()
     
-def author_name():
-    """
-    Utility to compute logged in user name
-    
-    :returns: name of current user, ``str``
-    """
-    import getpass
-    name = getpass.getuser()
-    try:
-        import pwd
-        login = name
-        name = pwd.getpwnam(login)[4]
-        name = ''.join(name.split(',')) # strip commas
-    except:
-        #pwd failed
-        pass
-    return name
+def test_read_template():
+    from roscreate.core import read_template
+    s = set()
+    # this unit test will break if any of the templates get removed/renamed
+    tests = ['Makefile.tmpl', 'stack.tmpl', 'mainpage.tmpl', 'CMakeLists.stack.tmpl']
+    for f in tests:
+        text = read_template(f)
+        s.add(text)
+    # simple assert to make sure we didn't read the same thing from each template
+    assert len(s) == len(tests)
 
-def read_template(tmplf):
-    """
-    Read resource template from egg installation, or fallback on rospkg otherwise.
-
-    :returns: text of template file
-    """
-    if pkg_resources.resource_exists('roscreate', tmplf):
-        f = pkg_resources.resource_stream('roscreate', tmplf)
-        t = f.read()
-    else:
-        # fallback on rospkg
-        r = rospkg.RosPack()
-        with open(os.path.join(r.get_path('roscreate'), 'templates', tmplf)) as f:
-            t = f.read()
-    return t
-
-    
+    # hardcode test against a known template
+    text = read_template('Makefile.tmpl')        
+    assert text == 'include $(shell rospack find mk)/cmake.mk'

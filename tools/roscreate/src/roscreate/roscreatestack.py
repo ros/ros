@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Software License Agreement (BSD License)
 #
 # Copyright (c) 2009, Willow Garage, Inc.
@@ -55,8 +54,7 @@ from rospkg import on_ros_path
 
 def get_templates():
     """
-    @return: mapping of file names to templates to instantiate
-    @rtype: {str: str}
+    :returns: mapping of file names to templates to instantiate, ``{str: str}``
     """
     templates = {}
     templates['stack.xml'] = read_template('stack.tmpl')
@@ -66,8 +64,7 @@ def get_templates():
 
 def instantiate_template(template, stack, brief, description, author, depends, licenses, review):
     """
-    @return: template instantiated with properties
-    @rtype: str
+    :returns: template instantiated with properties, ``str``
     """
     return template%locals()
 
@@ -83,18 +80,12 @@ def _update_depends(depends):
          
 def create_stack(stack, stack_dir, stack_manifest, author, depends, licenses, show_deps):
     """
-    @param stack: name of stack
-    @type  stack: str
-    @param stack_dir: path to stack
-    @type  stack_dir: str
-    @param stack_manifest: existing stack manifest or None
-    @type  stack_manifest: L{roslib.stack_manifest.StackManifest}
-    @param author: name of stack maintainer. Overrides stack_manifest.
-    @type  author: str
-    @param depends: map of stack name to packages that use that stack. Overrides stack_manifest.
-    @type  depends: {str: [str]}
-    @param licenses: list of licenses present in stack
-    @type  licenses: set(str)
+    :param stack: name of stack, ``str``
+    :param stack_dir: path to stack, ``str``
+    :param stack_manifest: existing stack manifest or ``None``, ``StackManifest``
+    :param author: name of stack maintainer. Overrides stack_manifest, ``str``
+    :param depends: map of stack name to packages that use that stack. Overrides stack_manifest, ``{str: [str]}``
+    :param licenses: list of licenses present in stack, ``set(str)``
     """
 
     if show_deps:
@@ -134,9 +125,8 @@ def create_stack(stack, stack_dir, stack_manifest, author, depends, licenses, sh
 
 def compute_stack_depends_and_licenses(stack_dir):
     """
-    @return: depends, licenses
-    @rtype: {str: [str]}, [str]
-    @raise: rospkg.ResourceNotFound
+    :returns: depends, licenses, ``{str: [str]}, [str]``
+    :raises: :exc:`rospkg.ResourceNotFound`
     """
     stack = os.path.basename(os.path.abspath(stack_dir))    
     if os.path.exists(stack_dir):
@@ -197,7 +187,7 @@ def roscreatestack_main():
     stack = os.path.basename(os.path.abspath(stack_dir))
 
     if not on_ros_path(stack_dir):
-        print("ERROR: roscreate-stack only work in directories in ROS_PACKAGE_PATH\nPlease update your ROS_PACKAGE_PATH environment variable.", file=sys.stderr)
+        print("ERROR: roscreate-stack only work in directories on your ROS_PACKAGE_PATH\nPlease update your ROS_PACKAGE_PATH environment variable.", file=sys.stderr)
         sys.exit(1)
     
     try:
@@ -227,6 +217,3 @@ def roscreatestack_main():
           pass
   
     create_stack(stack, stack_dir, stack_manifest, author, depends, licenses, options.show_deps)
-
-if __name__ == "__main__":
-    roscreatestack_main()

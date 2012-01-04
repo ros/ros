@@ -30,20 +30,16 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id: test_rosparam_command_line_online.py 5710 2009-08-20 03:11:04Z sfkwc $
 
 import os
-import signal
 import sys 
-import time
 import unittest
-
-import rospkg
-import rosgraph
 
 import cStringIO
 from subprocess import Popen, PIPE, check_call, call
+
+import rosgraph
+import rosparam
 
 def get_param_server():
     return rosgraph.Master('/test_rosparam')
@@ -59,6 +55,9 @@ def fakestdout():
 
 def tolist(b):
     return [x.strip() for x in b.getvalue().split('\n') if x.strip()]
+
+def get_test_path():
+    return os.path.abspath(os.path.join(os.path.dirname(__file__)))
 
 class TestRosparam(unittest.TestCase):
 
@@ -79,7 +78,6 @@ class TestRosparam(unittest.TestCase):
             self.failIf(t in actual)
         
     def test_rosparam_list(self):
-        from ros import rosparam
         cmd = 'rosparam'
 
         params = ['/string', '/int', '/float',
@@ -114,10 +112,8 @@ class TestRosparam(unittest.TestCase):
             self.assertEquals([], tolist(b))
             
     def test_rosparam_load(self):
-        from ros import rosparam
-        import roslib.packages
-        f = os.path.join(roslib.packages.get_pkg_dir('test_rosparam'), 'test', 'test.yaml')
-        f_ns = os.path.join(roslib.packages.get_pkg_dir('test_rosparam'), 'test', 'test_ns.yaml')
+        f = os.path.join(get_test_path(), 'test.yaml')
+        f_ns = os.path.join(get_test_path(), 'test', 'test_ns.yaml')
         
         cmd = 'rosparam'
         try:
@@ -163,12 +159,12 @@ class TestRosparam(unittest.TestCase):
         self.assertEquals('baz', ps.getParam('/rosparam_load/test2/a/b/foo'))
         
     def test_rosparam_get(self):
-        from ros import rosparam
+        import rosparam
         cmd = 'rosparam'
         try:
             rosparam.yamlmain([cmd, 'get'])
             self.fail("command-line arg should have failed")
-        except SystemExit, e:
+        except SystemExit as e:
             self.assertNotEquals(0, e.code)
 
         with fakestdout() as b:
@@ -224,7 +220,7 @@ class TestRosparam(unittest.TestCase):
             rosparam.yamlmain([cmd, 'get', '-pv', "g1"])
 
     def test_rosparam_set(self):
-        from ros import rosparam
+        import rosparam
         cmd = 'rosparam'
 
         ps = get_param_server()
@@ -283,7 +279,7 @@ class TestRosparam(unittest.TestCase):
             self.assertEquals('h', ps.getParam('/rosparam_set/testdictverbose/g'))
 
     def test_rosparam_delete(self):
-        from ros import rosparam
+        import rosparam
         cmd = 'rosparam'
         ps = get_param_server()
 
@@ -308,10 +304,9 @@ class TestRosparam(unittest.TestCase):
         self.failIf(ps.hasParam('/delete/me2'))
 
     def test_rosparam_dump(self):
-        from ros import rosparam
-        rp = rospkg.RosPack()
-        f = os.path.join(rp.get_path('test_rosparam'), 'test', 'test.yaml')
-        f_out = os.path.join(rp.get_path('test_rosparam'), 'test', 'test_dump.yaml')
+        import rosparam
+        f = os.path.join(get_test_path(), 'test.yaml')
+        f_out = os.path.join(get_test_path(), 'test_dump.yaml')
         
         cmd = 'rosparam'
         ps = get_param_server()
@@ -341,7 +336,7 @@ class TestRosparam(unittest.TestCase):
                 self.assertEquals(yaml.load(b.read()), yaml.load(b2.read()))
 
     def test_fullusage(self):
-        from ros import rosparam
+        import rosparam
         try:
             rosparam._fullusage()
         except SystemExit: pass

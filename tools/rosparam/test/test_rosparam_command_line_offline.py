@@ -39,9 +39,12 @@ import unittest
 import cStringIO
 import time
         
-import rospkg
-
 from subprocess import Popen, PIPE, check_call, call
+
+import rosparam
+
+def get_test_path():
+    return os.path.abspath(os.path.join(os.path.dirname(__file__)))
 
 class TestRosparamOffline(unittest.TestCase):
 
@@ -90,9 +93,7 @@ class TestRosparamOffline(unittest.TestCase):
         output = Popen([cmd, 'get', 'foo'], **kwds).communicate()
         self.assert_(output[1].endswith(msg))
         # have to test with actual file to avoid error
-        r = rospkg.RosPack()
-        path = r.get_path('rosparam')
-        path = os.path.join(path, 'test', 'test.yaml')
+        path = os.path.join(get_test_path(), 'test.yaml')
         output = Popen([cmd, 'load', path], **kwds).communicate()
         self.assert_(output[1].endswith(msg))
 

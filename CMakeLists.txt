@@ -6,7 +6,6 @@ find_package(Boost COMPONENTS thread)
 foreach(subdir
     core/roslib
     tools/rosbash
-#    tools/rosunit
     test/test_roslib
     )
   add_subdirectory(${subdir})
@@ -15,7 +14,6 @@ endforeach()
 
 install(PROGRAMS
   bin/rosrun
-  bin/rostopic
   bin/rxconsole
   DESTINATION bin
   )

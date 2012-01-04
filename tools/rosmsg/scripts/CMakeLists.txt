@@ -1,7 +1,0 @@
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-if(NOT EXISTS ${CMAKE_BINARY_DIR}/bin/rosmsg)
-  execute_process(COMMAND /bin/ln -s ${CMAKE_CURRENT_SOURCE_DIR}/rosmsg ${CMAKE_BINARY_DIR}/bin/rosmsg)
-endif()
-if(NOT EXISTS ${CMAKE_BINARY_DIR}/bin/rossrv)
-  execute_process(COMMAND /bin/ln -s ${CMAKE_CURRENT_SOURCE_DIR}/rossrv ${CMAKE_BINARY_DIR}/bin/rossrv)
-endif()

@@ -5,3 +5,5 @@ find_package(catkin)
 install(FILES scripts/rosgraph
   DESTINATION share/rosgraph/bin
   )
+
+catkin_export_python()

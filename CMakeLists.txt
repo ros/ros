@@ -18,4 +18,4 @@ install(PROGRAMS
   DESTINATION bin
   )
 
-enable_python(ros)
+catkin_export_python()

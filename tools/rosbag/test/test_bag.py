@@ -33,9 +33,6 @@
 #
 # test_bag.py
 
-PKG = 'rosbag'
-import roslib; roslib.load_manifest(PKG)
-
 import heapq
 import os
 import shutil

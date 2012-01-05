@@ -30,10 +30,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
-
-import roslib; roslib.load_manifest('test_rospy')
 
 import os
 import sys
@@ -53,7 +49,3 @@ class TestRospyTcpros(unittest.TestCase):
         import rospy.impl.transport
         self.assertEquals(int, type(rospy.impl.tcpros.DEFAULT_BUFF_SIZE))
         self.assert_(isinstance(rospy.impl.tcpros.get_tcpros_handler(), rospy.impl.transport.ProtocolHandler))
-                
-if __name__ == '__main__':
-    import rosunit
-    rosunit.unitrun('test_rospy', sys.argv[0], TestRospyTcpros, coverage_packages=['rospy.impl.tcpros'])

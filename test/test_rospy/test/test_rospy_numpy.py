@@ -30,10 +30,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id: test_rospy_names.py 4968 2009-06-23 21:36:04Z sfkwc $
-
-import roslib; roslib.load_manifest('test_rospy')
 
 import os
 import sys
@@ -72,8 +68,3 @@ class TestRospyNumpy(unittest.TestCase):
         self.assert_(isinstance(f3.data, numpy.ndarray), type(f3.data))
         v = numpy.equal(f3.data, numpy.array([1.0, 2.1, 3.2, 4.3, 5.4, 6.5], dtype=numpy.float32))
         self.assert_(v.all())
-    
-if __name__ == '__main__':
-    import rosunit
-    rosunit.unitrun('test_rospy', sys.argv[0], TestRospyNumpy, coverage_packages=['rospy.numpy'])
-

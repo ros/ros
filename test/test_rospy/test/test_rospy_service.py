@@ -30,10 +30,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
-
-import roslib; roslib.load_manifest('test_rospy')
 
 import os
 import sys
@@ -100,7 +96,3 @@ class TestRospyService(unittest.TestCase):
         self.assertEquals([('/serv2', mock2.uri)], sm.get_services())
         sm.unregister('/serv2', mock2)
         self.assertEquals([], sm.get_services())
-        
-if __name__ == '__main__':
-    import rosunit
-    rosunit.unitrun('test_rospy', sys.argv[0], TestRospyService, coverage_packages=['rospy.service'])

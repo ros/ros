@@ -30,10 +30,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
-
-import roslib; roslib.load_manifest('test_rospy')
 
 import os
 import sys
@@ -62,7 +58,3 @@ class TestRospyValidators(unittest.TestCase):
                     non_empty('param-name-foo')(i, context)
                 except ParameterInvalid, e:
                     self.assert_('param-name-foo' in str(e))
-
-if __name__ == '__main__':
-    import rosunit
-    rosunit.unitrun('test_rospy', sys.argv[0], TestRospyValidators, coverage_packages=['rospy.impl.validators'])

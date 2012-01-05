@@ -30,10 +30,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
-
-import roslib; roslib.load_manifest('test_rospy')
 
 import os
 import sys
@@ -254,6 +250,3 @@ def test_shutdown_hook2(reason):
     called2 = reason
 def test_shutdown_hook_exception(reason):
     raise Exception("gotcha")
-
-if __name__ == '__main__':
-    rosunit.unitrun('test_rospy', sys.argv[0], TestRospyCore, coverage_packages=['rospy.core'])

@@ -30,10 +30,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id: test_rospy_api.py 4898 2009-06-17 01:31:18Z sfkwc $
-
-import roslib; roslib.load_manifest('test_rospy')
 
 import os
 import sys
@@ -236,8 +232,3 @@ class TestRospyTcprosService(unittest.TestCase):
         self.assertEquals(name, fields['service'])
         self.assertEquals(srv_data_class._md5sum, fields['md5sum'])
         self.assertEquals(srv_data_class._type, fields['type'])        
-        
-            
-if __name__ == '__main__':
-    import rosunit
-    rosunit.unitrun('test_rospy', 'test_rospy_tcpros_service', TestRospyTcprosService, coverage_packages=['rospy.impl.tcpros_service'])

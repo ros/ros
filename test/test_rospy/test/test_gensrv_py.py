@@ -30,10 +30,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id: test_genmsg_py.py 6352 2009-09-30 23:14:02Z kwc $
-
-import roslib; roslib.load_manifest('test_rospy')
 
 import os
 import sys
@@ -44,7 +40,7 @@ import time
 import random
 import math
 
-from roslib.message import SerializationError
+from genpy import SerializationError
         
 class TestGensrvPy(unittest.TestCase):
 
@@ -72,8 +68,3 @@ class TestGensrvPy(unittest.TestCase):
         # embedded messages. Because messages are flattened, this
         # causes ImportErrors.
         self._test_ser_deser(m, TransitiveSrvRequest())        
-
-    
-if __name__ == '__main__':
-    import rosunit
-    rosunit.unitrun('test_rospy', sys.argv[0], TestGensrvPy)

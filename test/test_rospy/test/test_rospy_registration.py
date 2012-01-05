@@ -30,10 +30,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id: test_rospy_tcpros.py 4140 2009-04-10 23:14:00Z sfkwc $
-
-import roslib; roslib.load_manifest('test_rospy')
 
 import os
 import sys
@@ -258,7 +254,3 @@ class TestRospyRegistration(unittest.TestCase):
         m.reg_removed('n1', 'type1', 'rtype1')
         m.cleanup('reason')
 
-        
-if __name__ == '__main__':
-    import rosunit
-    rosunit.unitrun('test_rospy', sys.argv[0], TestRospyRegistration, coverage_packages=['rospy.impl.registration'])

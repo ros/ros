@@ -30,10 +30,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
-
-import roslib; roslib.load_manifest('test_rospy')
 
 import os
 import sys
@@ -392,8 +388,3 @@ class TestGenmsgPy(unittest.TestCase):
         self._test_ser_deser(Int32MultiArray(),Int32MultiArray())
         self._test_ser_deser(Int32MultiArray(layout=MultiArrayLayout()),Int32MultiArray())
         self._test_ser_deser(Int32MultiArray(data=[1, 2, 3]),Int32MultiArray())
-
-    
-if __name__ == '__main__':
-    import rosunit
-    rosunit.unitrun('test_rospy', sys.argv[0], TestGenmsgPy)

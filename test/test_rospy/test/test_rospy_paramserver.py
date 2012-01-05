@@ -30,10 +30,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
-
-import roslib; roslib.load_manifest('test_rospy')
 
 import os
 import sys
@@ -43,9 +39,7 @@ import time
 import random
 import datetime
 
-import rosunit
-
-from roslib.names import make_global_ns, ns_join
+from rosgraph.names import make_global_ns, ns_join
 
 ## Unit tests for rospy.paramserver module
 class TestRospyParamServer(unittest.TestCase):
@@ -79,6 +73,3 @@ class TestRospyParamServer(unittest.TestCase):
                 ps.get(k)
                 self.fail('get should fail on deleted key')
             except KeyError: pass
-
-if __name__ == '__main__':
-    rosunit.unitrun('test_rospy', sys.argv[0], TestRospyParamServer, coverage_packages=['rospy.impl.paramserver'])

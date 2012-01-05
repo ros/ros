@@ -30,21 +30,23 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
+
+from __future__ import print_function
 
 import sys
 import time
-import rosgraph.roslogging
-import rosgraph.impl.graph
-import rosgraph.masterapi
+
+from . import roslogging
+from . import masterapi
+
+from .impl import graph
 
 def fullusage():
-    print """rosgraph is a command-line tool for debugging the ROS Computation Graph.
+    print("""rosgraph is a command-line tool for debugging the ROS Computation Graph.
 
 Usage:
 \trosgraph
-"""
+""")
     
 def rosgraph_main():
     if len(sys.argv) == 1:
@@ -56,41 +58,41 @@ def rosgraph_main():
         fullusage()
         sys.exit(-1)
     
-    rosgraph.roslogging.configure_logging('rosgraph')
+    roslogging.configure_logging('rosgraph')
 
     # make sure master is available
-    master = rosgraph.masterapi.Master('rosgraph')
+    master = masterapi.Master('rosgraph')
     try:
         master.getPid()
     except:
-        print >> sys.stderr, "ERROR: Unable to communicate with master!"
+        print("ERROR: Unable to communicate with master!", file=sys.stderr)
         return
         
-    g = rosgraph.impl.graph.Graph()
+    g = graph.Graph()
     try:
         while 1:
           g.update()
 
           if not g.nn_nodes and not g.srvs:
-              print "empty"
+              print("empty")
           else:
-              print '\n'
+              print('\n')
           if g.nn_nodes:
-              print 'Nodes:'
+              print('Nodes:')
               for n in g.nn_nodes:
-                  print '  ' + n + ' :'
-                  print '    Inbound:'
+                  print('  ' + n + ' :')
+                  print('    Inbound:')
                   if n in g.nn_edges.edges_by_end:
                       for c in g.nt_all_edges.edges_by_end[n]:
-                          print '      ' + c.start
-                  print '    Outbound:'
+                          print('      ' + c.start)
+                  print('    Outbound:')
                   if n in g.nn_edges.edges_by_start:
                       for c in g.nt_all_edges.edges_by_start[n]:
-                          print '      ' + c.end
+                          print('      ' + c.end)
           if g.srvs:
-              print 'Services:'
+              print('Services:')
               for s in g.srvs:
-                  print '  ' + s
+                  print('  ' + s)
 
           time.sleep(1.0)
     except KeyboardInterrupt:

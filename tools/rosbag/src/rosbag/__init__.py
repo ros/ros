@@ -35,4 +35,3 @@ from .bag import Bag, Compression, ROSBagException, ROSBagFormatException, ROSBa
 # Import rosbag main to be used by the rosbag executable
 from rosbag_main import rosbagmain
 
-__version__ = '1.7.0'

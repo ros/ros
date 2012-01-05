@@ -39,8 +39,6 @@ state of the ROS Parameter Server using YAML files.
 
 from __future__ import print_function
 
-__version__ = '1.7.0'
-
 NAME = 'rosparam'
 
 ## namespace key. Use of this in a YAML document specifies the

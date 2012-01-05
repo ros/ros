@@ -36,4 +36,3 @@ from .main import rosmaster_main
 
 from .master import DEFAULT_MASTER_PORT
 
-__version__ = '1.7.0'

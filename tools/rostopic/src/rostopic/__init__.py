@@ -38,8 +38,6 @@ from __future__ import division, print_function
 
 NAME='rostopic'
 
-__version__ = '1.7.0'
-
 import os
 import sys
 import itertools

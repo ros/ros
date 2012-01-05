@@ -76,8 +76,6 @@ from .topics import Message, SubscribeListener, Publisher, Subscriber
 from .impl import init
 init.init_log_handlers()
 
-__version__ = '1.7.0'
-
 __all__ = [
     'Header',
     'spin',

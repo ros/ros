@@ -40,8 +40,6 @@ and roslib.srvs libraries and can be found there instead.
 
 from __future__ import print_function
 
-__version__ = '1.7.0'
-
 import os
 import platform
 import sys

@@ -32,10 +32,6 @@
 #
 # Revision $Id$
 
-from __future__ import with_statement
-
-__version__ = '1.7.0'
-
 import os
 import logging
 import sys

@@ -1,12 +1,26 @@
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
-rosbuild_init()
+project(test_roslib_comm)
 rosbuild_genmsg()
-# unit tests
-rosbuild_add_pyunit(test/test_md5sums.py)
-rosbuild_add_pyunit(test/test_roslib_genpy.py)
-rosbuild_add_pyunit(test/test_roslib_gentools.py)
-rosbuild_add_pyunit(test/test_roslib_message.py)
-rosbuild_add_pyunit(test/test_roslib_msgs.py)
-rosbuild_add_pyunit(test/test_roslib_srvs.py)
- 
+
+add_message_files(DIRECTORY msg
+  FILES
+  ArrayOfMsgs.msg
+  FieldNameChange1.msg
+  FieldNameChange2.msg
+  FillEmbedTime.msg
+  FillSimple.msg
+  HeaderTest.msg
+  SameSubMsg1.msg
+  SameSubMsg2.msg
+  SameSubMsg3.msg
+  TypeNameChange1.msg
+  TypeNameChange2.msg
+  TypeNameChangeArray1.msg
+  TypeNameChangeArray2.msg
+  TypeNameChangeComplex1.msg
+  TypeNameChangeComplex2.msg
+  )
+generate_messages(DEPENDENCIES std_msgs rosgraph_msgs)
+
+catkin_project(test_roslib_comm
+  MSG_DIRS msg
+  )

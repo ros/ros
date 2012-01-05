@@ -25,7 +25,7 @@ catkin_project(test_rospy
   MSGS_DIRS msg
   )
 
-add_nosetests(test/test_rospy/test/unit)
+add_nosetests(test/unit)
 message("TODO: enable rospy rostests")
 
 # integration tests

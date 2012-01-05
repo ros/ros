@@ -47,7 +47,7 @@ import roslib.names
 import genpy
 
 # forward a bunch of old symbols from genmsg for backwards compat
-from genmsg.message imoprt check_type, strify_message
+from genmsg.message import check_type, strify_message
 from genpy import Message, DeserializationError, SerializationError, \
      Time, Duration, TVal
 from genpy.message import get_printable_message_args, fill_message_args

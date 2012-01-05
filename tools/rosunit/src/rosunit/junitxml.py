@@ -331,7 +331,7 @@ def read(test_file, test_name):
         err, fail, tests = [string.atoi(val) for val in vals]
 
         result = Result(test_name, err, fail, tests)
-        result.time = float(test_suite.getAttribute('time')) or 0.0    
+        result.time = 0.0 if not len(test_suite.getAttribute('time')) else float(test_suite.getAttribute('time'))
 
         # Create a prefix based on the test result filename. The idea is to
         # disambiguate the case when tests of the same name are provided in

@@ -32,12 +32,6 @@ catkin_project(roslib
   INCLUDE_DIRS include
   )
 
-catkin_export_python(src)
-# We have to set ros_PYTHONPATH to get the 'ros' module copied into the
-# buildspace.  Not sure what will happen if multiple packages do this...
-# set(ros_PYTHONPATH src)
-
-
 #integration tests
 
 add_gtest(${PROJECT_NAME}-utest test/utest.cpp)

@@ -39,6 +39,7 @@ import unittest
 
 import rospy
 import std_msgs.msg
+import rostest
 
 from subprocess import Popen, PIPE, check_call, call
 
@@ -113,3 +114,6 @@ class TestRosnodeOnline(unittest.TestCase):
             if 0:
                 #ping
                 stdout, stderr = run_for([cmd, 'ping', name], 3.)
+
+if __name__ == '__main__':
+    rostest.run(PKG, NAME, TestRosnodeOnline, sys.argv)

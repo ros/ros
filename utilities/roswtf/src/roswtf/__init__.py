@@ -79,7 +79,7 @@ def roswtf_main():
         import std_msgs.msg
         import rosgraph_msgs.msg
     except ImportError:
-        print "ERROR: The ROS communication libraries have not been built. To fix:\nrosmake ros_comm"
+        print "ERROR: The core ROS message libraries (std_msgs and rosgraph_msgs) have not been built."
         sys.exit(1)
     
     from roswtf.context import WtfException

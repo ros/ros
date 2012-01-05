@@ -32,10 +32,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import sys
-import roslib
-roslib.load_manifest('rosconsole')
+import rospkg
 
-base_path = roslib.packages.get_pkg_dir('rosconsole')
+rospack = rospkg.RosPack()
+base_path = rospack.get_path('rosconsole')
 
 def add_macro(f, caps_name, enum_name):
     f.write('#if (ROSCONSOLE_MIN_SEVERITY > ROSCONSOLE_SEVERITY_%s)\n' %(caps_name))

@@ -32,10 +32,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import sys
-import roslib
-roslib.load_manifest('rosconsole')
+import rospkg
 
-base_path = roslib.packages.get_pkg_dir('rosconsole')
+rospack = rospkg.RosPack()
+base_path = rospack.get_path('rosconsole')
 
 f = open('%s/test/speed_test.cpp' % (base_path), 'w')
 

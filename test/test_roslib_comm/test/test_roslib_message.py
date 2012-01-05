@@ -30,9 +30,6 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-PKG = 'test_roslib_comm'
-import roslib; roslib.load_manifest(PKG)
-
 import os
 import sys
 import time
@@ -524,7 +521,7 @@ d:
             try:
                 m = FillEmbedTime()
                 fill_message_args(m, b)
-            except roslib.message.ROSMessageException:
+            except genpy.MessageException:
                 failed = False
             self.failIf(failed, "fill_message_args should have failed: %s"%str(b))
             
@@ -600,7 +597,7 @@ d:
             try:
                 m = FillSimple()
                 fill_message_args(m, b)
-            except roslib.message.ROSMessageException:
+            except genpy.MessageException:
                 failed = False
             self.failIf(failed, "fill_message_args should have failed: %s"%str(b))
         
@@ -619,5 +616,5 @@ d:
         self.assertEquals(std_srvs.srv.Empty, get_service_class('std_srvs/Empty'))    
 
 if __name__ == '__main__':
-  rosunit.unitrun(PKG, 'test_message', MessageTest, coverage_packages=['roslib.message'])
+  rosunit.unitrun('test_roslib_comm', 'test_message', MessageTest, coverage_packages=['roslib.message'])
 

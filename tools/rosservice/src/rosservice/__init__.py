@@ -51,13 +51,15 @@ import socket
 
 from cStringIO import StringIO
 
+import genpy
+
 import roslib.message 
-import roslib.names
-import rosgraph.network
 import rospy
 import rosmsg
 
 import rosgraph
+import rosgraph.names
+import rosgraph.network
 
 from optparse import OptionParser
 
@@ -408,20 +410,20 @@ def call_service(service_name, service_args, service_class=None):
     try:
         now = rospy.get_rostime()
         keys = { 'now': now, 'auto': std_msgs.msg.Header(stamp=now) }
-        roslib.message.fill_message_args(request, service_args, keys=keys)
-    except roslib.message.ROSMessageException as e:
+        genpy.message.fill_message_args(request, service_args, keys=keys)
+    except genpy.MessageException as e:
         def argsummary(args):
             if type(args) in [tuple, list]:
                 return '\n'.join([' * %s (type %s)'%(a, type(a).__name__) for a in args])
             else:
                 return ' * %s (type %s)'%(args, type(args).__name__)
 
-        raise ROSServiceException("Incompatible arguments to call service:\n%s\nProvided arguments are:\n%s\n\nService arguments are: [%s]"%(e, argsummary(service_args), roslib.message.get_printable_message_args(request)))
+        raise ROSServiceException("Incompatible arguments to call service:\n%s\nProvided arguments are:\n%s\n\nService arguments are: [%s]"%(e, argsummary(service_args), genpy.message.get_printable_message_args(request)))
     try:
         return request, rospy.ServiceProxy(service_name, service_class)(request)
     except rospy.ServiceException, e:
         raise ROSServiceException(str(e))
-    except roslib.message.SerializationError as e:
+    except genpy.SerializationError as e:
         raise ROSServiceException("Unable to send request. One of the fields has an incorrect type:\n"+\
                                       "  %s\n\nsrv file:\n%s"%(e, rosmsg.get_srv_text(service_class._type)))
     except rospy.ROSSerializationException, e:
@@ -484,7 +486,7 @@ def get_service_args(service_name):
     """
     service_name = rosgraph.names.script_resolve_name('rosservice', service_name)
     service_class = get_service_class_by_name(service_name)
-    return roslib.message.get_printable_message_args(service_class._request_class)
+    return genpy.message.get_printable_message_args(service_class._request_class)
     
 ##########################################################################################
 # COMMAND PROCESSING #####################################################################

@@ -29,8 +29,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
 
 """Internal use: Service-specific extensions for TCPROS support"""
 
@@ -43,7 +41,8 @@ import logging
 import time
 import traceback
 
-import roslib.message
+import genpy
+
 import rosgraph
 import rosgraph.names
 import rosgraph.network
@@ -180,7 +179,7 @@ def convert_return_to_response(response, response_class):
     # use this declared ROS type check instead of a direct instance
     # check, which allows us to play tricks with serialization and
     # deserialization
-    if isinstance(response, roslib.message.Message) and response._type == response_class._type:
+    if isinstance(response, genpy.Message) and response._type == response_class._type:
     #if isinstance(response, response_class):
         return response
     elif type(response) == dict:
@@ -438,7 +437,7 @@ class ServiceProxy(_Service):
         @param request: request message
         @type  request: L{rospy.Message}
         """
-        if not isinstance(request, roslib.message.Message):
+        if not isinstance(request, genpy.Message):
             raise TypeError("request object is not a valid request message instance")
         # in order to support more interesting overrides, we only
         # check that it declares the same ROS type instead of a
@@ -609,7 +608,7 @@ class ServiceImpl(_Service):
         @param transport: transport instance
         @type  transport: L{TCPROSTransport}
         @param request: Message
-        @type  request: roslib.message.Message
+        @type  request: genpy.Message
         """
         try:
             # convert return type to response Message instance

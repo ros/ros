@@ -55,6 +55,7 @@ except ImportError:
     from io import StringIO # Python 3.x
 
 import genpy
+import roslib.message
 
 try:
     # backwards compatbility import
@@ -250,7 +251,7 @@ class Bag(object):
         @param raw: if True, then generate tuples of (datatype, (data, md5sum, position), pytype)
         @type  raw: bool
         @return: generator of (topic, message, timestamp) tuples for each message in the bag file
-        @rtype:  generator of tuples of (str, U{roslib.message.Message}, U{genpy.Time}) [not raw] or (str, (str, str, str, tuple, class), U{genpy.Time}) [raw]
+        @rtype:  generator of tuples of (str, U{genpy.Message}, U{genpy.Time}) [not raw] or (str, (str, str, str, tuple, class), U{genpy.Time}) [raw]
         """
         self.flush()
 

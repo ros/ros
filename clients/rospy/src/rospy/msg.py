@@ -40,11 +40,12 @@ import struct
 import logging
 import traceback
 
-import roslib.message
-import rospy.core
+import genpy
+
+import rospy.exceptions
 import rospy.names
 
-class AnyMsg(roslib.message.Message):
+class AnyMsg(genpy.Message):
     """
     Message class to use for subscribing to any topic regardless
     of type. Incoming messages are not deserialized. Instead, the raw
@@ -113,7 +114,7 @@ def args_kwds_to_message(data_class, args, kwds):
             # data_class has fields and that the type matches.  This
             # branch isn't necessary but provides more useful
             # information to users
-            elif isinstance(arg, roslib.message.Message) and \
+            elif isinstance(arg, genpy.Message) and \
                     (len(data_class._slot_types) == 0 or \
                          arg._type != data_class._slot_types[0]):
                 raise TypeError("expected [%s] but got [%s]"%(data_class._slot_types[0], arg._type))
@@ -177,7 +178,7 @@ def deserialize_messages(b, msg_queue, data_class, queue_size=None, max_msgs=Non
     @type  start: int
     @param max_msgs int: maximum number of messages to deserialize or None
     @type  max_msgs: int
-    @raise roslib.message.DeserializationError: if an error/exception occurs during deserialization
+    @raise genpy.DeserializationError: if an error/exception occurs during deserialization
     """    
     try:
         pos = start
@@ -241,5 +242,5 @@ def deserialize_messages(b, msg_queue, data_class, queue_size=None, max_msgs=Non
                 b.seek(btell)
     except Exception as e:
         logging.getLogger('rospy.msg').error("cannot deserialize message: EXCEPTION %s", traceback.format_exc())
-        raise roslib.message.DeserializationError("cannot deserialize: %s"%str(e))
+        raise genpy.DeserializationError("cannot deserialize: %s"%str(e))
 

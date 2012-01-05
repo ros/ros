@@ -56,7 +56,7 @@ import select
 
 import rosgraph
 import rosgraph.network
-from roslib.message import DeserializationError, Message
+from genpy import DeserializationError, Message
 from rosgraph.network import read_ros_handshake_header, write_ros_handshake_header
 
 # TODO: remove * import from core

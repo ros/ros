@@ -524,7 +524,7 @@ class CallbackEcho(object):
             self.sep = ''
         else:
             #TODOXXX: need to pass in filter function
-            self.str_fn = roslib.message.strify_message
+            self.str_fn = genpy.message.strify_message
             if echo_clear:
                 self.prefix = '\033[2J\033[;H'
 
@@ -1213,9 +1213,9 @@ def publish_message(pub, msg_class, pub_args, rate=None, once=False, verbose=Fal
         now = rospy.get_rostime() 
         import std_msgs.msg
         keys = { 'now': now, 'auto': std_msgs.msg.Header(stamp=now) }
-        roslib.message.fill_message_args(msg, pub_args, keys=keys)
-    except roslib.message.ROSMessageException as e:
-        raise ROSTopicException(str(e)+"\n\nArgs are: [%s]"%roslib.message.get_printable_message_args(msg))
+        genpy.message.fill_message_args(msg, pub_args, keys=keys)
+    except genpy.MessageException as e:
+        raise ROSTopicException(str(e)+"\n\nArgs are: [%s]"%genpy.message.get_printable_message_args(msg))
     try:
         
         if rate is None:

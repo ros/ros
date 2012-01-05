@@ -85,7 +85,6 @@ import time
 from itertools import chain
 import traceback
 
-import roslib.message
 import rosgraph.names
 
 from rospy.core import *
@@ -98,8 +97,9 @@ from rospy.impl.transport import DeadTransport
 
 _logger = logging.getLogger('rospy.topics')
 
-# wrap roslib implementation and map it to rospy namespace
-Message = roslib.message.Message
+# wrap genpy implementation and map it to rospy namespace
+import genpy
+Message = genpy.Message
 
 #######################################################################
 # Base classes for all client-API instantiated pub/sub
@@ -135,7 +135,7 @@ class Topic(object):
             raise ValueError("topic parameter 'data_class' is not initialized")
         if not type(data_class) == type:
             raise ValueError("data_class [%s] is not a class"%data_class) 
-        if not issubclass(data_class, roslib.message.Message):
+        if not issubclass(data_class, genpy.Message):
             raise ValueError("data_class [%s] is not a message data class"%data_class.__class__.__name__)
         # #2202
         if not rosgraph.names.is_legal_name(name):
@@ -694,7 +694,7 @@ class Publisher(Topic):
         try:
             self.impl.acquire()
             self.impl.publish(data)
-        except roslib.message.SerializationError as e:
+        except genpy.SerializationError as e:
             # can't go to rospy.logerr(), b/c this could potentially recurse
             _logger.error(traceback.format_exc(e))
             raise ROSSerializationException(str(e))
@@ -836,7 +836,7 @@ class _PublisherImpl(_TopicImpl):
         @type  connection_override: L{Transport}
         @return: True if the data was published, False otherwise.
         @rtype: bool
-        @raise roslib.message.SerializationError: if L{Message} instance is unable to serialize itself
+        @raise genpy.SerializationError: if L{Message} instance is unable to serialize itself
         @raise rospy.ROSException: if topic has been closed or was closed during publish()
         """
         #TODO: should really just use IOError instead of rospy.ROSException

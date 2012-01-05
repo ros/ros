@@ -44,9 +44,8 @@ import roslib.packages
 
 def get_manifest_file(package_name):
     """
-    @return: name of package to get manifest for
-    @rtype: str
-    @raise InvalidROSPkgException: if required is True and package cannot be located
+    :returns: name of package to get manifest for, ``str``
+    :raises: :exc:`InvalidROSPkgException` If required is True and package cannot be located
     """
     return roslib.manifest.manifest_file(package_name, required=True)
         
@@ -55,15 +54,17 @@ def get_manifest_file(package_name):
 #
 # fuerte: also using _bootstrapped to prevent descent into
 # catkin/setup.py-based python packages
-_bootstrapped = []
+_bootstrapped = ['genmsg', 'genpy', 'rospkg']+\
+                ['ros', 'roslib', 'rosunit', 'rosmake', 'rosclean', 'roscreate', 'rosboost_cfg'] +\
+                ['rosbag', 'rosgraph', 'rosgraph.impl', 'roslaunch', 'rosmaster', 'rosmsg', 'rosnode', 'rosparam', 'rospy', 'rospy.impl', 'rosservice', 'rostopic', 'rostest', 'roswtf',] +\
+                ['std_msgs', 'rosgraph_msgs', 'test_ros', 'test_rospy'] +\
+                ['sensor_msgs', 'geometry_msgs', 'nav_msgs', 'actionlib_msgs', 'trajectory_msgs', 'visualization_msgs', 'stereo_msgs', 'diagnostic_msgs']
 
 def load_manifest(package_name, bootstrap_version="0.7"):
     """
     Update the Python sys.path with package's dependencies
-    @param package_name: name of the package that load_manifest() is being called from.
-    @type  package_name: str
-    @param bootstrap_version: (keyword argument) do not use. Soon to be deprecated
-    @type  bootstrap_version: str
+
+    :param package_name: name of the package that load_manifest() is being called from, ``str``
     """
     if package_name in _bootstrapped:
         return

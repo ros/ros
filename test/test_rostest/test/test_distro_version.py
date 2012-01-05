@@ -46,3 +46,6 @@ class VersionTest(unittest.TestCase):
         param = rospy.get_param('rosdistro')
         self.assertEquals(val, param, "rosversion -d [%s] and roscore [%s] do not match"%(val, param))
 
+if __name__ == '__main__':
+    rostest.unitrun('test_rostest', 'test_distro_version', VersionTest, coverage_packages=[])
+  

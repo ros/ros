@@ -11,6 +11,11 @@ foreach(subdir
     rosout
     rosservice
     rostopic
+
+    # for test integration
+    tools/rosmaster
+    tools/rosnode
+    tools/rosparam
     )
   add_subdirectory(${subdir})
 endforeach()

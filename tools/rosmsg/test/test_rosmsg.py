@@ -41,6 +41,9 @@ import rosmsg
 
 from subprocess import Popen, PIPE, check_call, call
 
+#TODO: currently have an extra copy of msg and srv files in local dir
+# for historical/porting reasons.  Ideally there would only be one copy
+# in test_ros instead.
 def get_test_path():
     return os.path.abspath(os.path.dirname(__file__))
 
@@ -62,7 +65,7 @@ class TestRosmsg(unittest.TestCase):
         for t in ['RosmsgA', 'RosmsgB']:
             with open(os.path.join(msg_d, '%s.msg'%t), 'r') as f:
                 text = f.read()
-            type_ = 'test_rosmsg/'+t
+            type_ = 'test_ros/'+t
             self.assertEquals(text, rosmsg.get_msg_text(type_, raw=False))
             self.assertEquals(text, rosmsg.get_msg_text(type_, raw=True))
             
@@ -70,7 +73,7 @@ class TestRosmsg(unittest.TestCase):
         t = 'RosmsgC'
         with open(os.path.join(msg_d, '%s.msg'%t), 'r') as f:
             text = f.read()
-        type_ = 'test_rosmsg/'+t
+        type_ = 'test_ros/'+t
         self.assertEquals(text, rosmsg.get_msg_text(type_, raw=True))
         self.assertEquals("""std_msgs/String s1
   string data
@@ -106,29 +109,26 @@ std_msgs/String s2
         # test msgs
         l = rosmsg.list_types('rospy', mode='.msg')
         self.assertEquals([], l)
-        l = rosmsg.list_types('rosmsg', mode='.msg')
-        self.assertEquals(set(['rosmsg/RosmsgA',
-                               'rosmsg/RosmsgB',
-                               'rosmsg/RosmsgC',
-                               ]), set(l))
+        l = rosmsg.list_types('test_ros', mode='.msg')
+        for t in ['test_ros/RosmsgA', 'test_ros/RosmsgB', 'test_ros/RosmsgC']:
+            assert t in l
         
         l = rosmsg.list_types('rospy', mode='.srv')
         self.assertEquals([], l)        
-        l = rosmsg.list_types('rosmsg', mode='.srv')
-        self.assertEquals(set(['rosmsg/RossrvA',
-                               'rosmsg/RossrvB',
-                               ]), set(l))
+        l = rosmsg.list_types('test_ros', mode='.srv')
+        for t in ['test_ros/RossrvA', 'test_ros/RossrvB']:
+            assert t in l
 
     def test_get_srv_text(self):
         d = get_test_path()
         srv_d = os.path.join(d, 'srv')
         with open(os.path.join(srv_d, 'RossrvA.srv'), 'r') as f:
             text = f.read()
-        self.assertEquals(text, rosmsg.get_srv_text('rosmsg/RossrvA', raw=False))
-        self.assertEquals(text, rosmsg.get_srv_text('rosmsg/RossrvA', raw=True))
+        self.assertEquals(text, rosmsg.get_srv_text('test_ros/RossrvA', raw=False))
+        self.assertEquals(text, rosmsg.get_srv_text('test_ros/RossrvA', raw=True))
 
         # std_msgs/empty / std_msgs/empty
         with open(os.path.join(srv_d, 'RossrvB.srv'), 'r') as f:
             text = f.read()
-        self.assertEquals(text, rosmsg.get_srv_text('rosmsg/RossrvB', raw=False))
-        self.assertEquals(text, rosmsg.get_srv_text('rosmsg/RossrvB', raw=True))
+        self.assertEquals(text, rosmsg.get_srv_text('test_ros/RossrvB', raw=False))
+        self.assertEquals(text, rosmsg.get_srv_text('test_ros/RossrvB', raw=True))

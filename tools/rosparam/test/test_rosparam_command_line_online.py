@@ -30,15 +30,8 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id: test_rosparam_command_line_online.py 5710 2009-08-20 03:11:04Z sfkwc $
-
-PKG = 'test_rosparam'
-NAME = 'test_rosparam_command_line_online'
-import roslib; roslib.load_manifest(PKG)
 
 import os
-import signal
 import sys 
 import time
 import unittest

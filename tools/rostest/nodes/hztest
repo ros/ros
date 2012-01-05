@@ -42,8 +42,6 @@
 ##  * ~/test_duration: time (in secs) to run test
 ## 
 
-import roslib; roslib.load_manifest('rostest')
-
 import sys
 import threading
 import time

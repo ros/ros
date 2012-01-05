@@ -2,8 +2,9 @@ cmake_minimum_required(VERSION 2.8)
 project(rosgraph)
 find_package(catkin)
 
-install(FILES scripts/rosgraph
-  DESTINATION share/rosgraph/bin
+install(FILES manifest.xml
+  DESTINATION share/rosgraph
   )
-
-catkin_export_python()
+install(PROGRAMS scripts/rosgraph
+  DESTINATION share/rosgraph/scripts
+  )

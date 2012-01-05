@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 2.8)
 project(rosservice)
 find_package(catkin)
 
-install(FILES scripts/rosservice
-  DESTINATION share/rosservice/bin
+install(FILES manifest.xml
+  DESTINATION share/rosservice
+  )
+install(PROGRAMS scripts/rosservice
+  DESTINATION share/rosservice/scripts
   )

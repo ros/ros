@@ -14,7 +14,6 @@ endforeach()
 
 install(PROGRAMS
   bin/rosrun
-  bin/rxconsole
   DESTINATION bin
   )
 

@@ -30,11 +30,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
-
-NAME = 'test_rostopic_command_line_offline'
-import roslib; roslib.load_manifest('test_rostopic')
 
 import os
 import sys 
@@ -42,8 +37,6 @@ import unittest
 import cStringIO
 import time
         
-import rosunit
-
 from subprocess import Popen, PIPE, check_call, call
 
 class TestRostopicOffline(unittest.TestCase):
@@ -101,6 +94,3 @@ class TestRostopicOffline(unittest.TestCase):
         self.assert_(output[1].endswith(msg))
         output = Popen([cmd, 'type', 'std_msgs/String'], **kwds).communicate()
         self.assert_(output[1].endswith(msg))
-        
-if __name__ == '__main__':
-    rosunit.unitrun('test_rostopic', NAME, TestRostopicOffline, sys.argv, coverage_packages=[])

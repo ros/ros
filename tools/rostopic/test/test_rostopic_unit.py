@@ -30,14 +30,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id: test_rostopic_command_line_offline.py 6214 2009-09-18 23:38:22Z kwc $
-
-from __future__ import with_statement
-
-PKG = 'test_rostopic'
-NAME = 'test_rostopic_unit'
-import roslib; roslib.load_manifest(PKG)
 
 import os
 import sys 
@@ -46,8 +38,6 @@ import cStringIO
 import time
 import yaml
         
-import rostest
-
 from contextlib import contextmanager
 
 class TestRostopicUnit(unittest.TestCase):
@@ -55,7 +45,7 @@ class TestRostopicUnit(unittest.TestCase):
     def test_sub_str_plot_fields(self):
         from rostopic import _str_plot_fields
         from std_msgs.msg import String, Int32, Header
-        from test_rostopic.msg import Simple, TVals, Floats, Arrays, Embed
+        from test_ros.msg import Simple, TVals, Floats, Arrays, Embed
 
         from genpy import Time, Duration
         from rostopic import create_field_filter
@@ -145,7 +135,7 @@ class TestRostopicUnit(unittest.TestCase):
     def test_str_plot(self):
         from rostopic import _str_plot
         from std_msgs.msg import String, Int32, Header
-        from test_rostopic.msg import Simple, TVals, Floats, Arrays, Embed
+        from test_ros.msg import Simple, TVals, Floats, Arrays, Embed
 
         from genpy import Time, Duration
         from rostopic import create_field_filter
@@ -239,7 +229,7 @@ class TestRostopicUnit(unittest.TestCase):
         # roslib.messages cannot be unit tested within the ROS stack
         # -- part of the reason it needs to be moved elsewhere.
         from std_msgs.msg import String, Int32, Header
-        from test_rostopic.msg import Simple, TVals, Floats, Arrays, Embed
+        from test_ros.msg import Simple, TVals, Floats, Arrays, Embed
 
         from genpy import Time, Duration
         from roslib.message import strify_message
@@ -329,7 +319,7 @@ class TestRostopicUnit(unittest.TestCase):
         
     def test_create_field_filter(self):
         from std_msgs.msg import String, Int32, Header
-        from test_rostopic.msg import Simple, TVals, Floats, Arrays, Embed
+        from test_ros.msg import Simple, TVals, Floats, Arrays, Embed
 
         from rostopic import create_field_filter
         f = create_field_filter(echo_nostr=False, echo_noarr=False)
@@ -403,7 +393,3 @@ class TestRostopicUnit(unittest.TestCase):
         self.assertEquals(['t', 'd'], list(f(m)))
         m = Header()
         self.assertEquals(['seq', 'stamp'], list(f(m)))
-
-        
-if __name__ == '__main__':
-    rostest.unitrun(PKG, NAME, TestRostopicUnit, sys.argv, coverage_packages=['rostopic'])

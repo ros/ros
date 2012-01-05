@@ -6,6 +6,6 @@
   <group ns="bar">
     <node name="talker" pkg="test_ros" type="talker.py" />
   </group>
-  <test test-name="rostopic_command_line_online" pkg="test_rostopic" type="test_rostopic_command_line_online.py" />
-  <test test-name="rostopic_unit" pkg="test_rostopic" type="test_rostopic.py" />
+  <test test-name="rostopic_command_line_online" pkg="rostopic" type="rostopic_command_line_online.py" />
+  <test test-name="rostopic_unit" pkg="rostopic" type="rostopic.py" />
 </launch>

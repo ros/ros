@@ -30,13 +30,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id: test_rostopic_command_line_offline.py 6214 2009-09-18 23:38:22Z kwc $
-
-from __future__ import with_statement
-
-NAME = 'test_rostopic'
-import roslib; roslib.load_manifest('test_rostopic')
 
 import os
 import sys 
@@ -44,7 +37,6 @@ import unittest
 import cStringIO
 import time
         
-import rostest
 import rospy
 import std_msgs.msg
 
@@ -349,6 +341,3 @@ class TestRostopic(unittest.TestCase):
         with fakestdout() as b:        
             rostopic.rostopicmain([cmd, 'list', 'bar'])
             self.assertEquals('/bar/chatter', b.getvalue().strip())
-        
-if __name__ == '__main__':
-    rostest.unitrun('test_rostopic', NAME, TestRostopic, sys.argv, coverage_packages=['rostopic'])

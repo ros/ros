@@ -31,7 +31,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Revision $Id$
+# Revision $Id: test_rostopic_command_line_online.py 9308 2010-04-21 19:05:43Z kwc $
 
 PKG = 'test_rostopic'
 NAME = 'test_rostopic_command_line_online'

@@ -30,9 +30,6 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-PKG = 'rosbag'
-import roslib; roslib.load_manifest(PKG)
-
 import collections
 import copy
 from cStringIO import StringIO

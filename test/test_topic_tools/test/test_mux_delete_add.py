@@ -35,7 +35,6 @@
 # Author: Brian Gerkey
 
 PKG = 'topic_tools'
-import roslib; roslib.load_manifest(PKG)
 
 import rospy
 

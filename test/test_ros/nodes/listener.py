@@ -30,14 +30,11 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id: listener.py 5263 2009-07-17 23:30:38Z sfkwc $
 
 ## Simple talker demo that listens to std_msgs/Strings published 
 ## to the 'chatter' topic
 
 PKG = 'test_ros' # this package name
-import roslib; roslib.load_manifest(PKG)
 
 import rospy
 from std_msgs.msg import String

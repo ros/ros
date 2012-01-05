@@ -30,13 +30,9 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id: talker.py 5263 2009-07-17 23:30:38Z sfkwc $
 
 ## Simple talker demo that published std_msgs/Strings messages
 ## to the 'chatter' topic
-
-import roslib; roslib.load_manifest('test_ros')
 
 import rospy
 from std_msgs.msg import String

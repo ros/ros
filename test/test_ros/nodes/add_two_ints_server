@@ -38,8 +38,6 @@
 PKG = 'test_ros' # this package name
 NAME = 'add_two_ints_server'
 
-import roslib; roslib.load_manifest(PKG) 
-
 # import the AddTwoInts service
 from test_ros.srv import *
 import rospy 

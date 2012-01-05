@@ -30,14 +30,10 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id: talker.py 5263 2009-07-17 23:30:38Z sfkwc $
 
 """
 This publishes wall clock to the /clock topic to test simulated time routines
 """
-
-import roslib; roslib.load_manifest('test_ros')
 
 import time
 import rospy

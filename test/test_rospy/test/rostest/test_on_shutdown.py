@@ -30,14 +30,11 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id: test_peer_subscribe_notify.py 3803 2009-02-11 02:04:39Z rob_wheeler $
 
 ## Integration test for peer_subscribe_notify
 
 PKG = 'test_rospy'
 NAME = 'on_shutdown_test'
-import roslib; roslib.load_manifest(PKG)
 
 import sys 
 import time

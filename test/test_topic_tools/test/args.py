@@ -35,7 +35,6 @@
 # Test that arg-parsing works
 
 PKG = 'topic_tools'
-import roslib; roslib.load_manifest(PKG)
 
 import unittest
 import os

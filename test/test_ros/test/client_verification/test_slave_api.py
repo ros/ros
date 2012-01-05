@@ -30,14 +30,10 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id: testSlave.py 1100 2008-05-29 20:23:54Z sfkwc $
 
 # This is a rewrite of the old node API tests, which focus too much on
 # a completed node API and don't facilitate easy bring up of a new
 # client library.
-
-import roslib; roslib.load_manifest('test_ros')
 
 import os
 import sys

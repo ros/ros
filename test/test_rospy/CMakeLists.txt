@@ -4,6 +4,7 @@ find_package(catkin)
 
 # messages are for integration testing only
 add_message_files(DIRECTORY msg
+  FILES
   ArrayVal.msg
   EmbedTest.msg
   Floats.msg

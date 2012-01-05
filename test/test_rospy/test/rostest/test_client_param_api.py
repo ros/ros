@@ -30,15 +30,12 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id: test_embed_msg.py 3803 2009-02-11 02:04:39Z rob_wheeler $
 
 ## Integration test for empty services to test serializers
 ## and transport
 
 PKG = 'test_rospy'
 NAME = 'test_param_api'
-import roslib; roslib.load_manifest(PKG)
 
 import sys
 import time

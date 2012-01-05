@@ -30,14 +30,11 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
 
 ## Unit test of rospy.client APIs for parameter server access
 
 PKG = 'test_rospy'
 NAME = 'test_rospy_client_param_server'
-import roslib; roslib.load_manifest(PKG)
 
 import sys, time
 import math

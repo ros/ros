@@ -30,10 +30,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id: test_rospy_core.py 4218 2009-04-16 21:09:31Z sfkwc $
-
-import roslib; roslib.load_manifest('test_rospy')
 
 import os
 import sys

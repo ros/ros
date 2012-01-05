@@ -30,15 +30,11 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id: gossipbot.py 1013 2008-05-21 01:08:56Z sfkwc $
 
 ## Simple talker demo that publishes std_msg/Strings to the 'chatter' topic
 
 PKG = 'test_rospy' # this package name
 NAME = 'talker'
-
-import roslib; roslib.load_manifest(PKG) 
 
 import sys
 import time

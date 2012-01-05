@@ -19,6 +19,17 @@ add_message_files(DIRECTORY msg
   TransitiveMsg2.msg
   Val.msg
   )
+add_service_files(DIRECTORY srv
+  ConstantsMultiplex.srv
+  EmptyReqSrv.srv
+  EmptyRespSrv.srv
+  EmptySrv.srv
+  ListReturn.srv
+  MultipleAddTwoInts.srv
+  StringString.srv
+  TransitiveSrv.srv
+  )
+
 generate_messages(DEPENDENCIES std_msgs test_ros)
 
 catkin_project(test_rospy

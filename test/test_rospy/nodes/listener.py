@@ -36,8 +36,7 @@
 ## Simple talker demo that listens to std_msgs/Strings published 
 ## to the 'chatter' topic
 
-PKG = 'test_rospy' # this package name
-import roslib; roslib.load_manifest(PKG)
+from __future__ import print_function
 
 import sys
 
@@ -45,7 +44,7 @@ import rospy
 from std_msgs.msg import String
 
 def callback(data):
-    print rospy.get_caller_id(), "I heard %s"%data.data
+    print(rospy.get_caller_id(), "I heard %s"%data.data)
     
 def listener():
 

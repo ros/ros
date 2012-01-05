@@ -30,23 +30,20 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-
-import roslib
-roslib.load_manifest('test_rosbag')
 
 import sys
 import struct
 
 import unittest
 
+import rospkg
 import rostest
 import rosbag
 
 class MigrationTest(unittest.TestCase):
 
   def setUp(self):
-    self.pkg_dir = roslib.packages.get_pkg_dir("test_rosbag")
+    self.pkg_dir = rospkg.RosPack().get_path('test_rosbag')
 
   def test_unmigrated(self):
     tmp_rule_files = ['migrated_explicit_rules.bmr', 'migrated_mixed_rules.bmr', 'migrated_addsub_rules.bmr']

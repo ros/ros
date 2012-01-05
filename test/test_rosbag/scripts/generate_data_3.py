@@ -30,10 +30,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-
-
-import roslib; roslib.load_manifest('test_rosbag')
 
 import rospy
 from test_rosbag.msg import *
@@ -43,32 +39,32 @@ import rosbag
 def generate_data():
     bag = rosbag.Bag("test/migrated_explicit_gen3.bag", "w")
     m = MigratedExplicit(None, 17, 58.2, "aldfkja", 82)
-    bag.write("migrated_explicit", m, roslib.rostime.Time())
+    bag.write("migrated_explicit", m, genpy.Time())
     bag.close()
 
     bag = rosbag.Bag("test/migrated_implicit_gen3.bag", "w")
     m = MigratedImplicit(None, MigratedExplicit(None, 17, 58.2, "aldfkja", 82), "kljene", 16.32, 34)
-    bag.write("migrated_implicit", m, roslib.rostime.Time())
+    bag.write("migrated_implicit", m, genpy.Time())
     bag.close()
 
     bag = rosbag.Bag("test/migrated_mixed_gen3.bag", "w")
     m = MigratedMixed(None, MigratedImplicit(None, MigratedExplicit(None, 17, 58.2, "aldfkja", 82), "kljene", 16.32, 34), 59)
-    bag.write("migrated_mixed", m, roslib.rostime.Time())
+    bag.write("migrated_mixed", m, genpy.Time())
     bag.close()
 
     bag = rosbag.Bag("test/partially_migrated_gen3.bag", "w")
     m = PartiallyMigrated(40, MigratedExplicit(None, 17, 58.2, "aldfkja", 82), "radasdk")
-    bag.write("partially_migrated", m, roslib.rostime.Time())
+    bag.write("partially_migrated", m, genpy.Time())
     bag.close()
 
     bag = rosbag.Bag("test/renamed_gen3.bag", "w")
     m = Renamed3(2.17, [8, 2, 5, 1])
-    bag.write("renamed", m, roslib.rostime.Time())
+    bag.write("renamed", m, genpy.Time())
     bag.close()
 
     bag = rosbag.Bag("test/converged_gen3.bag", "w")
     m = Converged([1.2, 3.4, 5.6, 7.8], [SimpleMigrated(11), SimpleMigrated(22), SimpleMigrated(33), SimpleMigrated(44)])
-    bag.write("converged", m, roslib.rostime.Time())
+    bag.write("converged", m, genpy.Time())
     bag.close()
         
 if __name__ == '__main__':

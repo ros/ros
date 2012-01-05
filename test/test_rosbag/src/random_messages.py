@@ -30,13 +30,11 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-import roslib
-roslib.load_manifest('test_rosbag')
 
 import rospy
 import random
-import roslib.msgs
-import roslib.genpy
+import genmsg.msgs
+import genpy.dynamic
 
 def get_sub_defs(msg_fqn, msg_txt):
     def_dict = {}
@@ -77,10 +75,10 @@ class RandomMsgGen(object):
             
             for j in xrange(self.rand.randint(3,5)):
                 field_name = self.randstr()
-                field_type = self.rand.choice(roslib.msgs.BUILTIN_TYPES + self.message_defs.keys())
+                field_type = self.rand.choice(genmsg.msgs.BUILTIN_TYPES + self.message_defs.keys())
                 field_array = self.rand.choice(5*[""]+["[]","[%d]"%self.rand.randint(1,10)])
 
-                if (field_type not in roslib.msgs.BUILTIN_TYPES):
+                if (field_type not in genmsg.msgs.BUILTIN_TYPES):
                     tmp = get_sub_defs(field_type, self.message_defs[field_type])
                     for (sm_type, sm_def) in tmp.iteritems():
                         msg_sub_defs[sm_type] = sm_def
@@ -96,7 +94,7 @@ class RandomMsgGen(object):
 
             topic_name = self.randstr()
 
-            self.message_dict[msg_fqn] = roslib.genpy.generate_dynamic(msg_fqn, msg_def)[msg_fqn] 
+            self.message_dict[msg_fqn] = genpy.dynamic.generate_dynamic(msg_fqn, msg_def)[msg_fqn] 
             self.topic_dict[topic_name] = self.message_dict[msg_fqn]
 
         time = 0.0
@@ -150,7 +148,7 @@ class RandomMsgGen(object):
         elif field_type == 'time':
             return rospy.Time.from_sec(self.rand.random()*1000)
         elif field_type.endswith(']'): # array type
-            base_type, is_array, array_len = roslib.msgs.parse_type(field_type)
+            base_type, is_array, array_len = genmsg.msgs.parse_type(field_type)
             
             if array_len is None:
                 array_len = self.rand.randint(1,100)

@@ -32,9 +32,6 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 
-import roslib
-roslib.load_manifest('test_rosbag')
-
 import unittest
 import rospy
 import rostest
@@ -44,6 +41,8 @@ import time
 from random_messages import RandomMsgGen
 import subprocess
 import os
+
+import genpy
 
 DELAY = 0.5
 
@@ -120,7 +119,7 @@ class RandomPlay(unittest.TestCase):
       for ind in xrange(0,100):
         (input_topic, input_msg, input_time) = self.input[ind]
 
-        if (roslib.message.strify_message(expect_msg) == roslib.message.strify_message(input_msg)):
+        if (genpy.message.strify_message(expect_msg) == genpy.message.strify_message(input_msg)):
           msg_match = True
           del self.input[ind]
 

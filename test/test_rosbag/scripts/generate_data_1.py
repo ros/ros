@@ -32,68 +32,66 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 
-
-import roslib; roslib.load_manifest('test_rosbag')
-
 import rospy
 from test_rosbag.msg import *
 
+import genpy
 import rosbag
 
 def generate_data():
     bag = rosbag.Bag("test/migrated_explicit_gen1.bag", "w")
     m = MigratedExplicit(None, 17, 58.2, "aldfkja")
-    bag.write("migrated_explicit", m, roslib.rostime.Time())
+    bag.write("migrated_explicit", m, genpy.Time())
     bag.close()
 
     bag = rosbag.Bag("test/migrated_implicit_gen1.bag", "w")
     m = MigratedImplicit(None, 34, 16.32, "kljene", MigratedExplicit(None, 17, 58.2, "aldfkja"))
-    bag.write("migrated_implicit", m, roslib.rostime.Time())
+    bag.write("migrated_implicit", m, genpy.Time())
     bag.close()
 
     bag = rosbag.Bag("test/migrated_mixed_gen1.bag", "w")
     m = MigratedMixed(None, MigratedImplicit(None, 34, 16.32, "kljene", MigratedExplicit(None, 17, 58.2, "aldfkja")))
-    bag.write("migrated_mixed", m, roslib.rostime.Time())
+    bag.write("migrated_mixed", m, genpy.Time())
     bag.close()
 
     bag = rosbag.Bag("test/migrated_addsub_gen1.bag", "w")
     m = MigratedAddSub(Simple(42))
-    bag.write("migrated_addsub", m, roslib.rostime.Time())
+    bag.write("migrated_addsub", m, genpy.Time())
     bag.close()
 
     bag = rosbag.Bag("test/unmigrated_gen1.bag", "w")
     m = Unmigrated(12, "uuiasjs")
-    bag.write("unmigrated", m, roslib.rostime.Time())
+    bag.write("unmigrated", m, genpy.Time())
     bag.close()
 
     bag = rosbag.Bag("test/subunmigrated_gen1.bag", "w")
     m = SubUnmigrated(92, Unmigrated(12, "uuiasjs"))
-    bag.write("subunmigrated", m, roslib.rostime.Time())
+    bag.write("subunmigrated", m, genpy.Time())
     bag.close()
 
     bag = rosbag.Bag("test/partially_migrated_gen1.bag", "w")
     m = PartiallyMigrated(40, MigratedExplicit(None, 17, 58.2, "aldfkja"))
-    bag.write("partially_migrated", m, roslib.rostime.Time())
+    bag.write("partially_migrated", m, genpy.Time())
     bag.close()
 
     bag = rosbag.Bag("test/renamed_gen1.bag", "w")
     m = Renamed1(2.17, [8, 2, 5])
-    bag.write("renamed", m, roslib.rostime.Time())
+    bag.write("renamed", m, genpy.Time())
     bag.close()
 
     bag = rosbag.Bag("test/convergent_gen1.bag", "w")
     m = Convergent(1.2, 3.4, 5.6, 7.8, SimpleMigrated(11), SimpleMigrated(22), SimpleMigrated(33), SimpleMigrated(44))
-    bag.write("convergent", m, roslib.rostime.Time())
+    bag.write("convergent", m, genpy.Time())
     bag.close()
 
     bag = rosbag.Bag("test/converged_gen1.bag", "w")
     m = Converged([1.2, 3.4, 5.6, 7.8], [SimpleMigrated(11), SimpleMigrated(22), SimpleMigrated(33), SimpleMigrated(44)])
-    bag.write("converged", m, roslib.rostime.Time())
+    bag.write("converged", m, genpy.Time())
     bag.close()
 
     bag = rosbag.Bag("test/constants_gen1.bag", "w")
     m = Constants(Constants.CONSTANT)
-    bag.write("constants", m, roslib.rostime.Time())
+    bag.write("constants", m, genpy.Time())
     bag.close()
         
 if __name__ == '__main__':

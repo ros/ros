@@ -30,16 +30,10 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
 
 ## Utility node for testing. Listens to chatter and when it gets a
 ## message it starts rebroadcasting on 'listenerpublisher'.  Unlike
 ## the normal listener, listenerpublisher is NOT anonymous.
-
-PKG = 'test_rospy'
-NAME = 'listenerpublisher'
-import roslib; roslib.load_manifest(PKG)
 
 import sys
 import rospy

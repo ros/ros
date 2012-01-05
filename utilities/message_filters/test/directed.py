@@ -13,8 +13,6 @@
 #
 #    wide.registerCallback(boost::bind(&PersonDataRecorder::wideCB, this, _1, _2, _3, _4));
 
-import roslib
-roslib.load_manifest('message_filters')
 import rostest
 import rospy
 import random

@@ -30,8 +30,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id: gensrv_py.py 1030 2008-05-22 22:11:12Z sfkwc $
 
 from __future__ import print_function
 
@@ -40,9 +38,9 @@ ROS message source code generation for rospy.
 
 Converts ROS .srv files into Python source code implementations.
 """
-import roslib; roslib.load_manifest('rospy')
 
-import sys, os
+import sys
+import os
 
 try:
     # TODO: remove after ROS 1.7 is released

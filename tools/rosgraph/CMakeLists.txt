@@ -3,7 +3,7 @@ project(rosgraph)
 find_package(catkin)
 
 message("TODO: enable rosgraph rostest")
-#add_rostest(test/masterapi.test)
+#add_rostest(test/rostest/masterapi.test)
 
 install(FILES manifest.xml
   DESTINATION share/rosgraph

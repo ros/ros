@@ -73,8 +73,6 @@ def _get_message_or_service_class(type_str, message_type, reload_on_error=False)
         # import the package and return the class
         pypkg = __import__('%s.%s'%(package, type_str))
         val = getattr(getattr(pypkg, type_str), base_type)
-    except roslib.packages.InvalidROSPkgException:
-        val = None
     except ImportError:
         val = None
     except AttributeError:

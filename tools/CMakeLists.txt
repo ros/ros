@@ -11,6 +11,7 @@ foreach(subdir
     rosout
     rosservice
     rostopic
+    rostest
 
     # for test integration
     rosmaster

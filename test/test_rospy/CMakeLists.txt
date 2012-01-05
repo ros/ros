@@ -18,7 +18,7 @@ add_message_files(DIRECTORY msg
   TransitiveMsg2.msg
   Val.msg
   )
-generate_messages()
+generate_messages(DEPENDENCIES std_msgs test_ros)
 
 catkin_project(test_rospy
   MSGS_DIRS msg

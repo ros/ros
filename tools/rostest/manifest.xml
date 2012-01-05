@@ -19,5 +19,5 @@
   <depend package="roslaunch"/>
   <depend package="roslib"/>
   <depend package="rosunit"/>
-  <platform os="ubuntu" version="9.04"/>
 
+</package>

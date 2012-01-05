@@ -30,12 +30,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
-
-PKG = 'test_rosservice'
-NAME = 'test_rosservice_command_line_online'
-import roslib; roslib.load_manifest(PKG)
 
 import os
 import sys 

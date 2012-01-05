@@ -30,13 +30,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id: test_rosservice_command_line_offline.py 6214 2009-09-18 23:38:22Z kwc $
-
-from __future__ import with_statement
-
-NAME = 'test_rosservice'
-import roslib; roslib.load_manifest('test_rosservice')
 
 import os
 import sys 

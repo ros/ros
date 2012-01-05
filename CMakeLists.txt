@@ -12,6 +12,7 @@ foreach(subdir
     clients/cpp/roscpp
     tools
     utilities/message_filters
+    utilities/roswtf
     )
   add_subdirectory(${subdir})
 endforeach()

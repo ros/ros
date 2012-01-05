@@ -18,6 +18,7 @@ add_message_files(DIRECTORY msg
   TVals.msg
   )
 add_service_files(DIRECTORY srv
+  FILES
   RossrvA.srv
   RossrvB.srv
 )

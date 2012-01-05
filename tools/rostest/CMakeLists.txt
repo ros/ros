@@ -1,7 +1,16 @@
 cmake_minimum_required(VERSION 2.8)
 project(rostest)
 
-add_gtest(test/test_permuter test/test_permuter.cpp)
+find_package(ROS COMPONENTS catkin)
+find_package(Boost COMPONENTS thread)
+
+include_directories(include ${Boost_INCLUDE_DIRS})
+catkin_project(rostest
+  VERSION 0.0.1
+  INCLUDE_DIRS include
+  )
+add_gtest(test_permuter test/test_permuter.cpp)
+target_link_libraries(test_permuter ${Boost_LIBRARIES})
 
 message("TODO: enable rostest rostests")
 #add_rostest(test/hztest0.test)

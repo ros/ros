@@ -160,7 +160,7 @@ class TestRospyCore(unittest.TestCase):
         del rospy.core._shutdown_hooks[:]
         # add a shutdown hook that throws an exception,
         # signal_shutdown should be robust to it
-        rospy.core.add_shutdown_hook(test_shutdown_hook_exception)
+        rospy.core.add_shutdown_hook(shutdown_hook_exception)
         rospy.core.signal_shutdown('test_exception')
         rospy.core._shutdown_flag = False        
         del rospy.core._shutdown_hooks[:]
@@ -171,14 +171,14 @@ class TestRospyCore(unittest.TestCase):
         global called, called2
         called = called2 = None
         self.failIf(rospy.core.is_shutdown())        
-        rospy.core.add_shutdown_hook(test_shutdown_hook)
+        rospy.core.add_shutdown_hook(shutdown_hook1)
         reason = "reason %s"%time.time()
         rospy.core.signal_shutdown(reason)
         self.assertEquals(reason, called)
         self.assert_(rospy.core.is_shutdown())
 
         # verify that shutdown hook is called immediately on add if already shutdown
-        rospy.core.add_shutdown_hook(test_shutdown_hook2)
+        rospy.core.add_shutdown_hook(shutdown_hook2)
         self.assert_(called2 is not None)
         rospy.core._shutdown_flag = False
 
@@ -240,13 +240,13 @@ class TestRospyCore(unittest.TestCase):
     
 called = None
 called2 = None
-def test_shutdown_hook(reason):
+def shutdown_hook1(reason):
     global called
     print "HOOK", reason
     called = reason
-def test_shutdown_hook2(reason):
+def shutdown_hook2(reason):
     global called2
     print "HOOK2", reason
     called2 = reason
-def test_shutdown_hook_exception(reason):
+def shutdown_hook_exception(reason):
     raise Exception("gotcha")

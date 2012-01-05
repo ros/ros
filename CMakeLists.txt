@@ -11,7 +11,6 @@ foreach(subdir
     tools/rosconsole
     clients/cpp/roscpp
     tools
-    clients/rospy
     utilities/message_filters
     )
   add_subdirectory(${subdir})

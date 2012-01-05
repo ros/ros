@@ -33,7 +33,6 @@
 #
 
 ## only point of this test is to be killed within a short period of time
-import roslib; roslib.load_manifest('rostest')
 
 import rospy
 

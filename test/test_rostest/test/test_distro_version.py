@@ -30,7 +30,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-import roslib; roslib.load_manifest('test_rostest')
 
 import os
 import sys
@@ -47,6 +46,3 @@ class VersionTest(unittest.TestCase):
         param = rospy.get_param('rosdistro')
         self.assertEquals(val, param, "rosversion -d [%s] and roscore [%s] do not match"%(val, param))
 
-if __name__ == '__main__':
-    rostest.unitrun('test_rostest', 'test_distro_version', VersionTest, coverage_packages=[])
-  

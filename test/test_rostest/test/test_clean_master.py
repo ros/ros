@@ -30,14 +30,13 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-import roslib; roslib.load_manifest('test_rostest')
 
 import os
 import sys
 import unittest
 
 import rospy
-import rostest
+import rosunit
 
 class CleanMasterTest(unittest.TestCase):
   
@@ -46,5 +45,5 @@ class CleanMasterTest(unittest.TestCase):
         rospy.set_param('dirty', True)
 
 if __name__ == '__main__':
-    rostest.unitrun('test_rostest', 'test_clean_master', CleanMasterTest, coverage_packages=[])
+    rosunit.unitrun('test_rostest', 'test_clean_master', CleanMasterTest, coverage_packages=[])
   

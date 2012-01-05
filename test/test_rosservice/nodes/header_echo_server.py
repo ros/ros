@@ -30,13 +30,8 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id: header_echo_server 3804 2009-02-11 02:16:00Z rob_wheeler $
 
-PKG = 'test_rosservice' # this package name
 NAME = 'header_echo_server'
-
-import roslib; roslib.load_manifest(PKG) 
 
 from test_rosservice.srv import *
 import rospy 

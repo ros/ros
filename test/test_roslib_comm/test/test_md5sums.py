@@ -30,13 +30,8 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
-
-import roslib; roslib.load_manifest('test_roslib_comm')
 
 import unittest
-import rosunit
 from test_roslib_comm.msg import *
 
 
@@ -54,5 +49,3 @@ class TestMd5sums(unittest.TestCase):
     def test_type_name_change_complex(self):
         self.assertEquals(TypeNameChangeComplex1._md5sum, TypeNameChangeComplex2._md5sum)
 
-if __name__ == '__main__':
-    rosunit.unitrun('test_roslib_comm', 'test_md5sums', TestMd5sums, coverage_packages=[])

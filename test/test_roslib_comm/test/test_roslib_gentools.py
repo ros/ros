@@ -30,12 +30,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
-
-PKG = 'test_roslib_comm'
-NAME = 'test_gentools'
-import roslib; roslib.load_manifest(PKG)
 
 import os
 import string 
@@ -45,7 +39,6 @@ import cStringIO
         
 import roslib.names
 import roslib.packages
-import rosunit
 
 TEST_CTX = 'rosgraph_msgs'
 
@@ -132,6 +125,3 @@ class TestGentools(unittest.TestCase):
                 md5s.add(self._compute_md5(f))
             # each md5 should be unique
             self.assertEquals(len(md5s), len(files))
-    
-if __name__ == '__main__':
-    rosunit.unitrun(PKG, NAME, TestGentools, sys.argv, coverage_packages=['roslib.gentools'])

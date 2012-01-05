@@ -30,15 +30,11 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-PKG = 'test_roslib_comm'
-import roslib; roslib.load_manifest(PKG)
-
 import os
 import sys
 import unittest
 
 import roslib.packages
-import rosunit
 
 class RoslibSrvTest(unittest.TestCase):
   
@@ -145,8 +141,4 @@ class RoslibSrvTest(unittest.TestCase):
         name3, spec3 = load_from_file(filename)
         self.assertEquals(name, name3)
         self.assertEquals(spec, spec3)        
-
-
-if __name__ == '__main__':
-  rosunit.unitrun(PKG, 'test_roslib_srvs', RoslibSrvTest, coverage_packages=['roslib.srvs'])
 

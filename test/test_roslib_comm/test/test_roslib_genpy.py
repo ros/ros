@@ -30,29 +30,18 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
-
-PKG = 'test_roslib_comm'
-NAME = 'test_genpy'
-import roslib; roslib.load_manifest(PKG)
 
 import sys 
 import unittest
 import cStringIO
 import time
         
-import rosunit
-
 # NOTE: roslib.genpy is in the roslib package to prevent circular
 # dependencies on messages in the roslib package
 # (Header/Time/Duration)
 
 # remapping import to handle transition/ros stack dependency
-try:
-    import roslib.genpy_electric as genpy_electric
-except ImportError:
-    import roslib.genpy as genpy_electric
+import roslib.genpy_electric as genpy_electric
     
 class TestGenpy(unittest.TestCase):
 
@@ -485,5 +474,3 @@ var_name = str[start:end]"""
         g = genpy_electric.string_serializer_generator('foo', 'string', 'var_name', False)
         self.assertEquals(val, '\n'.join(g))
 
-if __name__ == '__main__':
-    rosunit.unitrun(PKG, NAME, TestGenpy, sys.argv, coverage_packages=[])

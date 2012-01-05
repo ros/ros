@@ -30,14 +30,9 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-PKG = 'test_roslib_comm'
-import roslib; roslib.load_manifest(PKG)
-
 import os
 import sys
 import unittest
-
-import rosunit
 
 class MsgSpecTest(unittest.TestCase):
 
@@ -360,7 +355,3 @@ class MsgSpecTest(unittest.TestCase):
     for v in invalid:
       self.failIf(roslib.msgs.is_valid_constant_type(v), "roslib.msgs.is_valid_constant_type should have returned False for '%s'"%v)
     
-
-if __name__ == '__main__':
-  rosunit.unitrun(PKG, 'test_roslib_msgs', MsgSpecTest, coverage_packages=['roslib.msgs'])
-

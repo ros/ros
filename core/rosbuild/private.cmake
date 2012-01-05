@@ -280,7 +280,7 @@ macro(_rosbuild_add_roslaunch_check targetname file)
   rosbuild_get_stack_version(ros_comm_version "ros_comm")
   if(ros_comm_version VERSION_LESS "1.6.3")
     add_custom_target(${targetname}
-                      COMMAND ${rostest_path}/bin/roslaunch-check.py ${file} ${ARGN}
+                      COMMAND ${rostest_path}/scripts/roslaunch-check.py ${file} ${ARGN}
                       DEPENDS ${file}
                       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                       VERBATIM)
@@ -288,7 +288,7 @@ macro(_rosbuild_add_roslaunch_check targetname file)
     # It's the newer roslaunch-check.py, so we can pass the full path to
     # the test result file.
     add_custom_target(${targetname}
-                      COMMAND ${rostest_path}/bin/roslaunch-check.py -o ${rosbuild_test_results_dir}/${PROJECT_NAME}/TEST-${targetname}.xml ${file} ${ARGN}
+                      COMMAND ${rostest_path}/scripts/roslaunch-check.py -o ${rosbuild_test_results_dir}/${PROJECT_NAME}/TEST-${targetname}.xml ${file} ${ARGN}
                       DEPENDS ${file}
                       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                       VERBATIM)

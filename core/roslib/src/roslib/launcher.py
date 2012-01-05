@@ -30,9 +30,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
-# $Author$
 
 """
 Python path loader for python scripts and applications. Paths are
@@ -53,7 +50,11 @@ def get_manifest_file(package_name):
     """
     return roslib.manifest.manifest_file(package_name, required=True)
         
-# bootstrapped keeps track of which packages we've loaded so we don't update the path multiple times
+# bootstrapped keeps track of which packages we've loaded so we don't
+# update the path multiple times
+#
+# fuerte: also using _bootstrapped to prevent descent into
+# catkin/setup.py-based python packages
 _bootstrapped = []
 
 def load_manifest(package_name, bootstrap_version="0.7"):
@@ -66,13 +67,7 @@ def load_manifest(package_name, bootstrap_version="0.7"):
     """
     if package_name in _bootstrapped:
         return
-    prefix = []
-    if 'ROS_BUILD' in os.environ:
-        if os.environ['ROS_BUILD'] == os.environ['ROS_ROOT']:
-            return
-        prefix = [os.path.join(os.environ['ROS_BUILD'], 'gen', 'py'),
-                  os.path.join(os.environ['ROS_BUILD'], '..', 'rosidl', 'src')]
-    sys.path = prefix + _generate_python_path(package_name, [], os.environ) + sys.path
+    sys.path = _generate_python_path(package_name, [], os.environ) + sys.path
     
 def _append_package_paths(manifest_, paths, pkg_dir):
     """

@@ -30,15 +30,12 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id: test_embed_msg.py 1986 2008-08-26 23:57:56Z sfkwc $
 
 ## Integration test for empty services to test serializers
 ## and transport
 
-PKG = 'test_ros'
+PKG='test_ros'
 NAME = 'test_master'
-import roslib; roslib.load_manifest(PKG)
 
 import sys
 import unittest

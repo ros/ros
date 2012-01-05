@@ -30,12 +30,9 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id: test_embed_msg.py 1986 2008-08-26 23:57:56Z sfkwc $
 
 PKG = 'test_ros'
 NAME = 'test_ps_scope_down'
-import roslib; roslib.load_manifest(PKG)
 
 import sys
 

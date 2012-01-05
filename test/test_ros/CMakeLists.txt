@@ -8,6 +8,9 @@ add_message_files(DIRECTORY msg
   Arrays.msg
   CompositeA.msg CompositeB.msg Composite.msg
   Embed.msg Floats.msg Simple.msg
+  RosmsgA.msg
+  RosmsgB.msg
+  RosmsgC.msg
   TestArrays.msg
   TestHeader.msg
   TestPrimitives.msg

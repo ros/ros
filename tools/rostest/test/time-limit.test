@@ -1,0 +1,7 @@
+<launch>
+  <!-- as these tests are designed to fail, they aren't be added to the normal test regression suite.
+       they must be manually run with the knowledge that they will fail -->
+  <test test-name="time_limit_test" pkg="rostest" type="time_limit_test.py" time-limit="1" />
+  <!-- test normal timeout (60 seconds) -->
+  <test test-name="time_limit_test__no_limit" pkg="rostest" type="time_limit_test.py" />
+</launch>

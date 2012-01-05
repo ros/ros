@@ -20,6 +20,8 @@ endforeach()
 catkin_export_python()
 
 add_nosetests(tools/rosmaster/test)
+add_nosetests(tools/rosmsg/test)
 add_nosetests(tools/rosparam/test)
 add_nosetests(tools/rosgraph/test)
 add_nosetests(tools/roslaunch/test)
+add_nosetests(tools/roswtf/test)

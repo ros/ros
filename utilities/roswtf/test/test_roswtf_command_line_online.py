@@ -30,12 +30,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id: test_rostopic_command_line_online.py 6411 2009-10-02 21:32:01Z kwc $
-
-PKG = 'test_rostopic'
-NAME = 'test_rostopic_command_line_online'
-import roslib; roslib.load_manifest(PKG)
 
 import os
 import signal
@@ -43,6 +37,7 @@ import sys
 import time
 import unittest
 
+import rospkg
 import rospy
 import rostest
 
@@ -76,12 +71,12 @@ class TestRostopicOnline(unittest.TestCase):
 
         # pass in special test key to roswtf for ROS_PACKAGE_PATH
         env = os.environ.copy()
-        import roslib.stacks
-        
-        env['ROS_PACKAGE_PATH'] = roslib.stacks.get_stack_dir('ros_comm')
 
-        import roslib.packages
-        cwd  = roslib.packages.get_pkg_dir('test_roswtf')
+        rospack = rospkg.RosPack()
+        rosstack = rospkg.RosStack()
+        env['ROS_PACKAGE_PATH'] = rosstack.get_path('ros_comm')
+
+        cwd  = rospack.get_path('roswtf')
         kwds = { 'env': env, 'stdout': PIPE, 'stderr': PIPE, 'cwd': cwd}
 
         # run roswtf nakedly in the test_roswtf directory. Running in
@@ -93,8 +88,8 @@ class TestRostopicOnline(unittest.TestCase):
         self.assert_('ERROR' not in output, "OUTPUT[%s]"%output)        
 
         # run roswtf on a simple launch file online
-        import roslib.packages
-        p = os.path.join(roslib.packages.get_pkg_dir('test_roswtf'), 'test', 'min.launch')
+        rospack = rospkg.RosPack()
+        p = os.path.join(rospack.get_path('test_roswtf'), 'test', 'min.launch')
         output = Popen([cmd, p], **kwds).communicate()[0]
         self.assert_('No errors or warnings' in output, "OUTPUT[%s]"%output)
         self.assert_('ERROR' not in output, "OUTPUT[%s]"%output)        

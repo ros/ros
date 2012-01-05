@@ -30,13 +30,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id: test_roswtf_command_line_offline.py 5710 2009-08-20 03:11:04Z sfkwc $
-
-from __future__ import with_statement
-
-NAME = 'test_roswtf_command_line_offline'
-import roslib; roslib.load_manifest('test_roswtf')
 
 import os
 import sys 
@@ -44,9 +37,14 @@ import unittest
 import cStringIO
 import time
         
-import rostest
-
 from subprocess import Popen, PIPE, check_call, call
+
+import rospkg
+
+def get_test_path():
+    return os.path.abspath(os.path.dirname(__file__))
+def get_roswtf_path():
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 class TestRoswtfOffline(unittest.TestCase):
 
@@ -65,10 +63,12 @@ class TestRoswtfOffline(unittest.TestCase):
         # point at a different 'master'
         env = os.environ.copy()
         env['ROS_MASTER_URI'] = 'http://localhost:11312'
-        import roslib.packages
-        import roslib.stacks
-        env['ROS_PACKAGE_PATH'] = roslib.stacks.get_stack_dir('ros_comm')
-        cwd  = roslib.packages.get_pkg_dir('test_roswtf')
+
+        rospack = rospkg.RosPack()
+        rosstack = rospkg.RosStack()
+        env['ROS_PACKAGE_PATH'] = rosstack.get_path('ros_comm')
+
+        cwd  = get_roswtf_path()
         kwds = { 'env': env, 'stdout': PIPE, 'stderr': PIPE, 'cwd': cwd}
 
         # run roswtf nakedly
@@ -78,11 +78,7 @@ class TestRoswtfOffline(unittest.TestCase):
         self.assert_('ERROR' not in output[0], "OUTPUT[%s]"%str(output))
 
         # run roswtf on a simple launch file offline
-        import roslib.packages
-        p = os.path.join(roslib.packages.get_pkg_dir('test_roswtf'), 'test', 'min.launch')
+        p = os.path.join(get_test_path, 'min.launch')
         output = Popen([cmd, p], **kwds).communicate()[0]
         self.assert_('No errors or warnings' in output, "OUTPUT[%s]"%output)
         self.assert_('ERROR' not in output, "OUTPUT[%s]"%output)        
-        
-if __name__ == '__main__':
-    rostest.unitrun('test_roswtf', NAME, TestRoswtfOffline, sys.argv, coverage_packages=[])

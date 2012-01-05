@@ -15,6 +15,7 @@ foreach(subdir
 
     # for tests
     utilities/roswtf
+    test/test_rospy
     )
   add_subdirectory(${subdir})
 endforeach()

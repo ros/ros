@@ -3,7 +3,7 @@ project(rostest)
 
 add_gtest(test/test_permuter test/test_permuter.cpp)
 
-message("TODO: enable rostest rostests)
+message("TODO: enable rostest rostests")
 #add_rostest(test/hztest0.test)
 #add_rostest(test/hztest.test)
 #add_rostest(test/clean_master.test)

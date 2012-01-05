@@ -20,6 +20,7 @@ add_message_files(DIRECTORY msg
   Val.msg
   )
 add_service_files(DIRECTORY srv
+  FILES
   ConstantsMultiplex.srv
   EmptyReqSrv.srv
   EmptyRespSrv.srv

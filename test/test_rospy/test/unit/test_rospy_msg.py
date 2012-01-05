@@ -39,6 +39,8 @@ from cStringIO import StringIO
 import time
 import random
 
+import genpy
+
 class TestRospyMsg(unittest.TestCase):
 
     def test_args_kwds_to_message(self):
@@ -147,11 +149,11 @@ class TestRospyMsg(unittest.TestCase):
         #test with null buff
         try:
             rospy.msg.deserialize_messages(None, msg_queue, data_class)
-        except roslib.message.DeserializationError: pass
+        except genpy.DeserializationError: pass
         #test will null msg_queue
         try:
             rospy.msg.deserialize_messages(b, None, data_class)
-        except roslib.message.DeserializationError: pass
+        except genpy.DeserializationError: pass
         #test with empty buff
         rospy.msg.deserialize_messages(b, msg_queue, data_class)
         self.assertEquals(0, len(msg_queue))

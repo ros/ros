@@ -80,7 +80,7 @@ class TestRostopic(unittest.TestCase):
             self.fail("shutdown")
             
     def test_offline(self):
-        from ros import rostopic
+        import rostopic
         orig_uri = os.environ['ROS_MASTER_URI']
         os.environ['ROS_MASTER_URI'] = 'http://fake_host:12356'
 
@@ -111,7 +111,7 @@ class TestRostopic(unittest.TestCase):
             os.environ['ROS_MASTER_URI'] = orig_uri
         
     def test_cmd_type(self):
-        from ros import rostopic
+        import rostopic
         cmd = 'rostopic'
         s = '/rosout_agg'
         t = 'rosgraph_msgs/Log'
@@ -129,7 +129,7 @@ class TestRostopic(unittest.TestCase):
                 self.assertEquals('std_msgs/String', v)
 
     def test_main(self):
-        from ros import rostopic
+        import rostopic
         c = 'rostopic'
         try:
             rostopic.rostopicmain([c])
@@ -143,7 +143,7 @@ class TestRostopic(unittest.TestCase):
             self.assertNotEquals(0, e.code)
         
     def test_cmd_pub(self):
-        from ros import rostopic
+        import rostopic
         cmd = 'rostopic'
 
         # we can't actually test functional behavior because rostopic
@@ -167,14 +167,14 @@ class TestRostopic(unittest.TestCase):
 
                 
     def test_full_usage(self):
-        from ros import rostopic
+        import rostopic
         try:
             rostopic._fullusage()
             self.fail("should have caused system exit")
         except SystemExit: pass
 
     def test_get_topic_type(self):
-        from ros import rostopic
+        import rostopic
         
         self.assertEquals((None, None, None), rostopic.get_topic_type('/fake', blocking=False))
         
@@ -191,7 +191,7 @@ class TestRostopic(unittest.TestCase):
         self.assertEquals("bob", f(Log(name="bob")))
         
     def test_get_topic_class(self):
-        from ros import rostopic
+        import rostopic
         
         self.assertEquals((None, None, None), rostopic.get_topic_class('/fake'))
 
@@ -208,7 +208,7 @@ class TestRostopic(unittest.TestCase):
         self.assertEquals("bob", f(Log(name="bob")))
         
     def test_cmd_info(self):
-        from ros import rostopic
+        import rostopic
         cmd = 'rostopic'
 
         try:
@@ -236,7 +236,7 @@ class TestRostopic(unittest.TestCase):
                 self.assert_(s in v, "failed on %s: %s"%(s, v))
 
     def test_cmd_find(self):
-        from ros import rostopic
+        import rostopic
         cmd = 'rostopic'
 
         try:
@@ -259,7 +259,7 @@ class TestRostopic(unittest.TestCase):
         self.vals.add(val)
         
     def test_cmd_list(self):
-        from ros import rostopic
+        import rostopic
         cmd = 'rostopic'
         s = '/add_two_ints'
 

@@ -65,7 +65,7 @@ class TestRosservice(unittest.TestCase):
         pass
 
     def test_get_service_headers(self):
-        from ros import rosservice
+        import rosservice
         orig_uri = os.environ['ROS_MASTER_URI']
         os.environ['ROS_MASTER_URI'] = 'http://fake_host:12356'
         try:
@@ -86,12 +86,12 @@ class TestRosservice(unittest.TestCase):
             os.environ['ROS_MASTER_URI'] = orig_uri
         
     def test_get_service_type(self):
-        from ros import rosservice
+        import rosservice
         self.assertEquals('test_ros/AddTwoInts', rosservice.get_service_type('/add_two_ints'))
         self.assertEquals(None, rosservice.get_service_type('/fake_add_two_ints'))
 
     def test_offline(self):
-        from ros import rosservice
+        import rosservice
         orig_uri = os.environ['ROS_MASTER_URI']
         os.environ['ROS_MASTER_URI'] = 'http://fake_host:12356'
 
@@ -138,7 +138,7 @@ class TestRosservice(unittest.TestCase):
             os.environ['ROS_MASTER_URI'] = orig_uri
         
     def test_cmd_type(self):
-        from ros import rosservice
+        import rosservice
         cmd = 'rosservice'
         s = '/add_two_ints'
         try:
@@ -154,7 +154,7 @@ class TestRosservice(unittest.TestCase):
                 self.assertEquals('test_ros/AddTwoInts', v)
 
     def test_cmd_uri(self):
-        from ros import rosservice
+        import rosservice
         cmd = 'rosservice'
         with fakestdout() as b:
             try:
@@ -171,7 +171,7 @@ class TestRosservice(unittest.TestCase):
                 
 
     def test_cmd_node(self):
-        from ros import rosservice
+        import rosservice
         cmd = 'rosservice'
         for s in ['/add_two_ints', 'add_two_ints', 'foo/add_two_ints']:
             with fakestdout() as b:
@@ -187,14 +187,14 @@ class TestRosservice(unittest.TestCase):
         except SystemExit: pass
 
     def test_full_usage(self):
-        from ros import rosservice
+        import rosservice
         try:
             rosservice._fullusage()
             self.fail("should have caused system exit")
         except SystemExit: pass
         
     def test_cmd_info(self):
-        from ros import rosservice
+        import rosservice
         cmd = 'rosservice'
 
         try:
@@ -223,7 +223,7 @@ class TestRosservice(unittest.TestCase):
                 self.assert_('URI' in d)
 
     def test_cmd_find(self):
-        from ros import rosservice
+        import rosservice
         cmd = 'rosservice'
 
         try:
@@ -246,7 +246,7 @@ class TestRosservice(unittest.TestCase):
             self.assertEquals('', b.getvalue().strip())
 
     def test_get_service_class_by_name(self):
-        from ros import rosservice
+        import rosservice
         try:
             rosservice.get_service_class_by_name('fake')
             self.fail("should have raised")
@@ -254,7 +254,7 @@ class TestRosservice(unittest.TestCase):
             self.assertEquals("Service [fake] is not available.", str(e))
         
     def test_cmd_call(self):
-        from ros import rosservice
+        import rosservice
         cmd = 'rosservice'
 
         try:
@@ -270,7 +270,7 @@ class TestRosservice(unittest.TestCase):
     def setUp(self):
         # wait for all services to come up
 
-        from ros import rosservice        
+        import rosservice        
         services = ['/add_two_ints',
                     '/foo/add_two_ints',
                     '/bar/add_two_ints',
@@ -287,7 +287,7 @@ class TestRosservice(unittest.TestCase):
         self.fail("timeout")
         
     def test_cmd_list(self):
-        from ros import rosservice
+        import rosservice
         cmd = 'rosservice'
         s = '/add_two_ints'
         

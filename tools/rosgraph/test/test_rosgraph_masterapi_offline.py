@@ -167,13 +167,21 @@ class MasterApiOfflineTest(unittest.TestCase):
         self.assertEquals(_ID, m.caller_id)
         self.assertEquals(_MASTER_URI, m.master_uri)        
 
-        m = rosgraph.masterapi.Master(_ID)
-        self.assertEquals(os.environ['ROS_MASTER_URI'], m.master_uri)
+        reset_uri = False
+        if 'ROS_MASTER_URI' not in os.environ:
+            os.environ['ROS_MASTER_URI'] = 'http://localhost:21311')
 
-        id = '/some/other/id'
-        m = rosgraph.masterapi.Master(id)
-        self.assertEquals(id, m.caller_id)
+        try:
+            m = rosgraph.masterapi.Master(_ID)
+            self.assertEquals(os.environ['ROS_MASTER_URI'], m.master_uri)
 
+            id = '/some/other/id'
+            m = rosgraph.masterapi.Master(id)
+            self.assertEquals(id, m.caller_id)
+        finally:
+            if reset_uri:
+                del os.environ['ROS_MASTER_URI']
+                
     def test_getPid(self):
         h = self.m.handle
         r = 1235

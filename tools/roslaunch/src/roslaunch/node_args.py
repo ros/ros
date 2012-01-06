@@ -49,7 +49,8 @@ import rosgraph.names
 from rosgraph.names import script_resolve_name
 
 import roslib.packages
-import roslib.substitution_args
+
+from . import substitution_args
 
 from roslaunch.core import setup_env, local_machine, RLException
 from roslaunch.config import load_config_default
@@ -157,7 +158,7 @@ def get_node_args(node_name, roslaunch_files):
 
     loader = roslaunch.xmlloader.XmlLoader(resolve_anon=False)
     config = load_config_default(roslaunch_files, None, loader=loader, verbose=False, assign_machines=False)
-    (node_name) = roslib.substitution_args.resolve_args((node_name), resolve_anon=False)
+    (node_name) = substitution_args.resolve_args((node_name), resolve_anon=False)
     node_name = script_resolve_name('roslaunch', node_name) if not node_name.startswith('$') else node_name
     
     node = [n for n in config.nodes if _resolved_name(n) == node_name] + \
@@ -255,11 +256,11 @@ def create_local_process_args(node, machine):
     #shlex parses a command string into a list of args
     # - for the local process args, we *do* resolve the anon tag so that the user can execute
     # - the node name and args must be resolved together in case the args refer to the anon node name
-    (node_name) = roslib.substitution_args.resolve_args((node.name), context=resolve_dict, resolve_anon=True)
+    (node_name) = substitution_args.resolve_args((node.name), context=resolve_dict, resolve_anon=True)
     node.name = node_name
     remap_args.append('__name:=%s'%node_name)
         
-    resolved = roslib.substitution_args.resolve_args(node.args, context=resolve_dict, resolve_anon=True)
+    resolved = substitution_args.resolve_args(node.args, context=resolve_dict, resolve_anon=True)
     if type(resolved) == unicode:
         resolved = resolved.encode('UTF-8') #attempt to force to string for shlex/subprocess
     args = shlex.split(resolved) + remap_args

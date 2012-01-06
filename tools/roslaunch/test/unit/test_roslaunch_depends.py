@@ -1,7 +1,6 @@
-#!/usr/bin/env python
 # Software License Agreement (BSD License)
 #
-# Copyright (c) 2008, Willow Garage, Inc.
+# Copyright (c) 2012, Willow Garage, Inc.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,27 +30,23 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-PKG = 'test_roslaunch'
-NAME = 'test_env'
+import os
+import sys
 
-import os, sys, unittest
-
-import rostest
 import rospkg
 
-## Test Roslaunch 'env' tags
-class TestEnv(unittest.TestCase):
-    def test_env(self):
-      if '--noenv' in sys.argv:
-        self.assertEquals(None, os.environ.get('TEST_ENV', None))
-        self.assertEquals(None, os.environ.get('TEST_ENV_SUBSTITUTION', None))
-      else:
-        self.assertEquals('test env', os.environ.get('TEST_ENV', None))
-        path1 = os.path.join(rospkg.get_ros_root(), 'core', 'roslib', 'src')
-        path2 = os.environ.get('TEST_ENV_SUBSTITUTION', None)
-        self.assertEquals(os.path.abspath(path1), os.path.abspath(path2))
-
-        
-if __name__ == '__main__':
-    rostest.rosrun(PKG, NAME, TestEnv)
+def test_roslaunch_deps():
+    from roslaunch.depends imprt roslaunch_deps
+    roslaunch_d = rospkg.RosPack().get_path('roslaunch')
     
+    tests = [
+        ([os.path.join(roslaunch_d, 'example.launch')], ('roslaunch', {}, {})),
+        ([os.path.join(roslaunch_d, 'example-min.launch')], ('roslaunch', {}, {}),
+        ]
+    for files, results in tests:
+        for v in [True, False]:
+            base_pkg, file_deps, missing = roslaunch_deps(files, verbose=v)
+            assert base_pkg == results[0]
+        assert file_depds == results[1]
+            assert missing == results[2]
+            

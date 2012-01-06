@@ -35,12 +35,18 @@ PKG = 'test_roslaunch'
 
 import os, sys, unittest
 
+import xmlrpclib
 import rostest
-import roslib.packages 
-from roslib.params import get_param
+import rospkg
 
+import rosgraph
+master = rosgraph.Master('params_basic')
+def get_param(*args):
+    return master.getParam(*args)
+    
 ## Test Roslaunch 'param' tags
 class TestParamsBasic(unittest.TestCase):
+
     ## test primitive values
     def test_values(self):
         ## Test roslaunch string params
@@ -95,15 +101,13 @@ class TestParamsBasic(unittest.TestCase):
         
     ## test 'command' attribute
     def test_commandandfile(self):
-        dir = roslib.packages.get_pkg_dir('roslaunch')
-        f = open(os.path.join(dir, 'example.launch'), 'r')
-        data = f.read()
-        f.close()
+        dir = rospkg.RosPack().get_path('roslaunch')
+        with open(os.path.join(dir, 'example.launch'), 'r') as f:
+            data = f.read()
         test_file = data
         self.assertEquals(get_param("commandoutput"),test_file)
         self.assertEquals(get_param("textfile"),test_file)
         ## test 'binfile' attribute
-        import xmlrpclib
         bindata = get_param("binaryfile")
         self.assertTrue(isinstance(bindata, xmlrpclib.Binary))
         self.assertEquals(bindata.data,test_file)

@@ -29,8 +29,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
 
 """
 Uncategorized utility routines for roslaunch.
@@ -38,9 +36,14 @@ Uncategorized utility routines for roslaunch.
 This API should not be considered stable.
 """
 
+from __future__ import print_function
+
 import os
 import time
 
+import roslib.packages
+
+import rosclean
 import rospkg
 
 import roslaunch.core
@@ -48,12 +51,13 @@ from rosmaster import DEFAULT_MASTER_PORT
 
 import rosgraph
 
+from . import config
+
 def check_log_disk_usage():
     """
     Check size of log directory. If high, print warning to user
     """
     try:
-        import rosclean
         d = rospkg.get_log_dir()
         roslaunch.core.printlog("Checking log directory for disk usage. This may take awhile.\nPress Ctrl-C to interrupt") 
         disk_usage = rosclean.get_disk_usage(d)
@@ -71,7 +75,6 @@ def resolve_launch_arguments(args):
     @return: resolved filenames
     @rtype: [str]
     """
-    import roslib.packages
     import rospy
 
     # strip remapping args for processing
@@ -127,7 +130,7 @@ def _set_terminal(s):
     import platform
     if platform.system() in ['FreeBSD', 'Linux', 'Darwin', 'Unix']:
         try:
-            print '\033]2;%s\007'%(s)
+            print('\033]2;%s\007'%(s))
         except:
             pass
     
@@ -189,9 +192,8 @@ def check_roslaunch(f):
     @rtype: str
     """
     try:
-        import roslaunch.config
-        config = roslaunch.config.load_config_default([f], DEFAULT_MASTER_PORT, verbose=False)
-    except roslaunch.RLException, e:
+        rl_config = roslaunch.config.load_config_default([f], DEFAULT_MASTER_PORT, verbose=False)
+    except roslaunch.RLException as e:
         return str(e)
     
     errors = []
@@ -208,10 +210,10 @@ def check_roslaunch(f):
         nodes.extend(rldeps.nodes)
 
     # check for missing packages
-    import roslib.packages
+    rospack = rospkg.RosPack()
     for pkg, node_type in nodes:
         try:
-            roslib.packages.get_pkg_dir(pkg, required=True)
+            rospack.get_path(pkg)
         except:
             errors.append("cannot find package [%s] for node [%s]"%(pkg, node_type))
 
@@ -220,11 +222,11 @@ def check_roslaunch(f):
         try:
             if not roslib.packages.find_node(pkg, node_type):
                 errors.append("cannot find node [%s] in package [%s]"%(node_type, pkg))
-        except Exception, e:
+        except Exception as e:
             errors.append("unable to find node [%s/%s]: %s"%(pkg, node_type, str(e)))
                 
     # Check for configuration errors, #2889
-    for err in config.config_errors:
+    for err in rl_config.config_errors:
         errors.append('ROSLaunch config error: %s' % err)
 
     if errors:
@@ -255,8 +257,8 @@ def print_file_list(roslaunch_files):
         loader = roslaunch.xmlloader.XmlLoader(resolve_anon=False)
         config = load_config_default(roslaunch_files, None, loader=loader, verbose=False, assign_machines=False)
         files = [os.path.abspath(x) for x in set(config.roslaunch_files) - set([get_roscore_filename()])]
-        print '\n'.join(files)
+        print('\n'.join(files))
     except roslaunch.core.RLException as e:
-        print >> sys.stderr, str(e)
+        print(str(e), file=sys.stderr)
         sys.exit(1)
 

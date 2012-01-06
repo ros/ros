@@ -38,10 +38,7 @@ import unittest
 import time
 import random
 
-import rosunit
-
 import rospy
-
 
 class TestRospyCore(unittest.TestCase):
     

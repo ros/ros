@@ -17,6 +17,7 @@ foreach(subdir
     utilities/roswtf
     test/test_ros
     test/test_rospy
+    test/test_rosservice
     )
   add_subdirectory(${subdir})
 endforeach()

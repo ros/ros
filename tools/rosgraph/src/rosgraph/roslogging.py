@@ -39,7 +39,7 @@ import sys
 import logging
 import logging.config
 
-from rospkg import get_ros_root, get_log_dir
+import rospkg
 from rospkg.environment import ROS_LOG_DIR
 
 class LoggingException: pass
@@ -58,7 +58,7 @@ def configure_logging(logname, level=logging.INFO, filename=None, env=None):
         env = os.environ
 
     logname = logname or 'unknown'
-    log_dir = get_log_dir(env=env)
+    log_dir = rospkg.get_log_dir(env=env)
     
     # if filename is not explicitly provided, generate one using logname
     if not filename:
@@ -80,11 +80,20 @@ def configure_logging(logname, level=logging.INFO, filename=None, env=None):
     if 'ROS_PYTHON_LOG_CONFIG_FILE' in os.environ:
         config_file = os.environ['ROS_PYTHON_LOG_CONFIG_FILE']
     else:
-        config_file = os.path.join(get_ros_root(env=env), 'config', 'python_logging.conf')
+        # search for logging config file in /etc/.  If it's not there,
+        # look for it package-relative.
+        fname = 'python_logging.conf'
+        rosgraph_d = rospkg.RosPack().get_path('rosgraph')
+        for f in ['/etc/ros/%s'%(fname),
+                  os.path.join(rosgraph_d, 'conf', fname)]:
+            if os.path.isfile(f):
+                config_file = f
 
     if not os.path.isfile(config_file):
         # logging is considered soft-fail
         sys.stderr.write("WARNING: cannot load logging configuration file, logging is disabled\n")
+        #TODO: enable
+        #Logger.getLogger(logname).setLevel(Logger.CRITICAL)
         return log_filename
     
     # pass in log_filename as argument to pylogging.conf

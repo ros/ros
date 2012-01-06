@@ -8,6 +8,15 @@ message("TODO: enable rosgraph rostest")
 install(FILES manifest.xml
   DESTINATION share/rosgraph
   )
+# logging config file goes in both etc and package layout (for now).
+# want to get rid of package layout copy, but need to be able to
+# locate etc first.
+install(FILES conf/python_logging.conf
+  DESTINATION etc/ros
+  )
+install(FILES conf/python_logging.conf
+  DESTINATION share/rosgraph/conf
+  )
 install(PROGRAMS scripts/rosgraph
   DESTINATION share/rosgraph/scripts
   )

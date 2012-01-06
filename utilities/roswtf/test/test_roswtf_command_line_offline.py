@@ -66,7 +66,7 @@ class TestRoswtfOffline(unittest.TestCase):
 
         rospack = rospkg.RosPack()
         rosstack = rospkg.RosStack()
-        env['ROS_PACKAGE_PATH'] = rosstack.get_path('ros_comm')
+        env['ROS_PACKAGE_PATH'] = rosstack.get_path('ros_comm') + os.pathsep + rospack.get_path('std_msgs')
 
         cwd  = get_roswtf_path()
         kwds = { 'env': env, 'stdout': PIPE, 'stderr': PIPE, 'cwd': cwd}

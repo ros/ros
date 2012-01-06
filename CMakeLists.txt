@@ -16,6 +16,7 @@ foreach(subdir
     # for tests
     utilities/roswtf
     test/test_ros
+    test/test_roslib_comm
     test/test_rospy
     test/test_rosservice
     )

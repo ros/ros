@@ -20,3 +20,7 @@ foreach(subdir
     )
   add_subdirectory(${subdir})
 endforeach()
+
+install(PROGRAMS rosservice/scripts/rosservice
+  DESTINATION share/rosservice/scripts
+  )

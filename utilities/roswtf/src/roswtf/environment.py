@@ -102,15 +102,6 @@ def ros_root_check(ctx, ros_root=None):
         path = ctx.ros_root
     if not os.path.basename(path) == 'ros':
         return "ROS_ROOT [%s] must end in directory named 'ros'"%path      
-    bindir = os.path.join(path, 'bin')
-    if not isdir(bindir):
-        return "ROS_ROOT [%s] does not have a valid bin directory"%path
-    rospack = os.path.join(bindir, 'rospack')
-    if not isfile(rospack):
-        return "%(ros_root)s/bin is missing rospack. Perhaps that ROS has not been built yet"
-    if not is_executable(rospack):
-        return "%s is lacking executable permissions"%rospack
-
     
 def _writable_dir_check(ctx, path, name):
     """

@@ -32,7 +32,8 @@
 
 def test_author_name():
     from roscreate.core import author_name
-    assert author_name()
+    val = author_name()
+    assert val, val
     
 def test_read_template():
     from roscreate.core import read_template

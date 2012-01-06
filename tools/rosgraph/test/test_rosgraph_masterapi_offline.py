@@ -169,7 +169,7 @@ class MasterApiOfflineTest(unittest.TestCase):
 
         reset_uri = False
         if 'ROS_MASTER_URI' not in os.environ:
-            os.environ['ROS_MASTER_URI'] = 'http://localhost:21311')
+            os.environ['ROS_MASTER_URI'] = 'http://localhost:21311'
 
         try:
             m = rosgraph.masterapi.Master(_ID)

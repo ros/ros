@@ -16,11 +16,6 @@ foreach(subdir
   add_subdirectory(${subdir})
 endforeach()
 
-install(PROGRAMS
-  bin/rosrun
-  DESTINATION bin
-  )
-
 # nosetests are declared here to make them visible to the build system
 # (e.g., for Jenkins to invoke) but keep them from polluting the pristine
 # Python packages.
@@ -29,4 +24,14 @@ add_nosetests(tools/rosmake/test)
 add_nosetests(tools/rosunit/test)
 add_nosetests(tools/rosclean/test)
 add_nosetests(tools/roscreate/test)
+
+# INSTALLATION
+
+# setup our backwards-compatibility ROS_ROOT
+install(DIRECTORY core/rosbuild
+  DESTINATION share/ros/core/rosbuild
+  )
+install(DIRECTORY core/mk
+  DESTINATION share/ros/core/rosbuild
+  )
 

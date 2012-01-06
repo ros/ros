@@ -35,6 +35,8 @@ import os
 import sys
 import unittest
     
+import roslib.packages
+
 ## Test roslaunch.nodeprocess
 class TestNodeprocess(unittest.TestCase):
 
@@ -233,15 +235,15 @@ class TestNodeprocess(unittest.TestCase):
     def test_create_master_process2(self):
         # accidentally wrote two versions of this, need to merge
         from roslaunch.core import Master, RLException
-        import roslib.rosenv
+        import rospkg
         from roslaunch.nodeprocess import create_master_process
 
-        ros_root = roslib.rosenv.get_ros_root()
+        ros_root = rospkg.get_ros_root()
         
         # test failures
         failed = False
         try:
-            create_master_process('runid-unittest', Master.ROSMASTER, roslib.rosenv.get_ros_root(), 0)
+            create_master_process('runid-unittest', Master.ROSMASTER, rospkg.get_ros_root(), 0)
             failed = True
         except RLException: pass
         self.failIf(failed, "invalid port should have triggered error")

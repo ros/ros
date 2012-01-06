@@ -68,10 +68,15 @@ class TestRoslaunchRlutil(unittest.TestCase):
             ]
 
         for test, result in tests:
-            self.assertEquals(result, resolve_launch_arguments(test))
+            for v1, v2 in zip(result, resolve_launch_arguments(test)):
+                # workaround for nfs 
+                if os.path.exists(v1):
+                    self.assert_(os.path.samefile(v1, v2))
+                else:
+                    self.assertEquals(v1, v2)
         for test in bad:
             try:
-                self.assertEquals(result, resolve_launch_arguments(test))
+                resolve_launch_arguments(test)
                 self.fail("should have failed")
             except roslaunch.RLException:
                 pass

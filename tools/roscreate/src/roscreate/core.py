@@ -56,6 +56,9 @@ def author_name():
         login = name
         name = pwd.getpwnam(login)[4]
         name = ''.join(name.split(',')) # strip commas
+        # in case pwnam is not set
+        if not name:
+            name = login
     except:
         #pwd failed
         pass

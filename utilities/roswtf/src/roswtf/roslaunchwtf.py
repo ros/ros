@@ -48,13 +48,6 @@ import roslaunch.netapi
 from roswtf.environment import paths, is_executable
 from roswtf.rules import warning_rule, error_rule
 
-def bin_roslaunch_check(ctx):
-    roslaunch = os.path.join(ctx.ros_root, 'bin', 'roslaunch')
-    if not isfile(roslaunch):
-        return "%(ros_root)s/bin is missing roslaunch"
-    if not is_executable(roslaunch):
-        return "%s is lacking executable permissions"%roslaunch
-
 # this is very similar to roslib.packages.find_node. However, we
 # cannot use that implementation as it returns the first found
 # path. For the sake of this test, we have to find all potential
@@ -294,7 +287,6 @@ static_roslaunch_warnings = [
     (roslaunch_config_errors, "Loading your launch files reported the following configuration errors:"),
     ]
 static_roslaunch_errors = [
-    (bin_roslaunch_check, "roslaunch executable is invalid:"),
     (roslaunch_missing_deps_check, 
      "Package %(pkg)s is missing roslaunch dependencies.\nPlease add the following tags to %(pkg)s/manifest.xml:"),
     (roslaunch_missing_pkgs_check, 

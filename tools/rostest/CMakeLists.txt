@@ -18,10 +18,6 @@ message("TODO: enable rostest rostests")
 #add_rostest(test/clean_master.test)
 #add_rostest(test/distro_version.test)
 
-install(FILES manifest.xml
-  DESTINATION share/rostest
-  )
-
 # required for old rosbuild macro
 install(PROGRAMS scripts/roslaunch-check.py
   DESTINATION share/rostest/scripts

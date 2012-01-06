@@ -9,9 +9,6 @@ generate_messages(DEPENDENCIES std_msgs)
 
 catkin_project(std_srvs)
 
-install(FILES manifest.xml
-  DESTINATION share/std_srvs
-  )
 install(DIRECTORY srv
   DESTINATION share/std_srvs
   )

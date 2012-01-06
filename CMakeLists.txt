@@ -31,3 +31,7 @@ add_nosetests(tools/rosparam/test)
 add_nosetests(tools/rosgraph/test)
 add_nosetests(tools/roslaunch/test/unit)
 add_nosetests(utilities/roswtf/test)
+
+# install all manifests
+install_matching_to_share(manifest.xml)
+

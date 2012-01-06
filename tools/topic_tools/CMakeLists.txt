@@ -33,10 +33,6 @@ install(TARGETS topic_tools switch_mux mux relay drop throttle
     RUNTIME DESTINATION share/topic_tools/bin
     )
 
-install(FILES manifest.xml
-    DESTINATION share/topic_tools
-    )
-
 install(DIRECTORY include/
     DESTINATION include
     )

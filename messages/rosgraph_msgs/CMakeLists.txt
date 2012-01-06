@@ -9,10 +9,6 @@ generate_messages(DEPENDENCIES std_msgs)
 catkin_project(rosgraph_msgs
   MSG_DIRS msg
   )
-
-install(FILES manifest.xml
-  DESTINATION share/rosgraph_msgs
-  )
 install(DIRECTORY msg
   DESTINATION share/rosgraph_msgs
   )

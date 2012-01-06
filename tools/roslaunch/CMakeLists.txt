@@ -13,6 +13,6 @@ message("TODO: install roscore.xml to /etc/ros")
 #  DESTINATION etc/ros
 #  )
 # delete this once above is in placae
-install(FILES roscore.xml manifest.xml
+install(FILES roscore.xml
   DESTINATION share/roslaunch
   )

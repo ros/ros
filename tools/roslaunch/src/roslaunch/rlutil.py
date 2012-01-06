@@ -232,18 +232,6 @@ def check_roslaunch(f):
     if errors:
         return '\n'.join(errors)
                           
-
-def namespaces_of(name):
-    if name is None: 
-        raise ValueError('name')
-    if not isinstance(name, basestring):
-        raise TypeError('name')
-    if not name:
-        return ['/']
-
-    splits = [x for x in name.split('/') if x]
-    return ['/'] + ['/'+'/'.join(splits[:i]) for i in xrange(1, len(splits))]
-
 def print_file_list(roslaunch_files):
     """
     @param roslaunch_files: list of launch files to load

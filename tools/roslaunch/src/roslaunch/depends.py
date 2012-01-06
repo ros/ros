@@ -59,10 +59,29 @@ class RoslaunchDeps(object):
     """
     Represents dependencies of a roslaunch file. 
     """
-    def __init__(self):
-        self.nodes = []
-        self.includes = []
-        self.pkgs = []
+    def __init__(self, nodes=None, includes=None, pkgs=None):
+        if nodes == None:
+            nodes = []
+        if includes == None:
+            includes = []
+        if pkgs == None:
+            pkgs = []
+        self.nodes = nodes
+        self.includes = includes
+        self.pkgs = pkgs
+        
+    def __eq__(self, other):
+        if not isinstance(other, RoslaunchDeps):
+            return False
+        return self.nodes == other.nodes and \
+               self.includes == other.includes and \
+               self.pkgs == other.pkgs
+
+    def __repr__(self):
+        return "nodes: %s\nincludes: %s\npkgs: %s"%(str(self.nodes), str(self.includes), str(self.pkgs))
+
+    def __str__(self):
+        return "nodes: %s\nincludes: %s\npkgs: %s"%(str(self.nodes), str(self.includes), str(self.pkgs))
 
 def _parse_launch(tags, launch_file, file_deps, verbose):
     dir_path = os.path.dirname(os.path.abspath(launch_file))
@@ -89,8 +108,9 @@ def _parse_launch(tags, launch_file, file_deps, verbose):
             sub_pkg = rospkg.get_package_name(os.path.dirname(os.path.abspath(sub_launch_file)))
             if sub_pkg is None:
                 print("ERROR: cannot determine package for [%s]"%sub_launch_file, file=sys.stderr)
-                
-            file_deps[launch_file].includes.append(sub_launch_file)
+            
+            if sub_launch_file not in file_deps[launch_file].includes:
+                file_deps[launch_file].includes.append(sub_launch_file)
             if launch_file_pkg != sub_pkg:            
                 file_deps[launch_file].pkgs.append(sub_pkg)
             
@@ -111,10 +131,12 @@ def _parse_launch(tags, launch_file, file_deps, verbose):
                 pkg, type = [resolve_args(tag.attributes[a].value) for a in ['pkg', 'type']]
             except KeyError as e:
                 raise RoslaunchDepsException("Cannot load roslaunch <%s> tag: missing required attribute %s.\nXML is %s"%(tag.tagName, str(e), tag.toxml()))
-            file_deps[launch_file].nodes.append((pkg, type))
+            if (pkg, type) not in file_deps[launch_file].nodes:
+                file_deps[launch_file].nodes.append((pkg, type))
             # we actually want to include the package itself if that's referenced
             #if launch_file_pkg != pkg:
-            file_deps[launch_file].pkgs.append(pkg)
+            if pkg not in file_deps[launch_file].pkgs:
+                file_deps[launch_file].pkgs.append(pkg)
             
 def parse_launch(launch_file, file_deps, verbose):
     if verbose:
@@ -195,7 +217,7 @@ def calculate_missing(base_pkg, missing, file_deps):
             print("ERROR: cannot determine package for [%s]"%pkg, file=sys.stderr)
             continue
         m = rospack.get_manifest(pkg)
-        d_pkgs = set([d.package for d in m.depends])
+        d_pkgs = set([d.name for d in m.depends])
         # make sure we don't count ourselves as a dep
         d_pkgs.add(pkg)
 

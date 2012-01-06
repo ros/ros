@@ -46,8 +46,7 @@ import rospkg
 import rosgraph.names
 import rosgraph.network
 
-from roslaunch.core import Master, local_machine, get_ros_root, is_machine_local, RLException
-from roslaunch.rlutil import namespaces_of
+from .core import Master, local_machine, get_ros_root, is_machine_local, RLException
 import roslaunch.loader
 import roslaunch.xmlloader
 
@@ -56,6 +55,20 @@ try:
 except:
     DEFAULT_MASTER_PORT = 11311
     
+def namespaces_of(name):
+    """
+    utility to determine namespaces of a name
+    """
+    if name is None: 
+        raise ValueError('name')
+    if not isinstance(name, basestring):
+        raise TypeError('name')
+    if not name:
+        return ['/']
+
+    splits = [x for x in name.split('/') if x]
+    return ['/'] + ['/'+'/'.join(splits[:i]) for i in xrange(1, len(splits))]
+
 def get_roscore_filename():
     r = rospkg.RosPack()
     return os.path.join(r.get_path('roslaunch'), 'roscore.xml')

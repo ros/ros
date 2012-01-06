@@ -36,17 +36,33 @@ import sys
 import rospkg
 
 def test_roslaunch_deps():
-    from roslaunch.depends imprt roslaunch_deps
+    from roslaunch.depends import roslaunch_deps, RoslaunchDeps
     roslaunch_d = rospkg.RosPack().get_path('roslaunch')
-    
+
+    min_deps = RoslaunchDeps(nodes=[('test_ros', 'talker.py')], pkgs=['test_ros'])
+    include_deps = RoslaunchDeps(nodes=[('test_ros', 'talker.py'), ('test_ros', 'listener.py')], pkgs=['test_ros'])
+    example_deps = RoslaunchDeps(nodes=[('test_ros', 'listener.py'), ('test_ros', 'talker.py')], pkgs=['test_ros'],
+                                 includes=os.path.join(roslaunch_d, 'example-include.launch'))
+
+    example_file_deps = {
+        os.path.join(roslaunch_d, 'example.launch') : example_deps,
+
+        os.path.join(roslaunch_d, 'example-include.launch') : min_deps,
+        }
+    example_min_file_deps = {
+        os.path.join(roslaunch_d, 'example-min.launch') : min_deps,
+        }
+    r_missing = {'roslaunch': set(['test_ros'])}
     tests = [
-        ([os.path.join(roslaunch_d, 'example.launch')], ('roslaunch', {}, {})),
-        ([os.path.join(roslaunch_d, 'example-min.launch')], ('roslaunch', {}, {}),
+        ([os.path.join(roslaunch_d, 'example-min.launch')], ('roslaunch', example_min_file_deps, r_missing)),
+
+        ([os.path.join(roslaunch_d, 'example.launch')], ('roslaunch', example_file_deps, r_missing)),
+
         ]
     for files, results in tests:
         for v in [True, False]:
             base_pkg, file_deps, missing = roslaunch_deps(files, verbose=v)
             assert base_pkg == results[0]
-        assert file_depds == results[1]
-            assert missing == results[2]
+            assert file_deps == results[1], "%s vs %s"%(file_deps, results[1])
+            assert missing == results[2], "%s vs %s"%(missing, results[2])
             

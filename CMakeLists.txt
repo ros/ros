@@ -3,6 +3,8 @@ project(ros)
 find_package(catkin)
 find_package(Boost COMPONENTS thread)
 
+catkin_add_env_hooks(10.ros.buildspace.sh 10.ros.sh)
+
 # Must call catkin_export_python() early, to ensure that things like
 # rosunit are symlinked into build/bin, and can be found by things like
 # add_gtest(), which is called from within lower-level CMakeLists.txts.

@@ -1,3 +1,0 @@
-<launch>
-  <machine name="$(env NAME)" address="$(env ADDRESS)" ros-host-name="$(env ROS_HOST_NAME)" ros-root="$(env ROS_ROOT)" ros-package-path="$(env ROS_PACKAGE_PATH)"/>
-</launch> 

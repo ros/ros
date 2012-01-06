@@ -1,6 +1,0 @@
-<launch>
-
-  <test test-name="test10" pkg="package" type="test_respawn_true" respawn="true" />
-
-</launch>
-

@@ -1,4 +1,0 @@
-<launch>
-  <machine name="machine1" address="address1" ros-ip="1.2.3.4" ros-host-name="bob" />
-</launch>
-

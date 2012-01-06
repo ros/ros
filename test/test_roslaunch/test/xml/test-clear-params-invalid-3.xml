@@ -1,4 +1,0 @@
-<launch>
-  <!-- include with no 'ns' attribute -->
-  <include clear_params="true" file="$(find test_roslaunch)/test/xml/test-clear-params-include.xml" />  
-</launch>

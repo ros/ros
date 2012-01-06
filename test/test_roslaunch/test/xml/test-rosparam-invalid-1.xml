@@ -1,4 +1,0 @@
-<launch>
-  <rosparam file="$(find rosparam)/example.yaml" command="foo" />
-</launch>
-

@@ -1,9 +1,0 @@
-<launch>
-
-  <!-- name attribute is required -->
-  <node pkg="package" type="test_node_rosparam_invalid_name" >
-    <rosparam file="$(find test_roslaunch)/test/params.yaml" command="load" />    
-  </node>
-
-</launch>
-

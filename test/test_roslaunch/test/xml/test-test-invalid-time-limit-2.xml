@@ -1,6 +1,0 @@
-<launch>
-
-  <test test-name="test4" pkg="package" type="test_time_limit" time-limit="-1" />
-
-</launch>
-

@@ -1,7 +1,0 @@
-<launch>
-
-  <!-- retry NaN -->
-  <test test-name="test10" pkg="pkg" type="test" retry="foo" />
-
-</launch>
-

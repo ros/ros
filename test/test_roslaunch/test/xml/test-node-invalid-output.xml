@@ -1,3 +1,0 @@
-<launch>
-  <node pkg="package" type="type" output="foo" />
-</launch>

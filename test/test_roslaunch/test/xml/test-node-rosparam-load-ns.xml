@@ -1,8 +1,0 @@
-<launch>
-
-  <node pkg="package" type="test_node_rosparam_load_ns" name="load_ns">
-    <rosparam ns="subns" file="$(find test_roslaunch)/test/params.yaml" command="load" />
-  </node>
-
-</launch>
-

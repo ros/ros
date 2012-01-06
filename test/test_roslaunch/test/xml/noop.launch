@@ -1,4 +1,0 @@
-<launch>
-  <!-- roslaunch file that loads no nodes, and thus should exit immediately -->
-  <param name="noop" value="noop" />
-</launch>

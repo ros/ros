@@ -1,4 +1,0 @@
-<launch>
-  <!--  to is empty-->
-  <remap from="from" to="" />
-</launch>

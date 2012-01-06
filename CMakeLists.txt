@@ -11,7 +11,6 @@ catkin_export_python()
 foreach(subdir
     core/roslib
     tools/rosbash
-    tools/rosunit
     )
   add_subdirectory(${subdir})
 endforeach()
@@ -35,3 +34,13 @@ install(DIRECTORY core/mk
   DESTINATION share/ros/core/rosbuild
   )
 
+# install all manifests
+install_matching_to_share(manifest.xml)
+
+# install python package-relative scripts
+install(DIRECTORY tools/rosunit/scripts
+  DESTINATION share/rosunit/bin
+  )
+install(DIRECTORY tools/roscreate/templates
+  DESTINATION share/roscreate
+  )

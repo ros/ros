@@ -1,0 +1,3 @@
+<launch>
+  <test test-name="roslaunch_command_line_online" pkg="test_roslaunch" type="test_roslaunch_command_line_online.py" />
+</launch>

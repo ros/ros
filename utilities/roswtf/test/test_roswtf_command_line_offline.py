@@ -78,7 +78,7 @@ class TestRoswtfOffline(unittest.TestCase):
         self.assert_('ERROR' not in output[0], "OUTPUT[%s]"%str(output))
 
         # run roswtf on a simple launch file offline
-        p = os.path.join(get_test_path, 'min.launch')
+        p = os.path.join(get_test_path(), 'min.launch')
         output = Popen([cmd, p], **kwds).communicate()[0]
         self.assert_('No errors or warnings' in output, "OUTPUT[%s]"%output)
         self.assert_('ERROR' not in output, "OUTPUT[%s]"%output)        

@@ -39,7 +39,7 @@ import roslib.packages
 from subprocess import Popen, PIPE, check_call, call
 
 def get_test_path():
-    return os.path.abspath(os.path.join(os.path.dirname(__file__), 'xml'))
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'xml'))
 
 class TestListFiles(unittest.TestCase):
 

@@ -40,7 +40,7 @@ def get_ros_comm_version():
     return subprocess.Popen(cmd, stdout=subprocess.PIPE).communicate()[0].strip()
 
 def get_test_path():
-    return os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 class TestCoreVersion(unittest.TestCase):
 

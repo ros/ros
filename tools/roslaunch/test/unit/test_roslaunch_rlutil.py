@@ -41,8 +41,8 @@ import roslaunch
 import roslaunch.rlutil
 
 def get_test_path():
-    # one directory up from here
-    return os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    # two directories up from here
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 ## Test roslaunch.node_args
 class TestRoslaunchRlutil(unittest.TestCase):

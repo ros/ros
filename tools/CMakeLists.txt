@@ -9,7 +9,6 @@ foreach(subdir
     rosbag
     rosgraph
     rosout
-    rosservice
     rostopic
     rostest
 

@@ -535,29 +535,3 @@ def find_resource(pkg, resource_name, filter_fn=None, ros_root=None, ros_package
         if matches or on_last_search_step:
             return matches
 
-def rosdeps_of(packages):
-    """
-    Collect all rosdeps of specified packages into a dictionary.
-    @param packages: package names
-    @type  packages: [str]
-    @return: dictionary mapping package names to list of rosdep names.
-    @rtype: {str: [str]}
-    """
-    if not type(packages) in [list, tuple]:
-        raise TypeError("packages must be list or tuple")
-    _update_rospack_cache()
-    from roslib.manifest import load_manifest
-    manifests = [load_manifest(p) for p in packages]
-    map = {}
-    for pkg, m in zip(packages, manifests): #py3k
-        map[pkg] = [d.name for d in m.rosdeps]
-    return map
-
-def _safe_load_manifest(p):
-    """
-    Calls roslib.manifest.load_manifest and returns None if the calls raises an Exception (i.e. invalid package)
-    """
-    try:
-        return roslib.manifest.load_manifest(p)
-    except:
-        return roslib.manifest.Manifest()

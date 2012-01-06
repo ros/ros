@@ -19,6 +19,7 @@ add_message_files(DIRECTORY msg
   )
 add_service_files(DIRECTORY srv
   FILES
+  AddTwoInts.srv
   RossrvA.srv
   RossrvB.srv
 )

@@ -116,9 +116,9 @@ class TestRoslaunchChild(unittest.TestCase):
 
     def setUp(self):
         self.pmon = ProcessMonitorMock()
-        m = rosgraph.Master('/roslaunch')
         try:
             # if there is a core up, we have to use its run id
+            m = rosgraph.Master('/roslaunch')
             self.run_id = m.getParam('/run_id')
         except:
             self.run_id = 'foo-%s'%time.time()

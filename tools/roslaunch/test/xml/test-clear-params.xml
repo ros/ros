@@ -20,9 +20,9 @@
      <group ns="embedded_group" clear_params="true" />
   </group>
     
-  <include ns="include_test" clear_params="true" file="$(find test_roslaunch)/test/xml/test-clear-params-include.xml" />
+  <include ns="include_test" clear_params="true" file="$(find roslaunch)/test/xml/test-clear-params-include.xml" />
 
-  <include ns="include_test_false" clear_params="false" file="$(find test_roslaunch)/test/xml/test-clear-params-include.xml" />
-  <include ns="include_test_default" file="$(find test_roslaunch)/test/xml/test-clear-params-include.xml" />
+  <include ns="include_test_false" clear_params="false" file="$(find roslaunch)/test/xml/test-clear-params-include.xml" />
+  <include ns="include_test_default" file="$(find roslaunch)/test/xml/test-clear-params-include.xml" />
       
 </launch>

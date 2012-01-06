@@ -1,8 +1,8 @@
 <launch>
 
   <!-- allow empty files -->
-  <rosparam file="$(find test_roslaunch)/test/params_empty1.yaml" command="load" />
-  <rosparam file="$(find test_roslaunch)/test/params_empty2.yaml" command="load" />
+  <rosparam file="$(find roslaunch)/test/params_empty1.yaml" command="load" />
+  <rosparam file="$(find roslaunch)/test/params_empty2.yaml" command="load" />
   <rosparam command="load"/>
   
 </launch>

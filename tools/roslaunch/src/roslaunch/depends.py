@@ -73,9 +73,9 @@ class RoslaunchDeps(object):
     def __eq__(self, other):
         if not isinstance(other, RoslaunchDeps):
             return False
-        return self.nodes == other.nodes and \
-               self.includes == other.includes and \
-               self.pkgs == other.pkgs
+        return set(self.nodes) == set(other.nodes) and \
+               set(self.includes) == set(other.includes) and \
+               set(self.pkgs) == set(other.pkgs)
 
     def __repr__(self):
         return "nodes: %s\nincludes: %s\npkgs: %s"%(str(self.nodes), str(self.includes), str(self.pkgs))
@@ -142,10 +142,12 @@ def parse_launch(launch_file, file_deps, verbose):
     if verbose:
         print("processing launch %s"%launch_file)
 
-    dom = parse(launch_file).getElementsByTagName('launch')
+    try:
+        dom = parse(launch_file).getElementsByTagName('launch')
+    except:
+        raise RoslaunchDepsException("invalid XML in %s"%(launch_file))
     if not len(dom):
-        print("ignoring %s as it is not a roslaunch file"%launch_file, file=sys.stderr)
-        return
+        raise RoslaunchDepsException("invalid XML in %s"%(launch_file))
 
     file_deps[launch_file] = RoslaunchDeps()
     launch_tag = dom[0]
@@ -278,7 +280,7 @@ def roslaunch_deps_main(argv=sys.argv):
     files = [arg for arg in args if os.path.exists(arg)]
     packages = [arg for arg in args if not os.path.exists(arg)]
     if packages:
-        parser.error("cannot located %s"%','.join(packages))
+        parser.error("cannot locate %s"%','.join(packages))
     try:
         base_pkg, file_deps, missing = roslaunch_deps(files, verbose=options.verbose)
     except RoslaunchDepsException as e:

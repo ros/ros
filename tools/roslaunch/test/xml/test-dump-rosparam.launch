@@ -1,13 +1,13 @@
 <launch>
 
-  <rosparam file="$(find test_roslaunch)/test/dump-params.yaml" command="load" />
+  <rosparam file="$(find roslaunch)/test/dump-params.yaml" command="load" />
   
   <group ns="rosparam">
-    <rosparam file="$(find test_roslaunch)/test/dump-params.yaml" command="load" />
+    <rosparam file="$(find roslaunch)/test/dump-params.yaml" command="load" />
   </group>
 
   <node pkg="package" type="test_base" name="node_rosparam">
-    <rosparam file="$(find test_roslaunch)/test/dump-params.yaml" command="load" />      
+    <rosparam file="$(find roslaunch)/test/dump-params.yaml" command="load" />      
   </node>
 
   <rosparam param="inline_str">value1</rosparam>
@@ -29,7 +29,7 @@
   
   <!-- allow empty files. we test absense of loading in test-rosparam-empty.
        Here we include to make sure this doesn't blank out other parameters -->
-  <rosparam file="$(find test_roslaunch)/test/params_empty1.yaml" command="load" />
+  <rosparam file="$(find roslaunch)/test/params_empty1.yaml" command="load" />
 
 </launch>
 

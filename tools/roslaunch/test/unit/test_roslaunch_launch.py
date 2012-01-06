@@ -164,3 +164,16 @@ class TestRoslaunchLaunch(unittest.TestCase):
         for l in [l1, l2, l3]:
             self.assertEquals(l.process_name, 'p4')
             self.assertEquals(l.exit_code, 4)            
+
+# this is just to get coverage, it's an empty class
+def test_ROSRemoteRunnerIF():
+    from roslaunch.launch import ROSRemoteRunnerIF
+    r = ROSRemoteRunnerIF()
+    r.setup()
+    r.add_process_listener(1)
+    r.launch_remote_nodes()
+
+def test_ROSLaunchListener():
+    from roslaunch.launch import ROSLaunchListener
+    r = ROSLaunchListener()
+    r.process_died(1, 2)

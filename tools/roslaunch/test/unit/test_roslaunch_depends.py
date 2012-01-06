@@ -35,19 +35,109 @@ import sys
 
 import rospkg
 
+class Foo: pass
+
+def test_RoslaunchDeps():
+    from roslaunch.depends import RoslaunchDeps
+    min_deps = RoslaunchDeps(nodes=[('test_ros', 'talker.py')], pkgs=['test_ros'])
+    assert min_deps == min_deps
+    assert min_deps == RoslaunchDeps(nodes=[('test_ros', 'talker.py')], pkgs=['test_ros'])
+    assert not min_deps.__eq__(Foo())
+    assert Foo() != min_deps
+    assert min_deps != RoslaunchDeps(nodes=[('test_ros', 'talker.py')])
+    assert min_deps != RoslaunchDeps(pkgs=['test_ros'])
+
+    assert 'talker.py' in repr(min_deps)
+    assert 'talker.py' in str(min_deps)
+    
+import cStringIO
+from contextlib import contextmanager
+@contextmanager
+def fakestdout():
+    realstdout = sys.stdout
+    fakestdout = cStringIO.StringIO()
+    sys.stdout = fakestdout
+    yield fakestdout
+    sys.stdout = realstdout
+
+def test_roslaunch_deps_main():
+    from roslaunch.depends import roslaunch_deps_main
+    roslaunch_d = rospkg.RosPack().get_path('roslaunch')
+    rosmaster_d = rospkg.RosPack().get_path('rosmaster')
+    f = os.path.join(roslaunch_d, 'example.launch')
+    rosmaster_f = os.path.join(rosmaster_d, 'test', 'rosmaster.test')
+    invalid_f = os.path.join(roslaunch_d, 'test', 'xml', 'invalid-xml.xml')
+    not_f = os.path.join(roslaunch_d, 'test', 'xml', 'not-launch.xml')
+    
+    with fakestdout() as b:
+        roslaunch_deps_main(['roslaunch-deps', f])
+        s = b.getvalue()
+        assert s.strip() == 'test_ros', "buffer value [%s]"%(s)
+    with fakestdout() as b:
+        roslaunch_deps_main(['roslaunch-deps', f, '--warn'])
+        s = b.getvalue()
+        assert s.strip() == """Dependencies:
+test_ros
+
+Missing declarations:
+roslaunch/manifest.xml:
+  <depend package="test_ros" />""", s
+
+    # tripwire, don't really care about exact verbose output
+    with fakestdout() as b:
+        roslaunch_deps_main(['roslaunch-deps', f, '--verbose'])
+
+    # try with no file
+    with fakestdout() as b:
+        try:
+            roslaunch_deps_main(['roslaunch-deps'])
+            assert False, "should have failed"
+        except SystemExit:
+            pass
+
+    # try with non-existent file
+    with fakestdout() as b:
+        try:
+            roslaunch_deps_main(['roslaunch-deps', 'fakefile', '--verbose'])
+            assert False, "should have failed"
+        except SystemExit:
+            pass
+
+    # try with bad file
+    with fakestdout() as b:
+        try:
+            roslaunch_deps_main(['roslaunch-deps', invalid_f, '--verbose'])
+            assert False, "should have failed: %s"%b.getvalue()
+        except SystemExit:
+            pass
+    with fakestdout() as b:
+        try:
+            roslaunch_deps_main(['roslaunch-deps', not_f, '--verbose'])
+            assert False, "should have failed: %s"%b.getvalue()
+        except SystemExit:
+            pass
+
+    # try with files from different pacakges
+    with fakestdout() as b:
+        try:
+            roslaunch_deps_main(['roslaunch-deps', f, rosmaster_f, '--verbose'])
+            assert False, "should have failed"
+        except SystemExit:
+            pass
+    
 def test_roslaunch_deps():
     from roslaunch.depends import roslaunch_deps, RoslaunchDeps
     roslaunch_d = rospkg.RosPack().get_path('roslaunch')
 
     min_deps = RoslaunchDeps(nodes=[('test_ros', 'talker.py')], pkgs=['test_ros'])
     include_deps = RoslaunchDeps(nodes=[('test_ros', 'talker.py'), ('test_ros', 'listener.py')], pkgs=['test_ros'])
-    example_deps = RoslaunchDeps(nodes=[('test_ros', 'listener.py'), ('test_ros', 'talker.py')], pkgs=['test_ros'],
-                                 includes=os.path.join(roslaunch_d, 'example-include.launch'))
+    example_deps = RoslaunchDeps(nodes=[('test_ros', 'talker.py'), ('test_ros', 'listener.py')], pkgs=['test_ros'],
+                                 includes=[os.path.join(roslaunch_d, 'example-include.launch')])
 
     example_file_deps = {
         os.path.join(roslaunch_d, 'example.launch') : example_deps,
 
-        os.path.join(roslaunch_d, 'example-include.launch') : min_deps,
+        os.path.join(roslaunch_d, 'example-include.launch') : include_deps,
         }
     example_min_file_deps = {
         os.path.join(roslaunch_d, 'example-min.launch') : min_deps,
@@ -63,6 +153,6 @@ def test_roslaunch_deps():
         for v in [True, False]:
             base_pkg, file_deps, missing = roslaunch_deps(files, verbose=v)
             assert base_pkg == results[0]
-            assert file_deps == results[1], "%s vs %s"%(file_deps, results[1])
-            assert missing == results[2], "%s vs %s"%(missing, results[2])
+            assert file_deps == results[1], "\n%s vs \n%s"%(file_deps, results[1])
+            assert missing == results[2], "\n%s vs \n%s"%(missing, results[2])
             

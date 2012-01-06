@@ -1,14 +1,8 @@
-#
-#  TDS: 11/2011
-#  PROTOTYPE - PROTOTYPE - PROTOTYPE
-#  If you are surprised to see this here, just ignore it.
-#  Many fields are probably inaccurate.
-#
 Catkin-ProjectName: ros
-Version: 0.0.1
+Version: 1.7.0
 Depends: catkin, rospack, rospkg
-Description: ROS Core
-Author: Ken Conley et al
+Description: ROS packaging system
+Author: Eric Berger, Ken Conley, Josh Faust, Tully Foote, Brian Gerkey, Jeremy Leibs, Morgan Quigley, Rob Wheeler, et al
 Maintainer: Ken Conley <kwc@willowgarage.com>
 Homepage: http://www.ros.org
 

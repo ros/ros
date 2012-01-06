@@ -88,8 +88,11 @@ def configure_logging(logname, level=logging.INFO, filename=None, env=None):
                   os.path.join(rosgraph_d, 'conf', fname)]:
             if os.path.isfile(f):
                 config_file = f
+                break
+        else:
+            config_file = None
 
-    if not os.path.isfile(config_file):
+    if config_file is None or not os.path.isfile(config_file):
         # logging is considered soft-fail
         sys.stderr.write("WARNING: cannot load logging configuration file, logging is disabled\n")
         #TODO: enable

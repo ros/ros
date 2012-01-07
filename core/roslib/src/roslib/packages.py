@@ -145,8 +145,6 @@ def get_pkg_dir(package, required=True, ros_root=None, ros_package_path=None):
 
         # determine rospack exe name
         rospack = 'rospack'
-        if 'ROS_BUILD' in os.environ:
-            rospack = os.path.join(os.environ['ROS_BUILD'], 'bin', 'rospack')
 
         if ros_package_path is not None:
             ros_package_path = rospkg.environment._resolve_paths(ros_package_path)
@@ -402,11 +400,6 @@ def find_node(pkg, node_type, ros_root=None, ros_package_path=None):
     @rtype: str
     @raise roslib.packages.InvalidROSPkgException: If package does not exist 
     """
-
-    if 'ROS_BUILD' in os.environ:
-        tst = os.path.join(os.environ['ROS_BUILD'], 'bin', node_type)
-        if os.path.isfile(tst):
-            return tst
 
     d = get_pkg_dir(pkg, required=True, \
                     ros_root=ros_root, ros_package_path=ros_package_path)

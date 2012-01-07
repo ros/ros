@@ -36,11 +36,11 @@
 Roslaunch XML file parser.
 """
 
-from __future__ import with_statement
-
 import itertools
 import os
 import sys
+import traceback
+import logging
 
 from xml.dom.minidom import parse, parseString
 from xml.dom import Node as DomNode #avoid aliasing
@@ -735,8 +735,6 @@ class XmlLoader(loader.Loader):
                 print "... loading XML"
             root = parseString(xml_text).getElementsByTagName('launch')
         except Exception as e:
-            import traceback
-            import logging
             logging.getLogger('roslaunch').error("Invalid roslaunch XML syntax:\nstring[%s]\ntraceback[%s]"%(xml_text, traceback.format_exc()))
             raise XmlParseException("Invalid roslaunch XML syntax: %s"%e)
         

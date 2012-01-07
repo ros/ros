@@ -1,4 +1,8 @@
 project(topic_tools)
+catkin_project(topic_tools
+  LIBRARIES topic_tools
+  INCLUDE_DIRS include
+  )
 include_directories(include)
 find_package(ROS COMPONENTS roscpp rosconsole XmlRpc)
 include_directories(${ROS_INCLUDE_DIRS})
@@ -37,7 +41,3 @@ install(DIRECTORY include/
     DESTINATION include
     )
 
-catkin_project(topic_tools
-  LIBRARIES topic_tools
-  INCLUDE_DIRS include
-  )

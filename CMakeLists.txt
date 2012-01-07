@@ -4,6 +4,10 @@ find_package(ROS COMPONENTS catkin genmsg cpp_common rostime
   roscpp_serialization roscpp_traits std_msgs
   )
 
+# Must export python before recursing into subdirs, so that rostest is
+# linked into build/bin before anybody calls add_rostest().
+catkin_export_python()
+
 foreach(subdir
     messages/rosgraph_msgs
     messages/std_srvs
@@ -19,11 +23,10 @@ foreach(subdir
     test/test_roslib_comm
     test/test_rospy
     test/test_rosservice
+    test/test_topic_tools
     )
   add_subdirectory(${subdir})
 endforeach()
-
-catkin_export_python()
 
 add_nosetests(tools/rosmaster/test)
 add_nosetests(tools/rosmsg/test)

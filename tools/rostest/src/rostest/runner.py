@@ -38,6 +38,7 @@ import logging
 import time
 import unittest
 
+import rospkg
 import roslaunch
 import roslib.packages 
 
@@ -235,8 +236,8 @@ def createUnitTest(pkg, test_file):
         # #1989: find test first to make sure it exists and is executable
         err_msg = None
         try:
-            cmd = roslib.packages.find_node(test.package, test.type, \
-                                            test.machine.ros_root, test.machine.ros_package_path)
+            rp = rospkg.RosPack(ros_paths=[test.machine.ros_root]+test.machine.ros_package_path.split(':'))
+            cmd = roslib.packages.find_node(test.package, test.type, rp)
             if not cmd:
                 err_msg = "Test node [%s/%s] does not exist or is not executable"%(test.package, test.type)
         except roslib.packages.ROSPkgException as e:

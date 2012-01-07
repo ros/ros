@@ -44,6 +44,10 @@ def get_test_path():
     # two directories up from here
     return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 
+# path to example.launch directory
+def get_example_path():
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'resources'))
+
 ## Test roslaunch.node_args
 class TestRoslaunchRlutil(unittest.TestCase):
 
@@ -51,7 +55,7 @@ class TestRoslaunchRlutil(unittest.TestCase):
         from roslaunch.rlutil import resolve_launch_arguments
 
         roslaunch_dir = get_test_path()
-        example_xml_p = os.path.join(roslaunch_dir, 'example.launch')
+        example_xml_p = os.path.join(get_example_path(), 'example.launch')
         tests = [
             ([], []),
             (['roslaunch', 'example.launch'], [example_xml_p]),

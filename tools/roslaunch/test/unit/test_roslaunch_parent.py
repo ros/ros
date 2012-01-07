@@ -38,6 +38,7 @@ import time
 
 from xmlrpclib import ServerProxy
 
+import rospkg
 import rosgraph.network
 import roslaunch.parent
 
@@ -142,9 +143,8 @@ class TestRoslaunchParent(unittest.TestCase):
         self.assertEquals(True, p.is_core)
         self.assertEquals(False, p.local_only)
 
-        import roslib.packages
-        rl_dir = roslib.packages.get_pkg_dir('roslaunch')
-        rl_file = os.path.join(rl_dir, 'example.launch')
+        rl_dir = rospkg.RosPack().get_path('roslaunch')
+        rl_file = os.path.join(rl_dir, 'resources', 'example.launch')
         self.assert_(os.path.isfile(rl_file))
         
         # validate load_config logic
@@ -176,7 +176,7 @@ class TestRoslaunchParent(unittest.TestCase):
         except roslaunch.core.RLException: pass
 
         # try again with bad xml
-        rl_dir = roslib.packages.get_pkg_dir('roslaunch')
+        rl_dir = rospkg.RosPack.get_path('roslaunch')
         rl_file = os.path.join(rl_dir, 'test', 'xml', 'test-params-invalid-1.xml')
         self.assert_(os.path.isfile(rl_file))
         p = ROSLaunchParent(run_id, [rl_file])

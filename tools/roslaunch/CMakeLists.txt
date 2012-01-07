@@ -16,3 +16,8 @@ message("TODO: install roscore.xml to /etc/ros")
 install(FILES roscore.xml
   DESTINATION share/roslaunch
   )
+
+# install example launch files
+install(DIRECTORY resources
+  DESTINATION share/roslaunch
+  )

@@ -64,7 +64,7 @@ def test_roslaunch_deps_main():
     from roslaunch.depends import roslaunch_deps_main
     roslaunch_d = rospkg.RosPack().get_path('roslaunch')
     rosmaster_d = rospkg.RosPack().get_path('rosmaster')
-    f = os.path.join(roslaunch_d, 'example.launch')
+    f = os.path.join(roslaunch_d, 'resources', 'example.launch')
     rosmaster_f = os.path.join(rosmaster_d, 'test', 'rosmaster.test')
     invalid_f = os.path.join(roslaunch_d, 'test', 'xml', 'invalid-xml.xml')
     not_f = os.path.join(roslaunch_d, 'test', 'xml', 'not-launch.xml')

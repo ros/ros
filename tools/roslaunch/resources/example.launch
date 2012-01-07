@@ -54,9 +54,9 @@
   
   <!-- import another roslaunch config file -->
   <group ns="included">
-     <include file="$(find roslaunch)/example-include.launch" />
+     <include file="$(find roslaunch)/resources/example-include.launch" />
   </group>
   <!-- more compact import syntax -->
-  <include ns="included2" file="$(find roslaunch)/example-include.launch" />
+  <include ns="included2" file="$(find roslaunch)/resources/example-include.launch" />
   
 </launch>

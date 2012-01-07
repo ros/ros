@@ -43,7 +43,7 @@ def get_test_path():
 
 # path to example.launch directory
 def get_example_path():
-    return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'resources'))
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'resources'))
 
 ## Fake RosLaunch object
 class RosLaunchMock(object):
@@ -444,6 +444,10 @@ class TestXmlLoader(unittest.TestCase):
         f = os.path.join(self.xml_dir, 'test-env.xml')
         f2 = os.path.join(self.xml_dir, 'test-env-include.xml')
         mock = self._load(f)
+        mock_files = [os.path.realpath(x) for x in mock.roslaunch_files]
+        actual_files = [os.path.realpath(x) for x in [f, f2]]
+        self.assertEquals(len(set(actual_files)), len(set(mock_files)))
+            
         self.assertEquals(set([f, f2]), set(mock.roslaunch_files))
 
     def test_launch_prefix(self):
@@ -995,14 +999,3 @@ class TestXmlLoader(unittest.TestCase):
         self.assertEquals(param_d['/include3/include_test/p4_test'], 'new3')
         
 
-def test_load_string():
-    from roslaunch.config import ROSLaunchConfig
-    from roslaunch.xmlloader import XmlLoader
-    config = ROSLaunchConfig()
-    loader = XmlLoader()
-    loader = load_string("""<launch>
-    <node name="talker" pkg="test_ros" type="talker.py" />
-</launch""", config)
-    assert len(config.nodes) == 1
-    assert config.nodes[0].name == 'talker'
-    

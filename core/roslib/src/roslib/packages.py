@@ -461,7 +461,7 @@ def _load_catkin_packages_cache(catkin_packages_cache, env=None):
                 if not l:
                     continue
                 idx = l.find(' ')
-                catkin_packages_cache[l[:idx]] = l[idx+1:]
+                catkin_packages_cache[l[:idx]] = os.path.join(prefix, l[idx+1:])
     
 def _find_resource(d, resource_name, filter_fn=None):
     """

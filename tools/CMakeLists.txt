@@ -8,6 +8,7 @@ foreach(subdir
     topic_tools
     rosbag
     rosgraph
+    roslaunch
     rosout
     rostopic
     rostest

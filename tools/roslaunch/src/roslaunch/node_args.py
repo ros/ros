@@ -267,11 +267,19 @@ def create_local_process_args(node, machine):
 
     start_t = time.time()
     try:
-        cmd = roslib.packages.find_node(node.package, node.type,\
-                                            machine.ros_root, machine.ros_package_path)
-    except roslib.packages.ROSPkgException as e:
+        #TODO:fuerte: don't need machine.ros_root anymore
+        #TODO:fuerte: pass through rospack and catkin cache
+        rospack = rospkg.RosPack([machine.ros_root] + machine.ros_package_path.split(os.pathsep))
+        matches = roslib.packages.find_node(node.package, node.type, rospack)
+    except rospkg.ResourceNotFound as e:
         # multiple nodes, invalid package
         raise NodeParamsException(str(e))
+    if not matches:
+        raise NodeParamsException("can't locate node [%s] in package [%s]"%(node.type, node.package))
+    else:
+        # old behavior was to take first, do we want to change this in Fuerte-style?
+        cmd = matches[0]
+
     end_t = time.time()
     logging.getLogger('roslaunch.node_args').info('find_node(%s, %s, %s, %s) took %ss'%(node.package, node.type, machine.ros_root, machine.ros_package_path, (end_t - start_t)))
     if not cmd:

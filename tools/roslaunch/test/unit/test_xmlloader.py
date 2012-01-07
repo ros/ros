@@ -39,7 +39,7 @@ import roslaunch.loader
 import roslaunch.xmlloader 
 
 def get_test_path():
-    return os.path.abspath(os.path.join(os.path.dirname(__file__), 'xml'))
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'xml'))
 
 # path to example.launch directory
 def get_example_path():
@@ -994,3 +994,15 @@ class TestXmlLoader(unittest.TestCase):
         self.assertEquals(param_d['/include3/include_test/p3_test'], 'set')
         self.assertEquals(param_d['/include3/include_test/p4_test'], 'new3')
         
+
+def test_load_string():
+    from roslaunch.config import ROSLaunchConfig
+    from roslaunch.xmlloader import XmlLoader
+    config = ROSLaunchConfig()
+    loader = XmlLoader()
+    loader = load_string("""<launch>
+    <node name="talker" pkg="test_ros" type="talker.py" />
+</launch""", config)
+    assert len(config.nodes) == 1
+    assert config.nodes[0].name == 'talker'
+    

@@ -22,10 +22,10 @@ function _ros_location_find {
     done
 
     if [[ $1 == log ]]; then
-        echo `${ROS_ROOT}/bin/roslaunch-logs`
+        echo `roslaunch-logs`
         return 0
     elif [[ $1 == test_results ]]; then
-        echo `${ROS_ROOT}/tools/rosunit/scripts/test_results_dir.py`
+        echo `rosrun rosunit test_results_dir.py`
         return 0
     fi
 

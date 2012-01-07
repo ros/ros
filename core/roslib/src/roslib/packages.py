@@ -526,11 +526,10 @@ def find_resource(pkg, resource_name, filter_fn=None, rospack=None, catkin_packa
     if CATKIN_BINARY_DIR in os.environ and not catkin_packages_cache:
         _load_catkin_packages_cache(catkin_packages_cache)
 
-    # return matches from binary dir if found, otherwise ROS_PACKAGE_PATH
+    # if found in binary dir, start with that.  in any case, use matches
+    # from ros_package_path
+    matches = []
     if pkg in catkin_packages_cache:
-        matches = _find_resource(catkin_packages_cache[pkg], resource_name)
-        if matches:
-            return matches
-    else:
-        return _find_resource(pkg_path, resource_name)
-        
+        matches.extend(_find_resource(catkin_packages_cache[pkg], resource_name))
+    matches.extend(_find_resource(pkg_path, resource_name))
+    return matches

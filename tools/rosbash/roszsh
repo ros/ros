@@ -20,13 +20,13 @@ function _ros_decode_path {
     fi
 
     if [[ $rosname == ros ]]; then
-        rosdir=${ROS_ROOT}
+        rosdir=`rosstack find ros`
     elif [[ $rosname == pkg ]]; then
         rosdir=${ROS_PACKAGE_PATH%%:*}
     elif [[ $rosname == log ]]; then
-        rosdir=${ROS_ROOT}/log
+        rosdir=`roslaunch-logs`
     elif [[ $rosname == test_results ]]; then
-        rosdir=${ROS_ROOT}/test/test_results
+        rosdir=`rosrun rosunit test_results_dir.py`
     else
         rospackdir=`export ROS_CACHE_TIMEOUT=-1.0 && rospack find $rosname 2> /dev/null`
         rospack_result=$?

@@ -198,18 +198,6 @@ class ROSLaunchConfig(object):
         if [m for m in machine_unify_dict.itervalues() if not is_machine_local(m)]:
             self._remote_nodes_present = True
 
-    def validate(self):
-        """
-        Perform basic checks on the local ROS environment, master, and core services.
-        master will be launched if configured to do so. Core services will be launched regardless.
-        if they are not already running.
-    
-        @raise RLException: if validation fails
-        """
-        ros_root = get_ros_root()
-        if not os.path.isdir(ros_root):
-            raise RLException("ERROR: ROS_ROOT is not configured properly. Value is [%s]"%ros_root)
-        
     def summary(self, local=False):
         """
         Get a human-readable string summary of the launch
@@ -428,9 +416,6 @@ def load_config_default(roslaunch_files, port, roslaunch_strs=None, loader=None,
                 raise RLException('Launch string: %s\nException: %s'%(launch_str, e))
             except roslaunch.loader.LoadException, e:
                 raise RLException('Launch string: %s\nException: %s'%(launch_str, e))
-
-    # make sure our environment is correct
-    config.validate()
 
     # choose machines for the nodes
     if assign_machines:

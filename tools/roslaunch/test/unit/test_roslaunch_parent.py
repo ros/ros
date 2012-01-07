@@ -176,7 +176,7 @@ class TestRoslaunchParent(unittest.TestCase):
         except roslaunch.core.RLException: pass
 
         # try again with bad xml
-        rl_dir = rospkg.RosPack.get_path('roslaunch')
+        rl_dir = rospkg.RosPack().get_path('roslaunch')
         rl_file = os.path.join(rl_dir, 'test', 'xml', 'test-params-invalid-1.xml')
         self.assert_(os.path.isfile(rl_file))
         p = ROSLaunchParent(run_id, [rl_file])

@@ -26,11 +26,11 @@
   <param name="wg/childparam" value="a child namespace parameter" />  
   
   <!-- upload the contents of a file as a param -->
-  <param name="configfile" textfile="$(find roslaunch)/example.launch" />
+  <param name="configfile" textfile="$(find roslaunch)/resources/example.launch" />
   <!-- upload the contents of a file as base64 binary as a param -->
-  <param name="binaryfile" binfile="$(find roslaunch)/example.launch" />
+  <param name="binaryfile" binfile="$(find roslaunch)/resources/example.launch" />
   <!-- upload the output of a command as a param. -->
-  <param name="commandoutput" command="cat &quot;$(find roslaunch)/example.launch&quot;" />
+  <param name="commandoutput" command="cat &quot;$(find roslaunch)/resources/example.launch&quot;" />
   
   <!-- Group a collection of tags. ns attribute is optional -->
   <group ns="wg"> 

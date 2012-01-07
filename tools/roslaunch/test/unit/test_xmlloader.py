@@ -447,8 +447,6 @@ class TestXmlLoader(unittest.TestCase):
         mock_files = [os.path.realpath(x) for x in mock.roslaunch_files]
         actual_files = [os.path.realpath(x) for x in [f, f2]]
         self.assertEquals(len(set(actual_files)), len(set(mock_files)))
-            
-        self.assertEquals(set([f, f2]), set(mock.roslaunch_files))
 
     def test_launch_prefix(self):
         nodes = self._load_valid_nodes(['test_launch_prefix'])

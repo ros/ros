@@ -20,5 +20,5 @@
     <node name="kill3" pkg="test_ros" type="talker.py" />
     <node name="kill4" pkg="test_ros" type="talker.py" />
   </group>
-  <test test-name="rosnode_command_line_online" pkg="rosnode" type="rosnode_command_online.py" />
+  <test test-name="rosnode_command_line_online" pkg="rosnode" type="test_rosnode_command_online.py" />
 </launch>

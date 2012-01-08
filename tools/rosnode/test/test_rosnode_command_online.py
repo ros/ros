@@ -115,5 +115,7 @@ class TestRosnodeOnline(unittest.TestCase):
                 #ping
                 stdout, stderr = run_for([cmd, 'ping', name], 3.)
 
+PKG = 'test_rosnode'
+NAME = 'test_rosnode_command_line_online'
 if __name__ == '__main__':
     rostest.run(PKG, NAME, TestRosnodeOnline, sys.argv)

@@ -36,6 +36,7 @@ import sys
 import unittest
 import cStringIO
 import time
+import rostest
         
 import rospy
 import std_msgs.msg
@@ -341,3 +342,7 @@ class TestRostopic(unittest.TestCase):
         with fakestdout() as b:        
             rostopic.rostopicmain([cmd, 'list', 'bar'])
             self.assertEquals('/bar/chatter', b.getvalue().strip())
+
+NAME = 'test_rostopic'
+if __name__ == '__main__':
+    rostest.unitrun('test_rostopic', NAME, TestRostopic, sys.argv, coverage_packages=['rostopic'])

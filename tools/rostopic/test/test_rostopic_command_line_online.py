@@ -160,5 +160,7 @@ class TestRostopicOnline(unittest.TestCase):
             
             os.kill(popen.pid, signal.SIGKILL)
             
+PKG = 'test_rostopic'
+NAME = 'test_rostopic_command_line_online'
 if __name__ == '__main__':
     rostest.run(PKG, NAME, TestRostopicOnline, sys.argv)

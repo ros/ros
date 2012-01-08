@@ -29,6 +29,7 @@ generate_messages(DEPENDENCIES std_msgs rosgraph_msgs)
 catkin_project(test_ros
   MSG_DIRS msg
   )
+catkin_export_python(src)
 
 message("TODO: enable param server rostest")
 #add_rostest(test/test-param-server.xml)

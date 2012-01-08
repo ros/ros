@@ -94,5 +94,7 @@ class TestRostopicOnline(unittest.TestCase):
         self.assert_('No errors or warnings' in output, "OUTPUT[%s]"%output)
         self.assert_('ERROR' not in output, "OUTPUT[%s]"%output)        
         
+PKG = 'test_rostopic'
+NAME = 'test_rostopic_command_line_online'
 if __name__ == '__main__':
     rostest.run(PKG, NAME, TestRostopicOnline, sys.argv)

@@ -207,8 +207,15 @@ def setup_env(node, machine, master_uri):
 
     # fuerte/catkin: backwards compatibility.
     # use of roslib depends on PYTHONPATH being set.  This environment needs
-    # to be setup correctly for roslaunch through ssh to work
+    # to be setup correctly for roslaunch through ssh to work.
     d['PYTHONPATH'] = os.path.join(d[rospkg.environment.ROS_ROOT],'core','roslib', 'src')
+    # To work from a wet build, catkin also needs 
+    # CATKIN_BINARY_DIR/gen/py and CATKIN_BINARY_DIR/lib
+    if 'CATKIN_BINARY_DIR' in os.environ:
+        cbd = os.environ['CATKIN_BINARY_DIR']
+        cbd_genpy = os.path.join(cbd, 'gen', 'py')
+        cbd_lib = os.path.join(cbd, 'lib')
+        d['PYTHONPATH'] += ':%s:%s'%(cbd_genpy, cbd_lib)
 
     # load in machine env_args. Node env args have precedence
     for name, value in machine.env_args:

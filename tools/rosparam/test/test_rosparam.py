@@ -34,6 +34,7 @@
 import os
 import sys 
 import unittest
+import rostest
 
 import cStringIO
 from subprocess import Popen, PIPE, check_call, call
@@ -346,3 +347,8 @@ class TestRosparam(unittest.TestCase):
         try:
             rosparam.yamlmain(['rosparam', 'invalid'])        
         except SystemExit: pass
+
+PKG = 'test_rosparam'
+NAME = 'test_rosparam_command_line_online'
+if __name__ == '__main__':
+    rostest.unitrun(PKG, NAME, TestRosparam, sys.argv, coverage_packages=['rosparam'])

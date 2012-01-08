@@ -43,6 +43,7 @@ from subprocess import Popen, PIPE, check_call, call
 from rosgraph.names import script_resolve_name
 
 def get_param_server():
+    import rosgraph
     return rosgraph.Master('/rosparam')
 
 class TestRosparamOnline(unittest.TestCase):
@@ -188,5 +189,7 @@ class TestRosparamOnline(unittest.TestCase):
         # TODO: dump
         # TODO: load
             
+PKG = 'test_rosparam'
+NAME = 'test_rosparam_command_line_online'
 if __name__ == '__main__':
     rostest.run(PKG, NAME, TestRosparamOnline, sys.argv)

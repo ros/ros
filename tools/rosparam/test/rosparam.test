@@ -15,6 +15,6 @@
     <param name="float" value="20.0" />
   </group>
   
-  <test test-name="rosparam_command_line_online" pkg="test_rosparam" type="test_rosparam_command_line_online.py" />
-  <test test-name="test_rosparam" pkg="test_rosparam" type="test_rosparam.py" />
+  <test test-name="rosparam_command_line_online" pkg="rosparam" type="test_rosparam_command_line_online.py" />
+  <test test-name="test_rosparam" pkg="rosparam" type="test_rosparam.py" />
 </launch>

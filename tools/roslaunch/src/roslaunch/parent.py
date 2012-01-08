@@ -71,7 +71,7 @@ class ROSLaunchParent(object):
     This must be called from the Python Main thread due to signal registration.    
     """
 
-    def __init__(self, run_id, roslaunch_files, is_core=False, port=None, local_only=False, process_listeners=None, verbose=False, force_screen=False):
+    def __init__(self, run_id, roslaunch_files, is_core=False, port=None, local_only=False, process_listeners=None, verbose=False, force_screen=False, is_rostest=False):
         """
         @param run_id: UUID of roslaunch session
         @type  run_id: str
@@ -91,6 +91,9 @@ class ROSLaunchParent(object):
         @type  verbose: boolean
         @param force_screen: (optional) force output of all nodes to screen
         @type  force_screen: boolean
+        @param is_rostest bool: if True, this launch is a rostest
+            instance. This affects validation checks.
+        @type  is_rostest: bool
         @throws RLException
         """
         
@@ -100,6 +103,7 @@ class ROSLaunchParent(object):
         
         self.roslaunch_files = roslaunch_files
         self.is_core = is_core
+        self.is_rostest = is_rostest
         self.port = port
         self.local_only = local_only
         self.verbose = verbose
@@ -138,7 +142,7 @@ class ROSLaunchParent(object):
             raise RLException("pm is not initialized")
         if self.server is None:
             raise RLException("server is not initialized")
-        self.runner = roslaunch.launch.ROSLaunchRunner(self.run_id, self.config, server_uri=self.server.uri, pmon=self.pm, is_core=self.is_core, remote_runner=self.remote_runner)
+        self.runner = roslaunch.launch.ROSLaunchRunner(self.run_id, self.config, server_uri=self.server.uri, pmon=self.pm, is_core=self.is_core, remote_runner=self.remote_runner, is_rostest=self.is_rostest)
 
         # print runner info to user, put errors last to make the more visible
         if self.is_core:

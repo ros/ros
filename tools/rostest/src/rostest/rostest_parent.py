@@ -51,7 +51,7 @@ class ROSTestLaunchParent(roslaunch.parent.ROSLaunchParent):
             raise Exception("config not initialized")
         # we generate a run_id for each test
         run_id = roslaunch.core.generate_run_id()
-        super(ROSTestLaunchParent, self).__init__(run_id, roslaunch_files, is_core=True, port=port)
+        super(ROSTestLaunchParent, self).__init__(run_id, roslaunch_files, is_core=True, port=port, is_rostest=True)
         self.config = config
         
     def _load_config(self):

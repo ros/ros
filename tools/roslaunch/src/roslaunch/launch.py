@@ -61,7 +61,7 @@ _ID = '/roslaunch'
 
 class RLTestTimeoutException(RLException): pass
 
-def validate_master_launch(m, is_core):
+def validate_master_launch(m, is_core, is_rostest):
     """
     Validate the configuration of a master we are about to launch. Ths
     validation already assumes that no existing master is running at
@@ -99,9 +99,9 @@ def validate_master_launch(m, is_core):
             # ... the remote master cannot be contacted, so we fail. #3097
             raise RLException("ERROR: unable to contact ROS master at [%s]"%(m.uri))
             
-    if is_core:
+    if is_core and not is_rostest:
         # User wants to start a master, and our configuration does
-        # point to the local host.
+        # point to the local host, and we're not running as rostest.
         env_uri = rosgraph.get_master_uri()
         env_host, env_port = rosgraph.network.parse_http_host_and_port(env_uri)
 
@@ -230,7 +230,7 @@ class ROSLaunchRunner(object):
     monitored.
     """
     
-    def __init__(self, run_id, config, server_uri=None, pmon=None, is_core=False, remote_runner=None, is_child=False):
+    def __init__(self, run_id, config, server_uri=None, pmon=None, is_core=False, remote_runner=None, is_child=False, is_rostest=False):
         """
         @param run_id: /run_id for this launch. If the core is not
             running, this value will be used to initialize /run_id. If
@@ -252,6 +252,9 @@ class ROSLaunchRunner(object):
             detected.
         @type  is_core: bool
         @param remote_runner: remote roslaunch process runner
+        @param is_rostest: if True, this runner is a rostest
+            instance. This affects certain validation checks.
+        @type  is_rostest: bool
         """            
         if run_id is None:
             raise RLException("run_id is None")
@@ -266,6 +269,7 @@ class ROSLaunchRunner(object):
         self.server_uri = server_uri
         self.is_child = is_child
         self.is_core = is_core
+        self.is_rostest = is_rostest
         self.logger = logging.getLogger('roslaunch')
         self.pm = pmon or start_process_monitor()
 
@@ -376,7 +380,7 @@ class ROSLaunchRunner(object):
             raise RLException("roscore cannot run as another roscore/master is already running. \nPlease kill other roscore/master processes before relaunching.\nThe ROS_MASTER_URI is %s"%(m.uri))
 
         if not is_running:
-            validate_master_launch(m, self.is_core)
+            validate_master_launch(m, self.is_core, self.is_rostest)
 
             printlog("auto-starting new master")
             p = create_master_process(self.run_id, m.type, get_ros_root(), m.get_port())

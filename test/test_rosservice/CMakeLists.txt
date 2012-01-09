@@ -10,6 +10,5 @@ add_service_files(DIRECTORY srv
 generate_messages(DEPENDENCIES std_msgs)
 
 add_nosetests(test)
-message("TODO: enable rosservice rostests")
-#add_rostest(test/rosservice.test)
+add_rostest(test/rosservice.test)
 

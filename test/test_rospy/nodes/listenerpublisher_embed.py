@@ -56,7 +56,7 @@ def callback(data):
     _pub.publish(data)
     
 def listener():
-    rospy.init_node(NAME)
+    rospy.init_node("listenerpublisher_embed")
     rospy.Subscriber("chatter", EmbedTest, callback)
     rospy.spin()
         

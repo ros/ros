@@ -31,8 +31,7 @@ catkin_project(test_ros
   )
 catkin_export_python(src)
 
-message("TODO: enable param server rostest")
-#add_rostest(test/test-param-server.xml)
+add_rostest(test/test-param-server.xml)
 
 # make the talker/listener available for roslaunch example
 install(DIRECTORY nodes

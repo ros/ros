@@ -102,7 +102,7 @@ class TestParamsBasic(unittest.TestCase):
     ## test 'command' attribute
     def test_commandandfile(self):
         dir = rospkg.RosPack().get_path('roslaunch')
-        with open(os.path.join(dir, 'example.launch'), 'r') as f:
+        with open(os.path.join(dir, 'resources', 'example.launch'), 'r') as f:
             data = f.read()
         test_file = data
         self.assertEquals(get_param("commandoutput"),test_file)

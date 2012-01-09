@@ -358,5 +358,6 @@ class TestRosservice(unittest.TestCase):
         rosservice._rosservice_cmd_list([cmd, 'list', s, '--nodes'])
         
 
+NAME = 'test_rosservice'
 if __name__ == '__main__':
     rostest.unitrun('test_rosservice', NAME, TestRosservice, sys.argv, coverage_packages=['rosservice'])

@@ -158,5 +158,7 @@ class TestRosserviceOnline(unittest.TestCase):
         self.assert_(t1.success)
         
 
+PKG = 'test_rosservice'
+NAME = 'test_rosservice_command_line_online'
 if __name__ == '__main__':
     rostest.run(PKG, NAME, TestRosserviceOnline, sys.argv)

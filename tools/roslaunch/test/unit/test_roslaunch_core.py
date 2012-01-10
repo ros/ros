@@ -147,6 +147,108 @@ def test_local_machine():
     assert m.address == 'localhost'
     assert m.ssh_port == 22
     
+def test_Machine():
+    #def __init__(self, name, ros_root, ros_package_path, \
+    #             address, ssh_port=22, user=None, password=None, \
+    #             assignable=True, env_args=[], timeout=None):
+    from roslaunch.core import Machine
+    m = Machine('foo', '/rr', '/rpp', 'localhost')
+    assert 'foo' in str(m)
+    assert m.get_env() == {'ROS_ROOT': '/rr', 'ROS_PACKAGE_PATH': '/rpp'}
+    assert m.name == 'foo'
+    assert m.ros_root == '/rr'
+    assert m.ros_package_path == '/rpp'
+    assert m.env_args == []
+    assert m.assignable == True
+    assert m == m
+    assert not m.__eq__(1)
+    assert not m.config_equals(1)
+    assert m == Machine('foo', '/rr', '/rpp', 'localhost')
+    assert m.config_equals(Machine('foo', '/rr', '/rpp', 'localhost'))
+    assert m.config_key() == Machine('foo', '/rr', '/rpp', 'localhost').config_key()
+    assert m.config_equals(Machine('foo', '/rr', '/rpp', 'localhost'))
+    assert m.config_key() == Machine('foo', '/rr', '/rpp', 'localhost', ssh_port=22).config_key()    
+    assert m.config_equals(Machine('foo', '/rr', '/rpp', 'localhost', ssh_port=22))
+    assert m.config_key() == Machine('foo', '/rr', '/rpp', 'localhost', assignable=False).config_key()
+    assert m.config_equals(Machine('foo', '/rr', '/rpp', 'localhost', assignable=False))
+    
+    # test get_env
+    m = Machine('foo', '/rr', '/rpp', 'localhost', env_args=[('CATKIN_BINARY_DIR', '/cbd'), ('FOO', 'bar')])
+    assert 'foo' in str(m)
+    assert m.get_env() == {'ROS_ROOT': '/rr', 'ROS_PACKAGE_PATH': '/rpp',
+                           'CATKIN_BINARY_DIR': '/cbd', 'FOO': 'bar'}
+    
+
+    # original test suite
+    m = Machine('name1', '/ros/root1', '/rpp1', '1.2.3.4')
+    str(m), m.config_key() #test for error
+    assert m == m
+    assert m == Machine('name1', '/ros/root1', '/rpp1', '1.2.3.4')
+    # verify that config_equals is not tied to name or assignable, but is tied to other properties
+    assert m.config_equals(Machine('name1b', '/ros/root1', '/rpp1', '1.2.3.4'))
+    assert m.config_equals(Machine('name1c', '/ros/root1', '/rpp1', '1.2.3.4', assignable=False))
+    assert not m.config_equals(Machine('name1d', '/ros/root2', '/rpp1', '1.2.3.4'))
+    assert not m.config_equals(Machine('name1e', '/ros/root1', '/rpp2', '1.2.3.4'))
+    assert not m.config_equals(Machine('name1f', '/ros/root1', '/rpp1', '2.2.3.4'))
+        
+    assert m.name == 'name1'
+    assert m.ros_root == '/ros/root1'
+    assert m.ros_package_path == '/rpp1'
+    assert m.address == '1.2.3.4'
+    assert m.assignable == True
+    assert m.ssh_port == 22   
+    assert m.env_args == []
+    for p in ['user', 'password']:
+        assert getattr(m, p) is None
+
+    m = Machine('name2', '/ros/root2', '/rpp2', '2.2.3.4', assignable=False)
+    assert not m.assignable
+    str(m), m.config_key() #test for error
+    assert m == m
+    assert m == Machine('name2', '/ros/root2', '/rpp2', '2.2.3.4', assignable=False)
+    assert m.config_equals(Machine('name2b', '/ros/root2', '/rpp2', '2.2.3.4', assignable=False))
+    assert m.config_equals(Machine('name2c', '/ros/root2', '/rpp2', '2.2.3.4', assignable=True))
+
+    m = Machine('name3', '/ros/root3', '/rpp3', '3.3.3.4')
+    str(m) #test for error
+    assert m == m
+    assert m == Machine('name3', '/ros/root3', '/rpp3', '3.3.3.4')
+    assert m.config_equals(Machine('name3b', '/ros/root3', '/rpp3', '3.3.3.4'))
+            
+    m = Machine('name4', '/ros/root4', '/rpp4', '4.4.3.4', user='user4')
+    assert m.user == 'user4'
+    str(m), m.config_key() #test for error
+    assert m == m
+    assert m == Machine('name4', '/ros/root4', '/rpp4', '4.4.3.4', user='user4')
+    assert m.config_equals(Machine('name4b', '/ros/root4', '/rpp4', '4.4.3.4', user='user4'))
+    assert not m.config_equals(Machine('name4b', '/ros/root4', '/rpp4', '4.4.3.4', user='user4b'))
+            
+    m = Machine('name5', '/ros/root5', '/rpp5', '5.5.3.4', password='password5')
+    assert m.password == 'password5'
+    str(m), m.config_key() #test for error
+    assert m == m
+    assert m == Machine('name5', '/ros/root5', '/rpp5', '5.5.3.4', password='password5')
+    assert m.config_equals(Machine('name5b', '/ros/root5', '/rpp5', '5.5.3.4', password='password5'))
+    assert not m.config_equals(Machine('name5c', '/ros/root5', '/rpp5', '5.5.3.4', password='password5c'))
+
+    m = Machine('name6', '/ros/root6', '/rpp6', '6.6.3.4', ssh_port=23)
+    assert m.ssh_port == 23
+    str(m) #test for error
+    m.config_key()
+    assert m == m
+    assert m == Machine('name6', '/ros/root6', '/rpp6', '6.6.3.4', ssh_port=23)
+    assert m.config_equals(Machine('name6b', '/ros/root6', '/rpp6', '6.6.3.4', ssh_port=23))
+    assert not m.config_equals(Machine('name6c', '/ros/root6', '/rpp6', '6.6.3.4', ssh_port=24))
+
+    m = Machine('name7', '/ros/root7', '/rpp7', '7.7.3.4', env_args=[('ARG', 'val'), ('ARG2', 'val')])
+    assert m.env_args == [('ARG', 'val'), ('ARG2', 'val')]
+    str(m), m.config_key() #test for error
+    assert m == m
+    assert m == Machine('name7', '/ros/root7', '/rpp7', '7.7.3.4', env_args=[('ARG', 'val'), ('ARG2', 'val')])
+    assert m.config_equals(Machine('name7b', '/ros/root7', '/rpp7', '7.7.3.4', env_args=[('ARG', 'val'), ('ARG2', 'val')]))
+    assert m.config_equals(Machine('name7b', '/ros/root7', '/rpp7', '7.7.3.4', env_args=[('ARG2', 'val'), ('ARG', 'val')]))
+    assert not m.config_equals(Machine('name7c', '/ros/root7', '/rpp7', '7.7.3.4', env_args=[('ARGc', 'valc'), ('ARG2', 'val')]))
+
 def test_Master():
     from roslaunch.core import Master
     # can't verify value of is_running for actual master

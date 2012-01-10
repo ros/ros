@@ -267,7 +267,11 @@ def create_local_process_args(node, machine):
     args = shlex.split(resolved) + remap_args
     try:
         #TODO:fuerte: pass through rospack and catkin cache
-        rospack = rospkg.RosPack(rospkg.get_ros_paths(env=machine.get_env()))
+        env = machine.get_env()
+        #fuerte: remove ROS_ROOT from path-finding logic
+        if 'ROS_ROOT' in env:
+            del env['ROS_ROOT']
+        rospack = rospkg.RosPack(rospkg.get_ros_paths(env=env))
         matches = roslib.packages.find_node(node.package, node.type, rospack)
     except rospkg.ResourceNotFound as e:
         # multiple nodes, invalid package

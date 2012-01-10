@@ -29,8 +29,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
 
 """
 Core roslaunch model and lower-level utility routines.
@@ -38,6 +36,8 @@ Core roslaunch model and lower-level utility routines.
 
 import os
 import logging
+from operator import itemgetter
+
 import socket
 import sys
 import xmlrpclib
@@ -377,7 +377,8 @@ class Machine(object):
     
         :returns:: configuration key, ``str``
         """
-        return "Machine(address[%s] ros_root[%s] ros_package_path[%s] ssh_port[%s] user[%s] password[%s] env_args[%s] timeout[%s])"%(self.address, self.ros_root, self.ros_package_path, self.ssh_port, self.user or '', self.password or '', str(self.env_args), self.timeout)
+        sorted_env = sorted(self.env_args, key=itemgetter(0))
+        return "Machine(address[%s] ros_root[%s] ros_package_path[%s] ssh_port[%s] user[%s] password[%s] env_args[%s] timeout[%s])"%(self.address, self.ros_root, self.ros_package_path, self.ssh_port, self.user or '', self.password or '', str(sorted_env), self.timeout)
 
     def config_equals(self, m2):
         """
@@ -385,19 +386,12 @@ class Machine(object):
         """
         if not isinstance(m2, Machine):
             return False
-        return self.ros_root  == m2.ros_root and \
-               self.ros_package_path == m2.ros_package_path and \
-               self.address  == m2.address and \
-               self.ssh_port  == m2.ssh_port and \
-               self.user == m2.user and \
-               self.password == m2.password and \
-               set(self.env_args) == set(m2.env_args) and \
-               self.timeout == m2.timeout
+        return self.config_key() == m2.config_key()
 
     def get_env(self):
         d = dict(ROS_ROOT=self.ros_root, ROS_PACKAGE_PATH=self.ros_package_path)
         for name, value in self.env_args:
-            d[name] = d[value]
+            d[name] = value
         return d
         
     def __ne__(self, m2):

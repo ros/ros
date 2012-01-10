@@ -35,6 +35,7 @@ import os
 import sys
 import unittest
     
+import rospkg
 import roslib.packages
 import logging
 logging.getLogger('roslaunch').setLevel(logging.CRITICAL)
@@ -169,7 +170,8 @@ class TestNodeprocess(unittest.TestCase):
         n.args = ''
         p = create_node_process(run_id, n, master_uri)
         # - the first arg should be the path to the node executable
-        cmd = roslib.packages.find_node('test_ros', 'talker.py', ros_root, rpp)
+        rospack = rospkg.RosPack()
+        cmd = roslib.packages.find_node('test_ros', 'talker.py', rospack)[0]
         self.assertEquals(p.args[0], cmd)
 
         # - test basic args

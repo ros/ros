@@ -181,7 +181,7 @@ function _roscmd {
         echo "Couldn't find package [$1]"
         return 1
     fi
-    exepath=(`find -L $catkin_source_dir $catkin_binary_dir $pkgdir -name $2 -type f ! -regex .*/[.].* ! -regex .*$pkgdir\/build\/.*`)
+    exepath=(`find -L $catkin_source_dir $catkin_binary_dir $pkgdir -name $2 -type f ! -regex .*/[.].* ! -regex .*$pkgdir\/build\/.* | uniq`)
     if [[ ${#exepath[@]} == 0 ]] ; then
         echo "That file does not exist in that package."
         return 1

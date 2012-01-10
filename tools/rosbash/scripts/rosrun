@@ -6,7 +6,7 @@ if [ $# -lt 2 ]; then
   echo "  If it finds it, it will run it with ARGS."
   exit 1
 fi
-pkgdir=`${ROS_ROOT}/bin/rospack find $1` || exit 2
+pkgdir=`rospack find $1` || exit 2
 # The -perm /mode usage is not available in find on the Mac
 #exepathlist=(`find $pkgdir -name $2 -type f -perm /u+x,g+x,o+x`)
 # -L: #3475

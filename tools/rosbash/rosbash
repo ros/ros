@@ -170,8 +170,11 @@ function _roscmd {
     if [[ -n $CATKIN_SOURCE_DIR ]]; then
         catkin_source_dir=`ROS_ROOT=$CATKIN_SOURCE_DIR ROS_PACKAGE_PATH= _ros_package_find $1`
     fi 
-    if [[ -n $CATKIN_BINARY_DIR ]]; then
-        catkin_binary_dir=`ROS_ROOT=$CATKIN_BINARY_DIR ROS_PACKAGE_PATH= _ros_package_find $1`
+    if [[ -n $CATKIN_BINARY_DIR && -f $CATKIN_BINARY_DIR/etc/packages.list ]]; then
+        cbd=`grep $1 $CATKIN_BINARY_DIR/etc/packages.list | cut -d " " -f 2`
+        if [[ -n $cbd ]]; then
+          catkin_binary_dir=$CATKIN_BINARY_DIR/$cbd
+        fi
     fi 
     pkgdir=`_ros_package_find $1`
     if [[ -z $catkin_source_dir && -z $catkin_binary_dir && -z $pkgdir ]]; then
@@ -355,8 +358,11 @@ function _roscomplete_search_dir {
         if [[ -n "$CATKIN_SOURCE_DIR" ]]; then
             catkin_source_dir=`ROS_ROOT=$CATKIN_SOURCE_DIR ROS_PACKAGE_PATH= _ros_package_find ${COMP_WORDS[1]}`
         fi 
-        if [[ -n "$CATKIN_BINARY_DIR" ]]; then
-            catkin_binary_dir=`ROS_ROOT=$CATKIN_BINARY_DIR ROS_PACKAGE_PATH= _ros_package_find ${COMP_WORDS[1]}`
+        if [[ -n $CATKIN_BINARY_DIR && -f $CATKIN_BINARY_DIR/etc/packages.list ]]; then
+            cbd=`grep ${COMP_WORDS[1]} $CATKIN_BINARY_DIR/etc/packages.list | cut -d " " -f 2`
+            if [[ -n $cbd ]]; then
+              catkin_binary_dir=$CATKIN_BINARY_DIR/$cbd
+            fi
         fi 
         pkgdir=`_ros_package_find ${COMP_WORDS[1]}`
         if [[ -n "$catkin_source_dir" || -n "$catkin_binary_dir" || -n "$pkgdir" ]]; then

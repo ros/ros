@@ -4,3 +4,7 @@ install(FILES rosbash rostcsh roszsh
         DESTINATION share/ros/rosbash)
 install(PROGRAMS scripts/rosrun
         DESTINATION bin)
+if(NOT EXISTS ${CMAKE_BINARY_DIR}/bin/rosrun)
+  message(STATUS "   Making toplevel symlink for bash script rosrun")
+  execute_process(COMMAND /bin/ln -sf ${CMAKE_CURRENT_SOURCE_DIR}/scripts/rosrun ${CMAKE_BINARY_DIR}/bin/rosrun)
+endif()

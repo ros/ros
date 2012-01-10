@@ -61,7 +61,7 @@ _ID = '/roslaunch'
 
 class RLTestTimeoutException(RLException): pass
 
-def validate_master_launch(m, is_core, is_rostest):
+def validate_master_launch(m, is_core, is_rostest=False):
     """
     Validate the configuration of a master we are about to launch. Ths
     validation already assumes that no existing master is running at

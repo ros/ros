@@ -47,13 +47,18 @@ class TestNodeArgs(unittest.TestCase):
         ros_root = '/ros/root1'
         rpp = '/rpp1'
         master_uri = 'http://masteruri:1234'
+        cbd = '/cbd'
 
         n = Node('nodepkg','nodetype')
-        m = Machine('name1', ros_root, rpp, '1.2.3.4')
+        m = Machine('name1', ros_root, rpp, '1.2.3.4', env_args=[('CATKIN_BINARY_DIR', cbd)])
         d = create_local_process_env(n, m, master_uri)
         self.assertEquals(d['ROS_MASTER_URI'], master_uri)
         self.assertEquals(d['ROS_ROOT'], ros_root)
-        self.assertEquals(d['PYTHONPATH'], os.path.join(ros_root, 'core', 'roslib', 'src'))
+        roslib_path = os.path.join(ros_root, 'core', 'roslib', 'src')
+        pp = d['PYTHONPATH'].split(os.pathsep)
+        assert roslib_path in pp
+        assert os.path.join(cbd, 'gen', 'py') in pp
+        assert os.path.join(cbd, 'lib') in pp
         self.assertEquals(d['ROS_PACKAGE_PATH'], rpp)
         for k in ['ROS_IP', 'ROS_NAMESPACE']:
             if k in d:
@@ -75,9 +80,13 @@ class TestNodeArgs(unittest.TestCase):
         env = os.environ.copy()
         env['ROS_ROOT'] = '/not/ros/root/'
         env['PYTHONPATH'] = '/some/path'
+        env['CATKIN_BINARY_DIR'] = '/cbd/'
         d = create_local_process_env(n, m, master_uri, env=env)
         self.assertEquals(d['ROS_ROOT'], ros_root)
-        self.assertEquals(d['PYTHONPATH'], os.path.join(ros_root, 'core', 'roslib', 'src'))
+        pp = d['PYTHONPATH'].split(os.pathsep)
+        assert roslib_path in pp
+        assert os.path.join('/cbd', 'lib') in pp, pp
+        assert os.path.join('/cbd', 'gen', 'py') in pp, pp
 
         # - make sure it didn't pollute original env
         self.assertEquals(env['ROS_ROOT'], '/not/ros/root/')
@@ -92,19 +101,15 @@ class TestNodeArgs(unittest.TestCase):
         self.failIf('ROS_PACKAGE_PATH' in d, 'ROS_PACKAGE_PATH should not be set: %s'%d)
 
         # test ROS_IP
-        m = Machine('name1', ros_root, rpp, '1.2.3.4', ros_ip="4.5.6.7")
+        m = Machine('name1', ros_root, rpp, '1.2.3.4')
         n = Node('nodepkg','nodetype', namespace="/ns1")
         d = create_local_process_env(n, m, master_uri)
         self.assertEquals(d['ROS_NAMESPACE'], "/ns1")
+        # test ROS_NAMESPACE
         # test stripping
         n = Node('nodepkg','nodetype', namespace="/ns2/")
         d = create_local_process_env(n, m, master_uri)
         self.assertEquals(d['ROS_NAMESPACE'], "/ns2")
-
-        # test ROS_NAMESPACE
-        m = Machine('name1', ros_root, rpp, '1.2.3.4', ros_ip="4.5.6.7")
-        d = create_local_process_env(n, m, master_uri)
-        self.assertEquals(d['ROS_IP'], "4.5.6.7")
 
         # test node.env_args
         n = Node('nodepkg','nodetype', env_args=[('NENV1', 'val1'), ('NENV2', 'val2'), ('ROS_ROOT', '/new/root')])        
@@ -114,7 +119,7 @@ class TestNodeArgs(unittest.TestCase):
         self.assertEquals(d['NENV2'], "val2")
 
         # test machine.env_args
-        m = Machine('name1', ros_root, rpp, '1.2.3.4', ros_ip="4.5.6.7", env_args=[('MENV1', 'val1'), ('MENV2', 'val2'), ('ROS_ROOT', '/new/root2')])        
+        m = Machine('name1', ros_root, rpp, '1.2.3.4', env_args=[('MENV1', 'val1'), ('MENV2', 'val2'), ('ROS_ROOT', '/new/root2')])        
         n = Node('nodepkg','nodetype')
         d = create_local_process_env(n, m, master_uri)
         self.assertEquals(d['ROS_ROOT'], "/new/root2")
@@ -122,7 +127,7 @@ class TestNodeArgs(unittest.TestCase):
         self.assertEquals(d['MENV2'], "val2")
 
         # test node.env_args precedence
-        m = Machine('name1', ros_root, rpp, '1.2.3.4', ros_ip="4.5.6.7", env_args=[('MENV1', 'val1'), ('MENV2', 'val2')])
+        m = Machine('name1', ros_root, rpp, '1.2.3.4', env_args=[('MENV1', 'val1'), ('MENV2', 'val2')])
         n = Node('nodepkg','nodetype', env_args=[('MENV1', 'nodeval1')])
         d = create_local_process_env(n, m, master_uri)
         self.assertEquals(d['MENV1'], "nodeval1")

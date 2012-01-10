@@ -95,7 +95,7 @@ def configure_logging(logname, level=logging.INFO, filename=None, env=None):
     if config_file is None or not os.path.isfile(config_file):
         # logging is considered soft-fail
         sys.stderr.write("WARNING: cannot load logging configuration file, logging is disabled\n")
-        Logger.getLogger(logname).setLevel(Logger.CRITICAL)
+        logging.getLogger(logname).setLevel(logging.CRITICAL)
         return log_filename
     
     # pass in log_filename as argument to pylogging.conf

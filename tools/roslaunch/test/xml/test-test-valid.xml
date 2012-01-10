@@ -38,7 +38,6 @@
     <param name="foo2" value="bar2" />
   </test>
   
-  <test test-name="test20" pkg="package" type="test_cwd_1" cwd="ros-root" />
   <test test-name="test21" pkg="package" type="test_cwd_2" cwd="node" />
       
 

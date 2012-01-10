@@ -211,6 +211,7 @@ def create_local_process_env(node, machine, master_uri, env=None):
         rospkg.environment.ROS_PACKAGE_PATH,
         rosgraph.ROS_IP,
         'PYTHONPATH',
+        'CATKIN_BINARY_DIR',
         rosgraph.ROS_NAMESPACE]:
         if evar in full_env:
             del full_env[evar]
@@ -264,12 +265,9 @@ def create_local_process_args(node, machine):
     if type(resolved) == unicode:
         resolved = resolved.encode('UTF-8') #attempt to force to string for shlex/subprocess
     args = shlex.split(resolved) + remap_args
-
-    start_t = time.time()
     try:
-        #TODO:fuerte: don't need machine.ros_root anymore
         #TODO:fuerte: pass through rospack and catkin cache
-        rospack = rospkg.RosPack([machine.ros_root] + machine.ros_package_path.split(os.pathsep))
+        rospack = rospkg.RosPack(rospkg.get_ros_paths(env=machine.get_env()))
         matches = roslib.packages.find_node(node.package, node.type, rospack)
     except rospkg.ResourceNotFound as e:
         # multiple nodes, invalid package
@@ -279,9 +277,6 @@ def create_local_process_args(node, machine):
     else:
         # old behavior was to take first, do we want to change this in Fuerte-style?
         cmd = matches[0]
-
-    end_t = time.time()
-    logging.getLogger('roslaunch.node_args').info('find_node(%s, %s, %s, %s) took %ss'%(node.package, node.type, machine.ros_root, machine.ros_package_path, (end_t - start_t)))
     if not cmd:
         raise NodeParamsException("Cannot locate node of type [%s] in package [%s]"%(node.type, node.package))
     return _launch_prefix_args(node) + [cmd] + args        

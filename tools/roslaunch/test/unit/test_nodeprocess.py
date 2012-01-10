@@ -36,6 +36,8 @@ import sys
 import unittest
     
 import roslib.packages
+import logging
+logging.getLogger('roslaunch').setLevel(logging.CRITICAL)
 
 ## Test roslaunch.nodeprocess
 class TestNodeprocess(unittest.TestCase):

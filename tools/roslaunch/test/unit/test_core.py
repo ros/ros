@@ -63,6 +63,7 @@ class TestCore(unittest.TestCase):
         
     def test_child_mode(self):
         from roslaunch.core import is_child_mode, set_child_mode
+        set_child_mode(False)
         self.failIf(is_child_mode())
         set_child_mode(True)
         self.assert_(is_child_mode())        
@@ -92,12 +93,15 @@ class TestCore(unittest.TestCase):
         rpp = '/rpp1'
         master_uri = 'http://masteruri:1234'
 
+        # don't set CATKIN_BINARY_DIR
         n = Node('nodepkg','nodetype')
         m = Machine('name1', ros_root, rpp, '1.2.3.4')
         d = setup_env(n, m, master_uri)
         self.assertEquals(d['ROS_MASTER_URI'], master_uri)
         self.assertEquals(d['ROS_ROOT'], ros_root)
-        self.assertEquals(d['PYTHONPATH'], os.path.join(ros_root, 'core', 'roslib', 'src'))
+        roslib_path = os.path.join(ros_root, 'core', 'roslib', 'src')
+        assert d['PYTHONPATH'] == roslib_path
+
         self.assertEquals(d['ROS_PACKAGE_PATH'], rpp)
         for k in ['ROS_IP', 'ROS_NAMESPACE']:
             if k in d:
@@ -107,24 +111,25 @@ class TestCore(unittest.TestCase):
         m = Machine('name1', '', '', '1.2.3.4')
         d = setup_env(n, m, master_uri)
         val = os.environ['ROS_ROOT']
+        roslib_path2 = os.path.join(val, 'core', 'roslib', 'src')
         self.assertEquals(d['ROS_ROOT'], val)
-        self.assertEquals(d['PYTHONPATH'], os.path.join(val, 'core', 'roslib', 'src'))        
+        assert roslib_path2 == d['PYTHONPATH'], "%s vs. %s"%(roslib_path2, d['PYTHONPATH'])
         self.failIf('ROS_PACKAGE_PATH' in d, 'ROS_PACKAGE_PATH should not be set: %s'%d)
 
-        # test ROS_IP
-        m = Machine('name1', ros_root, rpp, '1.2.3.4', ros_ip="4.5.6.7")
-        n = Node('nodepkg','nodetype', namespace="/ns1")
-        d = setup_env(n, m, master_uri)
-        self.assertEquals(d['ROS_NAMESPACE'], "/ns1")
+        # test ROS_NAMESPACE
         # test stripping
         n = Node('nodepkg','nodetype', namespace="/ns2/")
         d = setup_env(n, m, master_uri)
         self.assertEquals(d['ROS_NAMESPACE'], "/ns2")
 
-        # test ROS_NAMESPACE
-        m = Machine('name1', ros_root, rpp, '1.2.3.4', ros_ip="4.5.6.7")
+
+        # test CATKIN_BINARY_DIR
+        m = Machine('name1', ros_root, rpp, '1.2.3.4', env_args=[('CATKIN_BINARY_DIR', '/cbd')])
         d = setup_env(n, m, master_uri)
-        self.assertEquals(d['ROS_IP'], "4.5.6.7")
+        pp = d['PYTHONPATH'].split(os.pathsep)
+        assert roslib_path in pp, pp
+        assert os.path.join('/cbd', 'gen', 'py') in pp, pp
+        assert os.path.join('/cbd', 'lib') in pp, pp
 
         # test node.env_args
         n = Node('nodepkg','nodetype', env_args=[('NENV1', 'val1'), ('NENV2', 'val2'), ('ROS_ROOT', '/new/root')])        
@@ -134,7 +139,7 @@ class TestCore(unittest.TestCase):
         self.assertEquals(d['NENV2'], "val2")
 
         # test machine.env_args
-        m = Machine('name1', ros_root, rpp, '1.2.3.4', ros_ip="4.5.6.7", env_args=[('MENV1', 'val1'), ('MENV2', 'val2'), ('ROS_ROOT', '/new/root2')])        
+        m = Machine('name1', ros_root, rpp, '1.2.3.4', env_args=[('MENV1', 'val1'), ('MENV2', 'val2'), ('ROS_ROOT', '/new/root2')])        
         n = Node('nodepkg','nodetype')
         d = setup_env(n, m, master_uri)
         self.assertEquals(d['ROS_ROOT'], "/new/root2")
@@ -142,7 +147,7 @@ class TestCore(unittest.TestCase):
         self.assertEquals(d['MENV2'], "val2")
 
         # test node.env_args precedence
-        m = Machine('name1', ros_root, rpp, '1.2.3.4', ros_ip="4.5.6.7", env_args=[('MENV1', 'val1'), ('MENV2', 'val2')])
+        m = Machine('name1', ros_root, rpp, '1.2.3.4', env_args=[('MENV1', 'val1'), ('MENV2', 'val2')])
         n = Node('nodepkg','nodetype', env_args=[('MENV1', 'nodeval1')])
         d = setup_env(n, m, master_uri)
         self.assertEquals(d['MENV1'], "nodeval1")
@@ -170,7 +175,7 @@ class TestCore(unittest.TestCase):
         self.assertEquals(m.assignable, True)
         self.assertEquals(m.ssh_port, 22)        
         self.assertEquals(m.env_args, [])        
-        for p in ['ros_ip', 'user', 'password']:
+        for p in ['user', 'password']:
             self.assertEquals(getattr(m, p), None)
 
         m = Machine('name2', '/ros/root2', '/rpp2', '2.2.3.4', assignable=False)
@@ -181,12 +186,11 @@ class TestCore(unittest.TestCase):
         self.assert_(m.config_equals(Machine('name2b', '/ros/root2', '/rpp2', '2.2.3.4', assignable=False)))
         self.assert_(m.config_equals(Machine('name2c', '/ros/root2', '/rpp2', '2.2.3.4', assignable=True)))
 
-        m = Machine('name3', '/ros/root3', '/rpp3', '3.3.3.4', ros_ip='4.5.6.7')
-        self.assertEquals(m.ros_ip, '4.5.6.7')
+        m = Machine('name3', '/ros/root3', '/rpp3', '3.3.3.4')
         str(m) #test for error
         self.assertEquals(m, m)
-        self.assertEquals(m, Machine('name3', '/ros/root3', '/rpp3', '3.3.3.4', ros_ip='4.5.6.7'))
-        self.assert_(m.config_equals(Machine('name3b', '/ros/root3', '/rpp3', '3.3.3.4', ros_ip='4.5.6.7')))
+        self.assertEquals(m, Machine('name3', '/ros/root3', '/rpp3', '3.3.3.4'))
+        self.assert_(m.config_equals(Machine('name3b', '/ros/root3', '/rpp3', '3.3.3.4')))
             
         m = Machine('name4', '/ros/root4', '/rpp4', '4.4.3.4', user='user4')
         self.assertEquals(m.user, 'user4')
@@ -225,10 +229,6 @@ class TestCore(unittest.TestCase):
     def test_local_machine(self):
         try:
             env_copy = os.environ.copy()
-            if 'ROS_IP' in os.environ:
-                del os.environ['ROS_IP']
-            if 'ROS_HOSTNAME' in os.environ:
-                del os.environ['ROS_HOSTNAME']
 
             from roslaunch.core import local_machine
             lm = local_machine()
@@ -239,9 +239,6 @@ class TestCore(unittest.TestCase):
             #verify properties
             self.assertEquals(lm.ros_root, rospkg.get_ros_root())
             self.assertEquals(lm.ros_package_path, rospkg.get_ros_package_path())        
-        
-            # #1051 important test: this caused regressions up the tree
-            self.assertEquals(lm.ros_ip, None)
         
             self.assertEquals(lm.name, '')
             self.assertEquals(lm.assignable, True)

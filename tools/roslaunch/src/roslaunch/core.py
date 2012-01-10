@@ -62,15 +62,13 @@ PHASE_TEARDOWN = 'teardown'
 _child_mode = False
 def is_child_mode():
     """
-    @return: True if roslaunch is running in remote child mode
-    @rtype: bool
+    :returns: ``True`` if roslaunch is running in remote child mode, ``bool``
     """
     return _child_mode
 def set_child_mode(child_mode):
     """
-    @param child_mode: True if roslaunch is running in remote
-    child mode
-    @type  child_mode: bool
+    :param child_mode: True if roslaunch is running in remote
+      child mode, ``bool``
     """
     global _child_mode
     _child_mode = child_mode
@@ -79,10 +77,8 @@ def is_machine_local(machine):
     """
     Check to see if machine is local. NOTE: a machine is not local if
     its user credentials do not match the current user.
-    @param machine: Machine
-    @type  machine: L{Machine}
-    @return: True if machine is local and doesn't require remote login
-    @rtype: bool
+    :param machine: Machine, ``Machine``
+    :returns: True if machine is local and doesn't require remote login, ``bool``
     """    
     try:
         machine_addr = socket.gethostbyname(machine.address)
@@ -103,8 +99,7 @@ _printerrlog_handlers = []
 def printlog(msg):
     """
     Core utility for printing message to stdout as well as printlog handlers
-    @param msg: message to print
-    @type  msg: str
+    :param msg: message to print, ``str``
     """
     for h in _printlog_handlers:
         try: # don't let this bomb out the actual code
@@ -119,8 +114,7 @@ def printlog(msg):
 def printlog_bold(msg):
     """
     Similar to L{printlog()}, but the message printed to screen is bolded for greater clarity
-    @param msg: message to print
-    @type  msg: str
+    :param msg: message to print, ``str``
     """
     for h in _printlog_handlers:
         try: # don't let this bomb out the actual code
@@ -138,8 +132,7 @@ def printlog_bold(msg):
 def printerrlog(msg):
     """
     Core utility for printing message to stderr as well as printerrlog handlers
-    @param msg: message to print
-    @type  msg: str
+    :param msg: message to print, ``str``
     """    
     for h in _printerrlog_handlers:
         try: # don't let this bomb out the actual code
@@ -185,14 +178,10 @@ def setup_env(node, machine, master_uri):
     setup_env() will only set ROS_*, PYTHONPATH, and user-specified
     environment variables.
     
-    @param machine Machine: machine being launched on
-    @type  machine: L{Machine}
-    @param node: node that is being launched or None
-    @type  node: L{Node} 
-    @param master_uri: ROS master URI
-    @type  master_uri: str
-    @return: process env dictionary
-    @rtype: dict
+    :param machine: machine being launched on, ``Machine``
+    :param node: node that is being launched or None, ``Node``
+    :param master_uri: ROS master URI, ``str``
+    :returns: process env dictionary, ``dict``
     """
     d = {}
     d[rosgraph.ROS_MASTER_URI] = master_uri
@@ -202,24 +191,20 @@ def setup_env(node, machine, master_uri):
     
     if machine.ros_package_path: #optional
         d[rospkg.environment.ROS_PACKAGE_PATH] = machine.ros_package_path
-    if machine.ros_ip: #optional
-        d[rosgraph.ROS_IP] = machine.ros_ip
 
     # fuerte/catkin: backwards compatibility.
-    # use of roslib depends on PYTHONPATH being set.  This environment needs
-    # to be setup correctly for roslaunch through ssh to work.
+    # use of roslib depends on PYTHONPATH being set.  
     d['PYTHONPATH'] = os.path.join(d[rospkg.environment.ROS_ROOT],'core','roslib', 'src')
-    # To work from a wet build, catkin also needs 
-    # CATKIN_BINARY_DIR/gen/py and CATKIN_BINARY_DIR/lib
-    if 'CATKIN_BINARY_DIR' in os.environ:
-        cbd = os.environ['CATKIN_BINARY_DIR']
-        cbd_genpy = os.path.join(cbd, 'gen', 'py')
-        cbd_lib = os.path.join(cbd, 'lib')
-        d['PYTHONPATH'] += ':%s:%s'%(cbd_genpy, cbd_lib)
 
     # load in machine env_args. Node env args have precedence
     for name, value in machine.env_args:
         d[name] = value
+        # To work from a wet build, catkin also needs 
+        # CATKIN_BINARY_DIR/gen/py and CATKIN_BINARY_DIR/lib
+        if name == 'CATKIN_BINARY_DIR':
+            cbd_genpy = os.path.join(value, 'gen', 'py')
+            cbd_lib = os.path.join(value, 'lib')
+            d['PYTHONPATH'] = os.pathsep.join([d['PYTHONPATH'], cbd_genpy, cbd_lib])
 
     # add node-specific env args last as they have highest precedence
     if node:
@@ -236,9 +221,8 @@ def setup_env(node, machine, master_uri):
 def rle_wrapper(fn):
     """
     Wrap lower-level exceptions in RLException class
-    @return: function wrapper that throws an RLException if the
-        wrapped function throws an Exception
-    @rtype: fn
+    :returns:: function wrapper that throws an RLException if the
+        wrapped function throws an Exception, ``fn``
     """    
     def wrapped_fn(*args):
         try:
@@ -255,10 +239,8 @@ get_ros_package_path = rospkg.get_ros_package_path
 def remap_localhost_uri(uri, force_localhost=False):
     """
     Resolve localhost addresses to an IP address so that
-    @param uri: XML-RPC URI
-    @type  uri: str
-    @param force_localhost: if True, URI is mapped onto the local machine no matter what
-    @type  force_localhost: bool
+    :param uri: XML-RPC URI, ``str``
+    :param force_localhost: if True, URI is mapped onto the local machine no matter what, ``bool``
     """
     hostname, port = rosgraph.network.parse_http_host_and_port(uri)
     if force_localhost or hostname == 'localhost':
@@ -282,10 +264,8 @@ class Master:
     def __init__(self, type_=None, uri=None, auto=None):
         """
         Create new Master instance.
-        @param uri: master URI. Defaults to ROS_MASTER_URI environment variable.
-        @type  uri: str
-        @param type_: Currently only support 'rosmaster' 
-        @type  type_: str
+        :param uri: master URI. Defaults to ROS_MASTER_URI environment variable, ``str``
+        :param type_: Currently only support 'rosmaster', ``str``
         """
         self.auto = None # no longer used
         self.type = type_ or Master.ROSMASTER
@@ -312,23 +292,20 @@ class Master:
 
     def get(self):
         """
-        @return: XMLRPC proxy for communicating with master
-        @rtype: xmlrpclib.ServerProxy
+        :returns:: XMLRPC proxy for communicating with master, ``xmlrpclib.ServerProxy``
         """
         return xmlrpclib.ServerProxy(self.uri)
     
     def get_multi(self):
         """
-        @return: multicall XMLRPC proxy for communicating with master
-        @rtype: xmlrpclib.MultiCall
+        :returns:: multicall XMLRPC proxy for communicating with master, ``xmlrpclib.MultiCall``
         """
         return xmlrpclib.MultiCall(self.get())
     
     def is_running(self):
         """
         Check if master is running. 
-        @return: True if the master is running
-        @rtype: bool
+        :returns:: True if the master is running, ``bool``
         """
         try:
             try:
@@ -357,34 +334,24 @@ class Machine(object):
     system.  Corresponds to the 'machine' tag in the launch
     specification.
     """
-    __slots__ = ['name', 'ros_root', 'ros_package_path', 'ros_ip',\
+    __slots__ = ['name', 'ros_root', 'ros_package_path', \
                  'address', 'ssh_port', 'user', 'password', 'assignable',\
                  'env_args', 'timeout']
     def __init__(self, name, ros_root, ros_package_path, \
-                 address, ros_ip=None, ssh_port=22, user=None, password=None, \
+                 address, ssh_port=22, user=None, password=None, \
                  assignable=True, env_args=[], timeout=None):
         """
-        @param name: machine name
-        @type  name: str
-        @param ros_root: ROS_ROOT on machine
-        @type  ros_root: str
-        @param ros_package_path: ROS_PACKAGE_PATH on machine
-        @type  ros_package_path: str
-        @param address: network address of machine
-        @type  address: str
-        @param ros_ip: ROS_IP on machine
-        @type  ros_ip: str
-        @param ssh_port: SSH port number
-        @type  ssh_port: int
-        @param user: SSH username
-        @type  user: str
-        @param password: SSH password. Not recommended for use. Use SSH keys instead.
-        @type  password: str
+        :param name: machine name, ``str``
+        :param ros_root: ROS_ROOT on machine, ``str``
+        :param ros_package_path: ROS_PACKAGE_PATH on machine, ``str``
+        :param address: network address of machine, ``str``
+        :param ssh_port: SSH port number, ``int``
+        :param user: SSH username, ``str``
+        :param password: SSH password. Not recommended for use. Use SSH keys instead., ``str``
         """
         self.name = name
         self.ros_root = ros_root
         self.ros_package_path = ros_package_path
-        self.ros_ip = ros_ip or None
         self.user = user or None
         self.password = password or None
         self.address = address
@@ -394,7 +361,7 @@ class Machine(object):
         self.timeout = timeout or _DEFAULT_REGISTER_TIMEOUT
         
     def __str__(self):
-        return "Machine(name[%s] ros_root[%s] ros_package_path[%s] ros_ip[%s] address[%s] ssh_port[%s] user[%s] assignable[%s] env_args[%s] timeout[%s])"%(self.name, self.ros_root, self.ros_package_path, self.ros_ip, self.address, self.ssh_port, self.user, self.assignable, str(self.env_args), self.timeout)
+        return "Machine(name[%s] ros_root[%s] ros_package_path[%s] address[%s] ssh_port[%s] user[%s] assignable[%s] env_args[%s] timeout[%s])"%(self.name, self.ros_root, self.ros_package_path, self.address, self.ssh_port, self.user, self.assignable, str(self.env_args), self.timeout)
     def __eq__(self, m2):
         if not isinstance(m2, Machine):
             return False
@@ -408,21 +375,18 @@ class Machine(object):
         machine. machines with identical configurations have identical
         keys
     
-        @return: configuration key
-        @rtype:  str
+        :returns:: configuration key, ``str``
         """
-        return "Machine(address[%s] ros_root[%s] ros_package_path[%s] ros_ip[%s] ssh_port[%s] user[%s] password[%s] env_args[%s] timeout[%s])"%(self.address, self.ros_root, self.ros_package_path, self.ros_ip or '', self.ssh_port, self.user or '', self.password or '', str(self.env_args), self.timeout)
+        return "Machine(address[%s] ros_root[%s] ros_package_path[%s] ssh_port[%s] user[%s] password[%s] env_args[%s] timeout[%s])"%(self.address, self.ros_root, self.ros_package_path, self.ssh_port, self.user or '', self.password or '', str(self.env_args), self.timeout)
 
     def config_equals(self, m2):
         """
-        @return: True if machines have identical configurations
-        @rtype: bool
+        :returns:: True if machines have identical configurations, ``bool``
         """
         if not isinstance(m2, Machine):
             return False
         return self.ros_root  == m2.ros_root and \
                self.ros_package_path == m2.ros_package_path and \
-               self.ros_ip == m2.ros_ip and \
                self.address  == m2.address and \
                self.ssh_port  == m2.ssh_port and \
                self.user == m2.user and \
@@ -430,6 +394,12 @@ class Machine(object):
                set(self.env_args) == set(m2.env_args) and \
                self.timeout == m2.timeout
 
+    def get_env(self):
+        d = dict(ROS_ROOT=self.ros_root, ROS_PACKAGE_PATH=self.ros_package_path)
+        for name, value in self.env_args:
+            d[name] = d[value]
+        return d
+        
     def __ne__(self, m2):
         return not self.__eq__(m2)
 
@@ -456,14 +426,12 @@ class Param(object):
 _local_m = None
 def local_machine():
     """
-    @return: Machine instance representing the local machine
-    @rtype: L{Machine}
+    :returns:: Machine instance representing the local machine, ``Machine``
     """
     global _local_m
     if _local_m is None:
         _local_m = Machine('', get_ros_root(), \
-                           get_ros_package_path(), 'localhost',\
-                           ros_ip=rosgraph.network.get_address_override())
+                           get_ros_package_path(), 'localhost')
     return _local_m
 
 class Node(object):
@@ -484,37 +452,23 @@ class Node(object):
                  remap_args=None,env_args=None, output=None, cwd=None, \
                  launch_prefix=None, required=False, filename='<unknown>'):
         """
-        @param package: node package name
-        @type  package: str
-        @param node_type: node type
-        @type  node_type: str
-        @param name: node name
-        @type  name: str
-        @param namespace: namespace for node
-        @type  namespace: str
-        @param machine_name: name of machine to run node on
-        @type  machine_name: str
-        @param args: argument string to pass to node executable
-        @type  args: str
-        @param respawn: if True, respawn node if it dies
-        @type  respawn: bool
-        @param remap_args: list of [(from, to)] remapping arguments
-        @type  remap_args: [(str, str)]: 
-        @param env_args: list of [(key, value)] of
-        additional environment vars to set for node
-        @type  env_args: [(str, str)]
-        @param output: where to log output to, either Node, 'screen' or 'log'
-        @type  output: str
-        @param cwd: current working directory of node, either 'node', 'ROS_HOME' or 'ros-root'. Default: ROS_HOME
-        @type  cwd: str
-        @param launch_prefix: launch command/arguments to prepend to node executable arguments
-        @type  launch_prefix: str
-        @param required: node is required to stay running (launch fails if node dies)
-        @type  required: bool
-        @param filename: name of file Node was parsed from
-        @type  filename: str
+        :param package: node package name, ``str``
+        :param node_type: node type, ``str``
+        :param name: node name, ``str``
+        :param namespace: namespace for node, ``str``
+        :param machine_name: name of machine to run node on, ``str``
+        :param args: argument string to pass to node executable, ``str``
+        :param respawn: if True, respawn node if it dies, ``bool``
+        :param remap_args: list of [(from, to)] remapping arguments, ``[(str, str)]``
+        :param env_args: list of [(key, value)] of
+        additional environment vars to set for node, ``[(str, str)]``
+        :param output: where to log output to, either Node, 'screen' or 'log', ``str``
+        :param cwd: current working directory of node, either 'node', 'ROS_HOME'. Default: ROS_HOME, ``str``
+        :param launch_prefix: launch command/arguments to prepend to node executable arguments, ``str``
+        :param required: node is required to stay running (launch fails if node dies), ``bool``
+        :param filename: name of file Node was parsed from, ``str``
 
-        @raise ValueError: if parameters do not validate
+        :raises: :exc:`ValueError` If parameters do not validate
         """        
 
         self.package = package
@@ -530,8 +484,6 @@ class Node(object):
         self.cwd = cwd
         if self.cwd == 'ros_home': # be lenient on case
             self.cwd = 'ROS_HOME'
-        elif self.cwd == 'ros-root':
-            printerrlog("WARNING: 'ros-root' value for <node> 'cwd' attribute is deprecated.")
             
         self.launch_prefix = launch_prefix or None
         self.required = required
@@ -549,8 +501,8 @@ class Node(object):
             raise ValueError("type must be non-empty")
         if not self.output in ['log', 'screen', None]:
             raise ValueError("output must be one of 'log', 'screen'")
-        if not self.cwd in ['ROS_HOME', 'ros-root', 'node', None]:
-            raise ValueError("cwd must be one of 'ROS_HOME', 'ros-root', 'node'")
+        if not self.cwd in ['ROS_HOME', 'node', None]:
+            raise ValueError("cwd must be one of 'ROS_HOME', 'node'")
         
         # Extra slots for assigning later
         
@@ -594,8 +546,7 @@ class Node(object):
     def to_xml(self):
         """
         convert representation into XML representation. Currently cannot represent private parameters.
-        @return: XML representation for remote machine
-        @rtype: str
+        :returns:: XML representation for remote machine, ``str``
         """
         t = self.xmltype()
         attrs = [(a, v) for a, v in self.xmlattrs() if v != None]
@@ -609,8 +560,7 @@ class Node(object):
         """
         convert representation into remote representation. Remote representation does
         not include parameter settings or 'machine' attribute
-        @return: XML representation for remote machine
-        @rtype: str
+        :returns:: XML representation for remote machine, ``str``
         """
         t = self.xmltype()
         attrs = [(a, v) for a, v in self.xmlattrs() if v != None and a != 'machine']
@@ -623,10 +573,8 @@ class Node(object):
 def _xml_escape(s):
     """
     Escape string for XML
-    @param s: string to escape
-    @type  s: str
-    @return: string with XML entities (<, >, \", &) escaped.
-    @rtype: str
+    :param s: string to escape, ``str``
+    :returns:: string with XML entities (<, >, \", &) escaped, ``str``
     """
     # gross, but doesn't need to be fast. always replace amp first
     s = str(s)
@@ -653,11 +601,9 @@ class Test(Node):
                  launch_prefix=None, retry=None, filename="<unknown>"):
         """
         Construct a new test node.
-        @param test_name: name of test for recording in test results
-        @type  test_name: str
-        @param time_limit: number of seconds that a test
-        should run before marked as a failure
-        @type  time_limit: int/float/long
+        :param test_name: name of test for recording in test results, ``str``
+        :param time_limit: number of seconds that a test
+          should run before marked as a failure, ``int/float/long``
         """
         super(Test, self).__init__(package, node_type, name=name, \
                                    namespace=namespace, \
@@ -705,13 +651,10 @@ class Executable(object):
     
     def __init__(self, cmd, args, phase=PHASE_RUN):
         """
-        @param cmd: name of command to run
-        @type  cmd: str
-        @param args: arguments to command
-        @type  args: (str,)
-        @param phase: PHASE_SETUP|PHASE_RUN|PHASE_TEARDOWN. Indicates whether the
-            command should be run before, during, or after launch.
-        @type  phase: str
+        :param cmd: name of command to run, ``str``
+        :param args: arguments to command, ``(str,)``
+        :param phase: PHASE_SETUP|PHASE_RUN|PHASE_TEARDOWN. Indicates whether the
+            command should be run before, during, or after launch, ``str``
         """
         self.command = cmd
         self.args = args
@@ -736,8 +679,7 @@ class RosbinExecutable(Executable):
 def generate_run_id():
     """
     Utility routine for generating run IDs (UUIDs)
-    @return: guid
-    @rtype: str
+    :returns: guid, ``str``
     """    
     import uuid
     return str(uuid.uuid1())

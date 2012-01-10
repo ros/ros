@@ -555,12 +555,10 @@ class TestXmlLoader(unittest.TestCase):
         self.assertEquals(2, n.retry)
                 
     def test_node_cwd(self):
-        nodes = self._load_valid_nodes(['test_base', 'test_cwd_1', 'test_cwd_2', 'test_cwd_3', 'test_cwd_4'])
+        nodes = self._load_valid_nodes(['test_base', 'test_cwd_2', 'test_cwd_3', 'test_cwd_4'])
         for n in nodes:
             if n.type == 'test_base':
                 self.assertEquals(None, n.cwd)
-            elif n.type == 'test_cwd_1':
-                self.assertEquals("ros-root", n.cwd)                
             elif n.type == 'test_cwd_2':
                 self.assertEquals("node", n.cwd)  
             elif n.type in ['test_cwd_3', 'test_cwd_4']:
@@ -603,7 +601,7 @@ class TestXmlLoader(unittest.TestCase):
                 self.assertEquals("/ns_test3/child3/", n.namespace) 
 
     def test_machines(self):
-        tests = ['test-machine-invalid.xml', 'test-machine-invalid-2.xml', \
+        tests = ['test-machine-invalid.xml', \
                  'test-machine-invalid-4.xml', 'test-machine-invalid-5.xml',
                  'test-machine-invalid-6.xml', 'test-machine-invalid-7.xml',
                  'test-machine-invalid-8.xml', 
@@ -629,17 +627,14 @@ class TestXmlLoader(unittest.TestCase):
             for m in machines:
                 if m.name == 'machine1':
                     self.assertEquals(m.address, 'address1')
-                    self.failIf(m.ros_ip, "ros ip should not be set")
                     self.assertEquals(m.ros_root, os.environ['ROS_ROOT'])
                     self.assertEquals(m.ros_package_path, os.environ['ROS_PACKAGE_PATH'])
                 elif m.name == 'machine2':
                     self.assertEquals(m.address, 'address2')
                     self.assertEquals(m.ros_root, '/ros/root')
                     self.assertEquals(m.ros_package_path, '/ros/package/path')
-                    self.assertEquals(m.ros_ip, 'hostname')
                 elif m.name == 'machine3':
                     self.assertEquals(m.address, 'address3')
-                    self.assertEquals(m.ros_ip, "hostname")
                     # should default to environment if not set
                     self.assertEquals(m.ros_root, os.environ['ROS_ROOT'])
                     self.assertEquals(m.ros_package_path, os.environ['ROS_PACKAGE_PATH'])
@@ -732,7 +727,6 @@ class TestXmlLoader(unittest.TestCase):
             self.assertEquals(m.address, 'address-%s'%r)        
             self.assertEquals(m.ros_root, 'ros_root-%s'%r)
             self.assertEquals(m.ros_package_path, '/ros/package/path-%s'%r)
-            self.assertEquals(m.ros_ip, 'ros_host_name-%s'%r)
         finally:
             os.environ['ROS_ROOT'] = old_rr
             if old_rpp is not None:

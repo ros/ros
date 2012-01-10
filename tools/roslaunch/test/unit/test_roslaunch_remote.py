@@ -72,8 +72,8 @@ class TestRoslaunchRemote(unittest.TestCase):
   <env name="key7b" value="val7b" />
 </node>""", n.to_remote_xml())
         # test cwd        
-        n = Node('pkg8', 'type8', cwd='ros-root')
-        self.assertEquals('<node pkg="pkg8" type="type8" ns="/" args="" cwd="ros-root" respawn="False" required="False">\n</node>', n.to_remote_xml())
+        n = Node('pkg8', 'type8', cwd='ROS_HOME')
+        self.assertEquals('<node pkg="pkg8" type="type8" ns="/" args="" cwd="ROS_HOME" respawn="False" required="False">\n</node>', n.to_remote_xml())
         n = Node('pkg9', 'type9', cwd='node')
         self.assertEquals('<node pkg="pkg9" type="type9" ns="/" args="" cwd="node" respawn="False" required="False">\n</node>', n.to_remote_xml())
         # test output
@@ -91,8 +91,8 @@ class TestRoslaunchRemote(unittest.TestCase):
         self.assertEquals('<node pkg="pkg13" type="type13" ns="/" args="" respawn="False" required="True">\n</node>', n.to_remote_xml())        
         
         #test everything
-        n = Node('pkg20', 'type20', namespace="/ns20/", machine_name="foo", remap_args=[('from20a', 'to20a'), ('from20b', 'to20b')], env_args=[('key20a', 'val20a'), ('key20b', 'val20b')], output="screen", cwd="ros-root", respawn=True, args="arg20a arg20b", launch_prefix="nice", required=False)
-        self.assertEquals("""<node pkg="pkg20" type="type20" ns="/ns20/" args="arg20a arg20b" output="screen" cwd="ros-root" respawn="True" launch-prefix="nice" required="False">
+        n = Node('pkg20', 'type20', namespace="/ns20/", machine_name="foo", remap_args=[('from20a', 'to20a'), ('from20b', 'to20b')], env_args=[('key20a', 'val20a'), ('key20b', 'val20b')], output="screen", cwd="ROS_HOME", respawn=True, args="arg20a arg20b", launch_prefix="nice", required=False)
+        self.assertEquals("""<node pkg="pkg20" type="type20" ns="/ns20/" args="arg20a arg20b" output="screen" cwd="ROS_HOME" respawn="True" launch-prefix="nice" required="False">
   <remap from="from20a" to="to20a" />
   <remap from="from20b" to="to20b" />
   <env name="key20a" value="val20a" />
@@ -128,14 +128,14 @@ class TestRoslaunchRemote(unittest.TestCase):
   <env name="key7b" value="val7b" />
 </test>""", n.to_remote_xml())
         # test cwd        
-        n = Test('test8', 'pkg8', 'type8', cwd='ros-root')
-        self.assertEquals('<test pkg="pkg8" type="type8" ns="/" args="" output="log" cwd="ros-root" required="False" test-name="test8">\n</test>', n.to_remote_xml())
+        n = Test('test8', 'pkg8', 'type8', cwd='ROS_HOME')
+        self.assertEquals('<test pkg="pkg8" type="type8" ns="/" args="" output="log" cwd="ROS_HOME" required="False" test-name="test8">\n</test>', n.to_remote_xml())
         n = Test('test9', 'pkg9', 'type9', cwd='node')
         self.assertEquals('<test pkg="pkg9" type="type9" ns="/" args="" output="log" cwd="node" required="False" test-name="test9">\n</test>', n.to_remote_xml())
 
         #test everything
-        n = Test('test20', 'pkg20', 'type20', namespace="/ns20/", machine_name="foo", remap_args=[('from20a', 'to20a'), ('from20b', 'to20b')], env_args=[('key20a', 'val20a'), ('key20b', 'val20b')], cwd="ros-root", args="arg20a arg20b")
-        self.assertEquals("""<test pkg="pkg20" type="type20" ns="/ns20/" args="arg20a arg20b" output="log" cwd="ros-root" required="False" test-name="test20">
+        n = Test('test20', 'pkg20', 'type20', namespace="/ns20/", machine_name="foo", remap_args=[('from20a', 'to20a'), ('from20b', 'to20b')], env_args=[('key20a', 'val20a'), ('key20b', 'val20b')], cwd="ROS_HOME", args="arg20a arg20b")
+        self.assertEquals("""<test pkg="pkg20" type="type20" ns="/ns20/" args="arg20a arg20b" output="log" cwd="ROS_HOME" required="False" test-name="test20">
   <remap from="from20a" to="to20a" />
   <remap from="from20b" to="to20b" />
   <env name="key20a" value="val20a" />

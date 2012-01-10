@@ -22,6 +22,4 @@ add_message_files(DIRECTORY msg
   )
 generate_messages(DEPENDENCIES std_msgs rosgraph_msgs)
 
-catkin_project(test_roslib_comm
-  MSG_DIRS msg
-  )
+catkin_project(test_roslib_comm)

@@ -26,9 +26,7 @@ add_service_files(DIRECTORY srv
 
 generate_messages(DEPENDENCIES std_msgs rosgraph_msgs)
 
-catkin_project(test_ros
-  MSG_DIRS msg
-  )
+catkin_project(test_ros)
 catkin_export_python(src)
 
 add_rostest(test/test-param-server.xml)

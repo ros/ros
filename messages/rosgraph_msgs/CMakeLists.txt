@@ -6,9 +6,7 @@ add_message_files(DIRECTORY msg
 
 generate_messages(DEPENDENCIES std_msgs)
 
-catkin_project(rosgraph_msgs
-  MSG_DIRS msg
-  )
+catkin_project(rosgraph_msgs)
 install(DIRECTORY msg
   DESTINATION share/rosgraph_msgs
   )

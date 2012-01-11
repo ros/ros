@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 if ! which port &>/dev/null ; then
   echo "You need to install MacPorts. Instructions provided at www.macports.org."
   exit 1

@@ -114,7 +114,7 @@ class TestRosparam(unittest.TestCase):
             
     def test_rosparam_load(self):
         f = os.path.join(get_test_path(), 'test.yaml')
-        f_ns = os.path.join(get_test_path(), 'test', 'test_ns.yaml')
+        f_ns = os.path.join(get_test_path(), 'test_ns.yaml')
         
         cmd = 'rosparam'
         try:

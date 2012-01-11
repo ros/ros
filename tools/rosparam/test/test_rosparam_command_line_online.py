@@ -134,57 +134,57 @@ class TestRosparamOnline(unittest.TestCase):
         # set
         # - integers
         Popen([cmd, 'set', "/set/test1", "1"], stdout=PIPE).communicate()[0]
-        self.assertEquals(1, ps.getParam('/set/test1')[2])
+        self.assertEquals(1, ps.getParam('/set/test1'))
         # -- verbose
         Popen([cmd, 'set', '-v', "/set/test1", "1"], stdout=PIPE).communicate()[0]
-        self.assertEquals(1, ps.getParam('/set/test1')[2])
+        self.assertEquals(1, ps.getParam('/set/test1'))
         Popen([cmd, 'set', "set/test1", "2"], stdout=PIPE).communicate()[0]
-        self.assertEquals(2, ps.getParam('/set/test1')[2])
+        self.assertEquals(2, ps.getParam('/set/test1'))
         # - floats
         Popen([cmd, 'set', "/set/test2", "1.0"], stdout=PIPE).communicate()[0]
-        self.assertEquals(1, ps.getParam('/set/test2')[2])
+        self.assertEquals(1, ps.getParam('/set/test2'))
         Popen([cmd, 'set', "set/test2", "2.0"], stdout=PIPE).communicate()[0]
-        self.assertEquals(2, ps.getParam('/set/test2')[2])
+        self.assertEquals(2, ps.getParam('/set/test2'))
         # - booleans
         Popen([cmd, 'set', "/set/testbool", "true"], stdout=PIPE).communicate()[0]
-        self.assertEquals(True, ps.getParam('/set/testbool')[2])
+        self.assertEquals(True, ps.getParam('/set/testbool'))
         Popen([cmd, 'set', "set/testbool", "false"], stdout=PIPE).communicate()[0]
-        self.assertEquals(False, ps.getParam('/set/testbool')[2])
+        self.assertEquals(False, ps.getParam('/set/testbool'))
         # - strings
         #   TODO: test more interesting encodings, like multi-line
         Popen([cmd, 'set', "/set/teststr", "hi"], stdout=PIPE).communicate()[0]
-        self.assertEquals("hi", ps.getParam('/set/teststr')[2])
+        self.assertEquals("hi", ps.getParam('/set/teststr'))
         Popen([cmd, 'set', "set/teststr", "hello world"], stdout=PIPE).communicate()[0]
-        self.assertEquals("hello world", ps.getParam('/set/teststr')[2])
+        self.assertEquals("hello world", ps.getParam('/set/teststr'))
         Popen([cmd, 'set', "set/teststr", "'true'"], stdout=PIPE).communicate()[0]
-        self.assertEquals("true", ps.getParam('/set/teststr')[2])
+        self.assertEquals("true", ps.getParam('/set/teststr'))
         # - list
         Popen([cmd, 'set', "set/testlist", "[]"], stdout=PIPE).communicate()[0]
-        self.assertEquals([], ps.getParam('/set/testlist')[2])
+        self.assertEquals([], ps.getParam('/set/testlist'))
         Popen([cmd, 'set', "/set/testlist", "[1, 2, 3]"], stdout=PIPE).communicate()[0]
-        self.assertEquals([1, 2, 3], ps.getParam('/set/testlist')[2])
+        self.assertEquals([1, 2, 3], ps.getParam('/set/testlist'))
         # - dictionary
         Popen([cmd, 'set', "/set/testdict", "{a: b, c: d}"], stdout=PIPE).communicate()[0]
-        self.assertEquals('b', ps.getParam('/set/testdict/a')[2])
-        self.assertEquals('d', ps.getParam('/set/testdict/c')[2])
+        self.assertEquals('b', ps.getParam('/set/testdict/a'))
+        self.assertEquals('d', ps.getParam('/set/testdict/c'))
         #   - empty dictionary should be a noop
         Popen([cmd, 'set', "set/testdict", "{}"], stdout=PIPE).communicate()[0]
-        self.assertEquals('b', ps.getParam('/set/testdict/a')[2])
-        self.assertEquals('d', ps.getParam('/set/testdict/c')[2])
+        self.assertEquals('b', ps.getParam('/set/testdict/a'))
+        self.assertEquals('d', ps.getParam('/set/testdict/c'))
         #   - this should be an update
         Popen([cmd, 'set', "/set/testdict", "{e: f, g: h}"], stdout=PIPE).communicate()[0]
-        self.assertEquals('b', ps.getParam('/set/testdict/a')[2])
-        self.assertEquals('d', ps.getParam('/set/testdict/c')[2])
-        self.assertEquals('f', ps.getParam('/set/testdict/e')[2])
-        self.assertEquals('h', ps.getParam('/set/testdict/g')[2])
+        self.assertEquals('b', ps.getParam('/set/testdict/a'))
+        self.assertEquals('d', ps.getParam('/set/testdict/c'))
+        self.assertEquals('f', ps.getParam('/set/testdict/e'))
+        self.assertEquals('h', ps.getParam('/set/testdict/g'))
         # -- verbose
         check_call([cmd, 'set', '-v', "/set/testdictverbose", "{e: f, g: h}"])
         
         # delete
         ps.setParam('/delete/me', True)
-        self.assert_(ps.hasParam('/delete/me')[2])
+        self.assert_(ps.hasParam('/delete/me'))
         Popen([cmd, 'delete', "/delete/me"], stdout=PIPE).communicate()[0]
-        self.failIf(ps.hasParam('/delete/me')[2])
+        self.failIf(ps.hasParam('/delete/me'))
 
         # TODO: dump
         # TODO: load

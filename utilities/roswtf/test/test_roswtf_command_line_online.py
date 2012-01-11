@@ -77,7 +77,7 @@ class TestRostopicOnline(unittest.TestCase):
 
         rospack = rospkg.RosPack()
         rosstack = rospkg.RosStack()
-        env['ROS_PACKAGE_PATH'] = os.pathsep.join([rosstack.get_path('ros_comm'), rospack.get_path('std_msgs')])
+        env['ROS_PACKAGE_PATH'] = os.pathsep.join([rosstack.get_path('ros_comm'), rospack.get_path('std_msgs'), rosstack.get_path('roscpp_core')])
 
         cwd  = rospack.get_path('roswtf')
         kwds = { 'env': env, 'stdout': PIPE, 'stderr': PIPE, 'cwd': cwd}

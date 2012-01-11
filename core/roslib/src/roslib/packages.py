@@ -469,7 +469,6 @@ def _find_resource(d, resource_name, filter_fn=None):
     """
     #UNIXONLY
     matches = []
-    node_exe = None
     for p, dirs, files in os.walk(d):
         if resource_name in files:
             test_path = os.path.join(p, resource_name)
@@ -515,10 +514,6 @@ def find_resource(pkg, resource_name, filter_fn=None, rospack=None, catkin_packa
     if catkin_packages_cache is None:
         catkin_packages_cache = {}
         
-    #if CATKIN_SOURCE_DIR in os.environ:
-    #    rrs.append(None)
-    #    rpps.append(os.environ[CATKIN_SOURCE_DIR])
-
     # lookup package as it *must* exist
     pkg_path = rospack.get_path(pkg)
     
@@ -530,6 +525,6 @@ def find_resource(pkg, resource_name, filter_fn=None, rospack=None, catkin_packa
     # from ros_package_path
     matches = []
     if pkg in catkin_packages_cache:
-        matches.extend(_find_resource(catkin_packages_cache[pkg], resource_name))
-    matches.extend(_find_resource(pkg_path, resource_name))
+        matches.extend(_find_resource(catkin_packages_cache[pkg], resource_name, filter_fn=filter_fn))
+    matches.extend(_find_resource(pkg_path, resource_name, filter_fn=filter_fn))
     return matches

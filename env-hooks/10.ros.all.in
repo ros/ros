@@ -1,0 +1,9 @@
+#
+#  Installed ROS env file
+#  This file was automatically generated.
+#
+export ROS_ROOT=@CMAKE_INSTALL_PREFIX@/share/ros
+export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:@CMAKE_INSTALL_PREFIX@/share
+if [ ! "$ROS_MASTER_URI" ] ; then
+    export ROS_MASTER_URI=http://localhost:11311
+fi

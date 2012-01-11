@@ -22,9 +22,9 @@ install(TARGETS roslib
   )
 
 install(DIRECTORY include/
-  DESTINATION include
-  FILES_MATCHING PATTERN "*.h"
-  )
+        DESTINATION include
+        FILES_MATCHING PATTERN "*.h"
+        PATTERN ".svn" EXCLUDE)
 
 catkin_project(roslib
   VERSION 0.0.1

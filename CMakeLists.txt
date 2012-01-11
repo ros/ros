@@ -28,20 +28,25 @@ add_nosetests(tools/roscreate/test)
 # INSTALLATION
 
 # setup our backwards-compatibility ROS_ROOT
-install(DIRECTORY core/rosbuild
+install(DIRECTORY core/rosbuild/
   DESTINATION share/ros/core/rosbuild
+  PATTERN ".svn" EXCLUDE
   )
-install(DIRECTORY core/mk
-  DESTINATION share/ros/core/rosbuild
+install(DIRECTORY core/mk/
+  DESTINATION share/ros/core/mk
+  PATTERN ".svn" EXCLUDE
   )
 
 # install all manifests
+message("TODO: exclude rosbuild/manifest.xml and mk/manifest.xml from install_matching_to_share(), because the parent directories are installed explicitly")
 install_matching_to_share(manifest.xml)
 
 # install python package-relative scripts
-install(DIRECTORY tools/rosunit/scripts
+install(DIRECTORY tools/rosunit/scripts/
   DESTINATION share/rosunit/bin
+  PATTERN ".svn" EXCLUDE
   )
-install(DIRECTORY tools/roscreate/templates
-  DESTINATION share/roscreate
+install(DIRECTORY tools/roscreate/templates/
+  DESTINATION share/roscreate/templates
+  PATTERN ".svn" EXCLUDE
   )

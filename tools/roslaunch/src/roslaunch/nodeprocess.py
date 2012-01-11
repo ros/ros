@@ -47,7 +47,8 @@ import traceback
 import rospkg
 
 from roslaunch.core import *
-from roslaunch.node_args import create_local_process_env, create_local_process_args
+#from roslaunch.core import setup_env
+from roslaunch.node_args import create_local_process_args
 from roslaunch.pmon import Process, FatalProcessLaunch
 
 import logging
@@ -115,7 +116,7 @@ def create_node_process(run_id, node, master_uri):
         raise ValueError("node name must be assigned")
 
     # - setup env for process (vars must be strings for os.environ)
-    env = create_local_process_env(node, machine, master_uri)
+    env = setup_env(node, machine, master_uri)
 
     if not node.name:
         raise ValueError("node name must be assigned")

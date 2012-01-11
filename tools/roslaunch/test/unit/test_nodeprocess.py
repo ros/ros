@@ -132,7 +132,7 @@ class TestNodeprocess(unittest.TestCase):
         d = p.env
         self.assertEquals(d['ROS_MASTER_URI'], master_uri)
         self.assertEquals(d['ROS_ROOT'], ros_root)
-        self.assertEquals(d['PYTHONPATH'], os.path.join(ros_root, 'core', 'roslib', 'src'))
+        self.assertEquals(d['PYTHONPATH'], os.environ['PYTHONPATH'])
         if rpp:
             self.assertEquals(d['ROS_PACKAGE_PATH'], rpp)
         for k in ['ROS_IP', 'ROS_NAMESPACE']:

@@ -93,14 +93,12 @@ class TestCore(unittest.TestCase):
         rpp = '/rpp1'
         master_uri = 'http://masteruri:1234'
 
-        # don't set CATKIN_BINARY_DIR
         n = Node('nodepkg','nodetype')
         m = Machine('name1', ros_root, rpp, '1.2.3.4')
         d = setup_env(n, m, master_uri)
         self.assertEquals(d['ROS_MASTER_URI'], master_uri)
         self.assertEquals(d['ROS_ROOT'], ros_root)
-        roslib_path = os.path.join(ros_root, 'core', 'roslib', 'src')
-        assert d['PYTHONPATH'] == roslib_path
+        assert d['PYTHONPATH'] == os.environ['PYTHON_PATH']
 
         self.assertEquals(d['ROS_PACKAGE_PATH'], rpp)
         for k in ['ROS_IP', 'ROS_NAMESPACE']:
@@ -111,9 +109,8 @@ class TestCore(unittest.TestCase):
         m = Machine('name1', '', '', '1.2.3.4')
         d = setup_env(n, m, master_uri)
         val = os.environ['ROS_ROOT']
-        roslib_path2 = os.path.join(val, 'core', 'roslib', 'src')
         self.assertEquals(d['ROS_ROOT'], val)
-        assert roslib_path2 == d['PYTHONPATH'], "%s vs. %s"%(roslib_path2, d['PYTHONPATH'])
+        assert os.environ['PYTHONPATH'] == d['PYTHONPATH']
         self.failIf('ROS_PACKAGE_PATH' in d, 'ROS_PACKAGE_PATH should not be set: %s'%d)
 
         # test ROS_NAMESPACE
@@ -121,15 +118,6 @@ class TestCore(unittest.TestCase):
         n = Node('nodepkg','nodetype', namespace="/ns2/")
         d = setup_env(n, m, master_uri)
         self.assertEquals(d['ROS_NAMESPACE'], "/ns2")
-
-
-        # test CATKIN_BINARY_DIR
-        m = Machine('name1', ros_root, rpp, '1.2.3.4', env_args=[('CATKIN_BINARY_DIR', '/cbd')])
-        d = setup_env(n, m, master_uri)
-        pp = d['PYTHONPATH'].split(os.pathsep)
-        assert roslib_path in pp, pp
-        assert os.path.join('/cbd', 'gen', 'py') in pp, pp
-        assert os.path.join('/cbd', 'lib') in pp, pp
 
         # test node.env_args
         n = Node('nodepkg','nodetype', env_args=[('NENV1', 'val1'), ('NENV2', 'val2'), ('ROS_ROOT', '/new/root')])        

@@ -170,7 +170,7 @@ def clear_printerrlog_handlers():
     """
     del _printerrlog_handlers[:]
     
-def setup_env(node, machine, master_uri):
+def setup_env(node, machine, master_uri, env=None):
     """
     Create dictionary of environment variables to set for launched
     process.
@@ -181,30 +181,18 @@ def setup_env(node, machine, master_uri):
     :param machine: machine being launched on, ``Machine``
     :param node: node that is being launched or None, ``Node``
     :param master_uri: ROS master URI, ``str``
+    :param env: base environment configuration, defaults to ``os.environ``
     :returns: process env dictionary, ``dict``
     """
-    d = {}
-    d[rosgraph.ROS_MASTER_URI] = master_uri
-    d[rospkg.environment.ROS_ROOT] = machine.ros_root or get_ros_root()
-    if d[rospkg.environment.ROS_ROOT] is None:
-        raise RLException("ERROR: ROS_ROOT is not set")
-    
-    if machine.ros_package_path: #optional
-        d[rospkg.environment.ROS_PACKAGE_PATH] = machine.ros_package_path
+    if env is None:
+        env = os.environ
 
-    # fuerte/catkin: backwards compatibility.
-    # use of roslib depends on PYTHONPATH being set.  
-    d['PYTHONPATH'] = os.path.join(d[rospkg.environment.ROS_ROOT],'core','roslib', 'src')
+    d = env.copy()
+    d[rosgraph.ROS_MASTER_URI] = master_uri
 
     # load in machine env_args. Node env args have precedence
     for name, value in machine.env_args:
         d[name] = value
-        # To work from a wet build, catkin also needs 
-        # CATKIN_BINARY_DIR/gen/py and CATKIN_BINARY_DIR/lib
-        if name == 'CATKIN_BINARY_DIR':
-            cbd_genpy = os.path.join(value, 'gen', 'py')
-            cbd_lib = os.path.join(value, 'lib')
-            d['PYTHONPATH'] = os.pathsep.join([d['PYTHONPATH'], cbd_genpy, cbd_lib])
 
     # add node-specific env args last as they have highest precedence
     if node:

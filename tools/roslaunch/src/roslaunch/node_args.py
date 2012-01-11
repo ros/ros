@@ -105,7 +105,7 @@ def print_node_args(node_name, roslaunch_files):
         node_name = script_resolve_name('roslaunch', node_name)
         args = get_node_args(node_name, roslaunch_files)
         print ' '.join(args)
-    except RLException, e:
+    except RLException as e:
         print >> sys.stderr, str(e)
         sys.exit(1)
     
@@ -173,9 +173,9 @@ def get_node_args(node_name, roslaunch_files):
     
     master_uri = rosgraph.get_master_uri()
     machine = local_machine()
-
-    # don't use create_local_process_env, which merges the env with the full env of the shell
     env = setup_env(node, machine, master_uri)
+
+    # remove setting identical to current environment for easier debugging
     to_remove = []
     for k in env.iterkeys():
         if env[k] == os.environ.get(k, None):
@@ -188,47 +188,6 @@ def get_node_args(node_name, roslaunch_files):
     # join environment vars are bash prefix args
     return ["%s=%s"%(k, v) for k, v in env.iteritems()] + args
     
-def create_local_process_env(node, machine, master_uri, env=None):
-    """
-    Setup environment for locally launched process. The local
-    environment includes the default os environment, with any
-    ROS-specific environment variables overriding this enviornment.
-
-    :returns: environment variables, ``dict``
-    """
-    if env is None:
-        env = os.environ
-
-    # #1029: generate environment for the node. unset
-    # #ROS-related environment vars before
-    # update() so that extra environment variables don't end
-    # up in the call.
-    full_env = env.copy()
-
-    for evar in [
-        rosgraph.ROS_MASTER_URI,
-        rospkg.environment.ROS_ROOT,
-        rospkg.environment.ROS_PACKAGE_PATH,
-        rosgraph.ROS_IP,
-        'PYTHONPATH',
-        'CATKIN_BINARY_DIR',
-        rosgraph.ROS_NAMESPACE]:
-        if evar in full_env:
-            del full_env[evar]
-
-    proc_env = setup_env(node, machine, master_uri)
-
-    # #2372: add ROS_ROOT/bin to path if it is not present
-    ros_root = rospkg.get_ros_root()
-    if ros_root is not None:
-        rosroot_bin = os.path.join(rospkg.get_ros_root(), 'bin')
-    path = os.environ.get('PATH', '')
-    if not rosroot_bin in path.split(os.pathsep):
-        proc_env['PATH'] = path + os.pathsep + rosroot_bin
-        
-    full_env.update(proc_env)
-    return full_env
-
 def _launch_prefix_args(node):
     if node.launch_prefix:
         prefix = node.launch_prefix
@@ -238,16 +197,20 @@ def _launch_prefix_args(node):
     else:
         return []
 
-def create_local_process_args(node, machine):
+def create_local_process_args(node, machine, env=None):
     """
     Subroutine for creating node arguments.
-    @return: arguments for node process
-    @rtype: [str]
-    @raise NodeParamsException: if args cannot be constructed for Node
-    as specified (e.g. the node type does not exist)
+
+    :param env: override os.environ.  Warning, this does not override
+      substitution args in node configuration (for now), ``dict``
+    :returns: arguments for node process, ``[str]``
+    :raises: :exc:`NodeParamsException` If args cannot be constructed for Node
+      as specified (e.g. the node type does not exist)
     """
     if not node.name:
         raise ValueError("node name must be defined")
+    if env is None:
+        env = os.environ
     
     # - Construct rosrun command
     remap_args = ["%s:=%s"%(src,dst) for src, dst in node.remap_args]
@@ -267,10 +230,6 @@ def create_local_process_args(node, machine):
     args = shlex.split(resolved) + remap_args
     try:
         #TODO:fuerte: pass through rospack and catkin cache
-        env = machine.get_env()
-        #fuerte: remove ROS_ROOT from path-finding logic
-        if 'ROS_ROOT' in env:
-            del env['ROS_ROOT']
         rospack = rospkg.RosPack(rospkg.get_ros_paths(env=env))
         matches = roslib.packages.find_node(node.package, node.type, rospack)
     except rospkg.ResourceNotFound as e:

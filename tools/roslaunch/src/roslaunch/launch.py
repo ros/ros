@@ -39,6 +39,7 @@ lower-level libraries.
 
 import os
 import logging
+import subprocess
 import sys
 import time
 import traceback
@@ -48,6 +49,7 @@ import rosgraph.names
 import rosgraph.network 
 
 from roslaunch.core import *
+#from roslaunch.core import setup_env
 from roslaunch.config import ROSLaunchConfig
 from roslaunch.nodeprocess import create_master_process, create_node_process
 from roslaunch.pmon import start_process_monitor, ProcessListener, FatalProcessLaunch
@@ -450,14 +452,10 @@ class ROSLaunchRunner(object):
         try:
             #kwc: I'm still debating whether shell=True is proper
             cmd = e.command
-            if isinstance(e, RosbinExecutable):
-                cmd = os.path.join(get_ros_root(), 'bin', cmd)
             cmd = "%s %s"%(cmd, ' '.join(e.args))
             print "running %s"%cmd
             local_machine = self.config.machines['']
-            import roslaunch.node_args
-            env = roslaunch.node_args.create_local_process_env(None, local_machine, self.config.master.uri)
-            import subprocess
+            env = setup_env(None, local_machine, self.config.master.uri)
             retcode = subprocess.call(cmd, shell=True, env=env)
             if retcode < 0:
                 raise RLException("command [%s] failed with exit code %s"%(cmd, retcode))

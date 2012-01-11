@@ -30,7 +30,7 @@ all_dist: minimal
 # to handle the case where the original .msg/.srv file has been removed,
 # and thus CMake no longer knows about it.
 clean_dist:
-	-cd build && make clean
+	-cd build && $(MAKE) clean
 	rm -rf build
 
 # Run the script that does the build, then do a fairly hacky cleanup, #1598

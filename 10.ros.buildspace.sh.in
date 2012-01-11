@@ -1,18 +1,33 @@
 #
-#  Buildspace ROS env file
+#  Buildspace ROS env file.
+#  This file was automatically generated.
 #
 export ROS_ROOT=@CMAKE_SOURCE_DIR@/ros
 export ROS_TEST_RESULTS_DIR=@CMAKE_BINARY_DIR@/test_results
 export ROS_PACKAGE_PATH=@CMAKE_SOURCE_DIR@:$ROS_PACKAGE_PATH
 export PATH=@CMAKE_SOURCE_DIR@/ros/bin:$PATH
+if [ ! "$ROS_MASTER_URI" ] ; then
+    export ROS_MASTER_URI=http://localhost:11311
+fi
+
+_rosbash_load () {
+    /bin/echo "Loading rosbash for shell $SHELL"
+    case "$SHELL" in
+        *bash)
+	    . @CMAKE_CURRENT_SOURCE_DIR@/tools/rosbash/rosbash
+            ;;
+        *zsh)
+            . @CMAKE_CURRENT_SOURCE_DIR@/tools/rosbash/roszsh
+            ;;
+        *)
+            ;;
+    esac
+}
 
 case "$-" in
     *i*)
-	if [ "$0" = "bash" ]; then
-	    . @CMAKE_CURRENT_SOURCE_DIR@/tools/rosbash/rosbash
-	elif [ "$0" = "zsh" ]; then
-	    . @CMAKE_CURRENT_SOURCE_DIR@/tools/rosbash/roszsh
-	fi
-	;;
-    *);;
+        _rosbash_load $0
+        ;;
+    *)
+        ;;
 esac

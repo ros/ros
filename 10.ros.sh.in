@@ -1,16 +1,29 @@
 #
 #  Installed ROS env file
+#  This file was automatically generated.
 #
 export ROS_ROOT=@CMAKE_INSTALL_PREFIX@/share/ros
 export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:@CMAKE_INSTALL_PREFIX@/share
+if [ ! "$ROS_MASTER_URI" ] ; then
+    export ROS_MASTER_URI=http://localhost:11311
+fi
+
+_rosbash_load () {
+    case "$SHELL" in
+        *bash)
+	    . @CMAKE_CURRENT_SOURCE_DIR@/tools/rosbash/rosbash
+            ;;
+        *zsh)
+            . @CMAKE_CURRENT_SOURCE_DIR@/tools/rosbash/roszsh
+            ;;
+        *)
+            ;;
+    esac
+}
 
 case "$-" in
     *i*)
-	if [ "$0" = "bash" ]; then
-	    . @CMAKE_INSTALL_PREFIX@/share/ros/rosbash/rosbash
-	elif [ "$0" = "zsh" ]; then
-	    . @CMAKE_INSTALL_PREFIX@/share/ros/rosbash/roszsh
-	fi
-	;;
-    *);;
+        _rosbash_load
+    *)
+        ;;
 esac

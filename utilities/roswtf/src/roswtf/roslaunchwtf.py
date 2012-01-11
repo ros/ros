@@ -48,31 +48,6 @@ import roslaunch.netapi
 from roswtf.environment import paths, is_executable
 from roswtf.rules import warning_rule, error_rule
 
-# this is very similar to roslib.packages.find_node. However, we
-# cannot use that implementation as it returns the first found
-# path. For the sake of this test, we have to find all potential
-# candidates.
-def _find_node(pkg, node_type):
-    try:
-        dir = roslib.packages.get_pkg_dir(pkg)
-    except roslib.packages.InvalidROSPkgException:
-        # caught by another rule
-        return []
-    paths = []
-    #UNIXONLY
-    node_exe = None
-    for p, dirs, files in os.walk(dir):
-        if node_type in files:
-            test_path = os.path.join(p, node_type)
-            s = os.stat(test_path)
-            if (s.st_mode & stat.S_IRWXU == stat.S_IRWXU):
-                paths.append(test_path)
-        if '.svn' in dirs:
-            dirs.remove('.svn')
-        elif '.git' in dirs:
-            dirs.remove('.git')
-    return paths
-
 ## check if node is cannot be located in package
 def roslaunch_missing_node_check(ctx):
     nodes = []
@@ -80,7 +55,7 @@ def roslaunch_missing_node_check(ctx):
         nodes.extend(rldeps.nodes)
     errors = []
     for pkg, node_type in nodes:
-        paths = _find_node(pkg, node_type)
+        paths = roslib.packages.find_node(pkg, node_type)
         if not paths:
             errors.append("node [%s] in package [%s]"%(node_type, pkg))
     return errors
@@ -92,7 +67,7 @@ def roslaunch_duplicate_node_check(ctx):
         nodes.extend(rldeps.nodes)
     warnings = []
     for pkg, node_type in nodes:
-        paths = _find_node(pkg, node_type)
+        paths = roslib.packages.find_node(pkg, node_type)
         if len(paths) > 1:
             warnings.append("node [%s] in package [%s]\n"%(node_type, pkg))
     return warnings
@@ -100,13 +75,13 @@ def roslaunch_duplicate_node_check(ctx):
 def pycrypto_check(ctx):
     try:
         import Crypto
-    except ImportError, e:
+    except ImportError as e:
         return True
 
 def paramiko_check(ctx):
     try:
         import paramiko
-    except ImportError, e:
+    except ImportError as e:
         return True
 def paramiko_system_keys(ctx):
     try:
@@ -137,7 +112,7 @@ def paramiko_ssh(ctx, address, port, username, password):
         return  "Unable to verify host key for [%s:%s]"%(address, port)
     except paramiko.AuthenticationException:
         return "Authentication to [%s:%s] failed"%(address, port)
-    except paramiko.SSHException, e:
+    except paramiko.SSHException as e:
         return "[%s:%s]: %s"%(address, port, e)
     except ImportError:
         pass
@@ -149,9 +124,8 @@ def _load_roslaunch_config(ctx):
     for launch_file in ctx.launch_files:
         loader.load(launch_file, config, verbose=False)
     try:
-        config.validate()
         config.assign_machines()
-    except roslaunch.RLException, e:
+    except roslaunch.RLException as e:
         return config, []
     machines = []
     for n in itertools.chain(config.nodes, config.tests):
@@ -166,9 +140,8 @@ def roslaunch_load_check(ctx):
     for launch_file in ctx.launch_files:
         loader.load(launch_file, config, verbose=False)
     try:
-        config.validate()
         config.assign_machines()
-    except roslaunch.RLException, e:
+    except roslaunch.RLException as e:
         return str(e)
     
 def roslaunch_machine_name_check(ctx):

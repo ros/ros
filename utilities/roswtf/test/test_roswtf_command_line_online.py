@@ -31,6 +31,9 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+PKG = 'roswtf'
+NAME = 'test_roswtf_command_line_online'
+
 import os
 import signal
 import sys 
@@ -74,27 +77,25 @@ class TestRostopicOnline(unittest.TestCase):
 
         rospack = rospkg.RosPack()
         rosstack = rospkg.RosStack()
-        env['ROS_PACKAGE_PATH'] = rosstack.get_path('ros_comm')
+        env['ROS_PACKAGE_PATH'] = os.pathsep.join([rosstack.get_path('ros_comm'), rospack.get_path('std_msgs')])
 
         cwd  = rospack.get_path('roswtf')
         kwds = { 'env': env, 'stdout': PIPE, 'stderr': PIPE, 'cwd': cwd}
 
-        # run roswtf nakedly in the test_roswtf directory. Running in
-        # ROS_ROOT effectively make test_roswtf have dependencies on
+        # run roswtf nakedly in the roswtf directory. Running in
+        # ROS_ROOT effectively make roswtf have dependencies on
         # every package in the ROS stack, which doesn't work.
 
         output, err = Popen([cmd], **kwds).communicate()
         self.assert_('No errors or warnings' in output, "OUTPUT[%s]\nstderr[%s}"%(output, err))
-        self.assert_('ERROR' not in output, "OUTPUT[%s]"%output)        
+        self.assert_('ERROR' not in output, "CMD [%s] KWDS[%s] OUTPUT[%s]"%(cmd, kwds, output))
 
         # run roswtf on a simple launch file online
         rospack = rospkg.RosPack()
-        p = os.path.join(rospack.get_path('test_roswtf'), 'test', 'min.launch')
+        p = os.path.join(rospack.get_path('roswtf'), 'test', 'min.launch')
         output = Popen([cmd, p], **kwds).communicate()[0]
-        self.assert_('No errors or warnings' in output, "OUTPUT[%s]"%output)
+        self.assert_('No errors or warnings' in output, "CMD[%s] OUTPUT[%s]"%([cmd, p], output))
         self.assert_('ERROR' not in output, "OUTPUT[%s]"%output)        
         
-PKG = 'test_rostopic'
-NAME = 'test_rostopic_command_line_online'
 if __name__ == '__main__':
     rostest.run(PKG, NAME, TestRostopicOnline, sys.argv)

@@ -11,6 +11,7 @@ catkin_project(std_srvs)
 
 install(DIRECTORY srv
   DESTINATION share/std_srvs
+  PATTERN ".svn" EXCLUDE
   )
 
 

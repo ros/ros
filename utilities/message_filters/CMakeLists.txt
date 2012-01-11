@@ -13,9 +13,9 @@ install(TARGETS message_filters
     DESTINATION lib)
 
 install(DIRECTORY include/
-  DESTINATION include
-  FILES_MATCHING PATTERN "*.h"
-  )
+        DESTINATION include
+        FILES_MATCHING PATTERN "*.h"
+        PATTERN ".svn" EXCLUDE)
 
 catkin_project(message_filters
   INCLUDE_DIRS include

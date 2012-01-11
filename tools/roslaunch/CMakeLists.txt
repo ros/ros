@@ -19,4 +19,5 @@ install(FILES roscore.xml
 # install example launch files
 install(DIRECTORY resources
   DESTINATION share/roslaunch
+  PATTERN ".svn" EXCLUDE
   )

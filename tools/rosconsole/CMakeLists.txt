@@ -31,7 +31,9 @@ install(TARGETS rosconsole
     DESTINATION lib)
 
 install(DIRECTORY include/
-    DESTINATION include)
+        DESTINATION include
+        FILES_MATCHING PATTERN "*.h"
+        PATTERN ".svn" EXCLUDE)
 
 catkin_project(rosconsole
   LIBRARIES rosconsole

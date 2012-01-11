@@ -26,10 +26,10 @@ if(WIN32)
   target_link_libraries(XmlRpc ws2_32)
 endif()
 
-install(DIRECTORY src/
-    DESTINATION include
-    FILES_MATCHING PATTERN "*.h"
-    )
+install(DIRECTORY include/
+        DESTINATION include
+        FILES_MATCHING PATTERN "*.h"
+        PATTERN ".svn" EXCLUDE)
 
 #explicitly install library and includes
 install(TARGETS XmlRpc

@@ -38,8 +38,9 @@ install(TARGETS topic_tools switch_mux mux relay drop throttle
     )
 
 install(DIRECTORY include/
-    DESTINATION include
-    )
+        DESTINATION include
+        FILES_MATCHING PATTERN "*.h"
+        PATTERN ".svn" EXCLUDE)
 
 #Testing
 add_gtest(${PROJECT_NAME}-utest test/utest.cpp)

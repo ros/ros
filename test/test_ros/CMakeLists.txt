@@ -34,4 +34,5 @@ add_rostest(test/test-param-server.xml)
 # make the talker/listener available for roslaunch example
 install(DIRECTORY nodes
   DESTINATION share/test_ros
+  PATTERN ".svn" EXCLUDE
   )

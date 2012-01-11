@@ -97,9 +97,9 @@ install(TARGETS roscpp
  )
 
 install(DIRECTORY include/
-  DESTINATION include
-  FILES_MATCHING PATTERN "*.h"
-  )
+        DESTINATION include
+        FILES_MATCHING PATTERN "*.h"
+        PATTERN ".svn" EXCLUDE)
 
 catkin_project(roscpp
   LIBRARIES roscpp

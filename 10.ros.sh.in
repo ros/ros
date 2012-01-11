@@ -3,3 +3,14 @@
 #
 export ROS_ROOT=@CMAKE_INSTALL_PREFIX@/share/ros
 export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:@CMAKE_INSTALL_PREFIX@/share
+
+case "$-" in
+    *i*)
+	if [ "$0" = "bash" ]; then
+	    . @CMAKE_INSTALL_PREFIX@/share/ros/rosbash/rosbash
+	elif [ "$0" = "zsh" ]; then
+	    . @CMAKE_INSTALL_PREFIX@/share/ros/rosbash/roszsh
+	fi
+	;;
+    *);;
+esac

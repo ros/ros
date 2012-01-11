@@ -14,6 +14,8 @@ macro(_rosbuild_warn_deprecate_no_prefix name)
   message("[rosbuild] WARNING: ${name} is deprecated; please use rosbuild_${name} instead")
 endmacro(_rosbuild_warn_deprecate_no_prefix)
 
+# look up python interpreter, store in ${PYTHON_EXECUTABLE}
+find_package(PythonInterp)
 
 ###############################################################################
 # Macro to turn a list into a string (why doesn't CMake have this
@@ -74,7 +76,7 @@ endmacro(_rosbuild_check_pythonpath)
 # Check validity of manifest.xml, to avoid esoteric build errors
 macro(_rosbuild_check_manifest)
   execute_process(
-    COMMAND python -c "import roslib.manifest; roslib.manifest.parse_file('manifest.xml')"
+    COMMAND ${PYTHON_EXECUTABLE} -c "import roslib.manifest; roslib.manifest.parse_file('manifest.xml')"
     OUTPUT_VARIABLE _manifest_error
     ERROR_VARIABLE _manifest_error
     RESULT_VARIABLE _manifest_failed
@@ -382,7 +384,7 @@ endmacro(_rosbuild_add_library)
 
 macro(_rosbuild_get_clock var)
   execute_process(
-    COMMAND python -c "import time, sys; sys.stdout.write(str(time.time()));"
+    COMMAND ${PYTHON_EXECUTABLE} -c "import time, sys; sys.stdout.write(str(time.time()));"
     OUTPUT_VARIABLE ${var}
     ERROR_VARIABLE _time_error
     RESULT_VARIABLE _time_failed
@@ -416,7 +418,7 @@ macro(_rosbuild_compare_manifests var _t _c _m)
     # Call Python to compare the provided time to the latest mtime on all
     # the files
     execute_process(
-      COMMAND python -c "import os, sys; sys.stdout.write('1' if set(${_pylist}) != set(${_cached_pylist}) or ${_t} < max(os.stat(f).st_mtime for f in ${_pylist}) else '0');"
+      COMMAND ${PYTHON_EXECUTABLE} -c "import os, sys; sys.stdout.write('1' if set(${_pylist}) != set(${_cached_pylist}) or ${_t} < max(os.stat(f).st_mtime for f in ${_pylist}) else '0');"
       OUTPUT_VARIABLE ${var}
       ERROR_VARIABLE _mtime_error
       RESULT_VARIABLE _mtime_failed

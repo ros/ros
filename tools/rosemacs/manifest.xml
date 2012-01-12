@@ -1,4 +1,5 @@
 <package>
+<catkin/>
 <description brief="Emacs extension for ros">
 Ros tools for those who live in emacs.
 </description>

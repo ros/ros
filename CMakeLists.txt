@@ -45,8 +45,19 @@ install(FILES core/roslang/cmake/roslang.cmake
         DESTINATION share/roslang/cmake)
 
 # install all manifests
-message("TODO: exclude rosbuild/manifest.xml and mk/manifest.xml from install_matching_to_share(), because the parent directories are installed explicitly")
-install_matching_to_share(manifest.xml)
+# we do them one-by-one instead of using install_matching_to_share()
+# because we need to exclude some of them (e.g., mk and rosbuild are
+# handled above, and some directories contains manifests that are only for
+# testing.).
+install(FILES core/roslang/manifest.xml DESTINATION share/roslang)
+install(FILES core/roslib/manifest.xml DESTINATION share/roslib)
+install(FILES tools/rosbash/manifest.xml DESTINATION share/rosbash)
+install(FILES tools/rosmake/manifest.xml DESTINATION share/rosmake)
+install(FILES tools/rosunit/manifest.xml DESTINATION share/rosunit)
+install(FILES tools/rosclean/manifest.xml DESTINATION share/rosclean)
+install(FILES tools/roscreate/manifest.xml DESTINATION share/roscreate)
+install(FILES tools/rosboost_cfg/manifest.xml DESTINATION share/rosboost_cfg)
+install(FILES tools/rosemacs/manifest.xml DESTINATION share/rosemacs)
 
 # install python package-relative scripts
 install(PROGRAMS 

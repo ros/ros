@@ -1,4 +1,5 @@
 <package>
+  <catkin/>
 
   <description brief="Unit testing for ROS">
 
@@ -9,7 +10,6 @@
   <license>BSD</license>
   <review status="Doc reviewed" notes="2011/01/12, REP 100"/>
   <url>http://ros.org/wiki/rosunit</url>
-  <depend package="roslib"/>
   <export>
     <rosdoc config="rosdoc.yaml" />
   </export>

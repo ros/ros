@@ -1,4 +1,5 @@
 <package>
+  <catkin/>
   <description brief="test_rostime">
 
      test_rostime
@@ -8,7 +9,6 @@
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/test_rostime</url>
-  <depend package="rostime"/>
 
 </package>
 

@@ -1,4 +1,5 @@
 <package>
+  <catkin/>
   <description brief="ROS Bag Tools">
     This is a set of tools for recording from and playing back to ROS
     topics.  It is intended to be high performance and avoids
@@ -8,10 +9,6 @@
   <license>BSD</license>
   <review status="Doc reviewed" notes="2010/01/20"/>
   <url>http://ros.org/wiki/rosbag</url>
-  <depend package="roscpp"/>
-  <depend package="rospy"/>
-  <depend package="topic_tools"/>
-  <depend package="rostest"/>
   <export>
     <cpp cflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --cflags rosbag`"
          lflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --libs rosbag`"/>

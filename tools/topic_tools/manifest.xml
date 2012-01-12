@@ -1,4 +1,5 @@
 <package>
+  <catkin/>
   <description brief="generic routing tools">
     Tools for directing, throttling, selecting, and otherwise messing with
     ROS topics at a meta level. None of the programs in this package actually
@@ -9,12 +10,6 @@
   <author>Morgan Quigley, Brian Gerkey</author>
   <license>BSD</license>
   <review status="Doc reviewed" notes="2010/01/07"/>
-  <depend package="roscpp"/>
-  <depend package="rosconsole"/>
-  <depend package="std_msgs"/>
-  <depend package="rostest"/>
-  <depend package="rospy"/>
-
   <export>
     <cpp cflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --cflags topic_tools`"
          lflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --libs topic_tools`"/>

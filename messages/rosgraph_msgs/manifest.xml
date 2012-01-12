@@ -1,4 +1,5 @@
 <package>
+  <catkin/>
   <description brief="rosgraph_msgs">
 
      Messages relating to the ROS Computation Graph. These are generally considered to be low-level messages that end users do not interact with.
@@ -8,9 +9,6 @@
   <license>BSD</license>
   <review status="API reviewed" notes="relocated from roslib"/>
   <url>http://ros.org/wiki/rosgraph_msgs</url>
-
-  <depend package="std_msgs" />
-
 </package>
 
 

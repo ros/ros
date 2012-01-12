@@ -1,4 +1,5 @@
 <package>
+  <catkin/>
   <description brief="rostopic command-line tool">
 
 rostopic contains the rostopic command-line tool for displaying
@@ -17,12 +18,6 @@ behaviors in ROS.
   <license>BSD</license>
   <review status="Doc reviewed" notes="11/10/2009"/>
   <url>http://ros.org/wiki/rostopic</url>
-  <depend package="roslib"/>
-  <depend package="rosgraph"/>
-  <depend package="rosmsg"/>
-  <depend package="rospy"/>
-  <depend package="rosbag"/>
-  <depend package="std_msgs"/>
   
   <export>
     <rosdoc config="rosdoc.yaml"/>    

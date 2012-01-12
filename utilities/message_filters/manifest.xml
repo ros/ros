@@ -1,11 +1,9 @@
 <package>
+  <catkin/>
   <description>A set of message filters which take in messages and may output those messages at a later time, based on the conditions that filter needs met.</description>
   <author>Josh Faust (jfaust@willowgarage.com), Vijay Pradeep (vpradeep@willowgarage.com)</author>
   <license>BSD</license>
   <review status="Doc reviewed" notes=""/>
-  <depend package="roscpp" />
-  <depend package="rospy" />
-  <depend package="rostest" />
   <export>
     <cpp cflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --cflags message_filters`"
          lflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --libs message_filters`"/>

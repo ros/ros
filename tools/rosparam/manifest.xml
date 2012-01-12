@@ -1,4 +1,5 @@
 <package>
+  <catkin/>
   <description brief="rosparam command-line tool">
 
 <p>

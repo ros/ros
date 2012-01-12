@@ -1,15 +1,10 @@
 <package>
+  <catkin/>
   <description brief="rospy tests">
     rospy unit and integration test framework.
   </description>
   <author>Ken Conley/kwc@willowgarage.com</author>
   <license>BSD</license>
   <review status="test" notes=""/>
-  <depend package="rospy" />
-  <depend package="rostest" />  
-  <depend package="std_msgs" />  
-  <depend package="test_ros" />
-
   <rosdep name="python-numpy" /> <!-- for numpy tests -->
-  <depend package="rostopic" />  <!-- for latch test -->
 </package>

@@ -1,4 +1,5 @@
 <package>
+  <catkin/>
   <description brief="rosmaster">
 
      ROS <a href="http://ros.org/wiki/Master">Master</a> implementation.
@@ -8,8 +9,6 @@
   <license>BSD</license>
   <review status="doc reviewed" notes="originally part of rospy"/>
   <url>http://ros.org/wiki/rosmaster</url>
-
-  <depend package="rosgraph" />
 
   <export>
     <rosdoc config="rosdoc.yaml"/>    

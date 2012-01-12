@@ -1,4 +1,5 @@
 <package>
+<catkin/>
 <description brief="A C++ XML-RPC library">
 
 XmlRpc++ is a C++ implementation of the XML-RPC protocol. This version is
@@ -21,6 +22,5 @@ own fork.
   <platform os="ubuntu" version="9.10"/>
   <platform os="ubuntu" version="10.04"/>
   <platform os="macports" version="macports"/>
-  <depend package="cpp_common"/>
 </package>
 

@@ -1,4 +1,5 @@
 <package>
+  <catkin/>
   <description brief="rosnode command-line tool">
 
 rosnode is a command-line tool for displaying debug information about ROS <a href="http://www.ros.org/wiki/Nodes">Nodes</a>, including publications, subscriptions and connections. It also contains an experimental library for retrieving node information. This library is intended for internal use only. 
@@ -8,7 +9,6 @@ rosnode is a command-line tool for displaying debug information about ROS <a hre
   <license>BSD</license>
   <review status="Doc reviewed" notes="2009-12-31"/>
   <url>http://ros.org/wiki/rosnode</url>
-  <depend package="rosgraph"/>
 
   <export>
     <rosdoc config="rosdoc.yaml"/>    

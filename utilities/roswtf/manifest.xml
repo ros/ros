@@ -1,4 +1,5 @@
 <package>
+  <catkin/>
   <description brief="roswtf command-line tool">
 
      roswtf is a tool for diagnosing issues with a running ROS system. Think of it as a FAQ implemented in code.
@@ -8,14 +9,6 @@
   <license>BSD</license>
   <review status="Doc reviewed" notes="1/4/2010. end-user docs passed. plugin API requires more work."/>
   <url>http://ros.org/wiki/roswtf</url>
-  <depend package="rospy"/>
-  <depend package="roslib"/>
-  <depend package="roslaunch"/>
-  <depend package="rosnode"/>
-  <depend package="rosservice"/>
-  <depend package="rosgraph"/>
-  <depend package="test_ros"/>
-
   <rosdep name="paramiko" />
   <export>
     <rosdoc config="rosdoc.yaml" />

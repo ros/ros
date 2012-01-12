@@ -59,10 +59,12 @@ def author_name():
     import getpass
     name = getpass.getuser()
     try:
-        import pwd
+        import pwd, codecs
         login = name
         name = pwd.getpwnam(login)[4]
         name = ''.join(name.split(',')) # strip commas
+        if type(name) == str:
+            name = name.decode('utf-8')
     except:
         #pwd failed
         pass

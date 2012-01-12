@@ -59,6 +59,8 @@ def author_name():
         # in case pwnam is not set
         if not name:
             name = login
+        elif type(name) == str:
+            name = name.decode('utf-8')
     except:
         #pwd failed
         pass

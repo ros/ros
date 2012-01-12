@@ -34,6 +34,11 @@ add_nosetests(tools/rosgraph/test)
 add_nosetests(tools/roslaunch/test/unit)
 add_nosetests(utilities/roswtf/test)
 
+install(FILES clients/rospy/cmake/rosbuild-rospy.cmake
+        DESTINATION share/rospy/cmake)
+install(FILES clients/roslisp/cmake/rosbuild-roslisp.cmake
+        DESTINATION share/roslisp/cmake)
+
 # install all manifests
 install_matching_to_share(manifest.xml)
 

@@ -1,7 +1,7 @@
 project(rosbag)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
 
-find_package(ROS REQUIRED COMPONENTS cpp_common roscpp_serialization roscpp rosconsole XmlRpc topic_tools)
+find_package(ROS REQUIRED COMPONENTS cpp_common roscpp_serialization roscpp rosconsole xmlrpcpp topic_tools)
 find_package(Boost REQUIRED COMPONENTS program_options)
 find_package(BZip2 REQUIRED)
 # Support large bags (>2GB) on 32-bit systems

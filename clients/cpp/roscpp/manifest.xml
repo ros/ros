@@ -29,7 +29,7 @@
   <depend package="rosgraph_msgs"/>
   <export>
     <cpp cflags="-I${prefix}/include `rosboost-cfg --cflags`" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lros `rosboost-cfg --lflags thread,signals`"/>
-    <roslang cmake="${prefix}/cmake/roscpp.cmake"/>
+    <roslang cmake="${prefix}/cmake/rosbuild-roscpp.cmake"/>
   </export>
   <rosdep name="pkg-config"/>
   <platform os="ubuntu" version="9.04"/>

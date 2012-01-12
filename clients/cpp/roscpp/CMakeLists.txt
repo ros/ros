@@ -3,7 +3,7 @@ project(roscpp)
 find_package(ROS COMPONENTS
   catkin genmsg
   cpp_common rostime rosconsole roscpp_serialization
-  roscpp_traits std_msgs rosgraph_msgs XmlRpc
+  roscpp_traits std_msgs rosgraph_msgs xmlrpcpp
   )
 include_directories(${ROS_INCLUDE_DIRS})
 
@@ -95,7 +95,8 @@ generate_messages()
 install(TARGETS roscpp
   DESTINATION lib
  )
-
+install(FILES cmake/rosbuild-roscpp.cmake
+        DESTINATION share/roscpp/cmake)
 install(DIRECTORY include/
         DESTINATION include
         FILES_MATCHING PATTERN "*.h"

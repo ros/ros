@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project(XmlRpc)
+project(xmlrpcpp)
 
 find_package(ROS COMPONENTS catkin cpp_common)
 include_directories(${ROS_INCLUDE_DIRS})
@@ -10,7 +10,7 @@ if(WIN32)
   add_definitions(-D_WINDOWS)
 endif()
 
-add_library(XmlRpc SHARED
+add_library(xmlrpcpp SHARED
   src/XmlRpcClient.cpp
   src/XmlRpcDispatch.cpp
   src/XmlRpcServer.cpp
@@ -23,20 +23,21 @@ add_library(XmlRpc SHARED
   )
 
 if(WIN32)
-  target_link_libraries(XmlRpc ws2_32)
+  target_link_libraries(xmlrpcpp ws2_32)
 endif()
 
-install(DIRECTORY include/
+message("TODO: consider moving xmlrpcpp's headers into a subdirectory")
+install(DIRECTORY src/
         DESTINATION include
         FILES_MATCHING PATTERN "*.h"
         PATTERN ".svn" EXCLUDE)
 
 #explicitly install library and includes
-install(TARGETS XmlRpc
+install(TARGETS xmlrpcpp
   DESTINATION lib
  )
 
-catkin_project(XmlRpc
+catkin_project(xmlrpcpp
   INCLUDE_DIRS src
-  LIBRARIES XmlRpc
+  LIBRARIES xmlrpcpp
   )

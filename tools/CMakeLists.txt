@@ -1,4 +1,4 @@
-find_package(ROS REQUIRED COMPONENTS roscpp rosconsole XmlRpc)
+find_package(ROS REQUIRED COMPONENTS roscpp rosconsole xmlrpcpp)
 include_directories(${ROS_INCLUDE_DIRS})
 
 foreach(subdir

@@ -330,13 +330,13 @@ macro(rosbuild_init)
 
   add_custom_target(test-results-run)
   add_custom_target(test-results
-                    COMMAND ${rosunit_path}/scripts/summarize_results.py --nodeps ${_project})
+                    COMMAND ${rosunit_path}/bin/summarize_results.py --nodeps ${_project})
   add_dependencies(test-results test-results-run)
   # Do we want coverage reporting (only matters for Python, because
   # Bullseye already collects everything into a single file).
   if("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
     add_custom_target(test-results-coverage
-                      COMMAND ${rosunit_path}/unit/pycoverage_to_html.py
+                      COMMAND ${rosunit_path}/bin/pycoverage_to_html.py
                       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
     # Make tests run before collecting coverage results
     add_dependencies(test-results-coverage test-results-run)
@@ -372,7 +372,7 @@ macro(rosbuild_init)
 
   # ${gendeps_exe} is a convenience variable that roslang cmake rules
   # must reference as a dependency of msg/srv generation
-  set(gendeps_exe ${roslib_path}/scripts/gendeps)
+  set(gendeps_exe ${roslib_path}/bin/gendeps)
 
   # If the roslang package is available, pull in cmake/roslang.cmake from
   # there; it will in turn include message-generation logic from client
@@ -738,7 +738,7 @@ macro(rosbuild_gendeps _pkg _msgfile)
     # which this one depends, for proper dependency tracking
     # ${roslib_path} was determined inside rospack()
     execute_process(
-      COMMAND ${roslib_path}/scripts/gendeps ${_input}
+      COMMAND ${roslib_path}/bin/gendeps ${_input}
       OUTPUT_VARIABLE __other_msgs
       ERROR_VARIABLE __rospack_err_ignore
       OUTPUT_STRIP_TRAILING_WHITESPACE)

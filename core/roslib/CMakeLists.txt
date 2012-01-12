@@ -25,6 +25,8 @@ install(DIRECTORY include/
         DESTINATION include
         FILES_MATCHING PATTERN "*.h"
         PATTERN ".svn" EXCLUDE)
+install(PROGRAMS scripts/gendeps
+        DESTINATION share/roslib/bin)
 
 catkin_project(roslib
   VERSION 0.0.1

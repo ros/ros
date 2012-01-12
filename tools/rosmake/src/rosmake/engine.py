@@ -387,11 +387,7 @@ class RosMakeAll:
         """
         return_string = ""
         try:
-            if p == "rospack":
-                return_string = ("[SKIP] rosmake uses rospack.  If building it is already built, if cleaning it will be cleaned at the end.")
-                return (True, return_string) # This will be caught later
             # warn if ROS_BUILD_BLACKLIST encountered if applicable
-
             # do not build packages for which the build has failed
             if argument == "test":  # Tests are not build dependent
                 failed_packages = []
@@ -577,36 +573,6 @@ class RosMakeAll:
         output = output + "----------------\n" + "%.2f Cumulative,  %.2f Elapsed, %.2f Speedup \n"%(total, elapsed_time, float(total) / float(elapsed_time))
         return output
 
-    def assert_prebuild_built(self, ros_package_path_list, target=''):
-        ret_val = True
-        count = 0
-        for pkg in ros_package_path_list:
-            count = count + 1
-            pkg_name = pkg.split('/')[-1]
-
-            if self.flag_tracker.has_nobuild(pkg_name):
-                ret_val &= True
-            else:
-                try:
-                    self.printer.print_all("Starting >>> %s"%pkg)
-                    self.update_status(target, {pkg:time.time()}, "%d/%d Bootstrap"%(count, len(ros_package_path_list)))
-                    #Special Case: %s [ %s %s ] [ %d of %d ] "%(pkg_name, make_command(), target, count, len(ros_package_path_list)))
-                    cmd = ["bash", "-c", "cd %s && %s %s"%(os.path.join(os.environ["ROS_ROOT"], pkg), make_command(), target)]
-                    command_line = subprocess.Popen(cmd, stdout=subprocess.PIPE,  stderr=subprocess.STDOUT)
-                    (pstd_out, pstd_err) = command_line.communicate() # pstd_err should be None due to pipe above
-
-                    self.printer.print_verbose(pstd_out)
-                    if command_line.returncode:
-                        sys.stderr.write("Failed to build %s\n"%(pkg_name))
-                        sys.stderr.write("Error:\n{{{\n%s\n}}}\n"%(pstd_out))
-                        sys.exit(-1)
-                    self.printer.print_all("Finished <<< %s"%pkg)
-                except KeyboardInterrupt as ex:
-                    self.printer.print_all("Keyboard interrupt caught in pkg %s"%pkg)
-                    return False
-        return True
-            
-
     def main(self):
         """
         main command-line entrypoint
@@ -641,7 +607,7 @@ class RosMakeAll:
         parser.add_option("--pre-clean", dest="pre_clean",
                           action="store_true", help="run make clean first")
         parser.add_option("--bootstrap", dest="bootstrap", default=False,
-                          action="store_true", help="Do the bootstrap packages even if there are no arguments")
+                          action="store_true", help="DEPRECATED, UNUSED")
         parser.add_option("--disable-logging", dest="logging_enabled", default=True,
                           action="store_false", help="turn off all logs")
         parser.add_option("--target", dest="target",
@@ -777,7 +743,7 @@ class RosMakeAll:
         self.printer.print_all("Expanded args %s to:\n%s"%(packages, self.specified_packages))
         if self.rejected_packages:
             self.printer.print_all("WARNING: The following args could not be parsed as stacks or packages: %s"%self.rejected_packages)
-        if len(self.specified_packages) + len(stacks_arguments) == 0 and options.bootstrap == False:
+        if len(self.specified_packages) + len(stacks_arguments) == 0:
             self.printer.print_all("ERROR: No arguments could be parsed into valid package or stack names.")
             self.printer.running = False
             return False
@@ -829,39 +795,16 @@ class RosMakeAll:
         if options.pre_clean:
           build_queue = parallel_build.BuildQueue(self.build_list, parallel_build.DependencyTracker([]), robust_build = True)
           self.parallel_build_pkgs(build_queue, "clean", threads = options.threads)
-          if "rospack" in self.build_list:
-              self.printer.print_all( "Rosmake detected that rospack was requested to be cleaned.  Cleaning it for it was skipped earlier.")
-              self.assert_prebuild_built(["tools/rospack"], 'clean')
-              #subprocess.check_call(["make", "-C", os.path.join(os.environ["ROS_ROOT"], "tools/rospack"), "clean"])
-
 
         build_passed = True
 
         if building:
-          #make sure required packages are built before continuing (These are required by internal functions
-          prebuild_result = False
-          if options.target == "clean":
-              prebuild_result = self.assert_prebuild_built(["tools/rospack"])
-          else:
-              prebuild_result = self.assert_prebuild_built(["tools/rospack"])
-          if not prebuild_result:
-              self.printer.print_all("Failed to finish prebuild, aborting")
-              self.printer.running = False
-              return
-
-
           self.printer.print_verbose ("Building packages %s"% self.build_list)
           build_queue = parallel_build.BuildQueue(self.build_list, self.dependency_tracker, robust_build = options.robust or options.best_effort)
-          build_queue.register_prebuilt(["rospack"])
           if None not in self.result.keys():
                 self.result[None] = {}
-          if 'rospack' in self.build_list:
-              self.result[None]["rospack"] = True
 
           build_passed = self.parallel_build_pkgs(build_queue, options.target, threads = options.threads)
-          if "rospack" in self.build_list and options.target == "clean":
-              self.printer.print_all( "Rosmake detected that rospack was requested to be cleaned.  Cleaning it, because it was skipped earlier.")
-              self.assert_prebuild_built(["tools/rospack"], 'clean')
 
         tests_passed = True
         if build_passed and testing:

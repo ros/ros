@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(rosbash)
 install(FILES rosbash rostcsh roszsh
-        DESTINATION share/ros/rosbash)
+        DESTINATION share/rosbash)
 install(PROGRAMS scripts/rosrun
         DESTINATION bin)
 if(NOT EXISTS ${CMAKE_BINARY_DIR}/bin/rosrun)

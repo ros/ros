@@ -31,21 +31,32 @@ add_nosetests(tools/roscreate/test)
 install(DIRECTORY core/rosbuild/
   DESTINATION share/ros/core/rosbuild
   PATTERN ".svn" EXCLUDE
+  PATTERN "bin" EXCLUDE
   )
+install(PROGRAMS 
+        core/rosbuild/bin/check_same_directories.py
+        core/rosbuild/bin/download_checkmd5.py
+        DESTINATION share/ros/core/rosbuild/bin)
 install(DIRECTORY core/mk/
   DESTINATION share/ros/core/mk
   PATTERN ".svn" EXCLUDE
   )
+install(FILES core/roslang/cmake/roslang.cmake
+        DESTINATION share/roslang/cmake)
 
 # install all manifests
 message("TODO: exclude rosbuild/manifest.xml and mk/manifest.xml from install_matching_to_share(), because the parent directories are installed explicitly")
 install_matching_to_share(manifest.xml)
 
 # install python package-relative scripts
-install(DIRECTORY tools/rosunit/scripts/
-  DESTINATION share/rosunit/bin
-  PATTERN ".svn" EXCLUDE
-  )
+install(PROGRAMS 
+        tools/rosunit/scripts/test_results_dir.py
+        tools/rosunit/scripts/summarize_results.py
+        tools/rosunit/scripts/rosunit
+        tools/rosunit/scripts/pycoverage_to_html.py
+        tools/rosunit/scripts/clean_junit_xml.py
+        tools/rosunit/scripts/check_test_ran.py
+        DESTINATION share/rosunit/bin)
 install(DIRECTORY tools/roscreate/templates/
   DESTINATION share/roscreate/templates
   PATTERN ".svn" EXCLUDE

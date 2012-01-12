@@ -169,9 +169,6 @@ macro(rosbuild_init)
   # PROJECT_SOURCE_DIR
   include($ENV{ROS_ROOT}/core/rosbuild/rosconfig.cmake)
 
-  # Check that PYTHONPATH includes roslib
-  _rosbuild_check_pythonpath()
-
   # Check that manifest.xml is valid
   _rosbuild_check_manifest()
 
@@ -297,12 +294,12 @@ macro(rosbuild_init)
   rosbuild_invoke_rospack("" rosunit path find rosunit)
 
   # Record where we're going to put test results (#2003)
-  execute_process(COMMAND ${rosunit_path}/scripts/test_results_dir.py
+  execute_process(COMMAND ${rosunit_path}/bin/test_results_dir.py
                   OUTPUT_VARIABLE rosbuild_test_results_dir
                   RESULT_VARIABLE _test_results_dir_failed
                   OUTPUT_STRIP_TRAILING_WHITESPACE)
   if(_test_results_dir_failed)
-    message(FATAL_ERROR "Failed to invoke rosunit/scripts/test_results_dir.py")
+    message(FATAL_ERROR "Failed to invoke rosunit/bin/test_results_dir.py")
   endif(_test_results_dir_failed)
 
   # The 'tests' target builds the test program

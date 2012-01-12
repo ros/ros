@@ -62,17 +62,6 @@ macro(_rosbuild_list_find _list _item _idx)
     endforeach(_i)
 endmacro(_rosbuild_list_find)
 
-# Check validity of PYTHONPATH, to avoid esoteric build errors, #954.
-macro(_rosbuild_check_pythonpath)
-  if("$ENV{PYTHONPATH}" STREQUAL "")
-    message("WARNING: PYTHONPATH is not set.  This is almost certainly wrong. Check the ROS installation instructions for details on setting PYTHONPATH.")
-  else("$ENV{PYTHONPATH}" STREQUAL "")
-    if(NOT "$ENV{PYTHONPATH}" MATCHES ".*roslib.*")
-      message("WARNING: PYTHONPATH does not appear to contain roslib.  This is almost certainly wrong. Check the ROS installation instructions for details on setting PYTHONPATH.")
-    endif(NOT "$ENV{PYTHONPATH}" MATCHES ".*roslib.*")
-  endif("$ENV{PYTHONPATH}" STREQUAL "")
-endmacro(_rosbuild_check_pythonpath)
-
 # Check validity of manifest.xml, to avoid esoteric build errors
 macro(_rosbuild_check_manifest)
   execute_process(

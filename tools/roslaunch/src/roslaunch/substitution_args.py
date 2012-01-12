@@ -219,7 +219,7 @@ _IN = 3
 def _collect_args(arg_str):
     """
     State-machine parser for resolve_args. Substitution args are of the form:
-    $(find rospy)/scripts/foo.py $(export some/attribute blar) non-relevant stuff
+    $(find package_name)/scripts/foo.py $(export some/attribute blar) non-relevant stuff
     
     @param arg_str: argument string to parse args from
     @type  arg_str: str

@@ -45,6 +45,7 @@ import roslib.packages
 
 import rosclean
 import rospkg
+import rosgraph
 
 import roslaunch.core
 from rosmaster import DEFAULT_MASTER_PORT
@@ -75,10 +76,9 @@ def resolve_launch_arguments(args):
     @return: resolved filenames
     @rtype: [str]
     """
-    import rospy
 
     # strip remapping args for processing
-    args = rospy.myargv(args)
+    args = rosgraph.myargv(args)
     
     # user can either specify:
     #  - filename + launch args

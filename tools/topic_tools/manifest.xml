@@ -14,8 +14,4 @@
     <cpp cflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --cflags topic_tools`"
          lflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --libs topic_tools`"/>
   </export>
-  <platform os="ubuntu" version="9.04"/>
-  <platform os="ubuntu" version="9.10"/>
-  <platform os="ubuntu" version="10.04"/>
-  <platform os="macports" version="macports"/>
 </package>

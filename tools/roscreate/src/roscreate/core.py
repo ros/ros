@@ -30,8 +30,8 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
+
+from __future__ import print_function
 
 import os
 import sys
@@ -41,7 +41,7 @@ import roslib.packages
 
 def print_warning(msg):
     """print warning to screen (bold red)"""
-    print >> sys.stderr, '\033[31m%s\033[0m'%msg
+    print('\033[31m%s\033[0m'%msg, file=sys.stderr)
     
 def on_ros_path(p):
     """
@@ -59,7 +59,7 @@ def author_name():
     import getpass
     name = getpass.getuser()
     try:
-        import pwd, codecs
+        import pwd
         login = name
         name = pwd.getpwnam(login)[4]
         name = ''.join(name.split(',')) # strip commas
@@ -72,10 +72,7 @@ def author_name():
 
 def read_template(tmplf):
     p = os.path.join(roslib.packages.get_pkg_dir('roscreate'), tmplf)
-    f = open(p, 'r')
-    try:
+    with open(p, 'r') as f:
         t = f.read()
-    finally:
-        f.close()
     return t
     

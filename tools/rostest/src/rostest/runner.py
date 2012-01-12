@@ -240,7 +240,7 @@ def createUnitTest(pkg, test_file):
             cmd = roslib.packages.find_node(test.package, test.type, rp)
             if not cmd:
                 err_msg = "Test node [%s/%s] does not exist or is not executable"%(test.package, test.type)
-        except roslib.packages.ROSPkgException as e:
+        except rospkg.ResourceNotFound as e:
             err_msg = "Package [%s] for test node [%s/%s] does not exist"%(test.package, test.package, test.type)
 
         testName = 'test%s'%(test.test_name)

@@ -15,7 +15,6 @@ rosparam can be invoked within a <a href="http://www.ros.org/wiki/roslaunch">ros
   <url>http://ros.org/wiki/rosparam</url>
   <license>BSD</license>
   <review status="doc reviewed" notes="11/05/2009"/>
-  <depend package="rosgraph"/>
   <rosdep name="python-yaml"/>
 
   <export>

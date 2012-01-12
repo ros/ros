@@ -42,15 +42,14 @@ import rospkg
 ## Test Roslaunch 'env' tags
 class TestEnv(unittest.TestCase):
     def test_env(self):
-      if '--noenv' in sys.argv:
-        self.assertEquals(None, os.environ.get('TEST_ENV', None))
-        self.assertEquals(None, os.environ.get('TEST_ENV_SUBSTITUTION', None))
-      else:
-        self.assertEquals('test env', os.environ.get('TEST_ENV', None))
-        path1 = os.path.join(rospkg.get_ros_root(), 'core', 'roslib', 'src')
-        path2 = os.environ.get('TEST_ENV_SUBSTITUTION', None)
-        self.assertEquals(os.path.abspath(path1), os.path.abspath(path2))
-
+        if '--noenv' in sys.argv:
+            self.assertEquals(None, os.environ.get('TEST_ENV', None))
+            self.assertEquals(None, os.environ.get('TEST_ENV_SUBSTITUTION', None))
+        else:
+            self.assertEquals('test env', os.environ.get('TEST_ENV', None))
+            path1 = os.path.join(rospkg.get_path('roslaunch'), 'src')
+            path2 = os.environ.get('TEST_ENV_SUBSTITUTION', None)
+            self.assertEquals(os.path.abspath(path1), os.path.abspath(path2))
         
 if __name__ == '__main__':
     rostest.rosrun(PKG, NAME, TestEnv)

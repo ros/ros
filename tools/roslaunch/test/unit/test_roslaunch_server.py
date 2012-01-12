@@ -41,6 +41,11 @@ from roslaunch.server import ProcessListener
 
 from xmlrpclib import ServerProxy
 
+import rosgraph
+master = rosgraph.Master('test_roslaunch_server')
+def get_param(*args):
+    return master.getParam(*args)
+    
 class MockProcessListener(ProcessListener):
     def process_died(self, name, code):
         self.process_name = name
@@ -272,10 +277,9 @@ class TestRoslaunchServer(unittest.TestCase):
     def test_ROSLaunchChildHandler(self):
         from roslaunch.server import ROSLaunchChildHandler
         pmon = self.pmon
-        import roslib.params
         try:
             # if there is a core up, we have to use its run id
-            run_id = roslib.params.get_param('/run_id')
+            run_id = get_param('/run_id')
         except:
             run_id = 'foo-%s'%time.time()
         name = 'foo-bob'
@@ -420,10 +424,9 @@ class TestRoslaunchServer(unittest.TestCase):
         from roslaunch.server import ROSLaunchChildNode
         from roslaunch.server import ChildROSLaunchProcess
         pmon = self.pmon
-        import roslib.params
         try:
             # if there is a core up, we have to use its run id
-            run_id = roslib.params.get_param('/run_id')
+            run_id = get_param('/run_id')
         except:
             run_id = 'foo-%s'%time.time()
         name = 'foo-bob'

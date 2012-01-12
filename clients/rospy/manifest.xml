@@ -25,18 +25,10 @@
   <license>BSD</license>
   <review status="Doc reviewed" notes="2010/01/18"/>
   <url>http://ros.org/wiki/rospy</url>
-  <depend package="roslib"/>
-  <depend package="rosgraph"/>
-  <depend package="rosgraph_msgs"/>
-  <depend package="std_msgs"/>
   <depend package="roslang"/>
   <export>
     <roslang cmake="${prefix}/rosbuild/rospy.cmake"/>
     <rosdoc config="rosdoc.yaml"/>
   </export>
-  <platform os="ubuntu" version="9.04"/>
-  <platform os="ubuntu" version="9.10"/>
-  <platform os="ubuntu" version="10.04"/>
-  <platform os="macports" version="macports"/>
 </package>
 

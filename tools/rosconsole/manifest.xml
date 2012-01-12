@@ -6,7 +6,8 @@
   <url>http://www.ros.org/wiki/rosconsole</url>
   <depend package="rostime"/>
   <export>
-    <cpp cflags="-I${prefix}/include `rosboost-cfg --cflags`" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lrosconsole `rosboost-cfg --lflags thread` -llog4cxx"/>
+    <cpp cflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --cflags rosconsole`"
+         lflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --libs rosconsole`"/>
   </export>
   <rosdep name="apr"/>
   <rosdep name="log4cxx"/>

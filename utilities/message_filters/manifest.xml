@@ -7,7 +7,8 @@
   <depend package="rospy" />
   <depend package="rostest" />
   <export>
-    <cpp cflags="-I${prefix}/include" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lmessage_filters `rosboost-cfg --lflags thread,signals`" />
+    <cpp cflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --cflags message_filters`"
+         lflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --libs message_filters`"/>
     <rosdoc config="rosdoc.yaml" />
   </export>
   <url>http://ros.org/wiki/message_filters</url>

@@ -28,8 +28,9 @@
   <depend package="std_msgs"/>
   <depend package="rosgraph_msgs"/>
   <export>
-    <cpp cflags="-I${prefix}/include `rosboost-cfg --cflags`" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lros `rosboost-cfg --lflags thread,signals`"/>
-    <roslang cmake="${prefix}/cmake/rosbuild-roscpp.cmake"/>
+    <cpp cflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --cflags roscpp`"
+         lflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --libs roscpp`"/>
+    <roslang cmake="${prefix}/rosbuild/roscpp.cmake"/>
   </export>
   <rosdep name="pkg-config"/>
   <platform os="ubuntu" version="9.04"/>

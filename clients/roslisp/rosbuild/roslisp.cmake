@@ -10,7 +10,7 @@ macro(genmsg_lisp)
   
     rosbuild_gendeps(${PROJECT_NAME} ${_msg})
   
-    set(genmsg_lisp_exe ${roslisp_PACKAGE_PATH}/scripts/genmsg_lisp.py)
+    set(genmsg_lisp_exe ${roslisp_PACKAGE_PATH}/rosbuild/scripts/genmsg_lisp.py)
   
     set(_output_lisp ${PROJECT_SOURCE_DIR}/msg_gen/lisp/${_msg})
     set(_output_lisp_package ${PROJECT_SOURCE_DIR}/msg_gen/lisp/_package.lisp)
@@ -54,7 +54,7 @@ macro(gensrv_lisp)
   
     rosbuild_gendeps(${PROJECT_NAME} ${_srv})
   
-    set(gensrv_lisp_exe ${roslisp_PACKAGE_PATH}/scripts/genmsg_lisp.py)
+    set(gensrv_lisp_exe ${roslisp_PACKAGE_PATH}/rosbuild/scripts/genmsg_lisp.py)
 
     set(_output_lisp ${PROJECT_SOURCE_DIR}/srv_gen/lisp/${_srv})
     set(_output_lisp_package ${PROJECT_SOURCE_DIR}/srv_gen/lisp/_package.lisp)

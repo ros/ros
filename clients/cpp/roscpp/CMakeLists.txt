@@ -95,12 +95,20 @@ generate_messages()
 install(TARGETS roscpp
   DESTINATION lib
  )
-install(FILES cmake/rosbuild-roscpp.cmake
-        DESTINATION share/roscpp/cmake)
 install(DIRECTORY include/
         DESTINATION include
         FILES_MATCHING PATTERN "*.h"
         PATTERN ".svn" EXCLUDE)
+# install legacy infrastructure needed by rosbuild
+install(FILES rosbuild/roscpp.cmake
+        DESTINATION share/roscpp/rosbuild)
+install(PROGRAMS 
+        rosbuild/scripts/genmsg_cpp.py
+        rosbuild/scripts/gensrv_cpp.py
+        DESTINATION share/roscpp/rosbuild/scripts)
+install(FILES 
+        rosbuild/scripts/msg_gen.py
+        DESTINATION share/roscpp/rosbuild/scripts)
 
 catkin_project(roscpp
   LIBRARIES roscpp

@@ -34,10 +34,27 @@ add_nosetests(tools/rosgraph/test)
 add_nosetests(tools/roslaunch/test/unit)
 add_nosetests(utilities/roswtf/test)
 
-install(FILES clients/rospy/cmake/rosbuild-rospy.cmake
-        DESTINATION share/rospy/cmake)
-install(FILES clients/roslisp/cmake/rosbuild-roslisp.cmake
-        DESTINATION share/roslisp/cmake)
+# install legacy infrastructure needed by rosbuild
+# rospy
+install(FILES clients/rospy/rosbuild/rospy.cmake
+        DESTINATION share/rospy/rosbuild)
+install(PROGRAMS 
+        clients/rospy/rosbuild/scripts/genmsg_py.py
+        clients/rospy/rosbuild/scripts/gensrv_py.py
+        DESTINATION share/rospy/rosbuild/scripts)
+install(FILES 
+        clients/rospy/rosbuild/scripts/genutil.py
+        DESTINATION share/rospy/rosbuild/scripts)
+# roslisp
+install(FILES clients/roslisp/rosbuild/roslisp.cmake
+        DESTINATION share/roslisp/rosbuild)
+install(PROGRAMS 
+        clients/roslisp/rosbuild/scripts/genmsg_lisp.py
+        DESTINATION share/roslisp/rosbuild/scripts)
+install(PROGRAMS 
+        clients/cpp/roscpp/rosbuild/scripts/genmsg_cpp.py
+        clients/cpp/roscpp/rosbuild/scripts/gensrv_cpp.py
+        DESTINATION share/roscpp/rosbuild/scripts)
 
 # install all manifests
 install_matching_to_share(manifest.xml)

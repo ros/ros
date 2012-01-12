@@ -1,8 +1,11 @@
 project(rosbag)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
+catkin_project(rosbag
+  LIBRARIES rosbag
+  INCLUDE_DIRS include
+  )
 
 find_package(ROS REQUIRED COMPONENTS cpp_common roscpp_serialization roscpp rosconsole xmlrpcpp topic_tools)
-find_package(Boost REQUIRED COMPONENTS program_options)
+find_package(Boost REQUIRED COMPONENTS regex program_options)
 find_package(BZip2 REQUIRED)
 # Support large bags (>2GB) on 32-bit systems
 add_definitions(-D_FILE_OFFSET_BITS=64)
@@ -16,7 +19,6 @@ add_library(rosbag SHARED
   src/query.cpp src/recorder.cpp src/stream.cpp src/time_translator.cpp
   src/uncompressed_stream.cpp src/view.cpp)
 target_link_libraries(rosbag ${ROS_LIBRARIES} ${Boost_LIBRARIES} ${BZIP2_LIBRARIES})
-rosbuild_link_boost(rosbag regex program_options)
 
 add_executable(record src/record.cpp)
 target_link_libraries(record rosbag)
@@ -27,8 +29,13 @@ target_link_libraries(play rosbag)
 #rosbuild_add_executable(example_write examples/write.cpp)
 #target_link_libraries(example_write rosbag)
 
-INSTALL(TARGETS record play
-        RUNTIME DESTINATION bin)
+install(DIRECTORY include/
+        DESTINATION include
+        FILES_MATCHING PATTERN "*.h"
+        PATTERN ".svn" EXCLUDE)
+install(TARGETS rosbag record play
+        RUNTIME DESTINATION share/rosbag/bin
+        LIBRARY DESTINATION lib)
 
 rosbuild_download_test_data(http://pr.willowgarage.com/data/rosbag/test_indexed_1.2.bag
   test/test_indexed_1.2.bag 523cc0deb66269c84be4a7c605ff5eb3)

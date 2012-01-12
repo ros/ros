@@ -36,20 +36,21 @@
 ## 
 ## Converts ROS .msg files in a package into C++ source code implementations.
 
-from rosidl import log, plog
-
-import genmsg_cpp
+import msg_gen as genmsg_cpp
  
 import sys
 import os
 import traceback
 
 # roslib.msgs contains the utilities for parsing .msg specifications. It is meant to have no rospy-specific knowledge
-import rosidl.srvs
-#import roslib.packages
-import rosidl.gentools
+import roslib.srvs
+import roslib.packages
+import roslib.gentools
 
-from cStringIO import StringIO
+try:
+    from cStringIO import StringIO #Python 2.x
+except ImportError:
+    from io import StringIO #Python 3.x
 
 def write_begin(s, spec, file):
     """
@@ -112,7 +113,7 @@ def write_trait_char_class(s, class_name, cpp_msg, value):
     s.write('  static const char* value(const %s&) { return value(); } \n'%(cpp_msg))
     s.write('};\n\n')
     
-def write_traits(s, spec, cpp_name_prefix, includepath):
+def write_traits(s, spec, cpp_name_prefix):
     """
     Write all the service traits for a message
     
@@ -123,8 +124,8 @@ def write_traits(s, spec, cpp_name_prefix, includepath):
     @param cpp_name_prefix: The C++ prefix to prepend when referencing the service, e.g. "std_srvs::"
     @type cpp_name_prefix: str
     """
-    gendeps_dict = rosidl.gentools.get_dependencies(spec, spec.package, includepath)
-    md5sum = rosidl.gentools.compute_md5(gendeps_dict, includepath)
+    gendeps_dict = roslib.gentools.get_dependencies(spec, spec.package)
+    md5sum = roslib.gentools.compute_md5(gendeps_dict)
     
     s.write('namespace ros\n{\n')
     s.write('namespace service_traits\n{\n')
@@ -141,18 +142,18 @@ def write_traits(s, spec, cpp_name_prefix, includepath):
     s.write('} // namespace service_traits\n')
     s.write('} // namespace ros\n\n')
 
-def generate(srv_path, options):
+def generate(srv_path):
     """
     Generate a service
     
     @param srv_path: the path to the .srv file
     @type srv_path: str
     """
-    # (package_dir, package) = roslib.packages.get_dir_pkg(srv_path)
-    (_, spec) = rosidl.srvs.load_from_file(srv_path, options.package)
+    (package_dir, package) = roslib.packages.get_dir_pkg(srv_path)
+    (_, spec) = roslib.srvs.load_from_file(srv_path, package)
     
     s = StringIO()  
-    cpp_prefix = '%s::'%(options.package)
+    cpp_prefix = '%s::'%(package)
     write_begin(s, spec, srv_path)
     genmsg_cpp.write_generic_includes(s)
     write_generic_includes(s)
@@ -160,13 +161,10 @@ def generate(srv_path, options):
     s.write('\n')
     genmsg_cpp.write_includes(s, spec.response)
     
-    gendeps_dict = rosidl.gentools.get_dependencies(spec, spec.package,
-                                                    options.includepath,
-                                                    compute_files=False)
-
-    md5sum = rosidl.gentools.compute_md5(gendeps_dict, options.includepath)
+    gendeps_dict = roslib.gentools.get_dependencies(spec, spec.package)
+    md5sum = roslib.gentools.compute_md5(gendeps_dict)
     
-    s.write('namespace %s\n{\n'%(options.package))
+    s.write('namespace %s\n{\n'%(package))
     genmsg_cpp.write_struct(s, spec.request, cpp_prefix, {'ServerMD5Sum': md5sum})
     s.write('\n')
     genmsg_cpp.write_struct(s, spec.response, cpp_prefix, {'ServerMD5Sum': md5sum})
@@ -179,59 +177,41 @@ def generate(srv_path, options):
     s.write('typedef Request RequestType;\n')
     s.write('typedef Response ResponseType;\n')
     s.write('}; // struct %s\n'%(spec.short_name))
-    s.write('} // namespace %s\n\n'%(options.package))
+    s.write('} // namespace %s\n\n'%(package))
     
     request_cpp_name = "Request"
     response_cpp_name = "Response"
-    log("options.includepath", str(options.includepath))
-    genmsg_cpp.write_traits(s, spec.request, cpp_prefix, options.includepath)
+    genmsg_cpp.write_traits(s, spec.request, cpp_prefix)
     s.write('\n')
-    genmsg_cpp.write_traits(s, spec.response, cpp_prefix, options.includepath)
+    genmsg_cpp.write_traits(s, spec.response, cpp_prefix)
     genmsg_cpp.write_serialization(s, spec.request, cpp_prefix)
     s.write('\n')
     genmsg_cpp.write_serialization(s, spec.response, cpp_prefix)
     
-    write_traits(s, spec, cpp_prefix, options.includepath)
+    write_traits(s, spec, cpp_prefix)
     
     write_end(s, spec)
     
-    if 'ROS_BUILD' in os.environ:
-        package_dir = os.environ['ROS_BUILD']
-    output_dir = os.path.join(options.outdir, options.package)
+    output_dir = '%s/srv_gen/cpp/include/%s'%(package_dir, package)
     if (not os.path.exists(output_dir)):
         # if we're being run concurrently, the above test can report false but os.makedirs can still fail if
         # another copy just created the directory
         try:
             os.makedirs(output_dir)
-        except OSError, e:
+        except OSError as e:
             pass
         
-    ofile = os.path.join(output_dir, spec.short_name + ".h")
-    f = open(ofile, 'w')
-    print "Writing to", ofile  
-    print >> f, s.getvalue()
+    f = open('%s/%s.h'%(output_dir, spec.short_name), 'w')
+    f.write(s.getvalue() + "\n")
     
     s.close()
 
 def generate_services(argv):
-    # print argv
-    from optparse import OptionParser
-    parser = OptionParser("generates c++ message serialization code")
-    parser.add_option("-p", dest='package',
-                      help="package name")
-
-    parser.add_option("-o", dest='outdir',
-                      help="directory in which to place output files")
-
-    parser.add_option("-I", dest='includepath',
-                      help="include path to search for messages",
-                      action="append")
-    (options, argv) = parser.parse_args(argv)
-
-    assert len(argv) == 2
-
-    generate(argv[1], options)
+    for arg in argv[1:]:
+        generate(arg)
 
 if __name__ == "__main__":
+    roslib.msgs.set_verbose(False)
     generate_services(sys.argv)
+    
     

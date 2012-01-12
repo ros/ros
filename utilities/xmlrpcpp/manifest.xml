@@ -14,7 +14,8 @@ own fork.
 <logo>http://xmlrpcpp.sourceforge.net/xmlrpc.jpg</logo>
 <export>
   <rosdoc external="http://xmlrpcpp.sourceforge.net/doc/hierarchy.html"/>
-  <cpp cflags="-I${prefix}/src" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lXmlRpc"/>
+    <cpp cflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --cflags xmlrpcpp`"
+         lflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --libs xmlrpcpp`"/>
 </export>
   <platform os="ubuntu" version="9.04"/>
   <platform os="ubuntu" version="9.10"/>

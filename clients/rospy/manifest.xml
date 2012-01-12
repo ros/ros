@@ -31,7 +31,7 @@
   <depend package="std_msgs"/>
   <depend package="roslang"/>
   <export>
-    <roslang cmake="${prefix}/cmake/rosbuild-rospy.cmake"/>
+    <roslang cmake="${prefix}/rosbuild/rospy.cmake"/>
     <rosdoc config="rosdoc.yaml"/>
   </export>
   <platform os="ubuntu" version="9.04"/>

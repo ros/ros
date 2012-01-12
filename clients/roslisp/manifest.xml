@@ -7,7 +7,7 @@
   <depend package="roslang"/>
   <depend package="std_srvs"/>
   <export>
-    <roslang cmake="${prefix}/cmake/rosbuild-roslisp.cmake"/>
+    <roslang cmake="${prefix}/rosbuild/roslisp.cmake"/>
   </export>
   <url>http://ros.org/wiki/roslisp</url>
   <platform os="ubuntu" version="9.04"/>

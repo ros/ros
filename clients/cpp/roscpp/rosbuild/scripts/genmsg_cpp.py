@@ -36,12 +36,12 @@
 ## 
 ## Converts ROS .msg files in a package into C++ source code implementations.
 
-import roscpp.msg_gen
+import msg_gen
 
 import sys
 
 if __name__ == "__main__":
-    roscpp.msg_gen.generate_messages(sys.argv)
+    msg_gen.generate_messages(sys.argv)
 
 
 

@@ -25,3 +25,7 @@ install(PROGRAMS scripts/roslaunch-check.py
 install(PROGRAMS nodes/hztest
   DESTINATION share/rostest/nodes/hztest
   )
+install(DIRECTORY include/
+        DESTINATION include
+        FILES_MATCHING PATTERN "*.h"
+        PATTERN ".svn" EXCLUDE)

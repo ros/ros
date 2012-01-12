@@ -13,7 +13,8 @@
   <depend package="topic_tools"/>
   <depend package="rostest"/>
   <export>
-    <cpp cflags="-I${prefix}/include" lflags="-Wl,-rpath,${prefix}/lib -L${prefix}/lib -lrosbag"/>
+    <cpp cflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --cflags rosbag`"
+         lflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --libs rosbag`"/>
     <rosdoc config="${prefix}/rosdoc.yaml" />
   </export>
   <rosdep name="python-imaging"/>

@@ -270,4 +270,5 @@ class TestRosbag(unittest.TestCase):
 
 if __name__ == '__main__':
     import rostest
+    PKG='rosbag'
     rostest.run(PKG, 'TestRosbag', TestRosbag, sys.argv)

@@ -56,12 +56,6 @@ MODE_SRV = '.srv'
 
 class ROSMsgException(Exception): pass
 
-def make_find_command(path):
-    if os.uname()[0] in ['Darwin', 'FreeBSD']:
-        return ["find", "-E", path]
-    else:
-        return ["find", path, "-regextype", "posix-egrep"]
-
 from cStringIO import StringIO
 def spec_to_str(msg_context, spec, buff=None, indent=''):
     """
@@ -334,12 +328,14 @@ def rosmsg_cmd_package(mode, full):
     else:
         print('\n'.join(list_types(arg, mode=mode)))
     
-def rosmsg_cmd_packages(mode, full):
+def rosmsg_cmd_packages(mode, full, argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
     parser = OptionParser(usage="usage: ros%s packages"%mode[1:])
     parser.add_option("-s",
                       dest="single_line", default=False,action="store_true",
                       help="list all packages on a single line")
-    options, args = parser.parse_args(sys.argv[2:])
+    options, args = parser.parse_args(argv[1:])
     rospack = rospkg.RosPack()    
     if options.single_line:
         print(' '.join([p for p, _ in iterate_packages(rospack, mode)]))

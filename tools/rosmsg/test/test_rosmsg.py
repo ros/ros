@@ -80,6 +80,24 @@ class TestRosmsg(unittest.TestCase):
 std_msgs/String s2
   string data""", rosmsg.get_msg_text(type_, raw=False).strip())
 
+    def test_iterate_packages(self):
+        from rosmsg import iterate_packages, MODE_MSG, MODE_SRV
+        import rospkg
+        rospack = rospkg.RosPack()
+        found = {}
+        for p, path in iterate_packages(rospack, MODE_MSG):
+            found[p] = path
+            assert os.path.basename(path) == 'msg', path
+            # make sure it's a package
+            assert rospack.get_path(p)
+        assert found
+        for p, path in iterate_packages(rospack, MODE_SRV):
+            found[p] = path
+            assert os.path.basename(path) == 'srv', path
+            # make sure it's a package
+            assert rospack.get_path(p)
+        assert found
+        
     def test_list_types(self):
         try:
             l = rosmsg.list_types('rosmsg', '.foo')
@@ -112,3 +130,27 @@ std_msgs/String s2
             text = f.read()
         self.assertEquals(text, rosmsg.get_srv_text('test_ros/RossrvB', raw=False))
         self.assertEquals(text, rosmsg.get_srv_text('test_ros/RossrvB', raw=True))
+
+    def test_rosmsg_cmd_packages(self):
+        from rosmsg import rosmsg_cmd_packages, MODE_MSG, MODE_SRV
+        with fakestdout() as b:
+            rosmsg_cmd_packages(MODE_MSG, 'foo', ['packages'])
+            val = b.getvalue().strip()
+            packages1 = val.split('\n')
+            assert 'std_msgs' in packages1
+        with fakestdout() as b:
+            rosmsg_cmd_packages(MODE_MSG, 'foo', ['packages', '-s'])
+            val = b.getvalue().strip()
+            packages2 = val.split(' ')
+            assert 'std_msgs' in packages2, packages2
+        assert set(packages1) == set(packages2), "%s vs. %s"%(packages1, packages2)
+
+from contextlib import contextmanager
+@contextmanager
+def fakestdout():
+    realstdout = sys.stdout
+    fakestdout = cStringIO.StringIO()
+    sys.stdout = fakestdout
+    yield fakestdout
+    sys.stdout = realstdout
+        

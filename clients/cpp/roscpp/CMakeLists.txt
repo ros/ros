@@ -115,3 +115,5 @@ catkin_project(roscpp
   INCLUDE_DIRS include
   DEPENDS roscpp_traits roscpp_serialization cpp_common std_msgs rosgraph_msgs #EAR are these needed?  doesn't the stack.yaml declare these?
   )
+
+message("TODO: add roscpp's tests back in")

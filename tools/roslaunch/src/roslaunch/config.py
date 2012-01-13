@@ -70,8 +70,15 @@ def namespaces_of(name):
     return ['/'] + ['/'+'/'.join(splits[:i]) for i in xrange(1, len(splits))]
 
 def get_roscore_filename():
+    # precedence: look for version in /etc/ros.  If it's not there, fall back to roslaunch package
+    etc_path = '/etc/ros'
+    if 'ROS_ETC_PATH' is os.environ:
+        etc_path = os.environ['ROS_ETC_PATH']
+    filename = os.path.join(etc_path, 'roscore.xml')
+    if os.path.isfile(filename):
+        return filename
     r = rospkg.RosPack()
-    return os.path.join(r.get_path('roslaunch'), 'roscore.xml')
+    return os.path.join(r.get_path('roslaunch'), 'resources', 'roscore.xml')
 
 def load_roscore(loader, config, verbose=True):
     """

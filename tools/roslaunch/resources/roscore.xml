@@ -5,7 +5,7 @@
   http://ros.org/wiki/roscore
   -->
 <launch>
-  <param name="rosversion" value="1.7.0" />
-  <param name="rosdistro" value="fuerte" />
+  <param name="rosversion" command="rosversion ros" />
+  <param name="rosdistro" command="rosversion -d" />
   <node pkg="rosout" type="rosout" name="rosout" respawn="true"/>
 </launch>

@@ -54,15 +54,14 @@ try:
 except ImportError:
     from io import StringIO # Python 3.x
 
+import genmsg
 import genpy
-import roslib.message
+import genpy.dynamic
+import genpy.message
 
-try:
-    # backwards compatbility import
-    import roslib.genpy_electric as genpy_electric
-except ImportError:
-    import roslib.genpy as genpy_electric
-    
+import roslib.msgs
+import roslib.gentools
+
 import rospy
 
 class ROSBagException(Exception):
@@ -321,7 +320,7 @@ class Bag(object):
             if raw:
                 if pytype is None:
                     try:
-                        pytype = roslib.message.get_message_class(msg_type)
+                        pytype = genpy.message.get_message_class(msg_type)
                     except Exception:
                         pytype = None
                 if pytype is None:
@@ -1309,13 +1308,13 @@ def _get_message_type(info):
     message_type = _message_types.get(info.md5sum)
     if message_type is None:
         try:
-            message_type = genpy_electric.generate_dynamic(info.datatype, info.msg_def)[info.datatype]
+            message_type = genpy.dynamic.generate_dynamic(info.datatype, info.msg_def)[info.datatype]
             if (message_type._md5sum != info.md5sum):
                 print('WARNING: For type [%s] stored md5sum [%s] does not match message definition [%s].\n  Try: "rosrun rosbag fix_msg_defs.py old_bag new_bag."'%(info.datatype, info.md5sum, message_type._md5sum), file=sys.stderr)
-        except roslib.msgs.MsgSpecException:
-            message_type = genpy_electric.generate_dynamic(info.datatype, "")[info.datatype]
+        except genmsg.InvalidMsgSpec:
+            message_type = genpy.dynamic.generate_dynamic(info.datatype, "")[info.datatype]
             print('WARNING: For type [%s] stored md5sum [%s] has invalid message definition."'%(info.datatype, info.md5sum), file=sys.stderr)
-        except genpy_electric.MsgGenerationException, ex:
+        except genmsg.MsgGenerationException as ex:
             raise ROSBagException('Error generating datatype %s: %s' % (info.datatype, str(ex)))
 
         _message_types[info.md5sum] = message_type
@@ -1505,7 +1504,7 @@ class _BagReader101(_BagReader):
                 pytype = _message_types[md5sum]
             except KeyError:
                 try:
-                    pytype = roslib.message.get_message_class(datatype)
+                    pytype = genpy.message.get_message_class(datatype)
                 except Exception:
                     pytype = None
           

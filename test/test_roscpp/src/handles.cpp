@@ -537,7 +537,7 @@ TEST(RoscppHandles, trackedObjectWithServiceCallback)
   ros::ServiceServer srv = n.advertiseService("/test_srv", &ServiceClass::serviceCallback, tracked);
 
   TestStringString t;
-  ASSERT_TRUE(ros::service::call("/test_srv", t));
+  EXPECT_TRUE(ros::service::call("/test_srv", t));
 
   tracked.reset();
 

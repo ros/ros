@@ -127,8 +127,9 @@ target_link_libraries(${PROJECT_NAME}-test_version)
 # provokes a particular message.
 find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
-add_executable(${PROJECT_NAME}-test_spinners test/test_spinners.cpp)
-target_link_libraries(${PROJECT_NAME}-test_spinners ros ${GTEST_LIBRARIES})
+add_executable(${PROJECT_NAME}-test_spinners EXCLUDE_FROM_ALL test/test_spinners.cpp)
+add_dependencies(tests ${PROJECT_NAME}-test_spinners) 
+target_link_libraries(${PROJECT_NAME}-test_spinners roscpp ${GTEST_LIBRARIES})
 
 add_gtest(${PROJECT_NAME}-test_header test/test_header.cpp)
 target_link_libraries(${PROJECT_NAME}-test_header roscpp)

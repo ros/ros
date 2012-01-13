@@ -1,12 +1,7 @@
-if(ROSBUILD)
-  include(rosbuild.cmake OPTIONAL)
-  return()
-endif()
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
-rosbuild_init()
-rosbuild_genmsg()
-
-# unit tests 
-rosbuild_add_gtest(test_time test/time.cpp)
+project(test_rostime)
+catkin_project(test_rostime)
+find_package(ROS COMPONENTS rostime)
+include_directories(${ROS_INCLUDE_DIRS})
+add_gtest(${PROJECT_NAME}-test_time test/time.cpp)
+target_link_libraries(${PROJECT_NAME}-test_time ${ROS_LIBRARIES})
 

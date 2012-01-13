@@ -42,6 +42,9 @@ import roslib.packages
 
 TEST_CTX = 'rosgraph_msgs'
 
+import roslib
+PKG='test_roslib_comm'
+
 class TestGentools(unittest.TestCase):
 
     def setUp(self):

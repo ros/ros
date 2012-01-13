@@ -91,20 +91,6 @@ class RoslibSrvTest(unittest.TestCase):
         spec2.package = ''        
         self.assertEquals(spec, spec2)
         
-    def test_is_verbose(self):
-        from roslib.srvs import is_verbose, set_verbose
-        self.failIf(is_verbose())
-        set_verbose(True)
-        self.assert_(is_verbose())
-        set_verbose(False)
-        self.failIf(is_verbose())
-        
-    def test_list_srv_types(self):
-        # tripwire for now
-        from roslib.srvs import list_srv_types
-        types = list_srv_types('test_ros', include_depends=False)
-        self.assertEquals(types, ['AddTwoInts'])
-        
     def test_srv_file(self):
         from roslib.srvs import srv_file
         

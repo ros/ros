@@ -34,6 +34,8 @@ import os
 import sys
 import unittest
 
+import roslib
+PKG='test_roslib_comm'
 class MsgSpecTest(unittest.TestCase):
 
   def test_verbose(self):
@@ -228,90 +230,6 @@ class MsgSpecTest(unittest.TestCase):
       self.fail("should have failed invalid type")
     except MsgSpecException: pass
     
-  def test_load_by_type(self):
-    from roslib.msgs import load_by_type
-    name, msgspec = load_by_type('std_msgs/String')
-    self.assertEquals('std_msgs/String', name)
-    self.assertEquals(['data'], msgspec.names)
-    self.assertEquals(['string'], msgspec.types)    
-    
-    
-  def test_load_package_dependencies(self):
-    import roslib.msgs    
-    # in order to do this test, we have to observe some inner state
-    roslib.msgs.reinit()
-    self.failIf(PKG in roslib.msgs._loaded_packages)
-    self.failIf('std_msgs' in roslib.msgs._loaded_packages)
-    roslib.msgs.load_package_dependencies(PKG)
-    
-    self.assert_('std_msgs' in roslib.msgs._loaded_packages, roslib.msgs._loaded_packages)
-    # should load deps only, not package itself
-    self.failIf(PKG in roslib.msgs._loaded_packages)
-
-    spec = roslib.msgs.get_registered('std_msgs/String')
-    self.assert_('data' in spec.names) # make sure we have an actual std_msgs msg
-    
-    # we don't have a test that properly exercises the recursive
-    # differences, but we need to at least test that branch of code
-    roslib.msgs.reinit()
-    self.failIf(PKG in roslib.msgs._loaded_packages)
-    self.failIf('std_msgs' in roslib.msgs._loaded_packages)
-    roslib.msgs.load_package_dependencies(PKG, load_recursive=True)    
-    self.assert_('std_msgs' in roslib.msgs._loaded_packages, roslib.msgs._loaded_packages)
-    # should load deps only, not package itself
-    self.failIf(PKG in roslib.msgs._loaded_packages)
-
-    spec = roslib.msgs.get_registered('std_msgs/String')
-    self.assert_('data' in spec.names) # make sure we have an actual std_msgs msg
-
-  def test_load_package(self):
-    import roslib.msgs    
-    # in order to do this test, we have to observe some inner state
-    roslib.msgs.reinit()
-    self.failIf(PKG in roslib.msgs._loaded_packages)
-    self.failIf('std_msgs' in roslib.msgs._loaded_packages)
-    roslib.msgs.load_package(PKG)
-    
-    self.assert_(PKG in roslib.msgs._loaded_packages)
-    # - shouldn't load deps
-    self.failIf('std_msgs' in roslib.msgs._loaded_packages, roslib.msgs._loaded_packages)
-
-    self.failIf(roslib.msgs.is_registered('std_msgs/String'))
-    spec = roslib.msgs.get_registered('%s/FillSimple'%(PKG))
-    self.assertEquals(['i32', 'str', 'i32_array', 'b'], spec.names) # make sure we have an actual msg
-    
-  def test_list_msg_types(self):
-    import roslib.msgs    
-    types1 = roslib.msgs.list_msg_types('rosgraph_msgs', False)
-    types2 = roslib.msgs.list_msg_types('rosgraph_msgs', True)
-    
-    self.assert_('Clock' in types1, types1)
-    self.assert_('Log' in types1, types1)        
-    
-    types1 = roslib.msgs.list_msg_types('std_msgs', False)
-    types2 = roslib.msgs.list_msg_types('std_msgs', True)
-    # std_msgs has no message deps, so this should be equivalent
-    self.assertEquals(types1, types2)
-    
-    self.assert_('Header' in types1, types1)
-    self.assert_('Header' in types2, types2)
-    self.assert_('String' in types1, types1)
-    self.assert_('String' in types2, types2)    
-    self.assert_('Int32' in types1, types1)
-    self.assert_('Int32' in types2, types2)    
-    
-    # test loading dependencies.  we depend on std_msgs
-    types1 = roslib.msgs.list_msg_types(PKG, False)
-    types2 = roslib.msgs.list_msg_types(PKG, True)
-
-    self.assert_('std_msgs/Header' in types2, types2)
-    self.assert_('std_msgs/Header' not in types1, types1)
-    self.assert_('std_msgs/Int32' in types2, types2)
-    self.assert_('std_msgs/Int32' not in types1, types1)
-    
-    # std_msgs depends on roslib, so these should be different
-    self.assertNotEquals(types1, types2)
-
   def test_msg_file(self):
     import roslib.msgs    
     f = roslib.msgs.msg_file('rosgraph_msgs', 'Log')

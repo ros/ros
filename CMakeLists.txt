@@ -34,6 +34,7 @@ foreach(subdir
   add_subdirectory(${subdir})
 endforeach()
 
+add_nosetests(test/test_roslib_comm/test)
 add_nosetests(tools/rosmaster/test)
 add_nosetests(tools/rosmsg/test)
 add_nosetests(tools/rosparam/test)

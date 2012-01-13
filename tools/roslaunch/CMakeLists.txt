@@ -6,7 +6,7 @@ add_rostest(test/rostests/roslaunch.test)
 add_rostest(test/rostests/env.test)
 add_rostest(test/rostests/params_basic.test)
 
-install(FILES roscore.xml
+install(FILES resources/roscore.xml
   DESTINATION etc/ros
   )
 

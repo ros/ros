@@ -31,6 +31,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import print_function
+
 import optparse
 import sys
 import roslib.message
@@ -48,15 +50,15 @@ if __name__ == '__main__':
     if options.bagfile is None:
         sys_class = roslib.message.get_message_class(args[0])
         if sys_class is None:
-            print >> sys.stderr, 'Could not find message %s.' % args[0]
+            print('Could not find message %s.' % args[0], file=sys.stderr)
         else:
-            print '[%s]:' % args[0]
-            print sys_class._full_text
+            print('[%s]:' % args[0])
+            print(sys_class._full_text)
     else:
         for topic, msg, t in rosbag.Bag(options.bagfile).read_messages(raw=True):
             if msg[0] == args[0]:
-                print '[%s]:' % args[0]
-                print msg[4]._full_text
+                print('[%s]:' % args[0])
+                print(msg[4]._full_text)
                 exit(0)
 
-        print >> sys.stderr, 'Could not find message %s in bag %s.' % (args[0], options.bagfile)
+        print('Could not find message %s in bag %s.' % (args[0], options.bagfile), file=sys.stderr)

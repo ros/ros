@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 2.8)
 project(xmlrpcpp)
+catkin_project(xmlrpcpp
+  INCLUDE_DIRS src
+  LIBRARIES xmlrpcpp
+  )
 
 find_package(ROS COMPONENTS catkin cpp_common)
 include_directories(${ROS_INCLUDE_DIRS})
@@ -36,8 +40,3 @@ install(DIRECTORY src/
 install(TARGETS xmlrpcpp
   DESTINATION lib
  )
-
-catkin_project(xmlrpcpp
-  INCLUDE_DIRS src
-  LIBRARIES xmlrpcpp
-  )

@@ -39,9 +39,11 @@ import os
 import string
 import sys
 
+import genmsg.msgs
+import genpy
+import genpy.dynamic
+
 import rospkg
-import roslib.message
-import roslib.msgs
 
 import rosbag
 
@@ -201,7 +203,7 @@ def qualified_name(name, top_name):
     # First clean the name, to make everyting else more deterministic
     tmp_name = clean_name(name, top_name)
 
-    if len(tmp_name.split('/')) == 2 or (roslib.msgs.is_builtin(tmp_name)):
+    if len(tmp_name.split('/')) == 2 or (genmsg.msgs.is_builtin(tmp_name)):
         return tmp_name
     elif tmp_name == 'Header':
         return 'std_msgs/Header'
@@ -265,7 +267,7 @@ class MessageUpdateRule(object):
         try:
             if self.old_type == "":
                 raise Exception
-            self.old_types = roslib.genpy.generate_dynamic(self.old_type, self.old_full_text)
+            self.old_types = genpy.dynamic.generate_dynamic(self.old_type, self.old_full_text)
             self.old_class = self.old_types[self.old_type]
             self.old_md5sum = self.old_class._md5sum
         except:
@@ -276,7 +278,7 @@ class MessageUpdateRule(object):
         try:
             if self.new_type == "":
                 raise Exception
-            self.new_types = roslib.genpy.generate_dynamic(self.new_type, self.new_full_text)
+            self.new_types = genpy.dynamic.generate_dynamic(self.new_type, self.new_full_text)
             self.new_class = self.new_types[self.new_type]
             self.new_md5sum = self.new_class._md5sum
         except:
@@ -631,7 +633,7 @@ class MessageMigrator(object):
 
             renamed = (sn.old_class._type != sn.new_class._type)
 
-            sys_class = roslib.message.get_message_class(sn.new_class._type)
+            sys_class = genpy.message.get_message_class(sn.new_class._type)
 
             # If we map directly to a system-defined class we're done
             if sys_class:
@@ -847,7 +849,7 @@ class MessageMigrator(object):
             return self.found_targets[key]
         except KeyError:
 
-            sys_class = roslib.message.get_message_class(old_class._type)
+            sys_class = genpy.message.get_message_class(old_class._type)
 
             if sys_class is not None:
                 self.found_targets[key] = sys_class
@@ -864,7 +866,7 @@ class MessageMigrator(object):
 
                 if tmp_sn.new_class is not None:
                     last_class = tmp_sn.new_class
-                    sys_class = roslib.message.get_message_class(tmp_sn.new_class._type)
+                    sys_class = genpy.message.get_message_class(tmp_sn.new_class._type)
                 else:
                     sys_class = None
 
@@ -875,16 +877,6 @@ class MessageMigrator(object):
                 pass
 
         self.found_targets[key] = None
-
-        (pkg, msg) = last_class._type.split('/')
-        try:
-            pkg_dir = roslib.packages.get_pkg_dir(pkg)
-        except roslib.packages.InvalidROSPkgException:
-            return None
-        mtypes = roslib.msgs.list_msg_types(pkg, False)
-        if msg in mtypes:
-            if not os.path.isfile(os.path.join(pkg_dir, os.path.join('src', pkg, 'msg', '_%s.py'%msg))):
-                print >> sys.stderr, "WARNING: Package \'%s\' contains message '%s' but is not built."%(pkg,msg)
         return None
             
     # This function determines the set of rules which must be created
@@ -1164,11 +1156,11 @@ class MessageMigrator(object):
         # Assign across primitives, self.migrate or self.migrate_array non-primitives
         for (s,t) in zip(new_class.__slots__, new_class._slot_types):
             warn_msg = None
-            new_base_type, new_is_array, new_array_len = roslib.msgs.parse_type(t)
+            new_base_type, new_is_array, new_array_len = genmsg.msgs.parse_type(t)
             try:
                 ind = old_class.__slots__.index(s)
                 old_slots.remove(s)
-                old_base_type, old_is_array, old_array_len = roslib.msgs.parse_type(old_class._slot_types[ind])
+                old_base_type, old_is_array, old_array_len = genmsg.msgs.parse_type(old_class._slot_types[ind])
 
                 if new_is_array != old_is_array:
                     warn_msg = "Could not match array with nonarray"
@@ -1181,7 +1173,7 @@ class MessageMigrator(object):
                     else:
                         warn_msg = "Fixed length array converted from %d to %d"%(old_array_len,new_array_len)
 
-                elif roslib.msgs.is_builtin(new_base_type):
+                elif genmsg.msgs.is_builtin(new_base_type):
                     if new_base_type != old_base_type:
                         warn_msg = "Primitive type changed"
                     else:
@@ -1300,7 +1292,7 @@ def migration_default_value(field_type):
         # strings, byte[], and uint8s are all optimized to be strings
         return "''"
     elif field_type.endswith(']'): # array type
-        base_type, is_array, array_len = roslib.msgs.parse_type(field_type)
+        base_type, is_array, array_len = genmsg.msgs.parse_type(field_type)
         if base_type in ['byte', 'uint8']:
             # strings, byte[], and uint8s are all optimized to be strings
             if array_len is not None:
@@ -1316,7 +1308,7 @@ def migration_default_value(field_type):
         return "self.get_new_class('%s')()"%field_type
 
 def constants_from_def(core_type, msg_def):
-    core_pkg, core_base_type = roslib.names.package_resource_name(core_type)
+    core_pkg, core_base_type = genmsg.package_resource_name(core_type)
 
     splits = msg_def.split('\n' + '=' * 80 + '\n')
     
@@ -1324,7 +1316,7 @@ def constants_from_def(core_type, msg_def):
     deps_msgs = splits[1:]
 
     # create MsgSpec representations of .msg text
-    specs = { core_type: roslib.msgs.load_from_string(core_msg, core_pkg) }
+    specs = { core_type: genmsg.msgs.load_from_string(core_msg, core_pkg) }
     # - dependencies
 #    for dep_msg in deps_msgs:
 #        # dependencies require more handling to determine type name

@@ -26,6 +26,11 @@ add_nosetests(tools/rosclean/test)
 add_nosetests(tools/roscreate/test)
 
 # INSTALLATION
+message("TODO: consider removing ros/stack.xml, pending a change in rosinstall's behavior")
+install(FILES stack.xml
+        DESTINATION share/ros)
+install(FILES config/rosconsole.config
+        DESTINATION share/ros/config)
 
 # setup our backwards-compatibility ROS_ROOT
 install(DIRECTORY core/rosbuild/

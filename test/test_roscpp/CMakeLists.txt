@@ -1,16 +1,24 @@
-if(ROSBUILD)
-  include(rosbuild.cmake OPTIONAL)
-  return()
-endif()
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
-rosbuild_init()
+project(test_roscpp)
+catkin_project(${PROJECT_NAME})
 
-rosbuild_genmsg()
-rosbuild_gensrv()
+add_message_files(
+  DIRECTORY msg
+  FILES
+  TestArray.msg
+  TestEmpty.msg
+  TestStringInt.msg
+  TestWithHeader.msg
+)
+add_service_files(
+  DIRECTORY srv
+  FILES
+  BadTestStringString.srv
+  TestStringString.srv
+)
+generate_messages(DEPENDENCIES std_msgs rosgraph_msgs)
 
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
+find_package(ROS COMPONENTS roscpp)
 
 add_subdirectory(src)
-add_subdirectory(test)
+#add_subdirectory(test)
 

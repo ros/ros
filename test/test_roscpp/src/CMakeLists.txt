@@ -1,179 +1,295 @@
-rosbuild_add_executable(handles EXCLUDE_FROM_ALL handles.cpp)
-rosbuild_add_gtest_build_flags(handles)
+find_package(GTest REQUIRED)
+include_directories(${GTEST_INCLUDE_DIRS})
 
-rosbuild_add_executable(timer_callbacks EXCLUDE_FROM_ALL timer_callbacks.cpp)
-rosbuild_add_gtest_build_flags(timer_callbacks)
+add_executable(${PROJECT_NAME}-handles EXCLUDE_FROM_ALL handles.cpp)
+target_link_libraries(${PROJECT_NAME}-handles ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(latching_publisher EXCLUDE_FROM_ALL latching_publisher.cpp)
-rosbuild_add_gtest_build_flags(latching_publisher)
+add_executable(${PROJECT_NAME}-timer_callbacks EXCLUDE_FROM_ALL timer_callbacks.cpp)
+target_link_libraries(${PROJECT_NAME}-timer_callbacks ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(publish_n_fast EXCLUDE_FROM_ALL publish_n_fast.cpp)
-rosbuild_declare_test(publish_n_fast)
+add_executable(${PROJECT_NAME}-latching_publisher EXCLUDE_FROM_ALL latching_publisher.cpp)
+target_link_libraries(${PROJECT_NAME}-latching_publisher ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(subscribe_self EXCLUDE_FROM_ALL subscribe_self.cpp)
-rosbuild_add_gtest_build_flags(subscribe_self)
+add_executable(${PROJECT_NAME}-publish_n_fast EXCLUDE_FROM_ALL publish_n_fast.cpp)
+target_link_libraries(${PROJECT_NAME}-publish_n_fast ${ROS_LIBRARIES})
 
-rosbuild_add_executable(pub_sub EXCLUDE_FROM_ALL pub_sub.cpp)
-rosbuild_declare_test(pub_sub)
+add_executable(${PROJECT_NAME}-subscribe_self EXCLUDE_FROM_ALL subscribe_self.cpp)
+target_link_libraries(${PROJECT_NAME}-subscribe_self ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(sub_pub EXCLUDE_FROM_ALL sub_pub.cpp)
-rosbuild_add_gtest_build_flags(sub_pub)
+add_executable(${PROJECT_NAME}-pub_sub EXCLUDE_FROM_ALL pub_sub.cpp)
+target_link_libraries(${PROJECT_NAME}-pub_sub ${ROS_LIBRARIES})
 
-rosbuild_add_executable(publish_empty EXCLUDE_FROM_ALL publish_empty.cpp)
-rosbuild_declare_test(publish_empty)
+add_executable(${PROJECT_NAME}-sub_pub EXCLUDE_FROM_ALL sub_pub.cpp)
+target_link_libraries(${PROJECT_NAME}-sub_pub ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(publish_onsub EXCLUDE_FROM_ALL publish_onsub.cpp)
-rosbuild_declare_test(publish_onsub)
+add_executable(${PROJECT_NAME}-publish_empty EXCLUDE_FROM_ALL publish_empty.cpp)
+target_link_libraries(${PROJECT_NAME}-publish_empty ${ROS_LIBRARIES})
 
-rosbuild_add_executable(subscribe_n_fast EXCLUDE_FROM_ALL subscribe_n_fast.cpp)
-rosbuild_add_gtest_build_flags(subscribe_n_fast)
+add_executable(${PROJECT_NAME}-publish_onsub EXCLUDE_FROM_ALL publish_onsub.cpp)
+target_link_libraries(${PROJECT_NAME}-publish_onsub ${ROS_LIBRARIES})
 
-rosbuild_add_executable(subscribe_empty EXCLUDE_FROM_ALL subscribe_empty.cpp)
-rosbuild_add_gtest_build_flags(subscribe_empty)
+add_executable(${PROJECT_NAME}-subscribe_n_fast EXCLUDE_FROM_ALL subscribe_n_fast.cpp)
+target_link_libraries(${PROJECT_NAME}-subscribe_n_fast ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(subscribe_resubscribe EXCLUDE_FROM_ALL subscribe_resubscribe.cpp)
-rosbuild_add_gtest_build_flags(subscribe_resubscribe)
+add_executable(${PROJECT_NAME}-subscribe_empty EXCLUDE_FROM_ALL subscribe_empty.cpp)
+target_link_libraries(${PROJECT_NAME}-subscribe_empty ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(subscribe_unsubscribe EXCLUDE_FROM_ALL subscribe_unsubscribe.cpp)
-rosbuild_add_gtest_build_flags(subscribe_unsubscribe)
+add_executable(${PROJECT_NAME}-subscribe_resubscribe EXCLUDE_FROM_ALL subscribe_resubscribe.cpp)
+target_link_libraries(${PROJECT_NAME}-subscribe_resubscribe ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(publish_unadvertise EXCLUDE_FROM_ALL publish_unadvertise.cpp)
-rosbuild_add_gtest_build_flags(publish_unadvertise)
+add_executable(${PROJECT_NAME}-subscribe_unsubscribe EXCLUDE_FROM_ALL subscribe_unsubscribe.cpp)
+target_link_libraries(${PROJECT_NAME}-subscribe_unsubscribe ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(subscribe_unsubscribe_repeatedly EXCLUDE_FROM_ALL subscribe_unsubscribe_repeatedly.cpp)
-rosbuild_declare_test(subscribe_unsubscribe_repeatedly)
+add_executable(${PROJECT_NAME}-publish_unadvertise EXCLUDE_FROM_ALL publish_unadvertise.cpp)
+target_link_libraries(${PROJECT_NAME}-publish_unadvertise ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(publish_constantly EXCLUDE_FROM_ALL publish_constantly.cpp)
-rosbuild_declare_test(publish_constantly)
+add_executable(${PROJECT_NAME}-subscribe_unsubscribe_repeatedly EXCLUDE_FROM_ALL subscribe_unsubscribe_repeatedly.cpp)
+target_link_libraries(${PROJECT_NAME}-subscribe_unsubscribe_repeatedly ${ROS_LIBRARIES})
 
-rosbuild_add_executable(param_update_test EXCLUDE_FROM_ALL param_update_test.cpp)
-rosbuild_declare_test(param_update_test)
+add_executable(${PROJECT_NAME}-publish_constantly EXCLUDE_FROM_ALL publish_constantly.cpp)
+target_link_libraries(${PROJECT_NAME}-publish_constantly ${ROS_LIBRARIES})
 
+add_executable(${PROJECT_NAME}-param_update_test EXCLUDE_FROM_ALL param_update_test.cpp)
+target_link_libraries(${PROJECT_NAME}-param_update_test ${ROS_LIBRARIES})
 
-rosbuild_add_executable(real_time_test EXCLUDE_FROM_ALL real_time_test.cpp)
-rosbuild_declare_test(real_time_test)
-rosbuild_add_gtest_build_flags(real_time_test)
+add_executable(${PROJECT_NAME}-real_time_test EXCLUDE_FROM_ALL real_time_test.cpp)
+target_link_libraries(${PROJECT_NAME}-real_time_test ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(sim_time_test EXCLUDE_FROM_ALL sim_time_test.cpp)
-rosbuild_declare_test(sim_time_test)
-rosbuild_add_gtest_build_flags(sim_time_test)
+add_executable(${PROJECT_NAME}-sim_time_test EXCLUDE_FROM_ALL sim_time_test.cpp)
+target_link_libraries(${PROJECT_NAME}-sim_time_test ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
 # Call a service
-rosbuild_add_executable(service_adv EXCLUDE_FROM_ALL service_adv.cpp)
-rosbuild_declare_test(service_adv)
+add_executable(${PROJECT_NAME}-service_adv EXCLUDE_FROM_ALL service_adv.cpp)
+target_link_libraries(${PROJECT_NAME}-service_adv ${ROS_LIBRARIES})
 
-rosbuild_add_executable(service_adv_unadv EXCLUDE_FROM_ALL service_adv_unadv.cpp)
-rosbuild_declare_test(service_adv_unadv)
-rosbuild_add_gtest_build_flags(service_adv_unadv)
+add_executable(${PROJECT_NAME}-service_adv_unadv EXCLUDE_FROM_ALL service_adv_unadv.cpp)
+target_link_libraries(${PROJECT_NAME}-service_adv_unadv ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(service_call EXCLUDE_FROM_ALL service_call.cpp)
-rosbuild_add_gtest_build_flags(service_call)
+add_executable(${PROJECT_NAME}-service_call EXCLUDE_FROM_ALL service_call.cpp)
+target_link_libraries(${PROJECT_NAME}-service_call ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(service_deadlock EXCLUDE_FROM_ALL service_deadlock.cpp)
-rosbuild_add_gtest_build_flags(service_deadlock)
+add_executable(${PROJECT_NAME}-service_deadlock EXCLUDE_FROM_ALL service_deadlock.cpp)
+target_link_libraries(${PROJECT_NAME}-service_deadlock ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(service_call_repeatedly EXCLUDE_FROM_ALL service_call_repeatedly.cpp)
-rosbuild_declare_test(service_call_repeatedly)
+add_executable(${PROJECT_NAME}-service_call_repeatedly EXCLUDE_FROM_ALL service_call_repeatedly.cpp)
+target_link_libraries(${PROJECT_NAME}-service_call_repeatedly ${ROS_LIBRARIES})
 
 
 # Repeatedly call ros::init()
-rosbuild_add_executable(multiple_init_fini EXCLUDE_FROM_ALL multiple_init_fini.cpp)
-rosbuild_add_gtest_build_flags(multiple_init_fini)
+add_executable(${PROJECT_NAME}-multiple_init_fini EXCLUDE_FROM_ALL multiple_init_fini.cpp)
+target_link_libraries(${PROJECT_NAME}-multiple_init_fini ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
 # Test node inspection functionality
-rosbuild_add_executable(inspection EXCLUDE_FROM_ALL inspection.cpp)
-rosbuild_add_gtest_build_flags(inspection)
+add_executable(${PROJECT_NAME}-inspection EXCLUDE_FROM_ALL inspection.cpp)
+target_link_libraries(${PROJECT_NAME}-inspection ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
 # Test that advertising a service multiple times fails
-rosbuild_add_executable(service_adv_multiple EXCLUDE_FROM_ALL service_adv_multiple.cpp)
-rosbuild_add_gtest_build_flags(service_adv_multiple)
+add_executable(${PROJECT_NAME}-service_adv_multiple EXCLUDE_FROM_ALL service_adv_multiple.cpp)
+target_link_libraries(${PROJECT_NAME}-service_adv_multiple ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
 # Test that the second node to advertise a service "wins"
-rosbuild_add_executable(service_adv_a EXCLUDE_FROM_ALL service_adv_a.cpp)
-rosbuild_add_gtest_build_flags(service_adv_a)
+add_executable(${PROJECT_NAME}-service_adv_a EXCLUDE_FROM_ALL service_adv_a.cpp)
+target_link_libraries(${PROJECT_NAME}-service_adv_a ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(service_wait_a_adv_b EXCLUDE_FROM_ALL service_wait_a_adv_b.cpp)
-rosbuild_add_gtest_build_flags(service_wait_a_adv_b)
+add_executable(${PROJECT_NAME}-service_wait_a_adv_b EXCLUDE_FROM_ALL service_wait_a_adv_b.cpp)
+target_link_libraries(${PROJECT_NAME}-service_wait_a_adv_b ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(service_call_expect_b EXCLUDE_FROM_ALL service_call_expect_b.cpp)
-rosbuild_add_gtest_build_flags(service_call_expect_b)
+add_executable(${PROJECT_NAME}-service_call_expect_b EXCLUDE_FROM_ALL service_call_expect_b.cpp)
+target_link_libraries(${PROJECT_NAME}-service_call_expect_b ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
 # Test command-line name remapping
-rosbuild_add_executable(name_remapping EXCLUDE_FROM_ALL name_remapping.cpp)
-rosbuild_add_gtest_build_flags(name_remapping)
-rosbuild_add_executable(name_remapping_with_ns EXCLUDE_FROM_ALL name_remapping_with_ns.cpp)
-rosbuild_add_gtest_build_flags(name_remapping_with_ns)
+add_executable(${PROJECT_NAME}-name_remapping EXCLUDE_FROM_ALL name_remapping.cpp)
+target_link_libraries(${PROJECT_NAME}-name_remapping ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
+add_executable(${PROJECT_NAME}-name_remapping_with_ns EXCLUDE_FROM_ALL name_remapping_with_ns.cpp)
+target_link_libraries(${PROJECT_NAME}-name_remapping_with_ns ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
 # Test namespaces
-rosbuild_add_executable(namespaces EXCLUDE_FROM_ALL namespaces.cpp)
-rosbuild_add_gtest_build_flags(namespaces)
+add_executable(${PROJECT_NAME}-namespaces EXCLUDE_FROM_ALL namespaces.cpp)
+target_link_libraries(${PROJECT_NAME}-namespaces ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
 # Test params
-rosbuild_add_executable(params EXCLUDE_FROM_ALL params.cpp)
-rosbuild_add_gtest_build_flags(params)
+add_executable(${PROJECT_NAME}-params EXCLUDE_FROM_ALL params.cpp)
+target_link_libraries(${PROJECT_NAME}-params ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
 # Test getting information from the master
-rosbuild_add_executable(get_master_information EXCLUDE_FROM_ALL get_master_information.cpp)
-rosbuild_add_gtest_build_flags(get_master_information)
+add_executable(${PROJECT_NAME}-get_master_information EXCLUDE_FROM_ALL get_master_information.cpp)
+target_link_libraries(${PROJECT_NAME}-get_master_information ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
 # Test multiple subscriptions
-rosbuild_add_executable(multiple_subscriptions EXCLUDE_FROM_ALL multiple_subscriptions.cpp)
-rosbuild_add_gtest_build_flags(multiple_subscriptions)
+add_executable(${PROJECT_NAME}-multiple_subscriptions EXCLUDE_FROM_ALL multiple_subscriptions.cpp)
+target_link_libraries(${PROJECT_NAME}-multiple_subscriptions ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(check_master EXCLUDE_FROM_ALL check_master.cpp)
-rosbuild_add_gtest_build_flags(check_master)
+add_executable(${PROJECT_NAME}-check_master EXCLUDE_FROM_ALL check_master.cpp)
+target_link_libraries(${PROJECT_NAME}-check_master ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(wait_for_message EXCLUDE_FROM_ALL wait_for_message.cpp)
-rosbuild_add_gtest_build_flags(wait_for_message)
+add_executable(${PROJECT_NAME}-wait_for_message EXCLUDE_FROM_ALL wait_for_message.cpp)
+target_link_libraries(${PROJECT_NAME}-wait_for_message ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(loads_of_publishers EXCLUDE_FROM_ALL loads_of_publishers.cpp)
-rosbuild_add_gtest_build_flags(loads_of_publishers)
+add_executable(${PROJECT_NAME}-loads_of_publishers EXCLUDE_FROM_ALL loads_of_publishers.cpp)
+target_link_libraries(${PROJECT_NAME}-loads_of_publishers ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(incrementing_sequence EXCLUDE_FROM_ALL incrementing_sequence.cpp)
-rosbuild_add_gtest_build_flags(incrementing_sequence)
+add_executable(${PROJECT_NAME}-incrementing_sequence EXCLUDE_FROM_ALL incrementing_sequence.cpp)
+target_link_libraries(${PROJECT_NAME}-incrementing_sequence ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(subscription_callback_types EXCLUDE_FROM_ALL subscription_callback_types.cpp)
-rosbuild_add_gtest_build_flags(subscription_callback_types)
+add_executable(${PROJECT_NAME}-subscription_callback_types EXCLUDE_FROM_ALL subscription_callback_types.cpp)
+target_link_libraries(${PROJECT_NAME}-subscription_callback_types ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(service_callback_types EXCLUDE_FROM_ALL service_callback_types.cpp)
-rosbuild_add_gtest_build_flags(service_callback_types)
+add_executable(${PROJECT_NAME}-service_callback_types EXCLUDE_FROM_ALL service_callback_types.cpp)
+target_link_libraries(${PROJECT_NAME}-service_callback_types ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(intraprocess_subscriptions EXCLUDE_FROM_ALL intraprocess_subscriptions.cpp)
-rosbuild_add_gtest_build_flags(intraprocess_subscriptions)
+add_executable(${PROJECT_NAME}-intraprocess_subscriptions EXCLUDE_FROM_ALL intraprocess_subscriptions.cpp)
+target_link_libraries(${PROJECT_NAME}-intraprocess_subscriptions ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(nonconst_subscriptions EXCLUDE_FROM_ALL nonconst_subscriptions.cpp)
-rosbuild_add_gtest_build_flags(nonconst_subscriptions)
+add_executable(${PROJECT_NAME}-nonconst_subscriptions EXCLUDE_FROM_ALL nonconst_subscriptions.cpp)
+target_link_libraries(${PROJECT_NAME}-nonconst_subscriptions ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(subscribe_retry_tcp EXCLUDE_FROM_ALL subscribe_retry_tcp.cpp)
-rosbuild_add_gtest_build_flags(subscribe_retry_tcp)
+add_executable(${PROJECT_NAME}-subscribe_retry_tcp EXCLUDE_FROM_ALL subscribe_retry_tcp.cpp)
+target_link_libraries(${PROJECT_NAME}-subscribe_retry_tcp ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(subscribe_star EXCLUDE_FROM_ALL subscribe_star.cpp)
-rosbuild_add_gtest_build_flags(subscribe_star)
-rosbuild_add_executable(publisher_for_star_subscriber EXCLUDE_FROM_ALL publisher_for_star_subscriber.cpp)
-rosbuild_declare_test(publisher_for_star_subscriber)
+add_executable(${PROJECT_NAME}-subscribe_star EXCLUDE_FROM_ALL subscribe_star.cpp)
+target_link_libraries(${PROJECT_NAME}-subscribe_star ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
+add_executable(${PROJECT_NAME}-publisher_for_star_subscriber EXCLUDE_FROM_ALL publisher_for_star_subscriber.cpp)
+target_link_libraries(${PROJECT_NAME}-publisher_for_star_subscriber ${ROS_LIBRARIES})
 
-rosbuild_add_executable(parameter_validation EXCLUDE_FROM_ALL parameter_validation.cpp)
-rosbuild_add_gtest_build_flags(parameter_validation)
+add_executable(${PROJECT_NAME}-parameter_validation EXCLUDE_FROM_ALL parameter_validation.cpp)
+target_link_libraries(${PROJECT_NAME}-parameter_validation ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(param_locale_avoidance_test EXCLUDE_FROM_ALL param_locale_avoidance_test.cpp)
-rosbuild_add_gtest_build_flags(param_locale_avoidance_test)
+add_executable(${PROJECT_NAME}-param_locale_avoidance_test EXCLUDE_FROM_ALL param_locale_avoidance_test.cpp)
+target_link_libraries(${PROJECT_NAME}-param_locale_avoidance_test ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(crashes_under_gprof EXCLUDE_FROM_ALL crashes_under_gprof.cpp)
+add_executable(${PROJECT_NAME}-crashes_under_gprof EXCLUDE_FROM_ALL crashes_under_gprof.cpp)
+target_link_libraries(${PROJECT_NAME}-crashes_under_gprof ${ROS_LIBRARIES})
 
-rosbuild_add_executable(test_remapping EXCLUDE_FROM_ALL test_remapping.cpp)
-rosbuild_add_gtest_build_flags(test_remapping)
+add_executable(${PROJECT_NAME}-test_remapping EXCLUDE_FROM_ALL test_remapping.cpp)
+target_link_libraries(${PROJECT_NAME}-test_remapping ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(name_not_remappable EXCLUDE_FROM_ALL name_not_remappable.cpp)
-rosbuild_add_gtest_build_flags(name_not_remappable)
+add_executable(${PROJECT_NAME}-name_not_remappable EXCLUDE_FROM_ALL name_not_remappable.cpp)
+target_link_libraries(${PROJECT_NAME}-name_not_remappable ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(test_ns_node_remapping EXCLUDE_FROM_ALL test_ns_node_remapping.cpp)
-rosbuild_add_gtest_build_flags(test_ns_node_remapping)
+add_executable(${PROJECT_NAME}-test_ns_node_remapping EXCLUDE_FROM_ALL test_ns_node_remapping.cpp)
+target_link_libraries(${PROJECT_NAME}-test_ns_node_remapping ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(test_search_param EXCLUDE_FROM_ALL test_search_param.cpp)
-rosbuild_add_gtest_build_flags(test_search_param)
+add_executable(${PROJECT_NAME}-test_search_param EXCLUDE_FROM_ALL test_search_param.cpp)
+target_link_libraries(${PROJECT_NAME}-test_search_param ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
-rosbuild_add_executable(left_right EXCLUDE_FROM_ALL left_right.cpp)
+add_executable(${PROJECT_NAME}-left_right EXCLUDE_FROM_ALL left_right.cpp)
+target_link_libraries(${PROJECT_NAME}-left_right ${ROS_LIBRARIES})
 
-rosbuild_add_executable(string_msg_expect EXCLUDE_FROM_ALL string_msg_expect.cpp)
-rosbuild_add_gtest_build_flags(string_msg_expect)
+add_executable(${PROJECT_NAME}-string_msg_expect EXCLUDE_FROM_ALL string_msg_expect.cpp)
+target_link_libraries(${PROJECT_NAME}-string_msg_expect ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
 
+add_dependencies(tests
+${PROJECT_NAME}-handles
+${PROJECT_NAME}-timer_callbacks
+${PROJECT_NAME}-latching_publisher
+${PROJECT_NAME}-publish_n_fast
+${PROJECT_NAME}-subscribe_self
+${PROJECT_NAME}-pub_sub
+${PROJECT_NAME}-sub_pub
+${PROJECT_NAME}-publish_empty
+${PROJECT_NAME}-publish_onsub
+${PROJECT_NAME}-subscribe_n_fast
+${PROJECT_NAME}-subscribe_empty
+${PROJECT_NAME}-subscribe_resubscribe
+${PROJECT_NAME}-subscribe_unsubscribe
+${PROJECT_NAME}-publish_unadvertise
+${PROJECT_NAME}-subscribe_unsubscribe_repeatedly
+${PROJECT_NAME}-publish_constantly
+${PROJECT_NAME}-param_update_test
+${PROJECT_NAME}-real_time_test
+${PROJECT_NAME}-sim_time_test
+${PROJECT_NAME}-service_adv
+${PROJECT_NAME}-service_adv_unadv
+${PROJECT_NAME}-service_call
+${PROJECT_NAME}-service_deadlock
+${PROJECT_NAME}-service_call_repeatedly
+${PROJECT_NAME}-multiple_init_fini
+${PROJECT_NAME}-inspection
+${PROJECT_NAME}-service_adv_multiple
+${PROJECT_NAME}-service_adv_a
+${PROJECT_NAME}-service_wait_a_adv_b
+${PROJECT_NAME}-service_call_expect_b
+${PROJECT_NAME}-name_remapping
+${PROJECT_NAME}-name_remapping_with_ns
+${PROJECT_NAME}-namespaces
+${PROJECT_NAME}-params
+${PROJECT_NAME}-get_master_information
+${PROJECT_NAME}-multiple_subscriptions
+${PROJECT_NAME}-check_master
+${PROJECT_NAME}-wait_for_message
+${PROJECT_NAME}-loads_of_publishers
+${PROJECT_NAME}-incrementing_sequence
+${PROJECT_NAME}-subscription_callback_types
+${PROJECT_NAME}-service_callback_types
+${PROJECT_NAME}-intraprocess_subscriptions
+${PROJECT_NAME}-nonconst_subscriptions
+${PROJECT_NAME}-subscribe_retry_tcp
+${PROJECT_NAME}-subscribe_star
+${PROJECT_NAME}-publisher_for_star_subscriber
+${PROJECT_NAME}-parameter_validation
+${PROJECT_NAME}-param_locale_avoidance_test
+${PROJECT_NAME}-crashes_under_gprof
+${PROJECT_NAME}-test_remapping
+${PROJECT_NAME}-name_not_remappable
+${PROJECT_NAME}-test_ns_node_remapping
+${PROJECT_NAME}-test_search_param
+${PROJECT_NAME}-left_right
+${PROJECT_NAME}-string_msg_expect
+)
+
+add_dependencies(${PROJECT_NAME}-handles ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-timer_callbacks ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-latching_publisher ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-publish_n_fast ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-subscribe_self ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-pub_sub ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-sub_pub ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-publish_empty ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-publish_onsub ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-subscribe_n_fast ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-subscribe_empty ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-subscribe_resubscribe ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-subscribe_unsubscribe ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-publish_unadvertise ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-subscribe_unsubscribe_repeatedly ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-publish_constantly ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-param_update_test ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-real_time_test ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-sim_time_test ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-service_adv ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-service_adv_unadv ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-service_call ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-service_deadlock ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-service_call_repeatedly ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-multiple_init_fini ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-inspection ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-service_adv_multiple ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-service_adv_a ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-service_wait_a_adv_b ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-service_call_expect_b ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-name_remapping ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-name_remapping_with_ns ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-namespaces ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-params ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-get_master_information ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-multiple_subscriptions ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-check_master ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-wait_for_message ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-loads_of_publishers ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-incrementing_sequence ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-subscription_callback_types ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-service_callback_types ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-intraprocess_subscriptions ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-nonconst_subscriptions ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-subscribe_retry_tcp ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-subscribe_star ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-publisher_for_star_subscriber ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-parameter_validation ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-param_locale_avoidance_test ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-crashes_under_gprof ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-test_remapping ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-name_not_remappable ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-test_ns_node_remapping ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-test_search_param ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-left_right ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-string_msg_expect ${PROJECT_NAME}_gencpp)

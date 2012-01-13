@@ -31,8 +31,6 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from __future__ import print_function
-
 """
 ROS message source code generation for rospy.
 
@@ -40,76 +38,9 @@ Converts ROS .srv files into Python source code implementations.
 """
 
 import sys
-import os
 
-try:
-    # TODO: remove after ROS 1.7 is released
-    from roslib.genpy_electric import MsgGenerationException, msg_generator
-except:
-    from roslib.genpy import MsgGenerationException, msg_generator
-
-import roslib.gentools 
-import roslib.srvs
-
-import genmsg_py, genutil
-
-REQUEST ='Request'
-RESPONSE='Response'
-
-class SrvGenerationException(MsgGenerationException): pass
-
-def srv_generator(package, name, spec):
-    req, resp = ["%s%s"%(name, suff) for suff in [REQUEST, RESPONSE]]
-
-    fulltype = '%s%s%s'%(package, roslib.srvs.SEP, name)
-
-    gendeps_dict = roslib.gentools.get_dependencies(spec, package)
-    md5 = roslib.gentools.compute_md5(gendeps_dict)
-
-    yield "class %s(object):"%name
-    yield "  _type          = '%s'"%fulltype
-    yield "  _md5sum = '%s'"%md5
-    yield "  _request_class  = %s"%req
-    yield "  _response_class = %s"%resp
-
-class SrvGenerator(genutil.Generator):
-    def __init__(self):
-        super(SrvGenerator, self).__init__('gensrv_py', 'services', '.srv', 'srv', SrvGenerationException)
-
-    def generate(self, package, f, outdir):
-        verbose = True
-        f = os.path.abspath(f)
-        infile_name = os.path.basename(f)
-        if not os.path.exists(outdir):
-            os.makedirs(outdir)
-        elif not os.path.isdir(outdir): 
-            raise SrvGenerationException("Cannot write to %s: file in the way"%outdir)
-
-        prefix = infile_name[:-len(roslib.srvs.EXT)]
-        # generate message files for request/response        
-        name, spec = roslib.srvs.load_from_file(f, package)
-        base_name = roslib.names.resource_name_base(name)
-        
-        outfile = self.outfile_name(outdir, f)
-        f = open(outfile, 'w')
-        if verbose:
-            print("... generating %s"%outfile)
-        try:
-            for mspec, suffix in ((spec.request, REQUEST), (spec.response, RESPONSE)):
-                #outfile = os.path.join(outdir, prefix+suffix+".py")    
-                #gen = roslib.genpy_electric.msg_generator(package, name+suffix, mspec)
-                #self.write_gen(outfile, gen, roslib.srvs.is_verbose())
-                for l in msg_generator(package, base_name+suffix, mspec):
-                    f.write(l+'\n')
-
-            # generate service file
-            #outfile = os.path.join(outdir, prefix+".py")
-            #self.write_gen(outfile, srv_generator(package, name, spec), verbose)
-            for l in srv_generator(package, base_name, spec):
-                f.write(l+'\n')
-        finally:
-            f.close()
-        return outfile
-    
+# genutil is a utility package the implements the package crawling
+# logic of genmsg_py and gensrv_py logic
+import genutil
 if __name__ == "__main__":
-    genutil.genmain(sys.argv, SrvGenerator())
+    genutil.genmain(sys.argv, 'srv')

@@ -29,8 +29,6 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id: genmsg_py.py 1590 2008-07-22 18:30:01Z sfkwc $
 
 ## Common generation tools for Python ROS message and service generators
 
@@ -40,290 +38,102 @@ import os
 import errno  # for smart handling of exceptions for os.makedirs()
 import sys
 import traceback
-import glob
 
-import roslib.msgs
-import roslib.packages
-import roslib.resources
-try:
-    # TODO: remove after ROS 1.7 is released
-    from roslib.genpy_electric import MsgGenerationException
-except:
-    from roslib.genpy import MsgGenerationException    
-
-class Generator(object):
-    
-    ## @param name str: name of resource types
-    ## @param ext str: file extension of resources (e.g. '.msg')
-    ## @param subdir str: directory sub-path of resources (e.g. 'msg')
-    ## @param exception class: exception class to raise if an error occurs
-    def __init__(self, name, what, ext, subdir, exception):
-        self.name = name
-        self.what = what
-        self.subdir = subdir
-        self.ext = ext
-        self.exception = exception
-    
-    ## @return [str]: list of (message/service) types in specified package
-    def list_types(self, package):
-        ext = self.ext
-        types = roslib.resources.list_package_resources(
-            package, False, self.subdir,
-            lambda x: os.path.isfile(x) and x.endswith(ext))
-        return [x[:-len(ext)] for x in types]
-
-    ## Convert resource filename to ROS resource name
-    ## @param filename str: path to .msg/.srv file
-    ## @return str: name of ROS resource
-    def resource_name(self, filename):
-        return os.path.basename(filename)[:-len(self.ext)]
-        
-    ## @param type_name str: Name of message type sans package,
-    ## e.g. 'String'
-    ## @return str: name of python module for auto-generated code
-    def _module_name(self, type_name):
-        return "_"+type_name
-    
-    ## @param outdir str: path to directory that files are generated to
-    ## @return str: output file path based on input file name and output directory
-    def outfile_name(self, outdir, infile_name):
-        # Use leading _ so that module name does not collide with message name. It also
-        # makes it more clear that the .py file should not be imported directly
-        return os.path.join(outdir, self._module_name(self.resource_name(infile_name))+".py")
-
-    ## @param base_dir str: base directory of package
-    ## @return str: out directory for generated files. For messages, this is
-    ## package 'mypackage.msg', stored in the src directory (.srv for services).
-    # - this is different from C++ and Ruby, mainly because Python cannot unify packages
-    #   across multiple directories. The msg subpackage is because we want to cleanly
-    #   denote auto-generated files.
-    def outdir(self, basedir):
-        "compute the directory that the .py files are output to"
-        outdir = os.path.join(basedir, roslib.packages.SRC_DIR, os.path.basename(basedir), self.subdir)
-        if not os.path.exists(outdir):
-            try:
-                os.makedirs(outdir)
-            except Exception as e:
-                # It's not a problem if the directory already exists,
-                # because this can happen during a parallel build
-                if e.errno != errno.EEXIST:
-                    raise e
+import rospkg
+import genmsg
+import genpy
+import genpy.generator
+import genpy.generate_initpy
                 
-        elif not os.path.isdir(outdir): 
-            raise self.exception("Cannot write to %s: file in the way"%outdir)
-        return outdir
-
-    def generate(self, package, f, outdir):
-        raise Exception('subclass must override')
-
-    ## reindex files as a dictionary keyed by package
-    def generate_package_files(self, package_files, files, ext):
-        files = [f for f in files if f.endswith(ext)]
-        retcode = 0
-        for f in files:
-            try:
-                package_dir, package = roslib.packages.get_dir_pkg(f)
-                outdir = self.outdir(package_dir)
-                if not package:
-                    raise self.exception("Cannot locate package for %s. Is ROS_ROOT set?"%f)
-                outfile_name = self.outfile_name(outdir, f)
-                if not package in package_files:
-                    package_files[package] = []
-                package_files[package].append(f)
-            except Exception as e:
-                print("\nERROR[%s]: Unable to load %s file '%s': %s\n"%(self.name, self.ext, f, e))
-                retcode = 1 #flag error
-        return retcode
-
-    def write_modules(self, package_files):
-        for package, pfiles in package_files.items():
-            mfiles = [self.resource_name(f) for f in pfiles]
-            package_dir = roslib.packages.get_pkg_dir(package, True)
-            outdir = self.outdir(package_dir)
-            #TODO: also check against MSG/SRV dir to make sure it really is a generated file
-            # get a list of all the python files in the generated directory
-            # so we can import them into __init__.py. We intersect that list with the
-            # list of the .msg files so we can catch deletions without having to 'make clean'
-            good_types = set([f[1:-3] for f in os.listdir(outdir)
-                             if f.endswith('.py') and f != '__init__.py'])
-            types = set(self.list_types(package))
-            generated_modules = [self._module_name(f) for f in good_types.intersection(types)]
-            if package_dir is None:
-                continue #already printed error message about
-
-            self.write_module(package_dir, package, generated_modules)
-        return 0
-
-    ## @param base_dir str: path to package
-    ## @param package str: name of package to write module for
-    ## @param generated_modules [str]: list of generated message modules,
-    ##   i.e. the names of the .py files that were generated for each
-    ##   .msg file.
-    def write_module(self, basedir, package, generated_modules):
-        """create a module file to mark directory for python"""
-        dir = self.outdir(basedir)
-        if not os.path.exists(dir):
-            os.makedirs(dir)
-        elif not os.path.isdir(dir):
-            raise self.exception("file preventing the creating of module directory: %s"%dir)
-        p = os.path.join(dir, '__init__.py')
-        if roslib.msgs.is_verbose():
-            print("... creating module file", p)
-        f = open(p, 'w')
-        try:
-            #this causes more problems than anticipated -- for pure python
-            #packages it works fine, but in C++ packages doxygen seems to prefer python first.
-            #f.write('## \mainpage\n') #doxygen
-            #f.write('# \htmlinclude manifest.html\n')
-            for mod in generated_modules:
-                f.write('from .%s import *\n'%mod)
-        finally:
-            f.close()
-
-        parentInit = os.path.dirname(dir)
-        p = os.path.join(parentInit, '__init__.py')
-        if not os.path.exists(p):
-            #touch __init__.py in the parent package
-            print("... also creating module file %s"%p)
-            f = open(p, 'w')
-            f.close()
-
-    def generate_package(self, package, pfiles):
-        if not roslib.names.is_legal_resource_base_name(package):
-            print("\nERROR[%s]: package name '%s' is illegal and cannot be used in message generation.\nPlease see http://ros.org/wiki/Names"%(self.name, package))
-            return 1 # flag error
-        
-        package_dir = roslib.packages.get_pkg_dir(package, True)
-        if package_dir is None:
-            print("\nERROR[%s]: Unable to locate package '%s'\n"%(self.name, package))
-            return 1 #flag error
-
-        # package/src/package/msg for messages, packages/src/package/srv for services
-        outdir = self.outdir(package_dir)
-        try:
-            # TODO: this can result in packages getting dependencies
-            # that they shouldn't. To implement this correctly will
-            # require an overhaul of the message generator
-            # infrastructure.
-            roslib.msgs.load_package_dependencies(package, load_recursive=True)
-        except Exception as e:
-            #traceback.print_exc()
-            print("\nERROR[%s]: Unable to load package dependencies for %s: %s\n"%(self.name, package, e))
-            return 1 #flag error
-        try:
-            roslib.msgs.load_package(package)        
-        except Exception as e:
-            print("\nERROR[%s]: Unable to load package %s: %s\n"%(self.name, package, e))
-            return 1 #flag error
-
-        #print "[%s]: [%s] generating %s for the following messages: %s"%(self.name, self.what, package, pfiles)
-        retcode = 0
-        for f in pfiles:
-            try:
-                outfile = self.generate(package, f, outdir) #actual generation
-            except Exception as e:
-                if not isinstance(e, MsgGenerationException) and not isinstance(e, roslib.msgs.MsgSpecException):
-                    traceback.print_exc()
-                print("\nERROR[%s]: Unable to generate %s for package '%s': while processing '%s': %s\n"%(self.name, self.what, package, f, e))
-                retcode = 1 #flag error
-        print("%s: python messages for '%s' ==> %s"%(self.name, package, outdir))
-        return retcode
-        
-    def generate_all_by_package(self, package_files):
-        """
-        @return: return code
-        @rtype: int
-        """
-        retcode = 0
-        for package, pfiles in package_files.items():
-            retcode = self.generate_package(package, pfiles) or retcode
-        return retcode
-
-    def generate_initpy(self, files):
-        """
-        Generate __init__.py file for each package in in the msg/srv file list
-        and have the __init__.py file import the required symbols from
-        the generated version of the files.
-        @param files: list of msg/srv files
-        @type  files: [str]
-        @return: return code
-        @rtype: int
-        """
-        
-        package_files = {}
-        # pass 1: collect list of files for each package
-        retcode = self.generate_package_files(package_files, files, self.ext)
-
-        # pass 2: write the __init__.py file for the module
-        retcode = retcode or self.write_modules(package_files)
-        
-    def generate_messages(self, files, no_gen_initpy):
-        """
-        @param no_gen_initpy: if True, don't generate the __init__.py
-        file. This option is for backwards API compatibility.
-        @type  no_gen_initpy: bool
-        @return: return code
-        @rtype: int
-        """
-        package_files = {}
-        # pass 1: collect list of files for each package
-        retcode = self.generate_package_files(package_files, files, self.ext)
-        print("[%s]: generating %s for the following packages: %s"%(self.name, self.what, list(package_files.keys())))
-
-        # pass 2: roslib.msgs.load_package(), generate messages
-        retcode = retcode or self.generate_all_by_package(package_files)
-
-        # backwards compat
-        if not no_gen_initpy:
-            retcode = retcode or self.write_modules(package_files)
-            
-        return retcode
-
-    def write_gen(self, outfile, gen, verbose):
-        if verbose:
-            print("... generating %s"%outfile)
-        f = open(outfile, 'w')
-        try:
-            for l in gen:
-                f.write(l+'\n')
-        finally:
-            f.close()
-
 def usage(progname):
     print("%(progname)s file(s)"%vars())
 
-def get_files(argv, usage_fn, ext):
+def get_package_and_file(argv):
     if not argv[1:]:
-        usage_fn(argv[0])
-    files = []
-    for arg in argv[1:]:
-        if not arg == '--initpy':
-            files.extend(glob.glob(arg))
-    return files
+        usage(argv[0])
 
-def genmain(argv, gen, usage_fn=usage):
+    files = [a for a in argv[1:] if not a.startswith('--')]
+    # rospy.cmake only passes in a single file arg, assert this case
+    assert len(files) == 1, files
+
+    msg_file = files[0]
+    package = rospkg.get_package_name(msg_file)
+    return package, msg_file
+
+def get_outdir(package, path, subdir):
+    "compute the directory that the .py files are output to"
+    outdir = os.path.join(path, 'src', package, subdir)
+    if not os.path.exists(outdir):
+        try:
+            os.makedirs(outdir)
+        except Exception as e:
+            # It's not a problem if the directory already exists,
+            # because this can happen during a parallel build
+            if e.errno != errno.EEXIST:
+                raise e
+    elif not os.path.isdir(outdir): 
+        raise IOError("Cannot write to %s: file in the way"%(outdir))
+    return outdir
+
+def generate_messages(rospack, package, msg_file, subdir):
+    if subdir == 'msg':
+        gen = genpy.generator.MsgGenerator()
+    else:
+        gen = genpy.generator.SrvGenerator()
+
+    path = rospack.get_path(package)
+    search_path = {
+        package: os.path.join(path, subdir)
+        }
+    # std_msgs is implicit depend due to Header
+    search_path['std_msgs'] = os.path.join(rospack.get_path('std_msgs'), subdir)
+    for d in rospack.get_depends(package):
+        search_path[d] = os.path.join(rospack.get_path(d), subdir)
+
+    include_args = ['-I%s:%s'%(d, ipath) for d, ipath in search_path.iteritems()]
+    outdir = get_outdir(package, path, subdir)
+    retcode = gen.generate_messages(package, [msg_file], outdir, search_path)
+    
+def generate_initpy(rospack, p, subdir):
+    path = rospack.get_path(p)
+    outdir = get_outdir(p, path, subdir)
+    retcode = genpy.generate_initpy.write_modules(outdir)
+    parent_initpy = os.path.join(path, 'src', p, '__init__.py')
+    if not os.path.exists(parent_initpy):
+        with open(parent_initpy, 'w') as f:
+            f.write("#autogenerated by ROS python message generators")
+    return retcode
+    
+def genmain(argv, subdir):
+    rospack = rospkg.RosPack()
     try:
         gen_initpy = '--initpy' in argv
         no_gen_initpy = '--noinitpy' in argv
-        
         if gen_initpy:
             # #1827
-            packages = [p for p in argv[1:] if not p == '--initpy']
-            retcode = gen.generate_initpy(packages)
+
+            # new __init__py does not take explicit file args.  just
+            # convert to unique package names and compute path.
+            files = [f for f in argv[1:] if not f.startswith('--')]
+            packages = list(set([rospkg.get_package_name(f) for f in files]))
+            retcodes = [generate_initpy(rospack, p, subdir) for p in packages]
+            retcodes = [c for c in retcodes if c not in (0, None)]
+            if retcodes:
+                retcode = retcodes[0]
+            else:
+                retcode = 0
         else:
-            files = get_files(argv, usage_fn, gen.ext)
-            if not files:
-                print("No matching files found")
-                return
-            retcode = gen.generate_messages(files, no_gen_initpy)
-    except roslib.msgs.MsgSpecException as e:
-        sys.stderr.write("ERROR: " + e + "\n")
+            package, msg_file = get_package_and_file(argv)
+            retcode = generate_messages(rospack, package, msg_file, subdir)
+
+    except genmsg.InvalidMsgSpec as e:
+        sys.stderr.write("ERROR: %s\n"%(str(e)))
         retcode = 1
-    except MsgGenerationException as e:
-        sys.stderr.write("ERROR: " + e + "\n")
+    except genmsg.MsgGenerationException as e:
+        sys.stderr.write("ERROR: %s\n"%(str(e)))
         retcode = 2
     except Exception as e:
         traceback.print_exc()
-        sys.stderr.write("ERROR: " + e + "\n")
+        sys.stderr.write("ERROR: %s\n"%(str(e)))
         retcode = 3
     sys.exit(retcode or 0)

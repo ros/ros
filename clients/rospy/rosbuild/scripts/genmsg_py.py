@@ -30,65 +30,18 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
 
 """
 ROS message source code generation for Python
 
 Converts ROS .msg files in a package into Python source code implementations.
 """
-import sys
-import os
-import traceback
 
-# roslib.msgs contains the utilities for parsing .msg specifications. It is meant to have no rospy-specific knowledge
-import roslib.msgs 
-import roslib.packages 
+import sys
 
 # genutil is a utility package the implements the package crawling
 # logic of genmsg_py and gensrv_py logic
 import genutil
 
-try:
-    # TODO: remove after ROS 1.7 is released
-    from roslib.genpy_electric import MsgGenerationException, msg_generator
-except:
-    from roslib.genpy import MsgGenerationException, msg_generator
-
-class GenmsgPackage(genutil.Generator):
-    """
-    GenmsgPackage generates Python message code for all messages in a
-    package. See genutil.Generator. In order to generator code for a
-    single .msg file, see msg_generator.
-    """
-    def __init__(self):
-        super(GenmsgPackage, self).__init__(
-            'genmsg_py', 'messages', '.msg', 'msg', MsgGenerationException)
-
-    def generate(self, package, f, outdir):
-        """
-        Generate python message code for a single .msg file
-        @param f: path to .msg file
-        @type  f: str
-        @param outdir: output directory for generated code
-        @type  outdir: str
-        @return: filename of generated Python code 
-        @rtype: str
-        """
-        verbose = True
-        f = os.path.abspath(f)
-        infile_name = os.path.basename(f)
-        outfile_name = self.outfile_name(outdir, infile_name)
-
-        (name, spec) = roslib.msgs.load_from_file(f, package)
-        base_name = roslib.names.resource_name_base(name)
-        
-        self.write_gen(outfile_name, msg_generator(package, base_name, spec), verbose)
-
-        roslib.msgs.register(name, spec)
-        return outfile_name
-
 if __name__ == "__main__":
-    roslib.msgs.set_verbose(False)
-    genutil.genmain(sys.argv, GenmsgPackage())
+    genutil.genmain(sys.argv, 'msg')

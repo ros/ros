@@ -31,21 +31,23 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import print_function
+
 import os
 import rospy
 import rosbag
 
 def fix_md5sums(inbags):
     for b in inbags:
-        print 'Trying to migrating file: %s' % b
+        print('Trying to migrating file: %s' % b)
         outbag = b + '.tmp'
         rebag = rosbag.Bag(outbag, 'w')
         try:
             for i,(topic, msg, t) in enumerate(rosbag.Bag(b).read_messages(raw=True)):
                 rebag.write(topic, msg, t, raw=True)
             rebag.close()
-        except rosbag.ROSBagException, e:
-            print ' Migration failed: %s' % str(e)
+        except rosbag.ROSBagException as e:
+            print(' Migration failed: %s' % str(e))
             os.remove(outbag)
             continue
         
@@ -57,11 +59,11 @@ def fix_md5sums(inbags):
             oldname = oldnamebase + str(i)
         os.rename(b, oldname)
         os.rename(outbag, b)
-        print ' Migration successful.  Original stored as: %s' % oldname
+        print(' Migration successful.  Original stored as: %s' % oldname)
 
 if __name__ == '__main__':
     import sys
     if len(sys.argv) >= 2:
         fix_md5sums(sys.argv[1:])
     else:
-        print "usage: fix_md5sums.py bag1 [bag2 bag3 ...]"
+        print("usage: fix_md5sums.py bag1 [bag2 bag3 ...]")

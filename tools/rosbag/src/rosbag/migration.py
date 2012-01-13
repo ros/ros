@@ -1316,7 +1316,9 @@ def constants_from_def(core_type, msg_def):
     deps_msgs = splits[1:]
 
     # create MsgSpec representations of .msg text
-    specs = { core_type: genmsg.msgs.load_from_string(core_msg, core_pkg) }
+    from genmsg import MsgContext
+    context = MsgContext.create_default()
+    specs = { core_type: genmsg.msg_loader.load_msg_from_string(context, core_msg, core_pkg) }
     # - dependencies
 #    for dep_msg in deps_msgs:
 #        # dependencies require more handling to determine type name

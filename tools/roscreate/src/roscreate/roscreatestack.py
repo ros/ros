@@ -40,7 +40,6 @@ code API of this module is *not* stable.
 """
 
 from __future__ import print_function
-import roslib; roslib.load_manifest('roscreate')
 
 NAME='roscreate-stack'
 

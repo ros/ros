@@ -18,6 +18,6 @@ add_service_files(
 generate_messages(DEPENDENCIES std_msgs rosgraph_msgs)
 
 find_package(ROS COMPONENTS roscpp)
-
+include_directories(${ROS_INCLUDE_DIRS})
 add_subdirectory(src)
 add_subdirectory(test)

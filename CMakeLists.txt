@@ -23,6 +23,7 @@ foreach(subdir
     test/test_roslib_comm
     test/test_rospy
     test/test_rosservice
+    test/test_roscpp
     test/test_roscpp_serialization
     test/test_roscpp_serialization_perf
     test/test_rostime

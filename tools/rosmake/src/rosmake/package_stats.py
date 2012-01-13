@@ -92,7 +92,7 @@ class PackageFlagTracker:
     if package in self.packages_tested:
       return
     rospack = self.rospack
-    path = self.get_path(package)
+    path = rospack.get_path(package)
     
     if os.path.exists(os.path.join(path, "ROS_BUILD_BLACKLIST")):
       self.register_blacklisted(package, package)

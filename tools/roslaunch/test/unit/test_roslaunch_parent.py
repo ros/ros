@@ -42,6 +42,11 @@ import rospkg
 import rosgraph.network
 import roslaunch.parent
 
+import rosgraph
+master = rosgraph.Master('test_roslaunch_parent')
+def get_param(*args):
+    return master.getParam(*args)
+
 ## Fake Process object
 class ProcessMock(roslaunch.pmon.Process):
     def __init__(self, package, name, args, env, respawn=False):
@@ -129,10 +134,9 @@ class TestRoslaunchParent(unittest.TestCase):
     def _subroslaunchParent(self):
         from roslaunch.parent import ROSLaunchParent
         pmon = self.pmon
-        import roslib.params
         try:
             # if there is a core up, we have to use its run id
-            run_id = roslib.params.get_param('/run_id')
+            run_id = get_param('/run_id')
         except:
             run_id = 'test-rl-parent-%s'%time.time()
         name = 'foo-bob'

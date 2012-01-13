@@ -36,29 +36,20 @@ Python path loader for python scripts and applications. Paths are
 derived from dependency structure declared in ROS manifest files.
 """
 
-import sys
 import os
+import sys
 
-import roslib.manifest
-import roslib.packages
+import rospkg
 
-def get_manifest_file(package_name):
-    """
-    :returns: name of package to get manifest for, ``str``
-    :raises: :exc:`InvalidROSPkgException` If required is True and package cannot be located
-    """
-    return roslib.manifest.manifest_file(package_name, required=True)
-        
 # bootstrapped keeps track of which packages we've loaded so we don't
 # update the path multiple times
-#
-# fuerte: also using _bootstrapped to prevent descent into
-# catkin/setup.py-based python packages
-_bootstrapped = ['genmsg', 'genpy', 'rospkg']+\
-                ['ros', 'roslib', 'rosunit', 'rosmake', 'rosclean', 'roscreate', 'rosboost_cfg'] +\
-                ['rosbag', 'rosgraph', 'rosgraph.impl', 'roslaunch', 'rosmaster', 'rosmsg', 'rosnode', 'rosparam', 'rospy', 'rospy.impl', 'rosservice', 'rostopic', 'rostest', 'roswtf',] +\
-                ['std_msgs', 'rosgraph_msgs', 'test_ros', 'test_rospy'] +\
-                ['sensor_msgs', 'geometry_msgs', 'nav_msgs', 'actionlib_msgs', 'trajectory_msgs', 'visualization_msgs', 'stereo_msgs', 'diagnostic_msgs']
+_bootstrapped = []
+# _rospack is our cache of ROS package data
+_rospack = rospkg.RosPack()
+
+def get_depends(package, rospack):
+    vals = rospack.get_depends(package, implicit=True)
+    return [v for v in vals if not rospack.get_manifest(v).is_catkin]
 
 def load_manifest(package_name, bootstrap_version="0.7"):
     """
@@ -68,17 +59,14 @@ def load_manifest(package_name, bootstrap_version="0.7"):
     """
     if package_name in _bootstrapped:
         return
-    sys.path = _generate_python_path(package_name, [], os.environ) + sys.path
+    sys.path = _generate_python_path(package_name, _rospack) + sys.path
     
 def _append_package_paths(manifest_, paths, pkg_dir):
     """
     Added paths for package to paths
-    @param manifest_: package manifest
-    @type  manifest_: Manifest
-    @param pkg_dir: package's filesystem directory path
-    @type  pkg_dir: str
-    @param paths: list of paths
-    @type  paths: [str]
+    :param manifest_: package manifest, ``Manifest``
+    :param pkg_dir: package's filesystem directory path, ``str``
+    :param paths: list of paths, ``[str]``
     """
     exports = manifest_.get_export('python','path')
     if exports:
@@ -91,43 +79,32 @@ def _append_package_paths(manifest_, paths, pkg_dir):
                 paths.append(e.replace('${prefix}', pkg_dir))
     else:
         dirs = [os.path.join(pkg_dir, d) for d in ['src', 'lib']]
-        paths.extend(list(filter(os.path.isdir, dirs))) #py3k
+        paths.extend([d for d in dirs if os.path.isdir(d)])
     
-def _generate_python_path(pkg, depends, env=os.environ):
+def _generate_python_path(pkg, rospack):
     """
     Recursive subroutine for building dependency list and python path
-    @param manifest_file: manifest to parse for additional dependencies
-    @param depends: current dependency set. Will be modified
-    @return: list of directory paths to add to python path in order to include
-      package and dependencies described in manifest file.
-    @raise InvalidROSPkgException: if an error occurs while attempting to load package or dependencies
+    :raises: :exc:`rospkg.ResourceNotFound` If an error occurs while attempting to load package or dependencies
     """
     if pkg in _bootstrapped:
         return []
-    manifest_file = roslib.manifest.manifest_file(pkg, True, env)
-    if not manifest_file:
-        raise roslib.packages.InvalidROSPkgException("cannot locate package [%s]"%pkg)
-    _bootstrapped.append(pkg)
-    
-    pkg_dir = os.path.dirname(os.path.abspath(manifest_file))
-    depends.append(pkg)
-    m = roslib.manifest.parse_file(manifest_file)
-    
-    paths = []
-    _append_package_paths(m, paths, pkg_dir)
 
+    # short-circuit if this is a catkin-ized package
+    m = rospack.get_manifest(pkg)
+    if m.is_catkin:
+        _bootstrapped.append(p)
+        return
+
+    packages = get_depends(pkg, rospack) 
+    packages.append(pkg)
+
+    paths = []
     try:
-        for d in m.depends:
-            if d.package in depends:
-                continue 
-            try: #add sub-dependencies to paths and depends
-                paths.extend(_generate_python_path(d.package, depends, env))
-            except roslib.packages.InvalidROSPkgException as e:
-                # translate error message to give more context
-                raise roslib.packages.InvalidROSPkgException("While loading package '%s': %s"%(d.package, str(e)))
-            except:
-                import traceback
-                raise roslib.packages.InvalidROSPkgException("While loading package '%s': cannot load dependency '%s'\nLower level error was %s"%(pkg, d.package, traceback.format_exc()))
+        for p in packages:
+            m = rospack.get_manifest(p)
+            d = rospack.get_path(p)
+            _append_package_paths(m, paths, d)
+            _bootstrapped.append(p)
     except:
         if pkg in _bootstrapped:
             _bootstrapped.remove(pkg)

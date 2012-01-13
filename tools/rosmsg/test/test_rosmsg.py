@@ -80,26 +80,6 @@ class TestRosmsg(unittest.TestCase):
 std_msgs/String s2
   string data""", rosmsg.get_msg_text(type_, raw=False).strip())
 
-    def test_list_packages(self):
-        try:
-            l = rosmsg.list_packages('.foo')
-            self.fail("should have failed on invalid mode")
-        except ValueError: pass
-
-        # test msgs
-        l = rosmsg.list_packages('.msg')
-        for p in ['rosgraph_msgs', 'test_ros']:
-            self.assert_(p in l, "%s not in %s"%(p, l))
-        for p in ['rospy', 'std_srvs']:
-            self.assert_(p not in l)
-
-        # test srvs
-        l = rosmsg.list_packages('.srv')
-        for p in ['test_ros', 'std_srvs']:
-            self.assert_(p in l, "%s not in %s"%(p, l))
-        for p in ['roslib', 'rospy', 'std_msgs']:
-            self.assert_(p not in l)
-        
     def test_list_types(self):
         try:
             l = rosmsg.list_types('rosmsg', '.foo')

@@ -33,9 +33,7 @@
 """
 Implements rosmsg/rossrv command-line tools.
 
-The code API of the rosmsg module is unstable. Much of the
-functionality of rosmsg/rossrv is implemented using the roslib.msgs
-and roslib.srvs libraries and can be found there instead.
+The code API of the rosmsg module is unstable. 
 """
 
 from __future__ import print_function
@@ -49,8 +47,6 @@ import rospkg
 import genmsg
 import genpy
 
-import roslib.msgs
-import roslib.srvs
 import rosbag
 
 from optparse import OptionParser
@@ -92,7 +88,7 @@ def spec_to_str(msg_context, spec, buff=None, indent=''):
             spec_to_str(msg_context, subspec, buff, indent + '  ')
     return buff.getvalue()
 
-def get_srv_text(type_, raw=False):
+def get_srv_text(type_, raw=False, rospack=None):
     """
     Get .srv file for type_ as text
     :param type_: service type, ``str``
@@ -100,7 +96,8 @@ def get_srv_text(type_, raw=False):
     :returns: text of .srv file, ``str``
     @raise ROSMsgException: if type_ is unknown
     """
-    rospack = rospkg.RosPack()
+    if rospack is None:
+        rospack = rospkg.RosPack()
     srv_search_path = {}
     msg_search_path = {}
     for p in rospack.list():
@@ -121,7 +118,7 @@ def get_srv_text(type_, raw=False):
     else:
         return spec_to_str(context, spec.request)+'---\n'+spec_to_str(context, spec.response)
 
-def get_msg_text(type_, raw=False):
+def get_msg_text(type_, raw=False, rospack=None):
     """
     Get .msg file for type_ as text
     :param type_: message type, ``str``
@@ -129,7 +126,8 @@ def get_msg_text(type_, raw=False):
     :returns: text of .msg file, ``str``
     :raises :exc:`ROSMsgException` If type_ is unknown
     """
-    rospack = rospkg.RosPack()
+    if rospack is None:
+        rospack = rospkg.RosPack()
     search_path = {}
     for p in rospack.list():
         search_path[p] = os.path.join(rospack.get_path(p), 'msg')
@@ -146,15 +144,15 @@ def get_msg_text(type_, raw=False):
     else:
         return spec_to_str(context, spec)
 
-def rosmsg_debug(mode, type_, raw=False):
+def rosmsg_debug(rospack, mode, type_, raw=False):
     """
     Prints contents of msg/srv file
     :param mode: MODE_MSG or MODE_SRV, ``str``
     """
     if mode == MODE_SRV:
-        print(get_srv_text(type_, raw=raw))
+        print(get_srv_text(type_, raw=raw, rospack=rospack))
     elif mode == MODE_MSG:
-        print(get_msg_text(type_, raw=raw))
+        print(get_msg_text(type_, raw=raw, rospack=rospack))
     else:
         raise ROSMsgException("Invalid mode for debug: %s"%mode)
     
@@ -222,7 +220,7 @@ def _list_resources(package, path, rfilter=os.path.isfile):
         resources = []
     return resources
 
-def iterate_packages(mode):
+def iterate_packages(rospack, mode):
     """
     Iterator for packages that contain messages/services
     :param mode: .msg or .srv, ``str``
@@ -234,38 +232,20 @@ def iterate_packages(mode):
     else:
         raise ValueError('Unknown mode for iterate_packages: %s'%mode)
 
-    rospack = rospkg.RosPack()
     pkgs = rospack.list()
     for p in pkgs:
-        try:
-            d = os.path.join(rospack.get_path(p), subdir)
-            if os.path.isdir(d):
-                yield p
-        except rospkg.ResourceNotFound:
-            # race condition, ignore
-            pass
+        d = os.path.join(rospack.get_path(p), subdir)
+        if os.path.isdir(d):
+            yield p, d
     
-def list_packages(mode=MODE_MSG):
-    """
-    List all packages that contain messages/services. This is a convenience
-    function of iterate_packages
-    :param mode: MODE_MSG or MODE_SRV. Defaults to msgs, ``str``
-    :returns: list of packages that contain messages/services (depending on mode), ``[str]``
-    """
-    return [p for p in iterate_packages(mode)]
-
-def rosmsg_search(mode, base_type):
+def rosmsg_search(rospack, mode, base_type):
     """
     Iterator for all packages that contain a message matching base_type
 
     :param base_type: message base type to match, e.g. 'String' would match std_msgs/String, ``str``
     """
-    if mode == MODE_MSG:
-        res_file = roslib.msgs.msg_file
-    else:
-        res_file = roslib.srvs.srv_file
-    for p in iterate_packages(mode):
-        if os.path.isfile(res_file(p, base_type)):
+    for p, path in iterate_packages(rospack, mode):
+        if os.path.isfile(os.path.join(path, "%s%s"%(base_type, mode))):
             yield genmsg.resource_name(p, base_type)
 
 def _stdin_arg(parser, full):
@@ -309,12 +289,13 @@ def rosmsg_cmd_show(mode, full):
                 print(get_msg_text(datatype, options.raw, pytype._full_text))
                 break
     else:
+        rospack = rospkg.RosPack()
         if '/' in arg: #package specified
-            rosmsg_debug(mode, arg, options.raw)
+            rosmsg_debug(rospack, mode, arg, options.raw)
         else:
-            for found in rosmsg_search(mode, arg):
+            for found in rosmsg_search(rospack, mode, arg):
                 print("[%s]:"%found)
-                rosmsg_debug(mode, found, options.raw)
+                rosmsg_debug(rospack, mode, found, options.raw)
 
 def rosmsg_md5(mode, type_):
     try:
@@ -337,7 +318,8 @@ def rosmsg_cmd_md5(mode, full):
         except IOError:
             print("Cannot locate [%s]"%arg, file=sys.stderr)
     else:
-        matches = [m for m in rosmsg_search(mode, arg)]
+        rospack = rospkg.RosPack()
+        matches = [m for m in rosmsg_search(rospack, mode, arg)]
         for found in matches:
             try:
                 md5 = rosmsg_md5(mode, found)
@@ -364,10 +346,11 @@ def rosmsg_cmd_packages(mode, full):
                       dest="single_line", default=False,action="store_true",
                       help="list all packages on a single line")
     options, args = parser.parse_args(sys.argv[2:])
+    rospack = rospkg.RosPack()    
     if options.single_line:
-        print(' '.join([p for p in iterate_packages(mode)]))
+        print(' '.join([p for p, _ in iterate_packages(rospack, mode)]))
     else:
-        print('\n'.join([p for p in iterate_packages(mode)]))
+        print('\n'.join([p for p, _ in iterate_packages(rospack, mode)]))
 
 def fullusage(cmd):
     """

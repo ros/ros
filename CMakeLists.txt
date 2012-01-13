@@ -24,6 +24,10 @@ foreach(subdir
     test/test_rospy
     test/test_rosservice
     test/test_roscpp_serialization
+    test/test_roscpp_serialization_perf
+    test/test_rostime
+    test/perf_roscpp
+    test/test_crosspackage
     )
   add_subdirectory(${subdir})
 endforeach()

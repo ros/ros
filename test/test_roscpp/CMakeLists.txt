@@ -20,5 +20,4 @@ generate_messages(DEPENDENCIES std_msgs rosgraph_msgs)
 find_package(ROS COMPONENTS roscpp)
 
 add_subdirectory(src)
-#add_subdirectory(test)
-
+add_subdirectory(test)

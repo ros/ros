@@ -1,97 +1,96 @@
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/real_time_test.xml)
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/sim_time_test.xml)
+add_rostest(real_time_test.xml)
+add_rostest(sim_time_test.xml)
 
 # Publish one message
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/pubsub_once.xml)
+add_rostest(pubsub_once.xml)
 
 # Publish a bunch of messages back to back
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/pubsub_n_fast.xml)
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/pubsub_n_fast_udp.xml)
+add_rostest(pubsub_n_fast.xml)
+add_rostest(pubsub_n_fast_udp.xml)
 
 # Publish a bunch of empty messages
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/pubsub_empty.xml)
+add_rostest(pubsub_empty.xml)
 
 # Publish only to the subscriber from the subscriber callback
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/pub_onsub.xml)
+add_rostest(pub_onsub.xml)
 
 # Publish a bunch of large messages back to back
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/pubsub_n_fast_large_message.xml)
+add_rostest(pubsub_n_fast_large_message.xml)
 
 # Subscribe, listen, unsubscribe, re-subscribe to a different topic, listen
 # again
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/pubsub_resub_once.xml)
+add_rostest(pubsub_resub_once.xml)
 
 # Subscribe and unsubscribe repeatedly, ensuring that callbacks don't get
 # called when not subscribed.
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/pubsub_unsub.xml)
+add_rostest(pubsub_unsub.xml)
 
 # Advertise, then unadvertise, and ensure that subscriber callback doesn't
 # get invoked afterward, while a subscriber is constantly subscribing and
 # unsubscribing
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/pubsub_unadv.xml)
+add_rostest(pubsub_unadv.xml)
 
 # Call a service
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/service_call.xml)
+add_rostest(service_call.xml)
 
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/service_deadlock.xml)
+add_rostest(service_deadlock.xml)
 
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/service_call_unadv.xml)
+add_rostest(service_call_unadv.xml)
 
 # Repeatedly call ros::init() and ros::fini()
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/multiple_init_fini.xml)
+add_rostest(multiple_init_fini.xml)
 
 # Test node inspection functionality
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/inspection.xml)
+add_rostest(inspection.xml)
 
 # Test that advertising a service multiple times fails
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/service_adv_multiple.xml)
+add_rostest(service_adv_multiple.xml)
 
 # Test that the second node to advertise a service "wins"
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/service_multiple_providers.xml)
+add_rostest(service_multiple_providers.xml)
 
 # Test namespaces
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/namespaces.xml)
+add_rostest(namespaces.xml)
 
 # Test command-line name remapping
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/name_remapping.xml)
+add_rostest(name_remapping.xml)
 
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/name_not_remappable.xml)
+add_rostest(name_not_remappable.xml)
 
 # Test command-line name remapping
-rosbuild_add_rostest(
-  ${CMAKE_CURRENT_SOURCE_DIR}/name_remapping_ROS_NAMESPACE.xml)
+add_rostest(name_remapping_ROS_NAMESPACE.xml)
 
 # Test params
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/params.xml)
+add_rostest(params.xml)
 
 # Test getting information from the master
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/get_master_information.xml)
+add_rostest(get_master_information.xml)
 
 # Test multiple subscriptions
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/multiple_subscriptions.xml)
+add_rostest(multiple_subscriptions.xml)
 
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/pingpong.xml)
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/pingpong_large.xml)
+add_rostest(pingpong.xml)
+add_rostest(pingpong_large.xml)
 
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/subscribe_self.xml)
+add_rostest(subscribe_self.xml)
 
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/check_master.xml)
+add_rostest(check_master.xml)
 
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/handles.xml)
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/timer_callbacks.xml)
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/latching_publisher.xml)
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/loads_of_publishers.xml)
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/incrementing_sequence.xml)
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/subscription_callback_types.xml)
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/service_callback_types.xml)
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/intraprocess_subscriptions.xml)
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/nonconst_subscriptions.xml)
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/subscribe_retry_tcp.xml)
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/subscribe_star.xml)
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/parameter_validation.xml)
+add_rostest(handles.xml)
+add_rostest(timer_callbacks.xml)
+add_rostest(latching_publisher.xml)
+add_rostest(loads_of_publishers.xml)
+add_rostest(incrementing_sequence.xml)
+add_rostest(subscription_callback_types.xml)
+add_rostest(service_callback_types.xml)
+add_rostest(intraprocess_subscriptions.xml)
+add_rostest(nonconst_subscriptions.xml)
+add_rostest(subscribe_retry_tcp.xml)
+add_rostest(subscribe_star.xml)
+add_rostest(parameter_validation.xml)
 
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/no_remappings.xml)
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/local_remappings.xml)
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/global_remappings.xml)
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/ns_node_remapping.xml)
-rosbuild_add_rostest(${CMAKE_CURRENT_SOURCE_DIR}/search_param.xml)
+add_rostest(no_remappings.xml)
+add_rostest(local_remappings.xml)
+add_rostest(global_remappings.xml)
+add_rostest(ns_node_remapping.xml)
+add_rostest(search_param.xml)

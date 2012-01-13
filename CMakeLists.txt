@@ -23,6 +23,7 @@ foreach(subdir
     test/test_roslib_comm
     test/test_rospy
     test/test_rosservice
+    test/test_roscpp_serialization
     )
   add_subdirectory(${subdir})
 endforeach()

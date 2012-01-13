@@ -56,12 +56,6 @@ MODE_SRV = '.srv'
 
 class ROSMsgException(Exception): pass
 
-def succeed(args):
-    code, msg, val = args
-    if code != 1:
-        raise ROSMsgException("remote call failed: %s"%msg)
-    return val
-
 def make_find_command(path):
     if os.uname()[0] in ['Darwin', 'FreeBSD']:
         return ["find", "-E", path]

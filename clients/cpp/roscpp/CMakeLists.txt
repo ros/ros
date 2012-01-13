@@ -116,4 +116,38 @@ catkin_project(roscpp
   DEPENDS roscpp_traits roscpp_serialization cpp_common std_msgs rosgraph_msgs #EAR are these needed?  doesn't the stack.yaml declare these?
   )
 
-message("TODO: add roscpp's tests back in")
+add_gtest(${PROJECT_NAME}-test_version test/test_version.cpp)
+target_link_libraries(${PROJECT_NAME}-test_version)
+
+# WARNING test_spinners is not actually run.  This is because this
+# infrastructure won't let me pass arguments from here through to
+# these test units.  otherwise one would have to build ten executables.
+# also the output of test_spinners has to be visually inspected
+# because there is no automatic way to ensure that an error condition
+# provokes a particular message.
+find_package(GTest REQUIRED)
+include_directories(${GTEST_INCLUDE_DIRS})
+add_executable(${PROJECT_NAME}-test_spinners test/test_spinners.cpp)
+target_link_libraries(${PROJECT_NAME}-test_spinners ros ${GTEST_LIBRARIES})
+
+add_gtest(${PROJECT_NAME}-test_header test/test_header.cpp)
+target_link_libraries(${PROJECT_NAME}-test_header roscpp)
+
+add_gtest(${PROJECT_NAME}-test_poll_set test/test_poll_set.cpp)
+target_link_libraries(${PROJECT_NAME}-test_poll_set roscpp)
+
+add_gtest(${PROJECT_NAME}-test_transport_tcp test/test_transport_tcp.cpp)
+target_link_libraries(${PROJECT_NAME}-test_transport_tcp roscpp)
+
+add_gtest(${PROJECT_NAME}-test_subscription_queue test/test_subscription_queue.cpp)
+target_link_libraries(${PROJECT_NAME}-test_subscription_queue roscpp)
+
+add_gtest(${PROJECT_NAME}-test_callback_queue test/test_callback_queue.cpp)
+target_link_libraries(${PROJECT_NAME}-test_callback_queue roscpp)
+
+add_gtest(${PROJECT_NAME}-test_names test/test_names.cpp)
+target_link_libraries(${PROJECT_NAME}-test_names roscpp)
+
+add_gtest(${PROJECT_NAME}-test_args test/test_args.cpp)
+target_link_libraries(${PROJECT_NAME}-test_args roscpp)
+

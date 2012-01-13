@@ -47,11 +47,8 @@ import subprocess
 
 import rospkg
 import genmsg
+import genpy
 
-import roslib
-
-import roslib.gentools
-import roslib.message
 import roslib.msgs
 import roslib.srvs
 import rosbag
@@ -320,25 +317,14 @@ def rosmsg_cmd_show(mode, full):
                 rosmsg_debug(mode, found, options.raw)
 
 def rosmsg_md5(mode, type_):
-    package, base_type = genmsg.package_resource_name(type_)
-    roslib.msgs.load_package_dependencies(package, load_recursive=True)
-    roslib.msgs.load_package(package)
-    if mode == MODE_MSG:
-        f = roslib.msgs.msg_file(package, base_type)
-        name, spec = roslib.msgs.load_from_file(f, package)
-    else:
-        f = roslib.srvs.srv_file(package, base_type)
-        name, spec = roslib.srvs.load_from_file(f, package)
-    gendeps_dict = roslib.gentools.get_dependencies(spec, package, compute_files=False)
-    return roslib.gentools.compute_md5(gendeps_dict)
-
-## soft-fail routine to check against generated md5sum to provide a sanity check. Only checks the Python md5
-def _rosmsg_md5_check(mode, type_, gendeps_md5):
     try:
-        msg_class = roslib.message.get_message_class(type_)
-        if msg_class is not None and msg_class._md5sum != gendeps_md5:
-            print("WARN: md5sum for compiled [%s] appears to differ from %s:\n\t%s vs %s"%(type_, mode, msg_class._md5sum, gendeps_md5), file=sys.stderr)
-    except ImportError: pass
+        msg_class = genpy.message.get_message_class(type_)
+    except ImportError:
+        raise IOError("cannot load [%s]"%(type_))
+    if msg_class is not None:
+        return msg_class._md5sum
+    else:
+        raise IOError("cannot load [%s]"%(type_))        
     
 def rosmsg_cmd_md5(mode, full):
     parser = OptionParser(usage="usage: ros%s md5 <%s>"%(mode[1:], full))
@@ -348,7 +334,6 @@ def rosmsg_cmd_md5(mode, full):
         try:
             md5 = rosmsg_md5(mode, arg)
             print(md5)
-            _rosmsg_md5_check(mode, arg, md5)
         except IOError:
             print("Cannot locate [%s]"%arg, file=sys.stderr)
     else:
@@ -357,7 +342,6 @@ def rosmsg_cmd_md5(mode, full):
             try:
                 md5 = rosmsg_md5(mode, found)
                 print("[%s]: %s"%(found, md5))
-                _rosmsg_md5_check(mode, found, md5)
             except IOError:
                 print("Cannot locate [%s]"%found, file=sys.stderr)
         if not matches:

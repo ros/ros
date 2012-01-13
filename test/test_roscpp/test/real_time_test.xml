@@ -1,4 +1,4 @@
 <launch>
-  <test test-name="timetest_real" pkg="test_roscpp" type="real_time_test" args=""/>
+  <test test-name="timetest_real" pkg="test_roscpp" type="test_roscpp-real_time_test" args=""/>
 </launch>
 

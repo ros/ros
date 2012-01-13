@@ -1,5 +1,5 @@
 <launch>
-  <test test-name="service_deadlock" pkg="test_roscpp" type="service_deadlock"/>
+  <test test-name="service_deadlock" pkg="test_roscpp" type="test_roscpp-service_deadlock"/>
 </launch>
 
 

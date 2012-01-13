@@ -5,7 +5,7 @@
   <param name="/global" value=":global"/>
   <param name="/other_namespace/param" value=":other_namespace:param"/>
   <test test-name="namespaces" pkg="test_roscpp" 
-        type="namespaces" name="NODE_NAME">
+        type="test_roscpp-namespaces" name="NODE_NAME">
     <env name="ROS_NAMESPACE" value="ROS_NAMESPACE"/>
   </test>
 </launch>

@@ -39,9 +39,8 @@ import sys
 import time
 import UserDict
 
-import rospkg
-
 import roslib.message
+import roslib.packages
 
 from bag import Bag, Compression, ROSBagException, ROSBagFormatException, ROSBagUnindexedException
 from migration import MessageMigrator, fixbag2, checkbag
@@ -113,9 +112,10 @@ def record_cmd(argv):
 
     cmd.extend(args)
 
-    rospack = rospkg.RosPack()
-    recordpath = os.path.join(rospack.get_path('rosbag'), 'bin', 'record')
-    os.execv(recordpath, cmd)
+    recordpath = roslib.packages.find_node('rosbag', 'record')
+    if not recordpath:
+        parser.error("Cannot find rosbag/record executable")
+    os.execv(recordpath[0], cmd)
 
 def info_cmd(argv):
     parser = optparse.OptionParser(usage='rosbag info [options] BAGFILE1 [BAGFILE2 BAGFILE3 ...]',
@@ -213,9 +213,10 @@ def play_cmd(argv):
 
     cmd.extend(args)
 
-    rospack = rospkg.RosPack()
-    playpath = os.path.join(rospack.get_path('rosbag'), 'bin', 'play')
-    os.execv(playpath, cmd)
+    playpath = roslib.packages.find_node('rosbag', 'play')
+    if not playpath:
+        parser.error("Cannot find rosbag/play executable")
+    os.execv(playpath[0], cmd)
 
 def filter_cmd(argv):
     def expr_eval(expr):

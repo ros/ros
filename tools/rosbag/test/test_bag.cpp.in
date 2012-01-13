@@ -222,7 +222,7 @@ TEST(rosbag, simple_write_and_read_works) {
 
 TEST(rosbag, append_indexed_1_2_fails) {
   try{
-    rosbag::Bag b("test/test_indexed_1.2.bag", rosbag::bagmode::Append);
+    rosbag::Bag b("@PROJECT_BINARY_DIR@/test/test_indexed_1.2.bag", rosbag::bagmode::Append);
 
     FAIL();
   }
@@ -232,7 +232,7 @@ TEST(rosbag, append_indexed_1_2_fails) {
 }
 
 TEST(rosbag, read_indexed_1_2_succeeds) {
-    rosbag::Bag b("test/test_indexed_1.2.bag", rosbag::bagmode::Read);
+    rosbag::Bag b("@PROJECT_BINARY_DIR@/test/test_indexed_1.2.bag", rosbag::bagmode::Read);
     rosbag::View view(b);
 
     int32_t i = 0;

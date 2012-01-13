@@ -46,11 +46,18 @@ download_test_data(http://pr.willowgarage.com/data/rosbag/test_future_version_2.
 
 add_pyunit(test/test_bag.py)
 
-add_gtest(test_bag test/test_bag.cpp)
+configure_file(test/test_bag.cpp.in 
+               ${PROJECT_BINARY_DIR}/test/test_bag.cpp)
+add_gtest(test_bag ${PROJECT_BINARY_DIR}/test/test_bag.cpp)
 target_link_libraries(test_bag rosbag)
 
-add_rostest(test/rosbag_play.test)
-add_rostest(test/play_play.test)
+configure_file(test/play_play.test.in 
+               ${PROJECT_BINARY_DIR}/test/play_play.test)
+add_rostest(${PROJECT_BINARY_DIR}/test/play_play.test)
+configure_file(test/rosbag_play.test.in 
+               ${PROJECT_BINARY_DIR}/test/rosbag_play.test)
+add_rostest(${PROJECT_BINARY_DIR}/test/rosbag_play.test)
+
 add_rostest(test/latched_pub.test)
 add_rostest(test/latched_sub.test)
 add_rostest(test/record_two_publishers.test)

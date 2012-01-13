@@ -374,7 +374,7 @@ TEST(RoscppHandles, serviceAdv)
   {
     ros::ServiceServer srv = n.advertiseService("/test_srv", serviceCallback);
 
-    ASSERT_TRUE(ros::service::call("/test_srv", t));
+    EXPECT_TRUE(ros::service::call("/test_srv", t));
   }
 
   queue.disable();
@@ -403,15 +403,15 @@ TEST(RoscppHandles, serviceAdvCopy)
 
         ASSERT_TRUE(srv3 == srv2);
 
-        ASSERT_TRUE(ros::service::call("/test_srv", t));
+        EXPECT_TRUE(ros::service::call("/test_srv", t));
       }
 
       ASSERT_TRUE(srv2 == srv1);
 
-      ASSERT_TRUE(ros::service::call("/test_srv", t));
+      EXPECT_TRUE(ros::service::call("/test_srv", t));
     }
 
-    ASSERT_TRUE(ros::service::call("/test_srv", t));
+    EXPECT_TRUE(ros::service::call("/test_srv", t));
   }
 
   ASSERT_FALSE(ros::service::call("/test_srv", t));

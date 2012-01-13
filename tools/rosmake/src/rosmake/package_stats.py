@@ -74,13 +74,7 @@ class PackageFlagTracker:
     self.nomakefile = set()
     self.packages_tested = set()
     self.dependency_tracker = dependency_tracker
-    self.paths = {}
     self.build_failed = set()
-
-  def get_path(self, package):
-    if not package in self.paths:
-      self.paths[package] = self.rospack.get_path(package)
-    return self.paths[package]
 
   def register_blacklisted(self, blacklisted_package, dependent_package):
     if dependent_package in self.blacklisted.keys():
@@ -96,21 +90,27 @@ class PackageFlagTracker:
 
   def _check_package_flags(self, package):
     if package in self.packages_tested:
-      return 
-    if os.path.exists(os.path.join(self.get_path(package), "ROS_BUILD_BLACKLIST")):
+      return
+    rospack = self.rospack
+    path = self.get_path(package)
+    
+    if os.path.exists(os.path.join(path, "ROS_BUILD_BLACKLIST")):
       self.register_blacklisted(package, package)
-      for p in self.rospack.get_depends_on(package, implicit=True):
+      for p in rospack.get_depends_on(package, implicit=True):
         self.register_blacklisted(package, p)
         
-    if os.path.exists(os.path.join(self.get_path(package), "ROS_BUILD_BLACKLIST_OSX")):
+    if os.path.exists(os.path.join(path, "ROS_BUILD_BLACKLIST_OSX")):
       self.register_blacklisted_osx(package, package)
-      for p in self.rospack.get_depends_on(package, implicit=True):
+      for p in rospack.get_depends_on(package, implicit=True):
         self.register_blacklisted_osx(package, p)
 
-    if os.path.exists(os.path.join(self.get_path(package), "ROS_NOBUILD")):
+    # NO_BUILD if marker file or catkin attribute in manifest
+    if os.path.exists(os.path.join(path, "ROS_NOBUILD")):
+      self.nobuild.add(package)
+    if self.rospack.get_manifest(package).is_catkin:
       self.nobuild.add(package)
 
-    if not os.path.exists(os.path.join(self.get_path(package), "Makefile")):
+    if not os.path.exists(os.path.join(path, "Makefile")):
       self.nomakefile.add(package)                      
 
     self.packages_tested.add(package)
@@ -166,7 +166,7 @@ class PackageFlagTracker:
   def add_nobuild(self, package):
     if self.has_nobuild(package):
       return True
-    with open(os.path.join(self.get_path(package), "ROS_NOBUILD"), 'w') as f:
+    with open(os.path.join(self.rospack.get_path(package), "ROS_NOBUILD"), 'w') as f:
       f.write("created by rosmake to mark as installed")
       self.nobuild.add(package)
       return True
@@ -176,7 +176,7 @@ class PackageFlagTracker:
     if not self.has_nobuild(package):
       return True
     try:
-      os.remove(os.path.join(self.get_path(package), "ROS_NOBUILD"))
+      os.remove(os.path.join(self.rospack.get_path(package), "ROS_NOBUILD"))
       self.nobuild.remove(package)
       return True  
     except:
@@ -188,10 +188,7 @@ class PackageFlagTracker:
   def build_failed(self, package):
       return package in self.build_failed
 
-  def is_whitelisted(self, package):
-      return platform_supported(self.rospack, package, self.os_name, self.os_version)
-        
-  def can_build(self, pkg, use_whitelist = False, use_whitelist_recursive = False, use_blacklist = False, failed_packages = [], use_makefile = True):
+  def can_build(self, pkg, use_blacklist = False, failed_packages = [], use_makefile = True):
     """
     Return (buildable, error, "reason why not")
     """
@@ -205,19 +202,6 @@ class PackageFlagTracker:
         output_state = False
         output_str += " Package %s cannot be built for dependent package(s) %s failed. \n"%(pkg, previously_failed_pkgs)
 
-
-    if use_whitelist:
-        non_whitelisted_packages = []
-        if not self.is_whitelisted(pkg):
-            buildable = False
-            output_state = False
-            non_whitelisted_packages.append(pkg)
-        if use_whitelist_recursive:
-            for p in [pk for pk in self.dependency_tracker.get_deps(pkg) if not self.is_whitelisted(pk)]:
-                non_whitelisted_packages.append(p)
-        if len(non_whitelisted_packages) > 0:
-            output_state = False
-            output_str += " Package(s) %s are not supported on this OS\n"%non_whitelisted_packages                
 
     if use_blacklist:
         black_listed_dependents = self.is_blacklisted(pkg)

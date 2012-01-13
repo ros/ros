@@ -289,8 +289,6 @@ class RosMakeAll:
         self.start_time = time.time()
         self.log_dir = ""
         self.logging_enabled = True
-        self.obey_whitelist = False
-        self.obey_whitelist_recursively = False
 
     def num_packages_built(self):
         """
@@ -395,7 +393,7 @@ class RosMakeAll:
                 with self._result_lock:
                     failed_packages = [j for j in self.result[argument] if not self.result[argument][j] == True]
 
-            (buildable, error, why) = self.flag_tracker.can_build(p, self.obey_whitelist, self.obey_whitelist_recursively, self.skip_blacklist, failed_packages)
+            (buildable, error, why) = self.flag_tracker.can_build(p, self.skip_blacklist, failed_packages)
             if buildable or self.robust_build:
                 start_time = time.time()
                 (returncode, pstd_out) = self._build_package(p, argument)
@@ -625,10 +623,6 @@ class RosMakeAll:
                           default=False, action="store_true", 
                           help="deprecated option. it will do nothing, please use platform declarations and --require-platform instead")
 
-        parser.add_option("--require-platform", dest="obey_whitelist",
-                          action="store_true", help="do not build a package unless it is marked as supported on this platform")
-        parser.add_option("--require-platform-recursive", dest="obey_whitelist_recursively",
-                          action="store_true", help="do not build a package unless it is marked as supported on this platform, and all dependents are also marked")
         parser.add_option("--status-rate", dest="status_update_rate",
                           action="store", help="How fast to update the status bar in Hz.  Default: 5Hz")
         
@@ -663,10 +657,6 @@ class RosMakeAll:
         if options.skip_blacklist_osx:
             self.printer.print_all("Option --skip-blacklist-osx is deprecated. It will do nothing, please use platform declarations and --require-platform instead");
         self.logging_enabled = options.logging_enabled
-        if options.obey_whitelist or options.obey_whitelist_recursively:
-            self.obey_whitelist = True
-            if options.obey_whitelist_recursively:
-                self.obey_whitelist_recursively = True
 
         # pass through verbosity options
         self.printer.full_verbose = options.full_verbose
@@ -769,7 +759,7 @@ class RosMakeAll:
         # make sure all dependencies are satisfied and if not warn
         buildable_packages = []
         for p in required_packages:
-            (buildable, error, str) = self.flag_tracker.can_build(p, self.obey_whitelist, self.obey_whitelist_recursively, self.skip_blacklist, [], False)
+            (buildable, error, str) = self.flag_tracker.can_build(p, self.skip_blacklist, [], False)
             if buildable: 
                 buildable_packages.append(p)
 

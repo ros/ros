@@ -59,9 +59,6 @@ import genpy
 import genpy.dynamic
 import genpy.message
 
-import roslib.msgs
-import roslib.gentools
-
 import rospy
 
 class ROSBagException(Exception):

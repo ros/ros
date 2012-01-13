@@ -997,7 +997,7 @@ class Bag(object):
             self._reader = _BagReader200(self)
         elif major_version == 1:
             if minor_version == 1:
-                self._reader = _BagReader101(self)
+                raise ROSBagException('unsupported bag version %d. Please convert bag to newer format.' % self._version)
             else:
                 # Get the op code of the first record.  If it's FILE_HEADER, then we have an indexed 1.2 bag.
                 first_record_pos = self._file.tell()
@@ -1459,73 +1459,6 @@ class _BagReader(object):
 
     def reindex(self):
         raise NotImplementedError()
-
-class _BagReader101(_BagReader):
-    """
-    Support class for reading v1.1 bag files.
-    """
-    def __init__(self, bag):
-        _BagReader.__init__(self, bag)
-
-    def start_reading(self):
-        pass
-
-    def read_messages(self, topics, start_time, end_time, topic_filter, raw):
-        f = self.bag._file
-
-        while True:
-            bag_pos = f.tell()
-
-            # Read topic/md5/type string headers
-            topic = f.readline().rstrip()
-            if not topic:
-                return
-
-            md5sum = f.readline().rstrip()
-            datatype = f.readline().rstrip()
-            
-            # Migration for rostools->roslib rename
-            if datatype in ['rostools/Header', 'rostools/Log', 'rostools/Time']:
-                datatype = datatype.replace('rostools', 'roslib')
-          
-            # Read timestamp
-            data = f.read(12)
-            if len(data) != 12:
-                raise ROSBagFormatException('Bag file appears to be corrupt (1)')
-            (time_sec, time_nsec, length) = struct.unpack("<LLL", data)
-            t = rospy.Time(time_sec, time_nsec)
-        
-            # Read message
-            data = f.read(length)
-            if len(data) != length:
-                raise ROSBagFormatException('Bag file appears to be corrupt (2)')
-          
-            try:
-                pytype = _message_types[md5sum]
-            except KeyError:
-                try:
-                    pytype = genpy.message.get_message_class(datatype)
-                except Exception:
-                    pytype = None
-          
-                if pytype is None:
-                    raise ROSBagException('Cannot deserialize messages of type [%s]: cannot locate message class' % datatype)
-                else:
-                    if pytype._md5sum != md5sum:
-                        (package, type) = datatype.split('/')
-                    if roslib.gentools.compute_md5_v1(roslib.gentools.get_file_dependencies(roslib.msgs.msg_file(package,type))) == md5sum:
-                        print('In V1.1 Logfile, found old md5sum for type [%s].  Allowing implicit migration to new md5sum.' % datatype)
-                    else:
-                        raise ROSBagException('Cannot deserialize messages of type [%s]: md5sum is outdated in V1.1 bagfile' % datatype)
-                _message_types[md5sum] = pytype
-          
-            if raw:
-                msg = datatype, data, pytype._md5sum, bag_pos, pytype
-            else:    
-                msg = pytype()
-                msg.deserialize(data)
-            
-            yield topic, msg, t
 
 class _BagReader102_Unindexed(_BagReader):
     """

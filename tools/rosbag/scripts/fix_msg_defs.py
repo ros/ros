@@ -31,12 +31,14 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import print_function
+
 import sys
 import rosbag.migration
 
 if __name__ == '__main__':
     if len(sys.argv) != 3:
-        print 'usage: fix_msg_defs.py <inbag> <outbag>'
+        print('usage: fix_msg_defs.py <inbag> <outbag>')
         exit(2)
 
     mm = rosbag.migration.MessageMigrator()
@@ -57,15 +59,15 @@ if __name__ == '__main__':
             else:
                 real_msg_type = mm.lookup_type(k)
                 if real_msg_type != None:
-                    print >> sys.stderr, "FOUND: %s [%s] was defined in migration system\n"%(msg[0], msg[2])
+                    print("FOUND: %s [%s] was defined in migration system\n"%(msg[0], msg[2]), file=sys.stderr)
                 else:
                     systype = roslib.message.get_message_class(msg[0])
                     if systype != None and systype._md5sum == msg[2]:
                         real_msg_type = systype
-                        print >> sys.stderr, "FOUND: %s [%s] was defined on your package path\n"%(msg[0], msg[2])
+                        print("FOUND: %s [%s] was defined on your package path\n"%(msg[0], msg[2]), file=sys.stderr)
                 if real_msg_type == None:
                     real_msg_type = msg[4]
-                    print >> sys.stderr, "WARNING: Type [%s] with md5sum [%s] has an unknown definition.\n"%(msg[0], msg[2])
+                    print("WARNING: Type [%s] with md5sum [%s] has an unknown definition.\n"%(msg[0], msg[2]), file=sys.stderr)
                 lookup_cache[k] = real_msg_type
             outbag.write(topic, (msg[0], msg[1], msg[2], msg[3], real_msg_type), t, raw=True)
         else:

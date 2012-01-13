@@ -46,7 +46,7 @@ class TestRosmsg(unittest.TestCase):
 
     ## test that the rosmsg command works
     def test_cmd_help(self):
-        sub = ['show', 'md5', 'package', 'packages', 'users']
+        sub = ['show', 'md5', 'package', 'packages']
         
         for cmd in ['rosmsg', 'rossrv']:
             output = Popen([cmd], stdout=PIPE).communicate()[0]

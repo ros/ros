@@ -66,5 +66,4 @@ add_rostest(test/relay.test)
 #rosbuild_add_rostest(test/switch_mux_none.test)
 #rosbuild_add_rostest(test/mux_add.test)
 
-message("TODO: fix rosrun so that test_topic_tools pyunit will pass")
-#add_pyunit(test/args.py)
+add_pyunit(test/args.py)

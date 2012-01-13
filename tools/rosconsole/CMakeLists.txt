@@ -1,4 +1,8 @@
 project(rosconsole)
+catkin_project(rosconsole
+  LIBRARIES rosconsole
+  INCLUDE_DIRS include
+  )
 
 # See ticket: https://code.ros.org/trac/ros/ticket/3626
 # On mac use g++-4.2
@@ -35,7 +39,13 @@ install(DIRECTORY include/
         FILES_MATCHING PATTERN "*.h"
         PATTERN ".svn" EXCLUDE)
 
-catkin_project(rosconsole
-  LIBRARIES rosconsole
-  INCLUDE_DIRS include
-  )
+add_gtest(${PROJECT_NAME}-utest test/utest.cpp)
+target_link_libraries(${PROJECT_NAME}-utest ${PROJECT_NAME})
+
+if(${CMAKE_SYSTEM_NAME} STREQUAL Linux)
+  add_gtest(${PROJECT_NAME}-assertion_test test/assertion_test.cpp)
+  target_link_libraries(${PROJECT_NAME}-assertion_test ${PROJECT_NAME})
+endif()
+
+add_gtest(${PROJECT_NAME}-thread_test test/thread_test.cpp)
+target_link_libraries(${PROJECT_NAME}-thread_test ${PROJECT_NAME})

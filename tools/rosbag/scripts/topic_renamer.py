@@ -31,6 +31,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import print_function
+
 import rospy
 import rosbag
 
@@ -45,4 +47,4 @@ if __name__ == '__main__':
     if len(sys.argv) == 5:
         rename_topic(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
     else:
-        print "usage: topic_renamer.py <intopic> <inbag> <outtopic> <outbag>"
+        print("usage: topic_renamer.py <intopic> <inbag> <outtopic> <outbag>")

@@ -75,110 +75,6 @@ def make_find_command(path):
     else:
         return ["find", path, "-regextype", "posix-egrep"]
 
-def rosmsg_users_package_search(mode, type_, package):
-    result = set() #using a set for deduplication
-    mode_str = "srv"
-    if mode == MODE_MSG:
-        mode_str = "msg"
-
-    msg_pkg, msg_name = type_.split('/')
-
-    # Get the full path to the using package
-    rospack = rospkg.RosPack()
-    p = rospack.get_path(package)
-
-    # Find the msg/srv files
-    # Leave the heavy lifting to find and grep.
-    if mode == MODE_MSG:
-        command = []
-        if msg_pkg == package:
-            command = make_find_command(p)
-            command += ["-regex", ".*\.(msg|srv)", "!", "-regex", ".*build.*", "!", "-regex", ".*\.svn.*", "!", "-regex", ".*~", "-exec", "grep", "-lE", "(" + type_ + "|" + msg_name + ")", "{}", ";"]
-        else:
-            command = make_find_command(p)
-            command += ["-regex", ".*\.(msg|srv)", "!", "-regex", ".*build.*", "!", "-regex", ".*\.svn.*", "!", "-regex", ".*~", "-exec", "grep", "-lE", type_, "{}", ";"]
-
-
-        msgfiles = subprocess.Popen(command, stdout=subprocess.PIPE).communicate()[0].strip().split()
-        # Dump out what we found
-        for f in msgfiles:
-            if len(f.strip()) != 0:
-                result.add( f )
-
-    # Find the C/C++ files in this package that #include the msg/srv
-    # header.  Leave the heavy lifting to find and grep.
-    command = make_find_command(p)
-    command += ["-regex", ".*\.(cpp|h|hh|cc|hpp|c)", "!", "-regex", ".*build.*", "!", "-regex", ".*svn.*", "!", "-regex", ".*~", "-exec", "grep", "-lE", " *#include *(\"|<)" + type_ + ".h", "{}", ";"]
-    cppfiles = subprocess.Popen(command, stdout=subprocess.PIPE).communicate()[0].strip().split()
-    # Dump out what we found
-    for f in cppfiles:
-        if len(f.strip()) != 0:
-            result.add( f )
-
-    # Capture all of the form import package_name.msg.message_name
-    command = make_find_command(p)
-    # The following regex doesn't work on OS X, and also doesn't appear to
-    # do anything.
-    #command += ["-regex", ".*(\.py|)"]
-    command += ["!", "-regex", ".*build.*", "!", "-regex", ".*\.svn.*", "-exec", "grep", "-IlE", "import " +msg_pkg+"\."+mode_str+"\."+ msg_name, "{}", ";"]
-    pyfiles =  subprocess.Popen(command, stdout=subprocess.PIPE).communicate()[0].strip().split('\n')
-    for f in pyfiles:
-        if len(f.strip()) != 0:
-            result.add(f)
-
-    # Capture all of the form "from package_name.msg import *|message_name  with message name used
-    command = make_find_command(p)
-    # The following regex doesn't work on OS X, and also doesn't appear to
-    # do anything.
-    #command += ["-regex", ".*(\.py|)"]
-    command += ["!", "-regex", ".*build.*", "!", "-regex", ".*\.svn.*", "!", "-regex", ".*~", "-exec", "grep", "-IlE", " *from.*" + msg_pkg + "\."+mode_str+".*import (\*|" + msg_name +")", "{}",";"]
-    pyfiles =  subprocess.Popen(command, stdout=subprocess.PIPE).communicate()[0].strip().split('\n')
-
-
-    for f in pyfiles:
-        if len(f.strip()) != 0:
-            # Make sure that this message is used for the above test could return without using the message if importing *
-            command = ["grep", "-l", msg_name, f]
-            present  =  subprocess.Popen(command, stdout=subprocess.PIPE).communicate()[0].strip().split('\n')
-            if len(present[0]) > 0:
-                result.add(f)
-            
-    return list(result) #return as list
-
-
-def rosmsg_users(mode, type_):
-    msg_pkg, msg_name = genmsg.package_resource_name(type_)
-    # Find the direct users of the package; they're the only ones who
-    # should be able to use this message
-    if not msg_pkg:
-        print("Please specify the package and type for [%s]"%type_, file=sys.stderr)
-        sys.exit(os.EX_USAGE)
-
-    print('Files using %s:' % (type_))
-        
-    deps = subprocess.Popen(["rospack", "depends-on1", msg_pkg], stdout=subprocess.PIPE).communicate()[0].strip().split()
-    # Check the messages own package too
-    deps.append(msg_pkg)
-
-    correct_dependencies = []
-    for d in deps:
-        files = rosmsg_users_package_search(mode, type_, d)
-        correct_dependencies.extend(files)
-
-    print("Usages directly depended upon:" + type_)
-    for f in correct_dependencies:
-        print(f)
-
-    deps = subprocess.Popen(["rospack", "depends-on", msg_pkg], stdout=subprocess.PIPE).communicate()[0].strip().split()
-    incorrect_dependencies = []
-    for d in deps:
-        files = rosmsg_users_package_search(mode, type_, d)
-        incorrect_dependencies.extend(files)
-    print("Usages indirectly depended upon:")
-    for f in incorrect_dependencies:
-        if f not in correct_dependencies:
-            print(f)
-
 from cStringIO import StringIO
 def spec_to_str(msg_context, spec, buff=None, indent=''):
     """
@@ -467,11 +363,6 @@ def rosmsg_cmd_md5(mode, full):
         if not matches:
             print("No messages matching the name [%s]"%arg, file=sys.stderr)
                 
-def rosmsg_cmd_users(mode, full):
-    parser = OptionParser(usage="usage: ros%s users <%s>"%(mode[1:], full))
-    options, arg = _stdin_arg(parser, full)
-    rosmsg_users(mode, arg)
-    
 def rosmsg_cmd_package(mode, full):
     parser = OptionParser(usage="usage: ros%s package <package>"%mode[1:])
     parser.add_option("-s",
@@ -501,7 +392,6 @@ def fullusage(cmd):
     """
     return """Commands:
 \t%(cmd)s show\tShow message description
-\t%(cmd)s users\tFind files that use message
 \t%(cmd)s md5\tDisplay message md5sum
 \t%(cmd)s package\tList messages in a package
 \t%(cmd)s packages\tList packages that contain messages
@@ -529,9 +419,7 @@ def rosmsgmain(mode=MODE_MSG):
             sys.exit(0)
 
         command = sys.argv[1]
-        if command == 'users':
-            rosmsg_cmd_users(ext, full)
-        elif command == 'show':
+        if command == 'show':
             rosmsg_cmd_show(ext, full)
         elif command == 'package':
             rosmsg_cmd_package(ext, full)

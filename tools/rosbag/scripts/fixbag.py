@@ -31,22 +31,24 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import print_function
+
 import sys
 import rosbag.migration
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
-        print 'usage: fixbag.py <inbag> <outbag> [rulefile1, rulefile2, ...]'
+        print('usage: fixbag.py <inbag> <outbag> [rulefile1, rulefile2, ...]')
         exit(2)
 
     if sys.argv[2].split('.')[-1] == 'bmr':
-        print >> sys.stderr, 'Second argument should be a bag, not a rule file.'
+        print('Second argument should be a bag, not a rule file.', file=sys.stderr)
         exit(2)
 
     mm = rosbag.migration.MessageMigrator(sys.argv[3:])
     if not rosbag.migration.fixbag(mm, sys.argv[1], sys.argv[2]):
-        print 'Bag could not be migrated.'
+        print('Bag could not be migrated.')
         exit(1)
 
-    print 'Bag migrated successfully.'
+    print('Bag migrated successfully.')
     exit(0)

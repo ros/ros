@@ -31,6 +31,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import print_function
+
 import rospy
 import rosbag
 
@@ -41,7 +43,7 @@ def sortbags(inbag, outbag):
         schedule = [(t, i) for (topic, msg, t) in enumerate(rosbag.Bag(inbag).read_messages(raw=True))]
 
         schedule = [i for (t, i) in sorted(schedule)]
-        print schedule
+        print(schedule)
     
         stage = {}
         for i, (topic, msg, t) in enumerate(rosbag.Bag(inbag).read_messages(raw=True)):
@@ -62,4 +64,4 @@ if __name__ == '__main__':
     if len(sys.argv) == 3:
         sortbags(sys.argv[1], sys.argv[2])
     else:
-        print "usage: bagsort.py <inbag> <outbag>"
+        print("usage: bagsort.py <inbag> <outbag>")

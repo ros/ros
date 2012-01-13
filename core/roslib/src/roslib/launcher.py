@@ -93,7 +93,7 @@ def _generate_python_path(pkg, rospack):
     m = rospack.get_manifest(pkg)
     if m.is_catkin:
         _bootstrapped.append(pkg)
-        return
+        return []
 
     packages = get_depends(pkg, rospack) 
     packages.append(pkg)

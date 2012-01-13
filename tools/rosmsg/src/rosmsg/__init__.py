@@ -50,12 +50,6 @@ import genmsg
 
 import roslib
 
-try:
-    # TODO: remove after ROS 1.7 is released
-    from roslib.genpy_electric import _generate_dynamic_specs
-except:
-    from roslib.genpy import _generate_dynamic_specs
-
 import roslib.gentools
 import roslib.message
 import roslib.msgs
@@ -185,6 +179,26 @@ def rosmsg_users(mode, type_):
         if f not in correct_dependencies:
             print(f)
 
+from cStringIO import StringIO
+def spec_to_str(msg_context, spec, buff=None, indent=''):
+    """
+    Convert spec into a string representation. Helper routine for MsgSpec.
+    :param indent: internal use only, ``str``
+    :param buff: internal use only, ``StringIO``
+    :returns: string representation of spec, ``str``
+    """
+    if buff is None:
+        buff = StringIO()
+    for c in spec.constants:
+        buff.write("%s%s %s=%s\n"%(indent, c.type, c.name, c.val_text))
+    for type_, name in zip(spec.types, spec.names):
+        buff.write("%s%s %s\n"%(indent, type_, name))
+        base_type = genmsg.msgs.bare_msg_type(type_)
+        if not base_type in genmsg.msgs.BUILTIN_TYPES:
+            subspec = msg_context.get_registered(base_type)
+            spec_to_str(msg_context, subspec, buff, indent + '  ')
+    return buff.getvalue()
+
 def get_srv_text(type_, raw=False):
     """
     Get .srv file for type_ as text
@@ -193,60 +207,51 @@ def get_srv_text(type_, raw=False):
     :returns: text of .srv file, ``str``
     @raise ROSMsgException: if type_ is unknown
     """
-    package, base_type = genmsg.package_resource_name(type_)
-    roslib.msgs.load_package_dependencies(package, load_recursive=True)
-    roslib.msgs.load_package(package)
-    f = roslib.srvs.srv_file(package, base_type)
-    if not os.path.isfile(f):
-        raise ROSMsgException("Unknown srv type: %s"%type_)
-    name, spec = roslib.srvs.load_from_file(f, package)
+    rospack = rospkg.RosPack()
+    srv_search_path = {}
+    msg_search_path = {}
+    for p in rospack.list():
+        path = rospack.get_path(p)
+        msg_search_path[p] = os.path.join(path, 'msg')
+        srv_search_path[p] = os.path.join(path, 'srv')
+        
+    #TODO: cache context somewhere
+    context = genmsg.MsgContext.create_default()
+    try:
+        spec = genmsg.load_srv_by_type(context, type_, srv_search_path)
+        genmsg.load_depends(context, spec, msg_search_path)
+    except Exception as e:
+        raise ROSMsgException("Unknown srv type [%s]: %s"%(type_, e))
+    
     if raw:
         return spec.text
     else:
-        return str(spec.request)+'---\n'+str(spec.response)
+        return spec_to_str(context, spec.request)+'---\n'+spec_to_str(context, spec.response)
 
-def get_msg_text(type_, raw=False, full_text=None):
+def get_msg_text(type_, raw=False):
     """
     Get .msg file for type_ as text
     :param type_: message type, ``str``
     :param raw: if True, include comments and whitespace (default False), ``bool``
-    :param full_text: if not None, contains full text of message definition, ``str``
     :returns: text of .msg file, ``str``
     :raises :exc:`ROSMsgException` If type_ is unknown
     """
-    package, base_type = genmsg.package_resource_name(type_)
+    rospack = rospkg.RosPack()
+    search_path = {}
+    for p in rospack.list():
+        search_path[p] = os.path.join(rospack.get_path(p), 'msg')
+
+    context = genmsg.MsgContext.create_default()
+    try:
+        spec = genmsg.load_msg_by_type(context, type_, search_path)
+        genmsg.load_depends(context, spec, search_path)
+    except Exception as e:
+        raise ROSMsgException("Unable to load msg [%s]: %s"%(type_, e))
     
-    if not full_text:
-        roslib.msgs.load_package_dependencies(package, load_recursive=True)
-        roslib.msgs.load_package(package)
-        try:
-            spec = roslib.msgs.get_registered(type_)
-        except KeyError:
-            raise ROSMsgException("Unknown msg type: %s"%type_)        
-
-        if raw:
-            text = spec.text
-        else:
-            text = str(spec)
+    if raw:
+        return spec.text
     else:
-        splits = full_text.split('\n'+'='*80+'\n')
-        core_msg = splits[0]
-        deps_msgs = splits[1:]
-
-        specs = { type_: roslib.msgs.load_from_string(core_msg, package) }
-        for dep_msg in deps_msgs:
-            dep_type, dep_spec = _generate_dynamic_specs(specs, dep_msg)
-            specs[dep_type] = dep_spec
-        
-        for t, spec in specs.iteritems():
-            roslib.msgs.register(t, spec)       
-        spec = specs[type_]
-        if raw:
-            text = spec.text
-        else:
-            text = str(spec)
-
-    return text
+        return spec_to_str(context, spec)
 
 def rosmsg_debug(mode, type_, raw=False):
     """
@@ -356,9 +361,12 @@ def list_packages(mode=MODE_MSG):
     """
     return [p for p in iterate_packages(mode)]
 
-## iterator for all packages that contain a message matching base_type
-## :param base_type str: message base type to match, e.g. 'String' would match std_msgs/String
 def rosmsg_search(mode, base_type):
+    """
+    Iterator for all packages that contain a message matching base_type
+
+    :param base_type: message base type to match, e.g. 'String' would match std_msgs/String, ``str``
+    """
     if mode == MODE_MSG:
         res_file = roslib.msgs.msg_file
     else:

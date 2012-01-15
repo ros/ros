@@ -527,4 +527,5 @@ def find_resource(pkg, resource_name, filter_fn=None, rospack=None, catkin_packa
     if pkg in catkin_packages_cache:
         matches.extend(_find_resource(catkin_packages_cache[pkg], resource_name, filter_fn=filter_fn))
     matches.extend(_find_resource(pkg_path, resource_name, filter_fn=filter_fn))
-    return matches
+    # Uniquify the results, in case we found the same file twice
+    return list(set(matches))

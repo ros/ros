@@ -58,9 +58,9 @@ class RoslibPackagesTest(unittest.TestCase):
     import roslib.packages
     d = roslib.packages.get_pkg_dir('roslib')
     p = os.path.join(d, 'test', 'fake_node.py')
-    self.assertEquals(p, roslib.packages.find_node('roslib', 'fake_node.py'))
+    self.assertEquals([p], roslib.packages.find_node('roslib', 'fake_node.py'))
     
-    self.assertEquals(None, roslib.packages.find_node('roslib', 'not_a_node'))
+    self.assertEquals([], roslib.packages.find_node('roslib', 'not_a_node'))
     
   def test_get_pkg_dir(self):
     import roslib.packages

@@ -1,0 +1,11 @@
+<launch>
+  <test time-limit="120" test-name="r02random_play" pkg="test_rosbag" type="random_play.py" args="54321 10 10.0 1.0 0" retry="3">
+    <env name="PYTHONPATH" value="@PROJECT_SOURCE_DIR@/src:$(env PYTHONPATH)"/>
+  </test>
+  <test time-limit="120" test-name="r03random_play" pkg="test_rosbag" type="random_play.py" args="54321 10 10.0 0.5 0" retry="3">
+    <env name="PYTHONPATH" value="@PROJECT_SOURCE_DIR@/src:$(env PYTHONPATH)"/>
+  </test>
+  <test time-limit="120" test-name="r04random_play" pkg="test_rosbag" type="random_play.py" args="54321 10 10.0 2.0 0" retry="3">
+    <env name="PYTHONPATH" value="@PROJECT_SOURCE_DIR@/src:$(env PYTHONPATH)"/>
+  </test>
+</launch>

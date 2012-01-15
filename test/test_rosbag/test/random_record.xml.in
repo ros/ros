@@ -1,0 +1,5 @@
+<launch>
+  <test time-limit="100" test-name="random_record_01" pkg="test_rosbag" type="random_record.py" args="54321 10 10.0">
+    <env name="PYTHONPATH" value="@PROJECT_SOURCE_DIR@/src:$(env PYTHONPATH)"/>
+  </test>
+</launch>

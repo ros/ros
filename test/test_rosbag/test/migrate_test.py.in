@@ -44,12 +44,13 @@ class MigrationTest(unittest.TestCase):
 
   def setUp(self):
     self.pkg_dir = rospkg.RosPack().get_path('test_rosbag')
+    self.pkg_binary_dir = '@PROJECT_BINARY_DIR@'
 
   def test_unmigrated(self):
     tmp_rule_files = ['migrated_explicit_rules.bmr', 'migrated_mixed_rules.bmr', 'migrated_addsub_rules.bmr']
     rule_files = ["%s/test/%s"%(self.pkg_dir,r) for r in tmp_rule_files]
 
-    inbag = "%s/test/unmigrated_gen1.bag"%(self.pkg_dir,)
+    inbag = "%s/test/unmigrated_gen1.bag"%(self.pkg_binary_dir,)
 
     mm = rosbag.migration.MessageMigrator(rule_files,False)
     res = rosbag.migration.checkbag(mm, inbag)
@@ -64,7 +65,7 @@ class MigrationTest(unittest.TestCase):
     tmp_rule_files = ['migrated_explicit_rules.bmr', 'migrated_mixed_rules.bmr', 'migrated_addsub_rules.bmr']
     rule_files = ["%s/test/%s"%(self.pkg_dir,r) for r in tmp_rule_files]
 
-    inbag = "%s/test/subunmigrated_gen1.bag"%(self.pkg_dir,)
+    inbag = "%s/test/subunmigrated_gen1.bag"%(self.pkg_binary_dir,)
 
     mm = rosbag.migration.MessageMigrator(rule_files, False)
     res = rosbag.migration.checkbag(mm, inbag)
@@ -78,7 +79,7 @@ class MigrationTest(unittest.TestCase):
     tmp_rule_files = ['migrated_explicit_rules.bmr', 'migrated_mixed_rules.bmr', 'migrated_addsub_rules.bmr', 'partially_migrated_rules.bmr']
     rule_files = ["%s/test/%s"%(self.pkg_dir,r) for r in tmp_rule_files]
 
-    inbag = "%s/test/partially_migrated_gen%d.bag"%(self.pkg_dir,N)
+    inbag = "%s/test/partially_migrated_gen%d.bag"%(self.pkg_binary_dir,N)
 
     mm = rosbag.migration.MessageMigrator(rule_files, False)
     res = rosbag.migration.checkbag(mm, inbag)
@@ -103,8 +104,8 @@ class MigrationTest(unittest.TestCase):
     tmp_rule_files = ['migrated_explicit_rules.bmr', 'migrated_mixed_rules.bmr', 'migrated_addsub_rules.bmr']
     rule_files = ["%s/test/%s"%(self.pkg_dir,r) for r in tmp_rule_files]
 
-    inbag = "%s/test/migrated_addsub_gen1.bag"%(self.pkg_dir,)
-    outbag = "%s/test/migrated_addsub_gen1.fixed.bag"%(self.pkg_dir,)
+    inbag = "%s/test/migrated_addsub_gen1.bag"%(self.pkg_binary_dir,)
+    outbag = "%s/test/migrated_addsub_gen1.fixed.bag"%(self.pkg_binary_dir,)
 
     mm = rosbag.migration.MessageMigrator(rule_files, False)
     res = rosbag.migration.checkbag(mm, inbag)
@@ -125,8 +126,8 @@ class MigrationTest(unittest.TestCase):
     tmp_rule_files = ['migrated_explicit_rules.bmr', 'migrated_mixed_rules.bmr', 'migrated_addsub_rules.bmr']
     rule_files = ["%s/test/%s"%(self.pkg_dir,r) for r in tmp_rule_files]
 
-    inbag = "%s/test/migrated_explicit_gen%d.bag"%(self.pkg_dir,N)
-    outbag = "%s/test/migrated_explicit_gen%d.fixed.bag"%(self.pkg_dir,N)
+    inbag = "%s/test/migrated_explicit_gen%d.bag"%(self.pkg_binary_dir,N)
+    outbag = "%s/test/migrated_explicit_gen%d.fixed.bag"%(self.pkg_binary_dir,N)
 
     mm = rosbag.migration.MessageMigrator(rule_files, False)
     res = rosbag.migration.checkbag(mm, inbag)
@@ -158,8 +159,8 @@ class MigrationTest(unittest.TestCase):
     tmp_rule_files = ['migrated_explicit_rules.bmr', 'migrated_mixed_rules.bmr', 'migrated_addsub_rules.bmr']
     rule_files = ["%s/test/%s"%(self.pkg_dir,r) for r in tmp_rule_files]
 
-    inbag = "%s/test/migrated_implicit_gen%d.bag"%(self.pkg_dir,N)
-    outbag = "%s/test/migrated_implicit_gen%d.fixed.bag"%(self.pkg_dir,N)
+    inbag = "%s/test/migrated_implicit_gen%d.bag"%(self.pkg_binary_dir,N)
+    outbag = "%s/test/migrated_implicit_gen%d.fixed.bag"%(self.pkg_binary_dir,N)
 
     mm = rosbag.migration.MessageMigrator(rule_files, False)
     res = rosbag.migration.checkbag(mm, inbag
@@ -196,8 +197,8 @@ class MigrationTest(unittest.TestCase):
     tmp_rule_files = ['migrated_explicit_rules.bmr', 'migrated_mixed_rules.bmr', 'migrated_addsub_rules.bmr']
     rule_files = ["%s/test/%s"%(self.pkg_dir,r) for r in tmp_rule_files]
 
-    inbag = "%s/test/migrated_mixed_gen%d.bag"%(self.pkg_dir,N)
-    outbag = "%s/test/migrated_mixed_gen%d.fixed.bag"%(self.pkg_dir,N)
+    inbag = "%s/test/migrated_mixed_gen%d.bag"%(self.pkg_binary_dir,N)
+    outbag = "%s/test/migrated_mixed_gen%d.fixed.bag"%(self.pkg_binary_dir,N)
 
     mm = rosbag.migration.MessageMigrator(rule_files, False)
     res = rosbag.migration.checkbag(mm, inbag)
@@ -235,8 +236,8 @@ class MigrationTest(unittest.TestCase):
     tmp_rule_files = ['migrated_explicit_rules.bmr', 'migrated_mixed_rules.bmr', 'migrated_addsub_rules.bmr', 'renamed_rules.bmr']
     rule_files = ["%s/test/%s"%(self.pkg_dir,r) for r in tmp_rule_files]
 
-    inbag = "%s/test/renamed_gen%d.bag"%(self.pkg_dir,N)
-    outbag = "%s/test/renamed_gen%d.fixed.bag"%(self.pkg_dir,N)
+    inbag = "%s/test/renamed_gen%d.bag"%(self.pkg_binary_dir,N)
+    outbag = "%s/test/renamed_gen%d.fixed.bag"%(self.pkg_binary_dir,N)
 
     mm = rosbag.migration.MessageMigrator(rule_files, False)
     res = rosbag.migration.checkbag(mm, inbag
@@ -269,8 +270,8 @@ class MigrationTest(unittest.TestCase):
     tmp_rule_files = ['migrated_explicit_rules.bmr', 'migrated_mixed_rules.bmr', 'migrated_addsub_rules.bmr', 'renamed_rules.bmr', 'simple_migrated_rules.bmr', 'converged_rules.bmr']
     rule_files = ["%s/test/%s"%(self.pkg_dir,r) for r in tmp_rule_files]
 
-    inbag = "%s/test/converged_gen%d.bag"%(self.pkg_dir,N)
-    outbag = "%s/test/converged_gen%d.fixed.bag"%(self.pkg_dir,N)
+    inbag = "%s/test/converged_gen%d.bag"%(self.pkg_binary_dir,N)
+    outbag = "%s/test/converged_gen%d.fixed.bag"%(self.pkg_binary_dir,N)
 
     mm = rosbag.migration.MessageMigrator(rule_files, False)
     res = rosbag.migration.checkbag(mm, inbag)
@@ -309,8 +310,8 @@ class MigrationTest(unittest.TestCase):
     tmp_rule_files = ['migrated_explicit_rules.bmr', 'migrated_mixed_rules.bmr', 'migrated_addsub_rules.bmr', 'renamed_rules.bmr', 'simple_migrated_rules.bmr', 'converged_rules.bmr']
     rule_files = ["%s/test/%s"%(self.pkg_dir,r) for r in tmp_rule_files]
 
-    inbag = "%s/test/convergent_gen%d.bag"%(self.pkg_dir,N)
-    outbag = "%s/test/convergent_gen%d.fixed.bag"%(self.pkg_dir,N)
+    inbag = "%s/test/convergent_gen%d.bag"%(self.pkg_binary_dir,N)
+    outbag = "%s/test/convergent_gen%d.fixed.bag"%(self.pkg_binary_dir,N)
 
     mm = rosbag.migration.MessageMigrator(rule_files, False)
     res = rosbag.migration.checkbag(mm, inbag)
@@ -348,8 +349,8 @@ class MigrationTest(unittest.TestCase):
     tmp_rule_files = []
     rule_files = ["%s/test/%s"%(self.pkg_dir,r) for r in tmp_rule_files]
 
-    inbag = "%s/test/constants_gen%d.bag"%(self.pkg_dir,N)
-    outbag = "%s/test/constants_gen%d.fixed.bag"%(self.pkg_dir,N)
+    inbag = "%s/test/constants_gen%d.bag"%(self.pkg_binary_dir,N)
+    outbag = "%s/test/constants_gen%d.fixed.bag"%(self.pkg_binary_dir,N)
 
     mm = rosbag.migration.MessageMigrator(rule_files, False)
     res = rosbag.migration.checkbag(mm, inbag)
@@ -364,8 +365,8 @@ class MigrationTest(unittest.TestCase):
     tmp_rule_files = ['constants.bmr']
     rule_files = ["%s/test/%s"%(self.pkg_dir,r) for r in tmp_rule_files]
 
-    inbag = "%s/test/constants_gen%d.bag"%(self.pkg_dir,N)
-    outbag = "%s/test/constants_gen%d.fixed.bag"%(self.pkg_dir,N)
+    inbag = "%s/test/constants_gen%d.bag"%(self.pkg_binary_dir,N)
+    outbag = "%s/test/constants_gen%d.fixed.bag"%(self.pkg_binary_dir,N)
 
     mm = rosbag.migration.MessageMigrator(rule_files, False)
     res = rosbag.migration.checkbag(mm, inbag)

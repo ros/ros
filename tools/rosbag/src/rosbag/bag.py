@@ -59,6 +59,7 @@ import genpy
 import genpy.dynamic
 import genpy.message
 
+import roslib # still needed for roslib.names.canonicalize_name()
 import rospy
 
 class ROSBagException(Exception):

@@ -50,6 +50,8 @@ class ConnectionCount(unittest.TestCase):
            '-y', '-k', 'topics']
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out,err = p.communicate()
+    self.assertEqual(p.returncode, 0, 'Failed to check bag\ncmd=%s\nstdout=%s\nstderr=%s'%(cmd,out,err))
+
     conns = False
     for l in out.split('\n'):
         f = l.strip().split(': ')

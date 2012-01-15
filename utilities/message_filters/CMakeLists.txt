@@ -4,7 +4,7 @@ catkin_project(${PROJECT_NAME}
   LIBRARIES message_filters
 )
 find_package(Boost COMPONENTS signals thread)
-find_package(ROS COMPONENTS roscpp)
+find_package(ROS COMPONENTS roscpp xmlrpcpp rosconsole)
 
 include_directories(include ${ROS_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 

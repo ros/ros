@@ -1,7 +1,7 @@
 project(perf_roscpp)
 catkin_project(perf_roscpp)
 find_package(Boost COMPONENTS thread)
-find_package(ROS COMPONENTS roscpp)
+find_package(ROS COMPONENTS roscpp xmlrpcpp rosconsole)
 include_directories(include ${Boost_INCLUDE_DIRS} ${ROS_INCLUDE_DIRS})
 
 add_message_files(

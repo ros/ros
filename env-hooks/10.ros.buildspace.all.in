@@ -5,6 +5,7 @@
 export ROS_ROOT=@CMAKE_SOURCE_DIR@/ros
 export ROS_TEST_RESULTS_DIR=@CMAKE_BINARY_DIR@/test_results
 export ROS_PACKAGE_PATH=@CMAKE_SOURCE_DIR@:$ROS_PACKAGE_PATH
+export ROS_DISTRO=fuerte
 export PATH=@CMAKE_SOURCE_DIR@/ros/bin:$PATH
 if [ ! "$ROS_MASTER_URI" ] ; then
     export ROS_MASTER_URI=http://localhost:11311

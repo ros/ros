@@ -7,4 +7,5 @@ export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:@CMAKE_INSTALL_PREFIX@/share
 if [ ! "$ROS_MASTER_URI" ] ; then
     export ROS_MASTER_URI=http://localhost:11311
 fi
-export ROS_ETC=@CMAKE_INSTALL_PREFIX@/etc/ros
+export ROS_ETC_DIR=@CMAKE_INSTALL_PREFIX@/etc/ros
+export ROS_DISTRO=fuerte

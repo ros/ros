@@ -47,7 +47,8 @@ class TestEnv(unittest.TestCase):
             self.assertEquals(None, os.environ.get('TEST_ENV_SUBSTITUTION', None))
         else:
             self.assertEquals('test env', os.environ.get('TEST_ENV', None))
-            path1 = os.path.join(rospkg.get_path('roslaunch'), 'src')
+            rospack = rospkg.RosPack()
+            path1 = os.path.join(rospack.get_path('roslaunch'), 'src')
             path2 = os.environ.get('TEST_ENV_SUBSTITUTION', None)
             self.assertEquals(os.path.abspath(path1), os.path.abspath(path2))
         

@@ -63,12 +63,6 @@ class RoslibStacksTest(unittest.TestCase):
         l = list_stacks()
         self.assert_('ros' in l)
 
-        # make sure it is equivalent to rosstack list
-        from roslib.rospack import rosstackexec
-        l2 = [x for x in rosstackexec(['list']).split('\n') if x]
-        l2 = [x.split()[0] for x in l2]
-        self.assertEquals(set(l), set(l2), set(l) ^ set(l2))
-
         # test with env
         test_dir = os.path.join(roslib.packages.get_pkg_dir('roslib'), 'test', 'stack_tests', 's1')
         env = os.environ.copy()

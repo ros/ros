@@ -67,6 +67,6 @@ install(PROGRAMS
 # install all manifests
 install_matching_to_share(manifest.xml)
 
-install(FILES stack.xml
+install(FILES stack.xml rosdep.yaml
         DESTINATION share/ros_comm)
 

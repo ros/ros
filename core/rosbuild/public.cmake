@@ -907,7 +907,10 @@ macro(rosbuild_link_boost target)
     endif(_first)
   endforeach(arg)
   set(_sysroot "--sysroot=${CMAKE_FIND_ROOT_PATH}") 
-  execute_process(COMMAND "rosboost-cfg" ${_sysroot} "--libs" ${_libs}
+  # We ask for --lflags, as recommended in #3773.  This means that we might
+  # pass non-library arguments to target_link_libraries() below, but CMake
+  # doesn't seem to mind.
+  execute_process(COMMAND "rosboost-cfg" ${_sysroot} "--lflags" ${_libs}
                   OUTPUT_VARIABLE BOOST_LIBS
 		  ERROR_VARIABLE _boostcfg_error
                   RESULT_VARIABLE _boostcfg_failed

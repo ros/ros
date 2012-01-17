@@ -32,6 +32,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cerrno>
+#include <climits>
 #include <string>
 #include <vector>
 #include <map>

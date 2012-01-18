@@ -1,7 +1,7 @@
 <stack>
   <description brief="ros_comm">ROS communications-related packages, including core client libraries (roscpp, rospy, roslisp) and graph introspection tools (rostopic, rosnode, rosservice, rosparam).</description>
   <author>Maintained by Ken Conley</author>
-  <version>1.7.0</version>
+  <version>1.7.1</version>
   <license>BSD,LGPL</license>  
   <review status="doc reviewed" notes="REP 100"/>
   <url>http://ros.org/wiki/ros_comm</url>

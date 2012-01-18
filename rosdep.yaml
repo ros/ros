@@ -377,3 +377,7 @@ libtool:
   arch: libtool
   gentoo: sys-devel/libtool
   freebsd: libtool
+nose:
+  ubuntu:
+    apt:
+      packages: [python-nose]

@@ -1,6 +1,6 @@
 Catkin-ProjectName: ros
 Version: 1.7.2
-Depends: catkin, rospack, rospkg, gtest, bzip2, python, boost
+Depends: catkin, rospack, rospkg, gtest, bzip2, python, boost, nose
 Description: ROS packaging system
 Author: Eric Berger, Ken Conley, Josh Faust, Tully Foote, Brian Gerkey, Jeremy Leibs, Morgan Quigley, Rob Wheeler, et al
 Maintainer: Ken Conley <kwc@willowgarage.com>

@@ -7,4 +7,4 @@ Maintainer: Ken Conley <kwc@willowgarage.com>
 Homepage: http://www.ros.org
 
 Catkin-CopyrightType: willowgarage
-Catkin-DebRulesType: +rules.em
+Catkin-DebRulesType: cmake

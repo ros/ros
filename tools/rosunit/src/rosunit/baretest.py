@@ -47,8 +47,6 @@ import traceback
 
 import rospkg
 
-import roslib.packages
-
 from .core import xml_results_file, rostest_name_from_path, create_xml_runner, printlog, printerrlog, printlog_bold
 
 from . import pmon

@@ -1,5 +1,5 @@
 project(roslib)
-find_package(ROS COMPONENTS catkin rospack)# rosunit)
+find_package(ROS COMPONENTS catkin rospack rosunit)
 
 include_directories(include ${Boost_INCLUDE_DIRS} ${ROS_INCLUDE_DIRS})
 
@@ -36,9 +36,8 @@ catkin_project(roslib
 
 #integration tests
 
-message("TODO: move roslib's gtests somewhere else, because roslib can't depend on rosunit")
-#add_gtest(${PROJECT_NAME}-utest test/utest.cpp)
-#target_link_libraries(${PROJECT_NAME}-utest roslib ${Boost_LIBRARIES} ${ROS_LIBRARIES})
-#
-#add_gtest(${PROJECT_NAME}-test_package test/package.cpp)
-#target_link_libraries(${PROJECT_NAME}-test_package roslib ${ROS_LIBRARIES})
+add_gtest(${PROJECT_NAME}-utest test/utest.cpp)
+target_link_libraries(${PROJECT_NAME}-utest roslib ${Boost_LIBRARIES} ${ROS_LIBRARIES})
+
+add_gtest(${PROJECT_NAME}-test_package test/package.cpp)
+target_link_libraries(${PROJECT_NAME}-test_package roslib ${ROS_LIBRARIES})

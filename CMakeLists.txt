@@ -14,9 +14,9 @@ catkin_export_python()
 
 foreach(subdir
     env-hooks
+    tools/rosunit
     core/roslib
     tools/rosbash
-    tools/rosunit
     )
   add_subdirectory(${subdir})
 endforeach()

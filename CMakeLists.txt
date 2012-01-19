@@ -3,6 +3,10 @@ project(ros)
 find_package(catkin)
 find_package(Boost COMPONENTS thread)
 
+# call catkin_stack() so we can configure stack.xml
+catkin_stack()
+configure_file(stack.xml.in ${CMAKE_CURRENT_SOURCE_DIR}/stack.xml)
+
 # Must call catkin_export_python() early, to ensure that things like
 # rosunit are symlinked into build/bin, and can be found by things like
 # add_gtest(), which is called from within lower-level CMakeLists.txts.

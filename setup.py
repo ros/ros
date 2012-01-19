@@ -5,8 +5,16 @@ from setuptools import setup
 import sys
 sys.path.insert(0, 'src')
 
+version = '0.0.0'
+try:
+    import yaml
+    d = yaml.load(open('stack.yaml'))
+    version = d['Version']
+except:
+    pass
+
 setup(name='roslib',
-      version= '1.7.1',
+      version=version,
       packages=['ros', 'roslib', 'rosunit', 'rosmake', 'rosclean', 'roscreate', 'rosboost_cfg'],
       package_dir = {'ros':'core/roslib/src/ros',
                      'roslib':'core/roslib/src/roslib',

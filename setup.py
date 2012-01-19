@@ -9,7 +9,7 @@ sys.path.insert(0, 'src')
 version = '0.0.0'
 try:
     import yaml
-    d = yaml.load(open(os.path.join(os.path.dirname(__file__), 'stack.yaml')))
+    d = yaml.load(open('stack.yaml'))
     version = d['Version']
 except:
     pass

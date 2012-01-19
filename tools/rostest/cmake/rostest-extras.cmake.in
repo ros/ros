@@ -1,0 +1,45 @@
+# We need append_test_to_cache() from rosunit-extras.cmake
+find_package(ROS COMPONENTS rosunit)
+
+message("TODO: implement rosbuild_add_roslaunch_check.")
+
+function(add_rostest file)
+  # Check that we can find rostest
+  find_program(rostest_exe rostest PATHS ${CMAKE_BINARY_DIR}/bin)
+  if(NOT rostest_exe)
+    message(FATAL_ERROR "Can't find rostest executable")
+  endif()
+
+  parse_arguments(_rosunit "WORKING_DIRECTORY" "" ${ARGN})
+  if(_rosunit_WORKING_DIRECTORY)
+    set(_chdir_prefix "bash -c \"cd ${_rosunit_WORKING_DIRECTORY} && ")
+    set(_chdir_suffix "\"")
+  endif()
+
+  # Check that the file exists, #1621
+  set(_file_name _file_name-NOTFOUND)
+  if(IS_ABSOLUTE ${file})
+    set(_file_name ${file})
+  else()
+    find_file(_file_name ${file}
+              PATHS ${CMAKE_CURRENT_SOURCE_DIR}
+              NO_DEFAULT_PATH
+              NO_CMAKE_FIND_ROOT_PATH)  # for cross-compilation.  thanks jeremy.
+    if(NOT _file_name)
+      message(FATAL_ERROR "Can't find rostest file \"${file}\"")
+    endif()
+  endif()
+
+  append_test_to_cache(catkin-tests "${_chdir_prefix}${rostest_exe} --pkgdir=${PROJECT_SOURCE_DIR} --package=${PROJECT_NAME} ${_file_name}${_chdir_suffix}")
+endfunction()
+
+# Function to download data on the tests target
+function(download_test_data _url _filename _md5)
+  # Create a legal target name, in case the target name has slashes in it
+  string(REPLACE "/" "_" _testname download_data_${_filename})
+  add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/${_filename}
+                     COMMAND ${catkin_EXTRAS_DIR}/test/download_checkmd5.py ${_url} ${PROJECT_BINARY_DIR}/${_filename} ${_md5}
+                     VERBATIM)
+  add_custom_target(${_testname} DEPENDS ${PROJECT_BINARY_DIR}/${_filename})
+  add_dependencies(tests ${_testname})
+endfunction()

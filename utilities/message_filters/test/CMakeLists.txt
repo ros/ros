@@ -1,3 +1,5 @@
+find_package(ROS COMPONENTS rosunit rostest)
+
 find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
 

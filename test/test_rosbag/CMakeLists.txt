@@ -1,5 +1,6 @@
 project(test_rosbag)
 catkin_project(test_rosbag)
+find_package(ROS COMPONENTS rosunit rostest)
 
 add_message_files(
   DIRECTORY msg_current

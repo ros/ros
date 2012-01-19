@@ -3,7 +3,7 @@ project(roscpp)
 find_package(ROS COMPONENTS
   catkin genmsg
   cpp_common rostime rosconsole roscpp_serialization
-  roscpp_traits std_msgs rosgraph_msgs xmlrpcpp
+  roscpp_traits std_msgs rosgraph_msgs xmlrpcpp rosunit
   )
 include_directories(${ROS_INCLUDE_DIRS})
 

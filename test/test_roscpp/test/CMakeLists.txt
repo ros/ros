@@ -1,3 +1,5 @@
+find_package(ROS COMPONENTS rostest)
+
 add_rostest(real_time_test.xml)
 add_rostest(sim_time_test.xml)
 

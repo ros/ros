@@ -1,7 +1,6 @@
 project(test_ros)
 
-find_package(std_msgs)
-find_package(rosgraph_msgs)
+find_package(ROS COMPONENTS std_msgs rosgraph_msgs rostest)
 
 add_message_files(DIRECTORY msg
   FILES

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 
 project(test_rosservice)
-find_package(catkin)
+find_package(ROS COMPONENTS catkin rosunit rostest)
 
 add_service_files(DIRECTORY srv
   FILES

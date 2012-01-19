@@ -15,7 +15,7 @@ IF(${CMAKE_SYSTEM} MATCHES "Darwin-11.*")
   ENDIF(EXISTS "/usr/bin/g++-4.2")
 ENDIF(${CMAKE_SYSTEM} MATCHES "Darwin-11.*")
 
-find_package(ROS COMPONENTS catkin cpp_common rostime)
+find_package(ROS COMPONENTS catkin cpp_common rostime rosunit)
 
 include_directories(${ROS_INCLUDE_DIRS})
 

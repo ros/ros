@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(ros_comm)
 find_package(ROS COMPONENTS catkin genmsg cpp_common rostime
-  roscpp_serialization roscpp_traits std_msgs
+  roscpp_serialization roscpp_traits std_msgs rosunit
   )
 
 # call catkin_stack() so we can configure stack.xml
@@ -13,6 +13,7 @@ configure_file(stack.xml.in ${CMAKE_CURRENT_SOURCE_DIR}/stack.xml @ONLY)
 catkin_export_python()
 
 foreach(subdir
+    tools/rostest
     messages/rosgraph_msgs
     messages/std_srvs
     utilities/xmlrpcpp

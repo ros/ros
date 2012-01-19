@@ -16,6 +16,7 @@ foreach(subdir
     env-hooks
     core/roslib
     tools/rosbash
+    tools/rosunit
     )
   add_subdirectory(${subdir})
 endforeach()
@@ -23,6 +24,7 @@ endforeach()
 # nosetests are declared here to make them visible to the build system
 # (e.g., for Jenkins to invoke) but keep them from polluting the pristine
 # Python packages.
+find_package(ROS COMPONENTS rosunit)
 add_nosetests(core/roslib/test)
 add_nosetests(tools/rosmake/test)
 add_nosetests(tools/rosunit/test)

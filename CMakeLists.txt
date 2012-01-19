@@ -4,6 +4,10 @@ find_package(ROS COMPONENTS catkin genmsg cpp_common rostime
   roscpp_serialization roscpp_traits std_msgs
   )
 
+# call catkin_stack() so we can configure stack.xml
+catkin_stack()
+configure_file(stack.xml.in ${CMAKE_CURRENT_SOURCE_DIR}/stack.xml @ONLY)
+
 # Must export python before recursing into subdirs, so that rostest is
 # linked into build/bin before anybody calls add_rostest().
 catkin_export_python()

@@ -2,11 +2,20 @@
 
 from setuptools import setup
 
+import os
 import sys
 sys.path.insert(0, 'src')
 
+version = '0.0.0'
+try:
+    import yaml
+    d = yaml.load(open(os.path.join(os.path.dirname(__file__), 'stack.yaml')))
+    version = d['Version']
+except:
+    pass
+
 setup(name='ros_comm',
-      version= '1.7.0',
+      version=version,
       packages=['rosbag',
                 'rosgraph',
                 'rosgraph.impl',

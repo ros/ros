@@ -113,7 +113,8 @@ install(FILES
 catkin_project(roscpp
   LIBRARIES roscpp
   INCLUDE_DIRS include
-  DEPENDS roscpp_traits roscpp_serialization cpp_common std_msgs rosgraph_msgs #EAR are these needed?  doesn't the stack.yaml declare these?
+  DEPENDS cpp_common rostime rosconsole roscpp_serialization
+          roscpp_traits std_msgs rosgraph_msgs xmlrpcpp
   )
 
 add_gtest(${PROJECT_NAME}-test_version test/test_version.cpp)

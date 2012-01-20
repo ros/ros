@@ -2,6 +2,7 @@ project(message_filters)
 catkin_project(${PROJECT_NAME}
   INCLUDE_DIRS include
   LIBRARIES message_filters
+  DEPENDS roscpp xmlrpcpp rosconsole
 )
 find_package(Boost COMPONENTS signals thread)
 find_package(ROS COMPONENTS roscpp xmlrpcpp rosconsole)

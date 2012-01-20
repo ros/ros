@@ -1,5 +1,5 @@
 macro(rosunit_initialize_tests)
-  if(PROJECT_SOURCE_DIR)
+  if(rosunit_SOURCE_DIR)
     find_program_required(ROSUNIT_EXE rosunit
                           PATHS @PROJECT_SOURCE_DIR@/scripts
                           NO_DEFAULT_PATH)
@@ -14,10 +14,10 @@ macro(rosunit_initialize_tests)
                           PATHS @CMAKE_INSTALL_PREFIX@/bin
                           NO_DEFAULT_PATH)
     find_program_required(ROSUNIT_SUMMARIZE_EXE summarize_results.py
-                          PATHS @CMAKE_INSTALL_PREFIX@/share/${PROJECT_NAME}/bin
+                          PATHS @CMAKE_INSTALL_PREFIX@/share/rosunit/bin
                           NO_DEFAULT_PATH)
     find_program_required(ROSUNIT_CHECK_TEST_RAN_EXE check_test_ran.py
-                          PATHS @CMAKE_INSTALL_PREFIX@/share/${PROJECT_NAME}/bin
+                          PATHS @CMAKE_INSTALL_PREFIX@/share/rosunit/bin
                           NO_DEFAULT_PATH)
   endif()
 endmacro()

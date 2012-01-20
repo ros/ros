@@ -2,7 +2,7 @@
 find_package(ROS COMPONENTS rosunit)
 
 function(add_rostest file)
-  if(PROJECT_SOURCE_DIR)
+  if(rostest_SOURCE_DIR)
     find_program_required(ROSTEST_EXE rostest 
                           PATHS @PROJECT_SOURCE_DIR@/scripts
                           NO_DEFAULT_PATH)

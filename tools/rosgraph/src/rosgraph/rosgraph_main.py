@@ -51,7 +51,7 @@ Usage:
 def rosgraph_main():
     if len(sys.argv) == 1:
         pass
-    elif len(sys.argv) == 2 and sys.argv[1] == '-h':
+    elif len(sys.argv) == 2 and (sys.argv[1] == '-h' or sys.argv[1] == '--help'):
         fullusage()
         return
     else:

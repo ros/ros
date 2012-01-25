@@ -47,20 +47,20 @@ add_nosetests(utilities/roswtf/test)
 # rospy
 install(FILES clients/rospy/rosbuild/rospy.cmake
         DESTINATION share/rospy/rosbuild)
-install(PROGRAMS 
+install(PROGRAMS
         clients/rospy/rosbuild/scripts/genmsg_py.py
         clients/rospy/rosbuild/scripts/gensrv_py.py
         DESTINATION share/rospy/rosbuild/scripts)
-install(FILES 
+install(FILES
         clients/rospy/rosbuild/scripts/genutil.py
         DESTINATION share/rospy/rosbuild/scripts)
 # roslisp
 install(FILES clients/roslisp/rosbuild/roslisp.cmake
         DESTINATION share/roslisp/rosbuild)
-install(PROGRAMS 
+install(PROGRAMS
         clients/roslisp/rosbuild/scripts/genmsg_lisp.py
         DESTINATION share/roslisp/rosbuild/scripts)
-install(PROGRAMS 
+install(PROGRAMS
         clients/cpp/roscpp/rosbuild/scripts/genmsg_cpp.py
         clients/cpp/roscpp/rosbuild/scripts/gensrv_cpp.py
         DESTINATION share/roscpp/rosbuild/scripts)
@@ -68,6 +68,6 @@ install(PROGRAMS
 # install all manifests
 install_matching_to_share(manifest.xml)
 
-install(FILES stack.xml rosdep.yaml
+install(FILES stack.xml rosdep.yaml stack.yaml
         DESTINATION share/ros_comm)
 

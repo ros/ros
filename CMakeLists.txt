@@ -39,7 +39,7 @@ install(DIRECTORY core/rosbuild/
   PATTERN ".svn" EXCLUDE
   PATTERN "bin" EXCLUDE
   )
-install(PROGRAMS 
+install(PROGRAMS
         core/rosbuild/bin/check_same_directories.py
         core/rosbuild/bin/download_checkmd5.py
         DESTINATION share/ros/core/rosbuild/bin)
@@ -66,7 +66,7 @@ install(FILES tools/rosboost_cfg/manifest.xml DESTINATION share/rosboost_cfg)
 install(FILES tools/rosemacs/manifest.xml DESTINATION share/rosemacs)
 
 # install python package-relative scripts
-install(PROGRAMS 
+install(PROGRAMS
         tools/rosunit/scripts/test_results_dir.py
         tools/rosunit/scripts/summarize_results.py
         tools/rosunit/scripts/rosunit
@@ -74,6 +74,9 @@ install(PROGRAMS
         tools/rosunit/scripts/clean_junit_xml.py
         tools/rosunit/scripts/check_test_ran.py
         DESTINATION share/rosunit/bin)
+
+install(FILES stack.yaml DESTINATION share/${PROJECT_NAME})
+
 install(DIRECTORY tools/roscreate/templates/
   DESTINATION share/roscreate/templates
   PATTERN ".svn" EXCLUDE

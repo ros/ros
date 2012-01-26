@@ -670,7 +670,7 @@ class RosMakeAll:
         packages = []
         #load packages from arguments
         if options.build_all:
-            packages = rospack.list()
+            packages = [x for x in rospack.list() if not self.rospack.get_manifest(x).is_catkin]
             self.printer.print_all( "Building all packages")
         else:      # no need to extend if all already selected   
             if options.buildtest:

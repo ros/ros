@@ -93,6 +93,7 @@ def generate_messages(rospack, package, msg_file, subdir):
     include_args = ['-I%s:%s'%(d, ipath) for d, ipath in search_path.items()]
     outdir = get_outdir(package, path, subdir)
     retcode = gen.generate_messages(package, [msg_file], outdir, search_path)
+    return retcode
     
 def generate_initpy(rospack, p, subdir):
     path = rospack.get_path(p)

@@ -260,8 +260,9 @@ static_roslaunch_warnings = [
     (roslaunch_config_errors, "Loading your launch files reported the following configuration errors:"),
     ]
 static_roslaunch_errors = [
-    (roslaunch_missing_deps_check, 
-     "Package %(pkg)s is missing roslaunch dependencies.\nPlease add the following tags to %(pkg)s/manifest.xml:"),
+    # Disabling, because we've removed package dependencies from manifests.
+    #(roslaunch_missing_deps_check, 
+    # "Package %(pkg)s is missing roslaunch dependencies.\nPlease add the following tags to %(pkg)s/manifest.xml:"),
     (roslaunch_missing_pkgs_check, 
      "Cannot find the following required packages:"),
     (roslaunch_missing_node_check, "Several nodes in your launch file could not be located. These are either typed incorrectly or need to be built:"),

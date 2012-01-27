@@ -35,7 +35,8 @@ add_rostest(pubsub_unadv.xml)
 # Call a service
 add_rostest(service_call.xml)
 
-add_rostest(service_deadlock.xml)
+# This test should be re-enabled after #2742 is fixed.
+#add_rostest(service_deadlock.xml)
 
 add_rostest(service_call_unadv.xml)
 

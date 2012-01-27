@@ -153,6 +153,10 @@ class TestRospyTcprosPubsub(unittest.TestCase):
     def test_TCPROSHandler_topic_connection_handler(self):
         
         import rospy
+        import rospy.core
+        # very ugly hack to handle bad design choice in rospy and bad isolation inside of nose
+        rospy.core._shutdown_flag  = False        
+        rospy.core._in_shutdown  = False        
         from rospy.impl.registration import Registration
         from rospy.impl.tcpros_pubsub import TCPROSHandler
         import test_rospy.msg

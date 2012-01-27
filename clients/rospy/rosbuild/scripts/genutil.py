@@ -83,14 +83,14 @@ def generate_messages(rospack, package, msg_file, subdir):
 
     path = rospack.get_path(package)
     search_path = {
-        package: os.path.join(path, subdir)
+        package: os.path.join(path, 'msg')
         }
     # std_msgs is implicit depend due to Header
-    search_path['std_msgs'] = os.path.join(rospack.get_path('std_msgs'), subdir)
+    search_path['std_msgs'] = os.path.join(rospack.get_path('std_msgs'), 'msg')
     for d in rospack.get_depends(package):
-        search_path[d] = os.path.join(rospack.get_path(d), subdir)
+        search_path[d] = os.path.join(rospack.get_path(d), 'msg')
 
-    include_args = ['-I%s:%s'%(d, ipath) for d, ipath in search_path.iteritems()]
+    include_args = ['-I%s:%s'%(d, ipath) for d, ipath in search_path.items()]
     outdir = get_outdir(package, path, subdir)
     retcode = gen.generate_messages(package, [msg_file], outdir, search_path)
     

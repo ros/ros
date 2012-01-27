@@ -51,7 +51,7 @@ SAMPLE1 = """/rosparam_load/dict1/head: 1
 /rosparam_load/dict1/knees: 3
 /rosparam_load/dict1/shoulders: 2
 /rosparam_load/dict1/toes: 4
-/rosparam_load/float1: 3.1415899999999999
+/rosparam_load/float1: 3.14159
 /rosparam_load/float2: 1234.5
 /rosparam_load/integer1: 1
 /rosparam_load/integer2: 2
@@ -75,7 +75,7 @@ SAMPLE2 = """/load_ns/subns/dict1/head: 1
 /load_ns/subns/dict1/knees: 3
 /load_ns/subns/dict1/shoulders: 2
 /load_ns/subns/dict1/toes: 4
-/load_ns/subns/float1: 3.1415899999999999
+/load_ns/subns/float1: 3.14159
 /load_ns/subns/float2: 1234.5
 /load_ns/subns/integer1: 1
 /load_ns/subns/integer2: 2

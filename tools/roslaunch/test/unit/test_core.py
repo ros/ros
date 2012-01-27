@@ -97,7 +97,6 @@ class TestCore(unittest.TestCase):
         m = Machine('name1', ros_root, rpp, '1.2.3.4')
         d = setup_env(n, m, master_uri)
         self.assertEquals(d['ROS_MASTER_URI'], master_uri)
-        self.assertEquals(d['ROS_ROOT'], ros_root)
         assert d['PYTHONPATH'] == os.environ['PYTHON_PATH']
 
         self.assertEquals(d['ROS_PACKAGE_PATH'], rpp)

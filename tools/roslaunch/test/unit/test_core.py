@@ -97,9 +97,7 @@ class TestCore(unittest.TestCase):
         m = Machine('name1', ros_root, rpp, '1.2.3.4')
         d = setup_env(n, m, master_uri)
         self.assertEquals(d['ROS_MASTER_URI'], master_uri)
-        assert d['PYTHONPATH'] == os.environ['PYTHON_PATH']
 
-        self.assertEquals(d['ROS_PACKAGE_PATH'], rpp)
         for k in ['ROS_IP', 'ROS_NAMESPACE']:
             if k in d:
                 self.fail('%s should not be set: %s'%(k,d[k]))
@@ -110,7 +108,6 @@ class TestCore(unittest.TestCase):
         val = os.environ['ROS_ROOT']
         self.assertEquals(d['ROS_ROOT'], val)
         assert os.environ['PYTHONPATH'] == d['PYTHONPATH']
-        self.failIf('ROS_PACKAGE_PATH' in d, 'ROS_PACKAGE_PATH should not be set: %s'%d)
 
         # test ROS_NAMESPACE
         # test stripping

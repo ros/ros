@@ -324,7 +324,11 @@ def read(test_file, test_name):
         return Result(test_name, 0, 0, 0)
 
     results = Result(test_name, 0, 0, 0)
-    for test_suite in test_suites:
+    for index, test_suite in enumerate(test_suites):
+        # skip test suites which are already covered by a parent test suite
+        if index > 0 and test_suite.parentNode in test_suites[0:index]:
+            continue
+
         #test_suite = test_suite[0]
         vals = [test_suite.getAttribute(attr) for attr in ['errors', 'failures', 'tests']]
         vals = [v or 0 for v in vals]

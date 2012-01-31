@@ -407,7 +407,7 @@ class XmlLoader(loader.Loader):
             raise XmlParseException(
                 "Invalid <node> tag: %s. \n\nNode xml is %s"%(e, tag.toxml()))
 
-    MACHINE_ATTRS = ('name', 'address', 'ros-root', 'ros-package-path', 'ros-ip', 'ros-host-name', 
+    MACHINE_ATTRS = ('name', 'address', 'env-loader', 
                      'ssh-port', 'user', 'password', 'default', 'timeout')
     @ifunless
     def _machine_tag(self, tag, context, ros_config, verbose=True):
@@ -415,35 +415,22 @@ class XmlLoader(loader.Loader):
             # clone context as <machine> tag sets up its own env args
             context = context.child(None)
             
+            # pre-fuerte warning attributes
+            attrs = self.opt_attrs(tag, context,
+                                   ('ros-root', 'ros-package-path', 'ros-ip', 'ros-hostname'))
+            if any(attrs):
+                raise XmlParseException("<machine>: ros-* attributes are not supported since ROS Fuerte.\nPlease use env-loader instead")
+
             self._check_attrs(tag, context, ros_config, XmlLoader.MACHINE_ATTRS)
             # required attributes
             name, address = self.reqd_attrs(tag, context, ('name', 'address'))
             
             # optional attributes
             attrs = self.opt_attrs(tag, context,
-                                   ('ros-root', 'ros-package-path', 
+                                   ('env-loader', 
                                     'ssh-port', 'user', 'password', 'default', 'timeout'))
-            rosroot, ros_package_path, \
-                ssh_port, user, password, default, timeout = attrs
+            env_loader, ssh_port, user, password, default, timeout = attrs
 
-            # DEPRECATED: remove in ROS 0.11 if possible
-            if rosroot:
-                ros_config.add_config_error("WARN: ros-root in <machine> tags is now deprecated. This setting is not necessary in ROS Fuerte.  If you need it, please uuse <env> tags instead")
-
-            if not ros_package_path:
-                # the default vale of ros_package_path is dependent on
-                # ros-root. If user has set ros-root they must also
-                # explicitly set ros-package-path. If neither is set,
-                # they default to the environment.
-                if rosroot:
-                    ros_package_path = ''
-                else:
-                    ros_package_path = get_ros_package_path()
-            if not rosroot:
-                try:
-                    rosroot = os.environ['ROS_ROOT']
-                except KeyError as e:
-                    pass
             ssh_port = int(ssh_port or '22')
 
             # check for default switch
@@ -457,7 +444,7 @@ class XmlLoader(loader.Loader):
             # load env args
             for t in [c for c in tag.childNodes if c.nodeType == DomNode.ELEMENT_NODE]:
                 if t.tagName == 'env':
-                    self._env_tag(t, context, ros_config)
+                    raise XmlParseException("<machine>: <env> tag is not supported since ROS Fuerte.\nPlease use env-loader instead")
                 else:
                     ros_config.add_config_error("unrecognized '%s' tag in <%s> tag"%(t.tagName, tag.tagName))
             # cast timeout to float. make sure timeout wasn't an empty string or negative
@@ -471,10 +458,7 @@ class XmlLoader(loader.Loader):
             if timeout is not None and timeout <= 0.:
                 raise XmlParseException("'timeout' be a positive number: [%s]"%timeout)                    
 
-            #TODO: change Machine representation to use an environment
-            # dictionary instead of the umpteen ROS environment
-            # variable settings.
-            m = Machine(name, rosroot, ros_package_path, address, 
+            m = Machine(name, address, env_loader=env_loader,
                         ssh_port=ssh_port, user=user, password=password, 
                         assignable=assignable, env_args=context.env_args, timeout=timeout)
             return (m, is_default)

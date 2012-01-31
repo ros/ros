@@ -89,25 +89,17 @@ class TestCore(unittest.TestCase):
         
     def test_setup_env(self):
         from roslaunch.core import setup_env, Node, Machine
-        ros_root = '/ros/root1'
-        rpp = '/rpp1'
         master_uri = 'http://masteruri:1234'
 
         n = Node('nodepkg','nodetype')
-        m = Machine('name1', ros_root, rpp, '1.2.3.4')
+        m = Machine('name1', '1.2.3.4')
         d = setup_env(n, m, master_uri)
         self.assertEquals(d['ROS_MASTER_URI'], master_uri)
 
-        for k in ['ROS_IP', 'ROS_NAMESPACE']:
-            if k in d:
-                self.fail('%s should not be set: %s'%(k,d[k]))
-
-        # don't set ROS_ROOT and ROS_PACKAGE_PATH. ROS_ROOT should default, ROS_PACKAGE_PATH does not
-        m = Machine('name1', '', '', '1.2.3.4')
+        m = Machine('name1', '1.2.3.4')
         d = setup_env(n, m, master_uri)
         val = os.environ['ROS_ROOT']
         self.assertEquals(d['ROS_ROOT'], val)
-        assert os.environ['PYTHONPATH'] == d['PYTHONPATH']
 
         # test ROS_NAMESPACE
         # test stripping
@@ -122,20 +114,6 @@ class TestCore(unittest.TestCase):
         self.assertEquals(d['NENV1'], "val1")
         self.assertEquals(d['NENV2'], "val2")
 
-        # test machine.env_args
-        m = Machine('name1', ros_root, rpp, '1.2.3.4', env_args=[('MENV1', 'val1'), ('MENV2', 'val2'), ('ROS_ROOT', '/new/root2')])        
-        n = Node('nodepkg','nodetype')
-        d = setup_env(n, m, master_uri)
-        self.assertEquals(d['ROS_ROOT'], "/new/root2")
-        self.assertEquals(d['MENV1'], "val1")
-        self.assertEquals(d['MENV2'], "val2")
-
-        # test node.env_args precedence
-        m = Machine('name1', ros_root, rpp, '1.2.3.4', env_args=[('MENV1', 'val1'), ('MENV2', 'val2')])
-        n = Node('nodepkg','nodetype', env_args=[('MENV1', 'nodeval1')])
-        d = setup_env(n, m, master_uri)
-        self.assertEquals(d['MENV1'], "nodeval1")
-        self.assertEquals(d['MENV2'], "val2")
         
     def test_local_machine(self):
         try:
@@ -147,13 +125,9 @@ class TestCore(unittest.TestCase):
             #singleton
             self.assert_(lm == local_machine())
 
-            #verify properties
-            self.assertEquals(lm.ros_root, rospkg.get_ros_root())
-            self.assertEquals(lm.ros_package_path, rospkg.get_ros_package_path())        
-        
             self.assertEquals(lm.name, '')
             self.assertEquals(lm.assignable, True)
-            self.assertEquals(lm.env_args, [])        
+            self.assertEquals(lm.env_loader, None)        
             self.assertEquals(lm.user, None)
             self.assertEquals(lm.password, None)
         finally:

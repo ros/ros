@@ -48,7 +48,7 @@ import roslaunch.remoteprocess
 from roslaunch.remoteprocess import SSHChildROSLaunchProcess
 import roslaunch.launch
 import roslaunch.server #ROSLaunchParentNode hidden dep
-from roslaunch.core import RLException, setup_env, is_machine_local, printerrlog
+from roslaunch.core import RLException, is_machine_local, printerrlog, printlog
 
 _CHILD_REGISTER_TIMEOUT = 10.0 #seconds
     
@@ -59,14 +59,10 @@ class ROSRemoteRunner(roslaunch.launch.ROSRemoteRunnerIF):
     
     def __init__(self, run_id, rosconfig, pm, server):
         """
-        @param run_id: roslaunch run_id of this runner
-        @type  run_id: str
-        @param config: launch configuration
-        @type  config: L{ROSConfig}
-        @param pm process monitor
-        @type  pm: L{ProcessMonitor}
-        @param server: roslaunch parent server
-        @type  server: L{ROSLaunchParentNode}
+        :param run_id: roslaunch run_id of this runner, ``str``
+        :param config: launch configuration, ``ROSConfig``
+        :param pm process monitor, ``ProcessMonitor``
+        :param server: roslaunch parent server, ``ROSLaunchParentNode``
         """
         self.run_id = run_id
         self.rosconfig = rosconfig
@@ -82,8 +78,8 @@ class ROSRemoteRunner(roslaunch.launch.ROSRemoteRunnerIF):
         """
         Listen to events about remote processes dying. Not
         threadsafe. Must be called before processes started.
-        @param l: ProcessListener
-        @type  l: L{ProcessListener}
+
+        :param l: ProcessListener 
         """
         self.listeners.append(l)
 
@@ -93,10 +89,9 @@ class ROSRemoteRunner(roslaunch.launch.ROSRemoteRunnerIF):
         name = "%s-%s"%(machine.address, counter)
 
         self.logger.info("remote[%s] starting roslaunch", name)
-        print "remote[%s] starting roslaunch"%name
+        printlog("remote[%s] starting roslaunch"%name)
             
-        env_dict = setup_env(None, machine, self.rosconfig.master.uri)
-        p = SSHChildROSLaunchProcess(self.run_id, name, server_node_uri, env_dict, machine)
+        p = SSHChildROSLaunchProcess(self.run_id, name, server_node_uri, machine)
         success = p.start()
         self.pm.register(p)
         if not success: #treat as fatal
@@ -167,10 +162,9 @@ in your launch"""%'\n'.join([" * %s (timeout %ss)"%(m.name, m.timeout) for m in 
     def _assume_failed(self, nodes, failed):
         """
         Utility routine for logging/recording nodes that failed
-        @param nodes: list of nodes that are assumed to have failed
-        @type  nodes: [L{Node}]
-        @param failed: list of names of nodes that have failed to extend
-        @type  failed: [str]
+
+        :param nodes: list of nodes that are assumed to have failed, ``Node``
+        :param failed: list of names of nodes that have failed to extend, ``[str]``
         """
         str_nodes = ["%s/%s"%(n.package, n.type) for n in nodes]
         failed.extend(str_nodes)
@@ -198,8 +192,6 @@ in your launch"""%'\n'.join([" * %s (timeout %ss)"%(m.name, m.timeout) for m in 
             nodes = self.remote_nodes[child.machine.config_key()]
             body = '\n'.join([n.to_remote_xml() for n in nodes])
             xml = '<launch>\n%s</launch>'%body
-            if 0:
-                print xml
                 
             api = child.getapi()
             # TODO: timeouts
@@ -213,17 +205,19 @@ in your launch"""%'\n'.join([" * %s (timeout %ss)"%(m.name, m.timeout) for m in 
                 else:
                     printerrlog('error launching on [%s, uri %s]: %s'%(child.name, child.uri, msg))
                     self._assume_failed(nodes, failed)
-            except socket.error, (errno, msg):
+            except socket.error as e:
+                errno, msg = e
                 printerrlog('error launching on [%s, uri %s]: %s'%(child.name, child.uri, str(msg)))
                 self._assume_failed(nodes, failed)
 
-            except socket.gaierror, (errno, msg):
+            except socket.gaierror as e:
+                errno, msg = e
                 # usually errno == -2. See #815. 
                 child_host, _ = network.parse_http_host_and_port(child.uri)
                 printerrlog("Unable to contact remote roslaunch at [%s]. This is most likely due to a network misconfiguration with host lookups. Please make sure that you can contact '%s' from this machine"%(child.uri, child_host))
                 self._assume_failed(nodes, failed)
 
-            except Exception, e:
+            except Exception as e:
                 printerrlog('error launching on [%s, uri %s]: %s'%(child.name, child.uri, str(e)))
                 self._assume_failed(nodes, failed)
 

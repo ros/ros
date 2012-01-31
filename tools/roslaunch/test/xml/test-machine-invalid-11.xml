@@ -1,0 +1,9 @@
+<launch>
+
+  <machine name="machine4" address="address4">
+    <env name="ENV1" value="value1" />
+    <env name="ENV2" value="value2" />
+    <env name="ENV3" value="value3" />
+  </machine>
+
+</launch>

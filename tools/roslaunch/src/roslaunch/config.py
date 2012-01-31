@@ -87,6 +87,17 @@ def load_roscore(loader, config, verbose=True):
     logging.getLogger('roslaunch').info('loading roscore config file %s'%f_roscore)            
     loader.load(f_roscore, config, core=True, verbose=verbose)    
         
+import rospkg.distro
+def calculate_env_loader(env=None):
+    if env is None:
+        env = os.environ
+    # guess the env loader based on distro name
+    distro_name = rospkg.distro.current_distro_name()
+    # sanity check
+    if distro_name in ['electric', 'diamondback', 'cturtle']:
+        raise RLException("This version of roslaunch is not compatible with pre-Fuerte ROS distributions")
+    return '/opt/ros/%s/env.sh'%(distro_name)
+
 def _summary_name(node):
     """
     Generate summary label for node based on its package, type, and name
@@ -157,9 +168,10 @@ class ROSLaunchConfig(object):
         """
         @return: True if roslaunch will launch nodes on a remote machine
         @rtype: bool
+        @raises: RLException
         """
         if not self._assign_machines_complete:
-            raise Exception("ERROR: has_remote_nodes() cannot be called until prelaunch check is complete")
+            raise RLException("ERROR: has_remote_nodes() cannot be called until prelaunch check is complete")
         return self._remote_nodes_present
     
     def assign_machines(self):
@@ -289,6 +301,10 @@ class ROSLaunchConfig(object):
         @raise RLException: if cannot add machine as specified
         """
         name = m.name
+        # Fuerte: all machines must have an env loader. We can guess
+        # it from the distro name for easier migration.
+        if not m.env_loader:
+            m.env_loader = calculate_env_loader()
         if m.address == 'localhost': #simplify address comparison
             address = rosgraph.network.get_local_address()
             self.logger.info("addMachine[%s]: remapping localhost address to %s"%(name, address))

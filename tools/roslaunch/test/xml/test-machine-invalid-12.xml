@@ -1,0 +1,6 @@
+<launch>
+
+  <!-- if ros-root is explicitly set and ros-package-path is not, ros-package-path should not get a default value -->
+  <machine name="machine5" address="address5" ros-root="/ros/root" />
+
+</launch>

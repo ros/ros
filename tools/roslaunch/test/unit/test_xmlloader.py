@@ -604,7 +604,9 @@ class TestXmlLoader(unittest.TestCase):
         tests = ['test-machine-invalid.xml', \
                  'test-machine-invalid-4.xml', 'test-machine-invalid-5.xml',
                  'test-machine-invalid-6.xml', 'test-machine-invalid-7.xml',
-                 'test-machine-invalid-8.xml', 
+                 'test-machine-invalid-8.xml', 'test-machine-invalid-9.xml', 
+                 'test-machine-invalid-10.xml', 'test-machine-invalid-11.xml',
+                 'test-machine-invalid-12.xml', 
                  ]
         loader = roslaunch.xmlloader.XmlLoader()
         for filename in tests:
@@ -616,47 +618,17 @@ class TestXmlLoader(unittest.TestCase):
             except roslaunch.xmlloader.XmlParseException, e:
                 pass
 
+        machines = self._load_valid_machines(['machine1', 'machine6', 'machine7', 'machine8', 'machine9'])
+        for m in machines:
+            if m.name == 'machine1':
+                self.assertEquals(m.address, 'address1')
+            elif m.name == 'machine7':
+                self.assertEquals(m.timeout, 10.0)
+            elif m.name == 'machine8':
+                self.assertEquals(m.timeout, 1.)
+            elif m.name == 'machine9':
+                self.assertEquals(m.env_loader, '/opt/ros/fuerte/env.sh')
 
-        old_rr = os.environ['ROS_ROOT']
-        old_rpp = os.environ.get('ROS_PACKAGE_PATH', None)
-        try:
-            os.environ['ROS_ROOT'] = '/ros/root/tm'
-            os.environ['ROS_PACKAGE_PATH'] = '/ros/package/path/tm'        
-
-            machines = self._load_valid_machines(['machine1', 'machine2', 'machine3', 'machine4', 'machine5'])
-            for m in machines:
-                if m.name == 'machine1':
-                    self.assertEquals(m.address, 'address1')
-                    self.assertEquals(m.ros_root, os.environ['ROS_ROOT'])
-                    self.assertEquals(m.ros_package_path, os.environ['ROS_PACKAGE_PATH'])
-                elif m.name == 'machine2':
-                    self.assertEquals(m.address, 'address2')
-                    self.assertEquals(m.ros_root, '/ros/root')
-                    self.assertEquals(m.ros_package_path, '/ros/package/path')
-                elif m.name == 'machine3':
-                    self.assertEquals(m.address, 'address3')
-                    # should default to environment if not set
-                    self.assertEquals(m.ros_root, os.environ['ROS_ROOT'])
-                    self.assertEquals(m.ros_package_path, os.environ['ROS_PACKAGE_PATH'])
-                elif m.name == 'machine4':
-                    self.assertEquals(m.address, 'address4')
-                    self.assertEquals(m.env_args, [('ENV1', 'value1'), ('ENV2', 'value2'), ('ENV3', 'value3')])
-                elif m.name == 'machine5':                
-                    self.assertEquals(m.address, 'address5')
-                    self.assertEquals(m.ros_root, '/ros/root')
-                    # ros_package_path does not get a default value if ros-root is explicitly set
-                    self.assertEquals(m.ros_package_path, '')
-                elif m.name == 'machine7':
-                    self.assertEquals(m.timeout, 10.0)
-                elif m.name == 'machine8':
-                    self.assertEquals(m.timeout, 1.)
-
-        finally:
-            os.environ['ROS_ROOT'] = old_rr
-            if old_rpp is not None:
-                os.environ['ROS_PACKAGE_PATH'] = old_rpp
-            else:
-                del os.environ['ROS_PACKAGE_PATH']
                 
     def test_node_subst(self):
         test_file =os.path.join(self.xml_dir, 'test-node-substitution.xml')
@@ -699,57 +671,30 @@ class TestXmlLoader(unittest.TestCase):
 
     def test_machine_subst(self):
         test_file = os.path.join(self.xml_dir, 'test-machine-substitution.xml')
-        old_rr = os.environ['ROS_ROOT']
-        old_rpp = os.environ.get('ROS_PACKAGE_PATH', None)
+        keys = ['NAME', 'ADDRESS'] 
+        for k in keys:
+            if k in os.environ:
+                del os.environ[k]
+        import random
+        r = random.randint(0, 100000)
+        # append all but one required key and make sure we fail
+        for k in keys[:-1]:
+            os.environ[k] = "%s-%s"%(k.lower(), r)
+            try:
+                mock = self._load(test_file)
+                self.fail("xml loader should have thrown an exception due to missing environment var")
+            except roslaunch.xmlloader.XmlParseException, e:
+                pass
 
-        try:
-            keys = ['NAME', 'ADDRESS', 'ROS_HOST_NAME', 'ROS_ROOT', 'ROS_PACKAGE_PATH']        
-            for k in keys:
-                if k in os.environ:
-                    del os.environ[k]
-            import random
-            r = random.randint(0, 100000)
-            # append all but one required key and make sure we fail
-            for k in keys[:-1]:
-                os.environ[k] = "%s-%s"%(k.lower(), r)
-                try:
-                    mock = self._load(test_file)
-                    self.fail("xml loader should have thrown an exception due to missing environment var")
-                except roslaunch.xmlloader.XmlParseException, e:
-                    pass
+        os.environ['NAME'] = "name-foo"
+        os.environ['ADDRESS'] = "address-foo"
+        # load the last required env var
+        mock = self._load(test_file)
+        self.assertEquals(1, len(mock.machines), "should only be one test machine")
+        m = mock.machines[0]
+        self.assertEquals(m.name, 'name-foo')
+        self.assertEquals(m.address, 'address-foo')
 
-            # load the last required env var
-            os.environ['ROS_PACKAGE_PATH'] = '/ros/package/path-%s'%r
-            mock = self._load(test_file)
-            self.assertEquals(1, len(mock.machines), "should only be one test machine")
-            m = mock.machines[0]
-            self.assertEquals(m.name, 'name-%s'%r)
-            self.assertEquals(m.address, 'address-%s'%r)        
-            self.assertEquals(m.ros_root, 'ros_root-%s'%r)
-            self.assertEquals(m.ros_package_path, '/ros/package/path-%s'%r)
-        finally:
-            os.environ['ROS_ROOT'] = old_rr
-            if old_rpp is not None:
-                os.environ['ROS_PACKAGE_PATH'] = old_rpp
-            else:
-                del os.environ['ROS_PACKAGE_PATH']
-
-    
-    def test_master(self):
-        from roslaunch.core import Master
-        tests = ['test-master-1.xml','test-master-2.xml',
-                 'test-master-3.xml','test-master-4.xml',
-                 'test-master-5.xml',        
-                 ]
-        # tests should still load, but nothing more
-        for x in xrange(1, 6):
-            loader = roslaunch.xmlloader.XmlLoader()
-            for filename in tests:
-                filename = os.path.join(self.xml_dir, 'test-master-%s.xml'%x)
-                self.assert_(os.path.exists(filename))
-                mock = RosLaunchMock()
-                loader.load(filename, mock)
-                 
     def test_env(self):
         nodes = self._load_valid_nodes(['test_env', 'test_env_empty'])
         for n in nodes:

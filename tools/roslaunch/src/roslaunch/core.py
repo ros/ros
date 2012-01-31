@@ -190,10 +190,6 @@ def setup_env(node, machine, master_uri, env=None):
     d = env.copy()
     d[rosgraph.ROS_MASTER_URI] = master_uri
 
-    # load in machine env_args. Node env args have precedence
-    for name, value in machine.env_args:
-        d[name] = value
-
     # add node-specific env args last as they have highest precedence
     if node:
         ns = node.namespace 
@@ -322,34 +318,30 @@ class Machine(object):
     system.  Corresponds to the 'machine' tag in the launch
     specification.
     """
-    __slots__ = ['name', 'ros_root', 'ros_package_path', \
-                 'address', 'ssh_port', 'user', 'password', 'assignable',\
-                 'env_args', 'timeout']
-    def __init__(self, name, ros_root, ros_package_path, \
-                 address, ssh_port=22, user=None, password=None, \
+    __slots__ = ['name', 'address', 'ssh_port', 'user', 'password', 'assignable',
+                 'env_loader', 'timeout']
+    def __init__(self, name, address,
+                 env_loader=None, ssh_port=22, user=None, password=None, 
                  assignable=True, env_args=[], timeout=None):
         """
         :param name: machine name, ``str``
-        :param ros_root: ROS_ROOT on machine, ``str``
-        :param ros_package_path: ROS_PACKAGE_PATH on machine, ``str``
         :param address: network address of machine, ``str``
+        :param env_loader: Path to environment loader, ``str``
         :param ssh_port: SSH port number, ``int``
         :param user: SSH username, ``str``
         :param password: SSH password. Not recommended for use. Use SSH keys instead., ``str``
         """
         self.name = name
-        self.ros_root = ros_root
-        self.ros_package_path = ros_package_path
+        self.env_loader = env_loader
         self.user = user or None
         self.password = password or None
         self.address = address
         self.ssh_port = ssh_port
         self.assignable = assignable
-        self.env_args = env_args
         self.timeout = timeout or _DEFAULT_REGISTER_TIMEOUT
         
     def __str__(self):
-        return "Machine(name[%s] ros_root[%s] ros_package_path[%s] address[%s] ssh_port[%s] user[%s] assignable[%s] env_args[%s] timeout[%s])"%(self.name, self.ros_root, self.ros_package_path, self.address, self.ssh_port, self.user, self.assignable, str(self.env_args), self.timeout)
+        return "Machine(name[%s] env_loader[%s] address[%s] ssh_port[%s] user[%s] assignable[%s] timeout[%s])"%(self.name, self.env_loader, self.address, self.ssh_port, self.user, self.assignable, self.timeout)
     def __eq__(self, m2):
         if not isinstance(m2, Machine):
             return False
@@ -365,8 +357,7 @@ class Machine(object):
     
         :returns:: configuration key, ``str``
         """
-        sorted_env = sorted(self.env_args, key=itemgetter(0))
-        return "Machine(address[%s] ros_root[%s] ros_package_path[%s] ssh_port[%s] user[%s] password[%s] env_args[%s] timeout[%s])"%(self.address, self.ros_root, self.ros_package_path, self.ssh_port, self.user or '', self.password or '', str(sorted_env), self.timeout)
+        return "Machine(address[%s] env_loader[%s] ssh_port[%s] user[%s] password[%s] timeout[%s])"%(self.address, self.env_loader, self.ssh_port, self.user or '', self.password or '', self.timeout)
 
     def config_equals(self, m2):
         """
@@ -376,12 +367,6 @@ class Machine(object):
             return False
         return self.config_key() == m2.config_key()
 
-    def get_env(self):
-        d = dict(ROS_ROOT=self.ros_root, ROS_PACKAGE_PATH=self.ros_package_path)
-        for name, value in self.env_args:
-            d[name] = value
-        return d
-        
     def __ne__(self, m2):
         return not self.__eq__(m2)
 
@@ -412,8 +397,7 @@ def local_machine():
     """
     global _local_m
     if _local_m is None:
-        _local_m = Machine('', get_ros_root(), \
-                           get_ros_package_path(), 'localhost')
+        _local_m = Machine('', 'localhost')
     return _local_m
 
 class Node(object):

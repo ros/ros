@@ -36,8 +36,6 @@
 Process handler for launching ssh-based roslaunch child processes.
 """
 
-from __future__ import with_statement
-
 import os
 import sys
 import socket
@@ -61,18 +59,12 @@ def ssh_check_known_hosts(ssh, address, port, username=None, logger=None):
     this routine can be modified by the ROSLAUNCH_SSH_UNKNOWN
     environment variable, which enables the paramiko.AutoAddPolicy.
 
-    @param ssh: paramiko SSH client
-    @type  ssh: L{paramiko.SSHClient}
-    @param address: SSH IP address
-    @type  address: str
-    @param port: SSH port
-    @type  port: int
-    @param username: optional username to include in error message if check fails
-    @type  username: str
-    @param logger: (optional) logger to record tracebacks to
-    @type  logger: logging.Logger
-    @return: error message if improperly configured, or None
-    @rtype: str
+    :param ssh: paramiko SSH client, :class:`paramiko.SSHClient`
+    :param address: SSH IP address, ``str``
+    :param port: SSH port, ``int``
+    :param username: optional username to include in error message if check fails, ``str``
+    :param logger: (optional) logger to record tracebacks to, :class:`logging.Logger`
+    :returns: error message if improperly configured, or ``None``. ``str``
     """
     import paramiko
     try:
@@ -117,18 +109,20 @@ then try roslaunching again.
 If you wish to configure roslaunch to automatically recognize unknown
 hosts, please set the environment variable ROSLAUNCH_SSH_UNKNOWN=1"""%(address, user_str, port_str, address)
         
-
 class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
     """
     Process wrapper for launching and monitoring a child roslaunch process over SSH
     """
-    def __init__(self, run_id, name, server_uri, env, machine):
-        if machine.ros_root:
-            cmd = os.path.join(machine.ros_root, 'bin', 'roslaunch')
-        else: # assumes user has mapped onto path
-            cmd = 'roslaunch'
-        args = [cmd, '-c', name, '-u', server_uri, '--run_id', run_id]
-        super(SSHChildROSLaunchProcess, self).__init__(name, args, env)
+    def __init__(self, run_id, name, server_uri, machine):
+        """
+        :param machine: Machine instance. Must be fully configured.
+            machine.env_loader is required to be set.
+        """
+        if not machine.env_loader:
+            raise ValueError("machine.env_loader must have been assigned before creating ssh child instance")
+        args = [machine.env_loader, 'roslaunch', '-c', name, '-u', server_uri, '--run_id', run_id]
+        # env is always empty dict because we only use env_loader
+        super(SSHChildROSLaunchProcess, self).__init__(name, args, {})
         self.machine = machine
         self.ssh = self.sshin = self.sshout = self.ssherr = None
         self.started = False
@@ -137,23 +131,18 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
         # log errors during a stop(). 
         self.is_dead = False
         
-    def _ssh_exec(self, command, env, address, port, username=None, password=None):
-        if env:
-            env_command = "env "+' '.join(["%s=%s"%(k,v) for (k, v) in env.iteritems()])
-            command = "%s %s"%(env_command, command)
+    def _ssh_exec(self, command, address, port, username=None, password=None):
+        """
+        :returns: (ssh pipes, message).  If error occurs, returns (None, error message).
+        """
         try:
-            # as pycrypto 2.0.1 is EOL, disable it's Python 2.6 deprecation warnings
-            import warnings
-            warnings.filterwarnings("ignore", message="the sha module is deprecated; use the hashlib module instead")
-            warnings.filterwarnings("ignore", message="the md5 module is deprecated; use hashlib instead")                                    
-            
             import Crypto
-        except ImportError, e:
+        except ImportError as e:
             _logger.error("cannot use SSH: pycrypto is not installed")
             return None, "pycrypto is not installed"
         try:
             import paramiko
-        except ImportError, e:
+        except ImportError as e:
             _logger.error("cannot use SSH: paramiko is not installed")
             return None, "paramiko is not installed"
         #load ssh client and connect
@@ -173,12 +162,12 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
             except paramiko.AuthenticationException:
                 _logger.error(traceback.format_exc())
                 err_msg = "Authentication to remote computer[%s%s:%s] failed.\nA common cause of this error is a missing key in your authorized_keys file."%(username_str, address, port)
-            except paramiko.SSHException, e:
+            except paramiko.SSHException as e:
                 _logger.error(traceback.format_exc())
                 if str(e).startswith("Unknown server"):
                     pass
                 err_msg = "Unable to establish ssh connection to [%s%s:%s]: %s"%(username_str, address, port, e)
-            except socket.error, e:
+            except socket.error as e:
                 # #1824
                 if e[0] == 111:
                     err_msg = "network connection refused by [%s:%s]"%(address, port)
@@ -187,6 +176,7 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
         if err_msg:
             return None, err_msg
         else:
+            printlog("launching remote roslaunch child with command: [%s]"%(str(command)))
             sshin, sshout, ssherr = ssh.exec_command(command)
             return (ssh, sshin, sshout, ssherr), "executed remotely"
 
@@ -197,16 +187,15 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
         """
         self.started = False #won't set to True until we are finished
         self.ssh = self.sshin = self.sshout = self.ssherr = None        
-        try:
-            self.lock.acquire()
+        with self.lock:
             name = self.name
             m = self.machine
             if m.user is not None:
                 printlog("remote[%s]: creating ssh connection to %s:%s, user[%s]"%(name, m.address, m.ssh_port, m.user))
             else:
                 printlog("remote[%s]: creating ssh connection to %s:%s"%(name, m.address, m.ssh_port))
-            _logger.info("remote[%s]: invoking with ssh exec args [%s], env: %s"%(name, ' '.join(self.args), self.env))
-            sshvals, msg = self._ssh_exec(' '.join(self.args), self.env, m.address, m.ssh_port, m.user, m.password)
+            _logger.info("remote[%s]: invoking with ssh exec args [%s]"%(name, ' '.join(self.args)))
+            sshvals, msg = self._ssh_exec(' '.join(self.args), m.address, m.ssh_port, m.user, m.password)
             if sshvals is None:
                 printerrlog("remote[%s]: failed to launch on %s:\n\n%s\n\n"%(name, m.name, msg))
                 return False
@@ -214,13 +203,10 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
             printlog("remote[%s]: ssh connection created"%name)
             self.started = True            
             return True
-        finally:
-            self.lock.release()
 
     def getapi(self):
         """
-        @return: ServerProxy to remote client XMLRPC server
-        @rtype: L{ServerProxy}
+        :returns: ServerProxy to remote client XMLRPC server, `ServerProxy`
         """
         if self.uri:
             return xmlrpclib.ServerProxy(self.uri)
@@ -229,9 +215,8 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
     
     def is_alive(self):
         """
-        @return: True if the process is alive. is_alive needs to be
-        called periodically as it drains the SSH buffer
-        @rtype: bool
+        :returns: ``True`` if the process is alive. is_alive needs to be
+            called periodically as it drains the SSH buffer, ``bool``
         """
         if self.started and not self.ssh:
             return False
@@ -267,8 +252,6 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
             if not len(data):
                 self.is_dead = True
                 return False
-            # data = data.decode('utf-8')
-            #print "DATA", data
         except socket.timeout:
             pass
         except IOError:
@@ -281,8 +264,7 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
         """
         if errors is None:
             errors = []
-        try:
-            self.lock.acquire()            
+        with self.lock:
             if not self.ssh:
                 return
 
@@ -316,5 +298,3 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
             self.ssherr = None            
             self.ssh = None
             _logger.info("remote[%s]: ssh connection closed", self.name)            
-        finally:
-            self.lock.release()

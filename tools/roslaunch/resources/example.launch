@@ -1,8 +1,8 @@
 <launch>
 
-  <!-- localhost definition can be omitted unless you want to override ros-root or set it as the default machine. -->
+  <!-- localhost definition can be omitted. -->
   <machine name="localhost" address="localhost" default="true" />
-  <machine name="localhost-altroot" address="localhost" ros-root="/u/kwc/sf/ros/" ros-package-path="/u/kwc/sf/personalrobots/" />
+  <machine name="localhost-altroot" address="localhost" env-loader="/opt/ros/fuerte/env.sh" />
 
   <!-- 
 

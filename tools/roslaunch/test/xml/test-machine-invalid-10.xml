@@ -1,0 +1,3 @@
+<launch>
+  <machine name="machine3" address="address3" ros-ip="hostname" />
+</launch>

@@ -50,6 +50,13 @@ import rosgraph.network
 
 from . import substitution_args
 
+from xml.sax.saxutils import escape 
+try:
+    unicode
+except NameError:
+    # Python 3: for _xml_escape
+    basestring = unicode = str
+    
 class RLException(Exception):
     """Base roslaunch exception type"""
     pass
@@ -542,13 +549,13 @@ def _xml_escape(s):
     :param s: string to escape, ``str``
     :returns:: string with XML entities (<, >, \", &) escaped, ``str``
     """
-    # gross, but doesn't need to be fast. always replace amp first
-    s = str(s)
-    s = s.replace('&', '&amp;')
-    s = s.replace('"', '&quot;')
-    s = s.replace('>', '&gt;')
-    s = s.replace('<', '&lt;')
-    return s
+    # use official escaping to preserve unicode.
+    # see import at the top for py3k-compat
+    if isinstance(s, basestring):
+        return escape(s, entities={'"': '&quot;'})
+    else:
+        # don't escape non-string attributes
+        return s
     
 TEST_TIME_LIMIT_DEFAULT = 1 * 60 #seconds
 

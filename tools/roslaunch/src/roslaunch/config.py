@@ -43,6 +43,7 @@ import sys
 import types
 
 import rospkg
+import rospkg.distro
 import rosgraph.names
 import rosgraph.network
 
@@ -87,12 +88,11 @@ def load_roscore(loader, config, verbose=True):
     logging.getLogger('roslaunch').info('loading roscore config file %s'%f_roscore)            
     loader.load(f_roscore, config, core=True, verbose=verbose)    
         
-import rospkg.distro
 def calculate_env_loader(env=None):
     if env is None:
         env = os.environ
     # guess the env loader based on distro name
-    distro_name = rospkg.distro.current_distro_name()
+    distro_name = rospkg.distro.current_distro_codename()
     # sanity check
     if distro_name in ['electric', 'diamondback', 'cturtle']:
         raise RLException("This version of roslaunch is not compatible with pre-Fuerte ROS distributions")

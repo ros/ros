@@ -35,4 +35,3 @@
 
 import roscreate.core
 import roscreate.roscreatepkg
-import roscreate.roscreatestack

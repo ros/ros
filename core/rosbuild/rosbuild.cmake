@@ -27,8 +27,8 @@ endif(COMMAND cmake_policy)
 set(CMAKE_OSX_ARCHITECTURES "x86_64")
 
 ##############################################################################
-# First things first: we must have rospack.
-find_program(ROSPACK_EXE NAMES rospack DOC "rospack executable")
+# First things first: we must have rospack.  But only look at PATH, #3831
+find_program(ROSPACK_EXE NAMES rospack DOC "rospack executable" NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
 if (NOT ROSPACK_EXE)
   message(FATAL_ERROR "Couldn't find rospack. Please run 'make' in $ROS_ROOT")
 endif(NOT ROSPACK_EXE)

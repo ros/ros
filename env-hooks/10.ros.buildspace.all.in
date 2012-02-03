@@ -2,6 +2,10 @@
 #  Buildspace ROS env file.
 #  This file was automatically generated.
 #
+
+# Scrub old ROS bin dirs, to avoid accidentally finding the wrong executables
+PATH=`python -c "import os; print(os.pathsep.join([x for x in \"$PATH\".split(os.pathsep) if not any([d for d in ['cturtle', 'diamondback', 'electric', 'unstable', 'fuerte'] if d in x])]))"`
+
 export ROS_ROOT=@CMAKE_SOURCE_DIR@/ros
 export ROS_TEST_RESULTS_DIR=@CMAKE_BINARY_DIR@/test_results
 export ROS_PACKAGE_PATH=@CMAKE_SOURCE_DIR@

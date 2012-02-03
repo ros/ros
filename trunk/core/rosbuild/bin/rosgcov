@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# A helper script to invoke gcov from CMake, which seems to have problems
+# with pipes inside an add_custom_target()
+
+src=$1
+p=$2
+for f in `find $p -name \`basename $src\`.o`; do
+  gcov -b -o $f $src  1>/dev/null 2>&1
+done
+true

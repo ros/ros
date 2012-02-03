@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Used by rosemacs rostopic mode to keep track of current ros topics
+
+while [ 1 ]
+do
+echo "BEGIN ROSTOPIC LIST"
+rostopic list -v
+echo "END ROSTOPIC LIST"
+sleep $1
+done

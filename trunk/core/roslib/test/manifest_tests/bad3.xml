@@ -1,0 +1,11 @@
+<package>
+  <description brief="a brief description">Line 1
+  </description>
+  <description brief="a brief second description">Second description
+  </description>
+
+  <author>The authors
+go here</author>
+  <license>Public Domain
+with other stuff</license>
+</package>

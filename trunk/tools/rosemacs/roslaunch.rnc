@@ -1,0 +1,55 @@
+# A RELAX NG schema for ros launch files
+# Incomplete
+grammar {
+  start = launch
+  launch = element launch { master? & node* & param* & inc* & group* & rosparam* & env* & arg* & remap* }
+  group = element group { attribute ns { text }? & attribute if { text }? & attribute unless { text } &
+                         ( node* & param* & inc* ) }
+  master = element master { attribute auto { text } }
+  node = element node {
+           attribute name { text } &
+           attribute pkg { text } &
+           attribute type { text } &
+           attribute args { text }? &
+           attribute respawn { "true" | "false" }? &
+           attribute machine { text }? &
+           attribute output { text }? &
+           attribute ns { text }? &
+           ( param* & remap* & rosparam* & group* )
+         }
+  env = element env {
+           attribute name { text } &
+           attribute value { text } 
+        }
+  param = element param {
+            attribute name { text } &
+            attribute value { text }? &
+            attribute command { text }? &
+            attribute if { text }? & 
+            attribute unless { text }? &
+            attribute type { text }? 
+          }
+  arg = element arg {
+            attribute name { text } &
+            attribute value { text }? &
+            attribute default { text }?
+        }
+  rosparam = element rosparam {
+               attribute command { text }? &
+               attribute file { text }? &
+               attribute ns { text }? &
+               attribute param { text }? &
+               attribute if { text }? & 
+               attribute unless { text }? &
+               ( text )
+             }
+ 
+
+  remap = element remap { attribute from { text }, attribute to { text }, 
+                          attribute unless { text }*, attribute if { text }* }          
+  inc = element include {
+          attribute file { text },
+          ( arg* )
+          
+        }
+}

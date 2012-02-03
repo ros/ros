@@ -1,0 +1,10 @@
+# -*- mode: snippet -*-
+# name: main() for a ros node
+# --
+int main (int argc, char** argv)
+{
+  ros::init(argc, argv, "`(file-name-nondirectory (file-name-sans-extension (buffer-file-name (current-buffer))))`");
+  ${1:NODE_CLASS} node;
+  ros::spin();
+  return 0;
+}

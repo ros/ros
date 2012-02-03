@@ -1,0 +1,10 @@
+<package>
+  <description brief="depends_stack1">
+     depends_stack1
+  </description>
+  <author>Kenneth Conley</author>
+  <license>BSD</license>
+  <depend package="depends_roslib" />
+</package>
+
+

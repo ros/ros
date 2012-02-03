@@ -1,0 +1,33 @@
+# A RELAX NG schema for manifest.xml files
+grammar {
+  start = package
+  package = element package { 
+    description &
+    author &
+    license &
+    review &
+    url &
+    (depend* & platform* & rosdep* & export*)
+  }
+  description = element description {
+    attribute brief { text }?,
+    text
+  }
+  author = element author { text }
+  license = element license { text }
+  review = element review { 
+    attribute status { text },
+    attribute notes { text }
+  }
+  url = element url { text }
+  depend = element depend { attribute package { text } }
+  export = element export { text & nodelet? }
+  nodelet = element nodelet { attribute plugin }
+  rosdep = element rosdep { attribute name { text } }
+  platform = element platform {
+    attribute os { text },
+    attribute version { text }
+  }
+}
+  
+    

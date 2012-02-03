@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Used by rosemacs rosnode mode to keep track of current ros rosnode
+
+while [ 1 ]
+do
+echo "BEGIN ROSNODE LIST"
+rosnode list
+echo "END ROSNODE LIST"
+sleep $1
+done

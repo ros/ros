@@ -1,0 +1,11 @@
+<package>
+  <description brief="roslib tests">
+    Fake
+  </description>
+  <author>No one</author>
+  <license>BSD</license>
+  <review status="test" notes=""/>
+
+  <depend package="roslib" />
+  <depend package="rosunit" />
+</package>

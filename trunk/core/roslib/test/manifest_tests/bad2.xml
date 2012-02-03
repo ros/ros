@@ -1,0 +1,20 @@
+<notpackage>
+  <description brief="a brief description">Line 1
+Line 2
+  </description>
+  <author>The authors
+go here</author>
+  <license>Public Domain
+with other stuff</license>
+  <url>http://pr.willowgarage.com/package/</url>
+  <logo>http://www.willowgarage.com/files/willowgarage/robot10.jpg</logo>
+  <depend package="pkgname" />
+  <depend package="common"/>
+  <export>
+    <cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib -lros"/>
+    <cpp os="osx" cflags="-I${prefix}/include" lflags="-L${prefix}/lib -lrosthread -framework CoreServices"/>
+  </export>
+  <rosdep name="python" />
+  <rosdep name="bar" />
+  <rosdep name="baz" />
+</notpackage>

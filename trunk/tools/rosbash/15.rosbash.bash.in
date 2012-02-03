@@ -1,0 +1,2 @@
+. @CMAKE_INSTALL_PREFIX@/share/rosbash/rosbash
+

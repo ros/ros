@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+if [ $# -lt 2 ]; then
+  echo "Usage: rosrun PACKAGE EXECUTABLE [ARGS]"
+  echo "  rosrun will locate PACKAGE and try to find"
+  echo "  an executable named EXECUTABLE in the PACKAGE tree."
+  echo "  If it finds it, it will run it with ARGS."
+  exit 1
+fi
+if [[ -n $CATKIN_SOURCE_DIR ]]; then
+    catkin_source_dir=`ROS_ROOT=$CATKIN_SOURCE_DIR ROS_PACKAGE_PATH= rospack find $1`
+fi 
+if [[ -n $CATKIN_BINARY_DIR && -f $CATKIN_BINARY_DIR/etc/packages.list ]]; then
+    cbd=`grep $1 $CATKIN_BINARY_DIR/etc/packages.list | cut -d " " -f 2`
+    if [[ -n $cbd ]]; then
+      catkin_binary_dir=$CATKIN_BINARY_DIR/$cbd
+    fi
+fi 
+pkgdir=`rospack find $1`
+if [[ -z $catkin_source_dir && -z $catkin_binary_dir && -z $pkgdir ]]; then
+    return 2
+fi
+# The -perm /mode usage is not available in find on the Mac
+#exepathlist=(`find $pkgdir -name $2 -type f -perm /u+x,g+x,o+x`)
+# -L: #3475
+exepathlist=(`find -L $catkin_source_dir $catkin_binary_dir $pkgdir -name $2 -type f  -perm +111 ! -regex ".*$pkgdir\/build\/.*" | uniq`)
+if [[ ${#exepathlist[@]} == 0 ]] ; then
+    echo "[rosrun] Couldn't find executable named $2 below $pkgdir"
+    nonexepathlist=(`find -H $pkgdir -name $2`)
+    if [[ ${#nonexepathlist[@]} != 0 ]] ; then
+      echo "[rosrun] Found the following, but they're either not files, "
+      echo "[rosrun] or not executable:"
+      for p in ${nonexepathlist[@]}; do
+        echo "[rosrun]   ${p}"
+      done
+    fi
+    exit 3
+elif [[ ${#exepathlist[@]} -gt 1 ]] ; then
+    echo "[rosrun] You have chosen a non-unique executable, please pick one of the following:"
+    select opt in ${exepathlist[@]}; do
+        exepath=$opt
+        break
+    done
+else
+    exepath=${exepathlist[0]}
+fi
+shift
+shift
+exec $exepath "$@"

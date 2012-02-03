@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # A little script to set svn:ignore properties.
 USAGE="USAGE: rossvnignore <tree-root>"

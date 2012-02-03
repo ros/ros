@@ -10,28 +10,28 @@ all:
 	-mkdir -p bin
 	@if ! (cd build && cmake ..); then \
 	  echo "[rosbuild] CMake failed; trying to clean and start over"; \
-	  make clean; \
+	  $(MAKE) clean; \
 	  mkdir -p build; \
 	  cd build && cmake ..; \
 	fi
-	cd build && make $(PARALLEL_JOBS)
+	cd build && $(MAKE) $(PARALLEL_JOBS)
 
 install: all
-	cd build && make install
+	cd build && $(MAKE) install
 
 # The clean target blows everything away
 clean:
-	-cd build && make clean
+	-cd build && $(MAKE) clean
 	rm -rf build
 
 test: all
-	if cd build && make -k $@; then make test-results; else make test-results && exit 1; fi
+	if cd build && $(MAKE) -k $@; then $(MAKE) test-results; else $(MAKE) test-results && exit 1; fi
 tests: all
-	cd build && make $@
+	cd build && $(MAKE) $@
 test-future: all
-	cd build && make -k $@
+	cd build && $(MAKE) -k $@
 gcoverage: all
-	cd build && make $@
+	cd build && $(MAKE) $@
 
 #SRC = main.cpp
 #LIBSRC = rospack.cpp \

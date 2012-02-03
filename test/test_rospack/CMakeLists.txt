@@ -13,8 +13,11 @@ rosbuild_add_pyunit(test/utest_rosstack.py TIMEOUT 180.0)
 rosbuild_add_gtest(test/utest test/utest.cpp TIMEOUT 180.0)
 rosbuild_link_boost(test/utest thread)
 
+# look up python interpreter, store in ${PYTHON_EXECUTABLE}
+find_package(PythonInterp)
+
 add_custom_target(deepdirs
-                  COMMAND python deep.py
+                  COMMAND ${PYTHON_EXECUTABLE} deep.py
                   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/test/deep
                   DEPENDS test/deep/deep.py
                   VERBATIM)

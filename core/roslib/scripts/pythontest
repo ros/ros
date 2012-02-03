@@ -1,9 +1,9 @@
-#!/bin/bash
+#!/bin/sh
 if [ ! -f /usr/bin/python ] ; then
   exit 1
 fi
 
-python -c "import sys, os; os._exit(float(sys.version[:3])>=2.4);"
+/usr/bin/env python -c "import sys, os; os._exit(float(sys.version[:3])>=2.4);"
 if [ $? -eq 0 ]
 then
   exit 1

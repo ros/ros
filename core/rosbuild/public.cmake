@@ -8,6 +8,9 @@ include(AddFileDependencies)
 # Used to check if a function exists
 include(CheckFunctionExists)
 
+# look up python interpreter, store in ${PYTHON_EXECUTABLE}
+find_package(PythonInterp)
+
 # Find a ros package. 
 macro(rosbuild_find_ros_package pkgname) 
   # catch the error output to suppress it 
@@ -103,7 +106,8 @@ macro(rosbuild_invoke_rospack pkgname _prefix _varname)
   if(NOT EXISTS ${ROSPACK_EXE})
     message("Cached location of rospack is invalid; searching for rospack...")
     set(ROSPACK_EXE ROSPACK_EXE-NOTFOUND)
-    find_program(ROSPACK_EXE NAMES rospack DOC "rospack executable")
+    # Only look in PATH for rospack, #3831
+    find_program(ROSPACK_EXE NAMES rospack DOC "rospack executable" NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
     if (NOT ROSPACK_EXE)
       message(FATAL_ERROR "Couldn't find rospack. Please run 'make' in $ROS_ROOT")
     endif(NOT ROSPACK_EXE)
@@ -808,7 +812,7 @@ macro(rosbuild_gensrv)
     # But we set it to the current time, because setting it to zero causes
     # annoying warning, #3396.
     execute_process(
-      COMMAND python -c "import os; os.utime('${PROJECT_SOURCE_DIR}/srv_gen/generated', (1, 1))"
+      COMMAND ${PYTHON_EXECUTABLE} -c "import os; os.utime('${PROJECT_SOURCE_DIR}/srv_gen/generated', (1, 1))"
       ERROR_VARIABLE _set_mtime_error
       RESULT_VARIABLE _set_mtime_failed
       OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -845,7 +849,7 @@ macro(rosbuild_genmsg)
     # But we set it to the current time, because setting it to zero causes
     # annoying warning, #3396.
     execute_process(
-      COMMAND python -c "import os; os.utime('${PROJECT_SOURCE_DIR}/msg_gen/generated', (1, 1))"
+      COMMAND ${PYTHON_EXECUTABLE} -c "import os; os.utime('${PROJECT_SOURCE_DIR}/msg_gen/generated', (1, 1))"
       ERROR_VARIABLE _set_mtime_error
       RESULT_VARIABLE _set_mtime_failed
       OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -904,7 +908,10 @@ macro(rosbuild_link_boost target)
     endif(_first)
   endforeach(arg)
   set(_sysroot "--sysroot=${CMAKE_FIND_ROOT_PATH}") 
-  execute_process(COMMAND "rosboost-cfg" ${_sysroot} "--libs" ${_libs}
+  # We ask for --lflags, as recommended in #3773.  This means that we might
+  # pass non-library arguments to target_link_libraries() below, but CMake
+  # doesn't seem to mind.
+  execute_process(COMMAND "rosboost-cfg" ${_sysroot} "--lflags" ${_libs}
                   OUTPUT_VARIABLE BOOST_LIBS
 		  ERROR_VARIABLE _boostcfg_error
                   RESULT_VARIABLE _boostcfg_failed

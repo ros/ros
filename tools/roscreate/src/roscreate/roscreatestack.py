@@ -207,7 +207,7 @@ def roscreatestack_main():
     
     try:
         depends, licenses = compute_stack_depends_and_licenses(stack_dir)
-    except roslib.packages.InvalidROSPkgException, e:
+    except roslib.packages.InvalidROSPkgException as e:
         print >> sys.stderr, str(e)
         sys.exit(1)
 

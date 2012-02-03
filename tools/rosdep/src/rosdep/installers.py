@@ -148,8 +148,8 @@ class SourceInstaller(InstallerAPI):
         if "ROSDEP_DEBUG" in os.environ:
             print("Downloaded manifest:\n{{{%s\n}}}\n"%self.manifest)
         
-        self.install_command = self.manifest.get("install-script", "#!/bin/bash\n#no install-script specificd")
-        self.check_presence_command = self.manifest.get("check-presence-script", "#!/bin/bash\n#no check-presence-script\nfalse")
+        self.install_command = self.manifest.get("install-script", "#!/bin/sh\n#no install-script specificd")
+        self.check_presence_command = self.manifest.get("check-presence-script", "#!/bin/sh\n#no check-presence-script\nfalse")
 
         self.exec_path = self.manifest.get("exec-path", ".")
         
@@ -314,14 +314,14 @@ class YumInstaller(InstallerAPI):
 
 
     def generate_package_install_command(self, default_yes = False, execute = True, display = True):
-        script = '!#/bin/bash\n#no script'
+        script = '!#/bin/sh\n#no script'
         packages_to_install = self.get_packages_to_install()
         if not packages_to_install:
-            script = "#!/bin/bash\n#No Packages to install"
+            script = "#!/bin/sh\n#No Packages to install"
         elif default_yes:
-            script = "#!/bin/bash\n#Packages %s\nsudo yum install -y "%packages_to_install + ' '.join(packages_to_install)        
+            script = "#!/bin/sh\n#Packages %s\nsudo yum install -y "%packages_to_install + ' '.join(packages_to_install)        
         else:
-            script = "#!/bin/bash\n#Packages %s\nsudo yum install "%packages_to_install + ' '.join(packages_to_install)
+            script = "#!/bin/sh\n#Packages %s\nsudo yum install "%packages_to_install + ' '.join(packages_to_install)
 
         if execute:
             return rosdep.core.create_tempfile_from_string_and_execute(script)

@@ -518,15 +518,24 @@ def _fill_val(msg, f, v, keys, prefix):
         # determine base_type of field by looking at _slot_types
         idx = msg.__slots__.index(f)
         t = msg._slot_types[idx]
-        base_type = roslib.msgs.base_msg_type(t)
+        base_type, is_array, length = roslib.msgs.parse_type(t)
         # - for primitives, we just directly set (we don't
         #   type-check. we rely on serialization type checker)
         if base_type in roslib.msgs.PRIMITIVE_TYPES:
+            # 3785
+            if length is not None and len(v) != length:
+                raise ROSMessageException("Field [%s%s] has incorrect number of elements: %s != %s"%(prefix, f, len(v), length))                
             setattr(msg, f, v)
 
         # - for complex types, we have to iteratively append to def_val
         else:
+            # 3785            
+            if length is not None and len(v) != length:
+                raise ROSMessageException("Field [%s%s] has incorrect number of elements: %s != %s"%(prefix, f, len(v), length))
             list_msg_class = get_message_class(base_type)
+            if list_msg_class is None:
+                raise ROSMessageException("Cannot instantiate messages for field [%s%s] : cannot load class %s"%(prefix, f, base_type))                
+            del def_val[:]
             for el in v:
                 inner_msg = list_msg_class()
                 _fill_message_args(inner_msg, el, prefix)

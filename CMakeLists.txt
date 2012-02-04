@@ -63,7 +63,6 @@ install(FILES tools/rosunit/manifest.xml DESTINATION share/rosunit)
 install(FILES tools/rosclean/manifest.xml DESTINATION share/rosclean)
 install(FILES tools/roscreate/manifest.xml DESTINATION share/roscreate)
 install(FILES tools/rosboost_cfg/manifest.xml DESTINATION share/rosboost_cfg)
-install(FILES tools/rosemacs/manifest.xml DESTINATION share/rosemacs)
 
 # install python package-relative scripts
 install(PROGRAMS

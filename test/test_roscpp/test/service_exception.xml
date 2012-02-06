@@ -1,0 +1,5 @@
+<launch>
+  <test test-name="service_exception" pkg="test_roscpp" type="test_roscpp-service_exception"/>
+</launch>
+
+

@@ -38,6 +38,8 @@ add_rostest(service_call.xml)
 # This test should be re-enabled after #2742 is fixed.
 #add_rostest(service_deadlock.xml)
 
+add_rostest(service_exception.xml)
+
 add_rostest(service_call_unadv.xml)
 
 # Repeatedly call ros::init() and ros::fini()

@@ -236,6 +236,10 @@ void ServiceServerLink::onResponse(const ConnectionPtr& conn, const boost::share
     {
       *current_call_->resp_ = SerializedMessage(buffer, size);
     }
+    else
+    {
+      current_call_->exception_string_ = std::string(reinterpret_cast<char*>(buffer.get()), size);
+    }
   }
 
   callFinished();
@@ -363,6 +367,11 @@ bool ServiceServerLink::call(const SerializedMessage& req, SerializedMessage& re
   }
 
   info->call_finished_ = true;
+
+  if (info->exception_string_.length() > 0)
+  {
+    ROS_ERROR("Service call failed: service [%s] responded with an error: %s", service_name_.c_str(), info->exception_string_.c_str());
+  }
 
   return info->success_;
 }

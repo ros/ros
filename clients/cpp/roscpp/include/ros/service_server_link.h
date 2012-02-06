@@ -70,6 +70,8 @@ private:
 
     bool success_;
     bool call_finished_;
+
+    std::string exception_string_;
   };
   typedef boost::shared_ptr<CallInfo> CallInfoPtr;
   typedef std::queue<CallInfoPtr> Q_CallInfo;

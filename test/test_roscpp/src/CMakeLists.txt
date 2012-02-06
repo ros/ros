@@ -74,6 +74,9 @@ target_link_libraries(${PROJECT_NAME}-service_deadlock ${GTEST_LIBRARIES} ${ROS_
 add_executable(${PROJECT_NAME}-service_call_repeatedly EXCLUDE_FROM_ALL service_call_repeatedly.cpp)
 target_link_libraries(${PROJECT_NAME}-service_call_repeatedly ${ROS_LIBRARIES})
 
+add_executable(${PROJECT_NAME}-service_exception EXCLUDE_FROM_ALL service_exception.cpp)
+target_link_libraries(${PROJECT_NAME}-service_exception ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
+
 
 # Repeatedly call ros::init()
 add_executable(${PROJECT_NAME}-multiple_init_fini EXCLUDE_FROM_ALL multiple_init_fini.cpp)
@@ -202,6 +205,7 @@ ${PROJECT_NAME}-service_adv
 ${PROJECT_NAME}-service_adv_unadv
 ${PROJECT_NAME}-service_call
 ${PROJECT_NAME}-service_deadlock
+${PROJECT_NAME}-service_exception
 ${PROJECT_NAME}-service_call_repeatedly
 ${PROJECT_NAME}-multiple_init_fini
 ${PROJECT_NAME}-inspection
@@ -260,6 +264,7 @@ add_dependencies(${PROJECT_NAME}-service_adv ${PROJECT_NAME}_gencpp)
 add_dependencies(${PROJECT_NAME}-service_adv_unadv ${PROJECT_NAME}_gencpp)
 add_dependencies(${PROJECT_NAME}-service_call ${PROJECT_NAME}_gencpp)
 add_dependencies(${PROJECT_NAME}-service_deadlock ${PROJECT_NAME}_gencpp)
+add_dependencies(${PROJECT_NAME}-service_exception ${PROJECT_NAME}_gencpp)
 add_dependencies(${PROJECT_NAME}-service_call_repeatedly ${PROJECT_NAME}_gencpp)
 add_dependencies(${PROJECT_NAME}-multiple_init_fini ${PROJECT_NAME}_gencpp)
 add_dependencies(${PROJECT_NAME}-inspection ${PROJECT_NAME}_gencpp)

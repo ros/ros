@@ -41,13 +41,77 @@ name.
 
 import os
 import sys
+import rospkg
+import roslib
 
-import roslib.names
-
-import genpy
+import genmsg
+import genpy.message #for wrapping get_message_class, get_service_class
 
 # forward a bunch of old symbols from genpy for backwards compat
 from genpy import Message, DeserializationError, SerializationError, \
      Time, Duration, TVal
 from genpy.message import get_printable_message_args, fill_message_args
-from genpy.message import check_type, strify_message, get_message_class, get_service_class
+from genpy.message import check_type, strify_message
+
+def _get_message_or_service_class(type_str, message_type, reload_on_error=False):
+    ## parse package and local type name for import
+    package, base_type = genmsg.package_resource_name(message_type)
+    if not package:
+        if base_type == 'Header':
+            package = 'std_msgs'
+        else:
+            raise ValueError("message type is missing package name: %s"%str(message_type))
+    pypkg = val = None
+    try: 
+        # bootstrap our sys.path
+        roslib.launcher.load_manifest(package)
+        # import the package and return the class
+        pypkg = __import__('%s.%s'%(package, type_str))
+        val = getattr(getattr(pypkg, type_str), base_type)
+    except rospkg.ResourceNotFound:
+        val = None
+    except ImportError:
+        val = None
+    except AttributeError:
+        val = None
+
+    # this logic is mainly to support rosh, so that a user doesn't
+    # have to exit a shell just because a message wasn't built yet
+    if val is None and reload_on_error:
+        try:
+            if pypkg:
+                reload(pypkg)
+            val = getattr(getattr(pypkg, type_str), base_type)
+        except:
+            val = None
+    return val
+        
+## cache for get_message_class
+_message_class_cache = {}
+
+## cache for get_service_class
+_service_class_cache = {}
+
+def get_message_class(message_type, reload_on_error=False):
+    if message_type in _message_class_cache:
+        return _message_class_cache[message_type]
+    # try w/o bootstrapping
+    cls = genpy.message.get_message_class(message_type, reload_on_error=reload_on_error)
+    if cls is None:
+        # try old loader w/ bootstrapping
+        cls = _get_message_or_service_class('msg', message_type, reload_on_error=reload_on_error)
+    if cls:
+        _message_class_cache[message_type] = cls
+    return cls
+
+def get_service_class(service_type, reload_on_error=False):
+    if service_type in _service_class_cache:
+        return _service_class_cache[service_type]
+    cls = genpy.message.get_service_class(service_type, reload_on_error=reload_on_error)
+    # try w/o bootstrapping
+    if cls is None:
+        # try old loader w/ bootstrapping
+        cls = _get_message_or_service_class('srv', service_type, reload_on_error=reload_on_error)
+    if cls:
+        _service_class_cache[service_type] = cls
+    return cls

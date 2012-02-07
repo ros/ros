@@ -1,5 +1,5 @@
 Catkin-ProjectName: ros_comm
-Version: 1.7.7
+Version: 1.7.8
 Depends: catkin, genmsg, std_msgs, roscpp_core, ros,
          libapr1-dev, libaprutil1-dev, liblog4cxx10-dev, libboost-dev, libboost-all-dev
 Description: ROS communications-related libraries and tools

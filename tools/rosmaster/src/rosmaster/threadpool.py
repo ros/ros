@@ -220,7 +220,7 @@ class ThreadPoolThread(threading.Thread):
                         self.__pool.remove_marker(marker)
                     if callback is not None:
                         callback(result)
-                except Exception, e:
+                except Exception as e:
                     logging.getLogger('rosmaster.threadpool').error(traceback.format_exc())
     
     def go_away(self):

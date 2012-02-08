@@ -493,7 +493,7 @@ class ROSMasterHandler(object):
     ##################################################################################
     # NOTIFICATION ROUTINES
 
-    def _notify(self, registrations, task, key, value):
+    def _notify(self, registrations, task, key, value, node_apis):
         """
         Generic implementation of callback notification
         @param registrations: Registrations
@@ -510,13 +510,12 @@ class ROSMasterHandler(object):
         if not thread_pool:
             return
         
-        if registrations.has_key(key):
-            try:            
-                for node_api in registrations.get_apis(key):
-                    # use the api as a marker so that we limit one thread per subscriber
-                    thread_pool.queue_task(node_api, task, (node_api, key, value))
-            except KeyError:
-                _logger.warn('subscriber data stale (key [%s], listener [%s]): node API unknown'%(key, s))
+        try:            
+            for node_api in node_apis:
+                # use the api as a marker so that we limit one thread per subscriber
+                thread_pool.queue_task(node_api, task, (node_api, key, value))
+        except KeyError:
+            _logger.warn('subscriber data stale (key [%s], listener [%s]): node API unknown'%(key, s))
         
     def _notify_param_subscribers(self, updates):
         """
@@ -559,8 +558,7 @@ class ROSMasterHandler(object):
             finally:
                 self.ps_lock.release()
 
-
-    def _notify_topic_subscribers(self, topic, pub_uris):
+    def _notify_topic_subscribers(self, topic, pub_uris, sub_uris):
         """
         Notify subscribers with new publisher list
         @param topic: name of topic
@@ -568,19 +566,8 @@ class ROSMasterHandler(object):
         @param pub_uris: list of URIs of publishers.
         @type  pub_uris: [str]
         """
-        self._notify(self.subscribers, publisher_update_task, topic, pub_uris)
+        self._notify(self.subscribers, publisher_update_task, topic, pub_uris, sub_uris)
 
-    def _notify_service_update(self, service, service_api):
-        """
-        Notify clients of new service provider
-        @param service: name of service
-        @type  service: str
-        @param service_api: new service URI
-        @type  service_api: str
-        """
-        ###TODO:XXX:stub code, this callback doesnot exist yet
-        self._notify(self.service_clients, service_update_task, service, service_api)
-        
     ##################################################################################
     # SERVICE PROVIDER
 
@@ -603,8 +590,6 @@ class ROSMasterHandler(object):
             self.ps_lock.acquire()
             self.reg_manager.register_service(service, caller_id, caller_api, service_api)
             mloginfo("+SERVICE [%s] %s %s", service, caller_id, caller_api)
-            if 0: #TODO
-                self._notify_service_update(service, service_api)
         finally:
             self.ps_lock.release()
         return 1, "Registered [%s] as provider of [%s]"%(caller_id, service), 1
@@ -650,8 +635,6 @@ class ROSMasterHandler(object):
         try:
             self.ps_lock.acquire()
             retval = self.reg_manager.unregister_service(service, caller_id, service_api)
-            if 0: #TODO
-                self._notify_service_update(service, service_api)
             mloginfo("-SERVICE [%s] %s %s", service, caller_id, service_api)
             return retval
         finally:
@@ -742,7 +725,8 @@ class ROSMasterHandler(object):
             if topic_type != rosgraph.names.ANYTYPE or not topic in self.topics_types:
                 self.topics_types[topic] = topic_type
             pub_uris = self.publishers.get_apis(topic)
-            self._notify_topic_subscribers(topic, pub_uris)
+            sub_uris = self.subscribers.get_apis(topic)
+            self._notify_topic_subscribers(topic, pub_uris, sub_uris)
             mloginfo("+PUB [%s] %s %s",topic, caller_id, caller_api)
             sub_uris = self.subscribers.get_apis(topic)            
         finally:
@@ -771,7 +755,7 @@ class ROSMasterHandler(object):
             self.ps_lock.acquire()
             retval = self.reg_manager.unregister_publisher(topic, caller_id, caller_api)
             if retval[VAL]:
-                self._notify_topic_subscribers(topic, self.publishers.get_apis(topic))
+                self._notify_topic_subscribers(topic, self.publishers.get_apis(topic), self.subscribers.get_apis(topic))
             mloginfo("-PUB [%s] %s %s",topic, caller_id, caller_api)
         finally:
             self.ps_lock.release()

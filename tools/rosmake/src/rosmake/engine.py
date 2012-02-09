@@ -717,7 +717,7 @@ class RosMakeAll:
           else:
               self.log_dir = os.path.join(rospkg.get_ros_home(), "rosmake", date_time_stamp);
 
-          self.printer.print_all("Logging to directory%s"%self.log_dir)
+          self.printer.print_all("Logging to directory %s"%self.log_dir)
           if os.path.exists (self.log_dir) and not os.path.isdir(self.log_dir):
               self.printer.print_all( "Log destination %s is a file; please remove it or choose a new destination"%self.log_dir)
               sys.exit(1)

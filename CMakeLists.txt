@@ -28,7 +28,7 @@ add_nosetests(tools/rosclean/test)
 add_nosetests(tools/roscreate/test)
 
 # INSTALLATION
-install(FILES stack.xml rosdep.yaml
+install(FILES stack.xml
         DESTINATION share/ros)
 install(FILES config/rosconsole.config
         DESTINATION share/ros/config)

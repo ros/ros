@@ -3,6 +3,7 @@ project(ros_comm)
 find_package(ROS COMPONENTS catkin genmsg cpp_common rostime
   roscpp_serialization roscpp_traits std_msgs rosunit
   )
+catkin_stack()
 
 # Must export python before recursing into subdirs, so that rostest is
 # linked into build/bin before anybody calls add_rostest().

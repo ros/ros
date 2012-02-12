@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 project(ros)
 find_package(catkin)
 find_package(Boost COMPONENTS thread)
+catkin_stack()
 
 # Must call catkin_export_python() early, to ensure that things like
 # rosunit are symlinked into build/bin, and can be found by things like

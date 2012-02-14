@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+if [[ $1 = "--help" ]]; then
+  echo "Usage: rosrun PACKAGE EXECUTABLE [ARGS]"
+  echo "  rosrun will locate PACKAGE and try to find"
+  echo "  an executable named EXECUTABLE in the PACKAGE tree."
+  echo "  If it finds it, it will run it with ARGS."
+  exit 0
+fi
 if [ $# -lt 2 ]; then
   echo "Usage: rosrun PACKAGE EXECUTABLE [ARGS]"
   echo "  rosrun will locate PACKAGE and try to find"

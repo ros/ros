@@ -300,7 +300,7 @@ The following variables are available:
         outbag.close()
 
 def fix_cmd(argv):
-    parser = optparse.OptionParser(usage='rosbag fix INBAG OUTBAG [EXTRARULES1 EXTRARULES2 ...]')
+    parser = optparse.OptionParser(usage='rosbag fix INBAG OUTBAG [EXTRARULES1 EXTRARULES2 ...]', description='Repair the messages in a bag file so that it can be played in the current system.')
     parser.add_option('-n', '--noplugins', action='store_true', dest='noplugins', help='do not load rulefiles via plugins')
     parser.add_option('--force', action='store_true', dest='force', help='proceed with migrations, even if not all rules defined')
 
@@ -375,7 +375,7 @@ def fix_cmd(argv):
         os.remove(outname)
 
 def check_cmd(argv):
-    parser = optparse.OptionParser(usage='rosbag check BAG [-g RULEFILE] [EXTRARULES1 EXTRARULES2 ...]')
+    parser = optparse.OptionParser(usage='rosbag check BAG [-g RULEFILE] [EXTRARULES1 EXTRARULES2 ...]', description='Determine whether a bag is playable in the current system, or if it can be migrated.')
     parser.add_option('-g', '--genrules',  action='store',      dest='rulefile', default=None, help='generate a rulefile named RULEFILE')
     parser.add_option('-a', '--append',    action='store_true', dest='append',                 help='append to the end of an existing rulefile after loading it')
     parser.add_option('-n', '--noplugins', action='store_true', dest='noplugins',              help='do not load rulefiles via plugins')
@@ -668,14 +668,20 @@ def reindex_op(inbag, outbag, quiet):
 class RosbagCmds(UserDict.UserDict):
     def __init__(self):
         UserDict.UserDict.__init__(self)
-
+        self._description = {}
         self['help'] = self.help_cmd
 
+    def add_cmd(self, name, function, description):
+        self[name] = function
+        self._description[name] = description
+        
     def get_valid_cmds(self):
         str = "Available subcommands:\n"
         for k in sorted(self.keys()):
-            str += "   %s\n" % k
-
+            str += "   %s  " % k
+            if k in self._description.keys():
+                str +="\t%s" % self._description[k]
+            str += "\n"
         return str
 
     def help_cmd(self,argv):
@@ -683,6 +689,8 @@ class RosbagCmds(UserDict.UserDict):
 
         if len(argv) == 0:
             print 'Usage: rosbag <subcommand> [options] [args]'
+            print
+            print "A bag is a file format in ROS for storing ROS message data. The rosbag command can record, replay and manipulate bags."
             print
             print self.get_valid_cmds()
             print 'For additional information, see http://code.ros.org/wiki/rosbag/'
@@ -785,15 +793,15 @@ class ProgressMeter(object):
 
 def rosbagmain(argv=None):
     cmds = RosbagCmds()
-    cmds['record']     = record_cmd
-    cmds['info']       = info_cmd
-    cmds['play']       = play_cmd
-    cmds['check']      = check_cmd
-    cmds['fix']        = fix_cmd
-    cmds['filter']     = filter_cmd
-    cmds['compress']   = compress_cmd
-    cmds['decompress'] = decompress_cmd
-    cmds['reindex']    = reindex_cmd
+    cmds.add_cmd('record', record_cmd, "Record a bag file with the contents of specified topics.")
+    cmds.add_cmd('info', info_cmd, 'Summarize the contents of one or more bag files.')
+    cmds.add_cmd('play', play_cmd, "Play back the contents of one or more bag files in a time-synchronized fashion.")
+    cmds.add_cmd('check', check_cmd, 'Determine whether a bag is playable in the current system, or if it can be migrated.')
+    cmds.add_cmd('fix', fix_cmd, 'Repair the messages in a bag file so that it can be played in the current system.')
+    cmds.add_cmd('filter', filter_cmd, 'Filter the contents of the bag.')
+    cmds.add_cmd('compress', compress_cmd, 'Compress one or more bag files.')
+    cmds.add_cmd('decompress', decompress_cmd, 'Decompress one or more bag files.')
+    cmds.add_cmd('reindex', reindex_cmd, 'Reindexes one or more bag files.')
 
     if argv is None:
         argv = sys.argv

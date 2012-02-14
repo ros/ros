@@ -79,13 +79,6 @@ def write_bad_filename_failure(test_file, results_file, outname):
     
 def rostestmain():
     import roslaunch.rlutil
-
-    # make sure all loggers are configured properly
-    logfile_name = configure_logging()
-    logger = logging.getLogger('rostest')
-    import roslaunch.core
-    roslaunch.core.add_printlog_handler(logger.info)
-    roslaunch.core.add_printerrlog_handler(logger.error)        
     
     from optparse import OptionParser
     parser = OptionParser(usage="usage: %prog [options] [package] <filename>", prog=_NAME)
@@ -105,6 +98,13 @@ def rostestmain():
         print(str(e), file=sys.stderr)
         sys.exit(1)
 
+    # make sure all loggers are configured properly
+    logfile_name = configure_logging()
+    logger = logging.getLogger('rostest')
+    import roslaunch.core
+    roslaunch.core.add_printlog_handler(logger.info)
+    roslaunch.core.add_printerrlog_handler(logger.error)        
+        
     logger.info('rostest starting with options %s, args %s'%(options, args))
     if len(args) == 0:
         parser.error("You must supply a test file argument to rostest.")

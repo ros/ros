@@ -95,7 +95,7 @@ def _roswtf_main():
     all_pkgs = rospack.list()
 
     import optparse
-    parser = optparse.OptionParser(usage="usage: roswtf [launch file]")
+    parser = optparse.OptionParser(usage="usage: roswtf [launch file]", description="roswtf is a tool for verifying a ROS installation and running system. Checks provided launchfile if provided, else current stack or package.")
     # #2268
     parser.add_option("--all", 
                       dest="all_packages", default=False,

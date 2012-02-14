@@ -690,9 +690,10 @@ def _rosnode_cmd_ping(argv):
     else:
         rosnode_ping(node_name, verbose=True, max_count=options.ping_count)
     
-def _fullusage():
+def _fullusage(return_error=True):
     """
     Prints rosnode usage information.
+    @param return_error whether to exit with error code os.EX_USAGE
     """
     print("""rosnode is a command-line tool for printing information about ROS Nodes.
 
@@ -705,7 +706,10 @@ Commands:
 
 Type rosnode <command> -h for more detailed usage, e.g. 'rosnode ping -h'
 """)
-    sys.exit(os.EX_USAGE)
+    if return_error:
+        sys.exit(os.EX_USAGE)
+    else:
+        sys.exit(0)
 
 def rosnodemain(argv=None):
     """
@@ -731,6 +735,8 @@ def rosnodemain(argv=None):
             sys.exit(_rosnode_cmd_cleanup(argv) or 0)
         elif command == 'kill':
             sys.exit(_rosnode_cmd_kill(argv) or 0)
+        elif command == '--help':
+            _fullusage(False)
         else:
             _fullusage()
     except socket.error:

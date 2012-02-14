@@ -46,6 +46,10 @@ function _ros_decode_path {
 }
 
 function rospython {
+  if [[ $1 = "--help" ]]; then
+    echo -e "usage: rospython [package] \n\nRun python loading package manifest first."
+    return 0
+  fi
 	if [[ -z $1 ]]; then
     if [[ -f ./manifest.xml ]]; then
       pkgname=`basename \`pwd\``
@@ -60,7 +64,10 @@ function rospython {
 
 function roscd {
 		local rosvals
-
+    if [[ $1 = "--help" ]] | [[ $# -ne 1 ]]; then
+        echo -e "usage: roscd package\n\nJump to target package."
+        return 0
+    fi
     if [ -z $1 ]; then
       cd ${ROS_ROOT}
       return 0
@@ -79,12 +86,16 @@ function roscd {
     fi
 }
 
-function is_integer {
+function _is_integer {
 		[ "$1" -eq "$1" ] > /dev/null 2>&1
     return $?
 }
 
 function rosd {
+    if [[ $1 = "--help" ]]; then
+        echo -e "usage: rosd\n\nDisplays the list of currently remembered directories with indexes."
+        return 0
+    fi
 		let count=0;
     for items in `dirs`;
     do
@@ -94,7 +105,11 @@ function rosd {
 }
 
 function rospd {
-    if is_integer $1; then
+    if [[ $1 = "--help" ]]; then
+        echo -e "usage: rospd\n\nLike pushd, also accepts indexes from rosd."
+        return 0
+    fi
+    if _is_integer $1; then
         pushd +$1 > /dev/null ;
     else
         local rosvals
@@ -106,6 +121,10 @@ function rospd {
 
 function rosls {
     local rosvals
+    if [[ $1 = "--help" ]]; then
+        echo -e "usage: rosls [package]\n\nLists contents of a package directory."
+        return 0
+    fi
     _ros_decode_path $1 forceeval
     ls ${rosvals[2]}${rosvals[3]}${rosvals[4]} $2
 }
@@ -135,6 +154,10 @@ function _roscmd {
 
 function rosed {
     local arg
+    if [[ $1 = "--help" ]]; then
+        echo -e "usage: rossed [package] [file]\n\nEdit a file within a package."
+        return 0
+    fi
     _roscmd ${1} ${2}
     if [[ -z $EDITOR ]]; then
         vim ${arg}
@@ -145,6 +168,10 @@ function rosed {
 
 function roscp {
     local arg
+    if [[ $1 = "--help" ]] | [[ $# -ne 3 ]]; then
+        echo -e "usage: roscp package filename target\n\nCopy a file from a package to target location."
+        return 0
+    fi
     _roscmd ${1} ${2}
     cp ${arg} ${3}
 }
@@ -157,6 +184,15 @@ function _roscomplete {
     IFS=$'\n'
     reply=(${=opts} ${=stack_opts})
 		unset IFS
+}
+
+function _roscomplete_rosmake {
+    local param
+    _roscomplete
+    if [[ $PREFIX == "--"* ]]; then
+        param="--test-only --all --mark-installed --unmark-installed --robust --build-everything --specified-only --buildtest --buildtest1 --output --pre-clean --bootstrap --disable-logging --target --pjobs --threads --profile --skip-blacklist  --status-rate"
+        reply=(${=reply} ${=param})
+    fi
 }
 
 function _roscomplete_sub_dir {
@@ -222,12 +258,40 @@ function _roscomplete_launchfile {
 function _roscomplete_rosbag {
     reply=()
 
-
     if [[ ${CURRENT} == 2 ]]; then
         opts="check compress decompress filter fix help info play record reindex"
         reply=(${=opts})
     else
-        reply=()
+        if [[ ${=${(s: :)words}[$(( ${CURRENT} ))]} =~ \-\- ]]; then
+            opts="--all --help"
+            case ${=${(s: :)words}[2]} in
+                check)
+                    opts="--genrules --append --noplugins --help"
+                    ;;
+                compress|decompress)
+                    opts="--output-dir --force --quiet --help"
+                    ;;
+                filter)
+                    opts="--print --help"
+                    ;;
+                fix)
+                    opts="--force --noplugins --help"
+                    ;;
+                info)
+                    opts="--yaml --key --freq --help"
+                    ;;
+                play)
+                    opts="--help --quiet --immediate --pause --queue --clock --hz --delay --rate --start --skip-empty --loop --keep-alive --try-future-version --topics --bags"
+                    ;;
+                record)
+                    opts="--help --all --regex --exclude --quiet --output-prefix --output-name --split --size --duration --buffsize --limit --node --bz2"
+                    ;;
+                reindex)
+                    opts="--help --force --quiet --output-dir"
+                    ;;
+            esac
+            reply=(${=opts})
+        fi
     fi
 
 }
@@ -246,14 +310,21 @@ function _roscomplete_rospack {
 function _roscomplete_rosnode {
     reply=()
 
-
     if [[ ${CURRENT} == 2 ]]; then
         opts="ping list info machine kill"
         reply=(${=opts})
     elif [[ ${CURRENT} == 3 ]]; then
         case ${=${(s: :)words}[2]} in
-            ping|info|list|kill)
+            info)
                 opts=`rosnode list 2> /dev/null`
+                reply=(${=opts})
+                ;;
+            ping|list|kill)
+                if [[ ${=${(s: :)words}[$(( ${CURRENT} ))]} =~ \-\- ]]; then
+                    opts="--all --help"
+                else
+                    opts=`rosnode list 2> /dev/null`
+                fi
                 reply=(${=opts})
                 ;;
             machine)
@@ -301,37 +372,61 @@ function _roscomplete_rosparam {
 
 }
 function _roscomplete_rostopic {
+    local opts
     reply=()
-
 
     if [[ ${CURRENT} == 2 ]]; then
         opts="bw echo hz list pub type find info"
         reply=(${=opts})
     elif [[ ${CURRENT} > 2 ]]; then
-        case ${=${(s: :)words}[2]} in
-            bw|echo|hz|list|type|info)
-                if [[ ${=${(s: :)words}[$(( ${CURRENT} -1 ))]} == "-b" ]]; then
-                    opts=`find . -maxdepth 1 -type f -not -name ".*" -not -name "*[~#]" | sed 's!.*/!!'`
-                    reply=(${=opts})
-                else
-                    opts=`rostopic list 2> /dev/null`
-                    reply=(${=opts})
-                fi
-                ;;
-            find)
-                opts=`_msg_opts ${=${(s: :)words[-1]}}`
-                reply=(${=opts})
-                ;;
-            pub)
-                if [[ ${CURRENT} == 3 ]]; then
-		                opts=`rostopic list 2> /dev/null`
-                    reply=(${=opts})
-                elif [[ ${CURRENT} == 4 ]]; then
-                    opts=`_msg_opts ${=${(s: :)words[-1]}}`
-                    reply=(${=opts})
-                fi
-                ;;
-        esac
+        if [[ ${=${(s: :)words}[$(( ${CURRENT} ))]} =~ \-\- ]]; then
+            case ${=${(s: :)words}[2]} in
+                pub)
+                    opts="--help --rate --once --file --latch"
+                    ;;
+                bw)
+                    opts="--help --window"
+                    ;;
+                echo)
+                    opts="--help --bag --filter --nostr --noarr --clear --all --offset"
+                    ;;
+                hz)
+                    opts="--help --window --filter"
+                    ;;
+                list)
+                    opts="--help --bag --verbose --host"
+                    ;;
+                type|info)
+                    opts="--help"
+                    ;;
+            esac
+            reply=(${=opts})
+        else
+						case ${=${(s: :)words}[2]} in
+								bw|echo|hz|list|type|info)
+										if [[ ${=${(s: :)words}[$(( ${CURRENT} -1 ))]} == "-b" ]]; then
+												opts=`find . -maxdepth 1 -type f -not -name ".*" -not -name "*[~#]" | sed 's!.*/!!'`
+												reply=(${=opts})
+										else
+												opts=`rostopic list 2> /dev/null`
+												reply=(${=opts})
+										fi
+										;;
+								find)
+										opts=`_msg_opts ${=${(s: :)words[-1]}}`
+										reply=(${=opts})
+										;;
+								pub)
+										if [[ ${CURRENT} == 3 ]]; then
+												opts=`rostopic list 2> /dev/null`
+												reply=(${=opts})
+										elif [[ ${CURRENT} == 4 ]]; then
+												opts=`_msg_opts ${=${(s: :)words[-1]}}`
+												reply=(${=opts})
+										fi
+										;;
+		        esac
+        fi
     fi
 }
 
@@ -497,12 +592,13 @@ function _roscomplete_roscreate_pkg {
     fi
 }
 compctl -K "_roscomplete_sub_dir" -S / "roscd" "rospd" "rosls"
-compctl -K "_roscomplete" "rosmake"
+compctl -K "_roscomplete_rosmake" "rosmake"
 
+compctl -x 'p[1]' -k "(check purge)" -- "rosclean"
 compctl -f -x 'p[1]' -K "_roscomplete" - 'p[2]' -K _roscomplete_file -- "rosed" "roscp"
 compctl -f -x 'p[1]' -K "_roscomplete" - 'p[2]' -K _roscomplete_exe -- "rosrun"
-compctl -/g '*.(launch|test)' -x 'p[1]' -K "_roscomplete" -tx - 'p[2]' -K _roscomplete_launchfile -- "roslaunch"
-compctl -/g '*.(launch|test)' -x 'p[1]' -K "_roscomplete" -tx - 'p[2]' -K _roscomplete_launchfile -- "rostest"
+compctl -/g '*.(launch|test)' -x 'p[1]' -K "_roscomplete" -tx - 'p[2]' -K _roscomplete_launchfile -- + -x 'S[--]' -k "(--files --args --nodes --find-node --child --local --screen --server_uri --run_id --wait --port --core --pid --dump-params)" -- "roslaunch"
+compctl -/g '*.(launch|test)' -x 'p[1]' -K "_roscomplete" -tx - 'p[2]' -K _roscomplete_launchfile -- + -x 'S[--]' -k "(--bare --bare-limit --bare-name --pkgdir --package)" -- "rostest"
 compctl -K "_roscomplete_rospack" "rospack"
 compctl -K "_roscomplete_rosbag" "rosbag"
 compctl -K "_roscomplete_rosnode" "rosnode"
@@ -512,3 +608,4 @@ compctl -K "_roscomplete_rosservice" "rosservice"
 compctl -x 'p[1]' -k "(md5 package packages show users)" - 'p[2]' -S '' -K "_roscomplete_rosmsg" -- "rosmsg"
 compctl -x 'p[1]' -k "(md5 package packages show users)" - 'p[2]' -S '' -K "_roscomplete_rossrv" -- "rossrv"
 compctl -K "_roscomplete_roscreate_pkg" "roscreate-pkg"
+compctl -/g '*.(launch|test)' -x 'S[--]' -k "(--all --no-plugins --offline)" -- "roswtf"

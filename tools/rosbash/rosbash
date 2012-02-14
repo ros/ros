@@ -101,6 +101,10 @@ function _ros_decode_path {
 }
 
 function rospython {
+  if [[ $1 = "--help" ]]; then
+    echo -e "usage: rospython [package] \n\nRun python loading package manifest first."
+    return 0
+  fi
   if [[ -z $1 ]]; then
     if [[ -f ./manifest.xml ]]; then
       pkgname=`basename \`pwd\``
@@ -115,7 +119,10 @@ function rospython {
 
 function roscd {
     local rosvals
-
+    if [[ $1 = "--help" ]] | [[ $# -ne 1 ]]; then
+        echo -e "usage: roscd package\n\nJump to target package."
+        return 0
+    fi
     if [ -z $1 ]; then
       cd ${ROS_ROOT}
       return 0
@@ -134,12 +141,16 @@ function roscd {
     fi
 }
 
-function is_integer {
+function _is_integer {
     [ "$1" -eq "$1" ] > /dev/null 2>&1
     return $?
 }
 
 function rosd {
+    if [[ $1 = "--help" ]]; then
+        echo -e "usage: rosd\n\nDisplays the list of currently remembered directories with indexes."
+        return 0
+    fi
     let count=0;
     for items in `dirs`;
     do
@@ -149,7 +160,11 @@ function rosd {
 }
 
 function rospd {
-    if is_integer $1; then
+    if [[ $1 = "--help" ]]; then
+        echo -e "usage: rospd\n\nLike pushd, also accepts indexes from rosd."
+        return 0
+    fi
+    if _is_integer $1; then
         pushd +$1 > /dev/null ;
     else
         local rosvals
@@ -161,6 +176,10 @@ function rospd {
 
 function rosls {
     local rosvals
+    if [[ $1 = "--help" ]]; then
+        echo -e "usage: rosls [package]\n\nLists contents of a package directory."
+        return 0
+    fi
     _ros_decode_path $1 forceeval
     ls ${rosvals[1]}${rosvals[2]}${rosvals[3]} $2
 }
@@ -199,6 +218,10 @@ function _roscmd {
 
 function rosed {
     local arg
+    if [[ $1 = "--help" ]]; then
+       echo -e "usage: rossed [package] [file]\n\nEdit a file within a package."
+       return 0
+    fi
     _roscmd ${1} ${2}
     if [[ -n ${arg} ]]; then
         if [[ -z $EDITOR ]]; then
@@ -211,6 +234,10 @@ function rosed {
 
 function roscp {
     local arg
+    if [[ $1 = "--help" ]] | [[ $# -ne 3 ]]; then
+        echo -e "usage: roscp package filename target\n\nCopy a file from a package to target location."
+        return 0
+    fi
     _roscmd ${1} ${2}
     cp ${arg} ${3}
 }
@@ -229,6 +256,16 @@ function _roscomplete {
     IFS=$'\n'
     COMPREPLY=($(compgen -W "${opts}" -- ${arg}))
     unset IFS
+}
+
+function _roscomplete_rosmake {
+    local arg
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+    _roscomplete
+    if [[ ${arg} =~ \-\-.* ]]; then
+        COMPREPLY=(${COMPREPLY[@]} $(compgen -W "--test-only --all --mark-installed --unmark-installed --robust --build-everything --specified-only --buildtest --buildtest1 --output --pre-clean --bootstrap --disable-logging --target --pjobs= --threads --profile --skip-blacklist --status-rate" -- ${arg}))
+    fi
 }
 
 function _roscomplete_sub_dir {
@@ -412,9 +449,25 @@ function _roscomplete_file {
 
 function _roscomplete_launch {
     _roscomplete_search_dir "-type f -regex .*\.launch$\|.*\.test$"
-    if [[ $COMP_CWORD == 1 ]]; then
-        arg="${COMP_WORDS[COMP_CWORD]}"
-        COMPREPLY=($(compgen -o plusdirs -f -X "!*.launch" -- ${arg}) ${COMPREPLY[@]} $(compgen -o plusdirs -f -X "!*.test" -- ${arg}) ${COMPREPLY[@]})
+    arg="${COMP_WORDS[COMP_CWORD]}"
+    if [[ ${arg} =~ \-\-.* ]]; then
+        COMPREPLY=(${COMPREPLY[@]} $(compgen -W "--files --args --nodes --find-node --child --local --screen --server_uri --run_id --wait --port --core --pid --dump-params" -- ${arg}))
+    else
+        if [[ $COMP_CWORD == 1 ]]; then
+           COMPREPLY=($(compgen -o plusdirs -f -X "!*.launch" -- ${arg}) ${COMPREPLY[@]} $(compgen -o plusdirs -f -X "!*.test" -- ${arg}) ${COMPREPLY[@]})
+        fi
+    fi
+}
+
+function _roscomplete_test {
+    _roscomplete_search_dir "-type f -regex .*\.launch$\|.*\.test$"
+    arg="${COMP_WORDS[COMP_CWORD]}"
+    if [[ ${arg} =~ \-\-.* ]]; then
+        COMPREPLY=(${COMPREPLY[@]} $(compgen -W "--bare --bare-limit --bare-name --pkgdir --package" -- ${arg}))
+    else
+        if [[ $COMP_CWORD == 1 ]]; then
+           COMPREPLY=($(compgen -o plusdirs -f -X "!*.launch" -- ${arg}) ${COMPREPLY[@]} $(compgen -o plusdirs -f -X "!*.test" -- ${arg}) ${COMPREPLY[@]})
+        fi
     fi
 }
 
@@ -426,7 +479,35 @@ function _roscomplete_rosbag {
         opts="check compress decompress filter fix help info play record reindex"
         COMPREPLY=($(compgen -W "$opts" -- ${arg}))
     else
-        COMPREPLY=()
+        if [[ ${arg} =~ \-\-.* ]]; then
+            case ${COMP_WORDS[1]} in
+                check)
+                    opts="--genrules --append --noplugins --help"
+                    ;;
+                compress|decompress)
+                    opts="--output-dir --force --quiet --help"
+                    ;;
+                filter)
+                    opts="--print --help"
+                    ;;
+                fix)
+                    opts="--force --noplugins --help"
+                    ;;
+                info)
+                    opts="--yaml --key --freq --help"
+                    ;;
+                play)
+                    opts="--help --quiet --immediate --pause --queue --clock --hz --delay --rate --start --skip-empty --loop --keep-alive --try-future-version --topics --bags"
+                    ;;
+                record)
+                    opts="--help --all --regex --exclude --quiet --output-prefix --output-name --split --size --duration --buffsize --limit --node --bz2"
+                    ;;
+                reindex)
+                    opts="--help --force --quiet --output-dir"
+                    ;;
+            esac
+            COMPREPLY=($(compgen -W "$opts" -- ${arg})) 
+        fi
     fi
 
 }
@@ -454,8 +535,16 @@ function _roscomplete_rosnode {
         COMPREPLY=($(compgen -W "$opts" -- ${arg}))
     elif [[ $COMP_CWORD == 2 ]]; then
         case ${COMP_WORDS[1]} in
-            ping|info|list|kill)
+            info)
                 opts=`rosnode list 2> /dev/null`
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                ;;
+            ping|list|kill)
+                if [[ ${arg} =~ \-\-.* ]]; then
+                    opts="--all --help"
+                else
+                    opts=`rosnode list 2> /dev/null`
+                fi
                 COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
                 ;;
             machine)
@@ -510,29 +599,49 @@ function _roscomplete_rostopic {
         opts="bw echo hz list pub type find info"
         COMPREPLY=($(compgen -W "$opts" -- ${arg}))
     elif [[ $COMP_CWORD -ge 2 ]]; then
-        case ${COMP_WORDS[1]} in
-            bw|echo|hz|list|type|info)
-                if [[ ${COMP_WORDS[$(( $COMP_CWORD - 1 ))]} == "-b" ]]; then
-                    COMPREPLY=($(compgen -f -- ${arg}))
-                else
-                    opts=`rostopic list 2> /dev/null`
-                    COMPREPLY=($(compgen -W "$opts" -- ${arg}))
-                fi
-                ;;
-            find)
-                opts=`_msg_opts ${COMP_WORDS[$COMP_CWORD]}`
-                COMPREPLY=($(compgen -W "$opts" -- ${arg}))
-                ;;
-            pub)
-                if [[ $COMP_CWORD == 2 ]]; then
-		    opts=`rostopic list 2> /dev/null`
-                    COMPREPLY=($(compgen -W "$opts" -- ${arg}))
-                elif [[ $COMP_CWORD == 3 ]]; then
-                    opts=`_msg_opts ${COMP_WORDS[$COMP_CWORD]}`
-                    COMPREPLY=($(compgen -W "$opts" -- ${arg}))
-                fi
-                ;;
-        esac
+        if [[ ${arg} =~ \-\-.* ]]; then
+            case ${COMP_WORDS[1]} in
+                pub)
+                    COMPREPLY=($(compgen -W "--rate --once --file --latch" -- ${arg}))
+                    ;;
+                bw)
+                    COMPREPLY=($(compgen -W "--window" -- ${arg}))
+                    ;;
+                echo)
+                    COMPREPLY=($(compgen -W "--bag --filter --nostr --noarr --clear --all offset" -- ${arg}))
+                    ;;
+                hz)
+                    COMPREPLY=($(compgen -W "--window --filter" -- ${arg}))
+                    ;;
+                list)
+                    COMPREPLY=($(compgen -W "--bag --verbose --host" -- ${arg})) 
+                    ;;
+            esac
+        else
+						case ${COMP_WORDS[1]} in
+								bw|echo|hz|list|type|info)
+										if [[ ${COMP_WORDS[$(( $COMP_CWORD - 1 ))]} == "-b" ]]; then
+												COMPREPLY=($(compgen -f -- ${arg}))
+										else
+												opts=`rostopic list 2> /dev/null`
+												COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+										fi
+										;;
+								find)
+										opts=`_msg_opts ${COMP_WORDS[$COMP_CWORD]}`
+										COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+										;;
+								pub)
+										if [[ $COMP_CWORD == 2 ]]; then
+												opts=`rostopic list 2> /dev/null`
+												COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+										elif [[ $COMP_CWORD == 3 ]]; then
+												opts=`_msg_opts ${COMP_WORDS[$COMP_CWORD]}`
+												COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+										fi
+										;;
+		        esac
+        fi
     fi
 }
 
@@ -632,16 +741,39 @@ function _roscomplete_roscreate_pkg {
     fi
 }
 
+function _roscomplete_roswtf {
+    local arg
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+    if [[ ${arg} =~ \-\-.* ]]; then
+        COMPREPLY=($(compgen -W "--all --no-plugins --offline" -- ${arg}))
+    else
+        if [[ $COMP_CWORD == 1 ]]; then
+           COMPREPLY=($(compgen -o plusdirs -f -X "!*.launch" -- ${arg}))
+        fi
+    fi
+}
+
+function _roscomplete_rosclean {
+    local arg
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+    if [[ $COMP_CWORD == 1 ]]; then
+        opts="check purge"
+        COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+    fi
+}
 
 complete -F "_roscomplete_sub_dir" -o "nospace" "roscd"
 complete -F "_roscomplete_sub_dir" -o "nospace" "rospd"
 complete -F "_roscomplete_sub_dir" -o "nospace" "rosls"
-complete -F "_roscomplete" "rosmake"
+complete -F "_roscomplete_rosmake" "rosmake"
+complete -F "_roscomplete_rosclean" "rosclean"
 complete -F "_roscomplete_exe" "rosrun"
 complete -F "_roscomplete_file" "rosed"
 complete -F "_roscomplete_file" "roscp"
 complete -F "_roscomplete_launch" -o filenames "roslaunch"
-complete -F "_roscomplete_launch" -o filenames "rostest"
+complete -F "_roscomplete_test" -o filenames "rostest"
 complete -F "_roscomplete_rospack" "rospack"
 complete -F "_roscomplete_rosbag" -o default "rosbag"
 complete -F "_roscomplete_rosnode" "rosnode"
@@ -651,3 +783,4 @@ complete -F "_roscomplete_rosservice" "rosservice"
 complete -F "_roscomplete_rosmsg" "rosmsg"
 complete -F "_roscomplete_rossrv" "rossrv"
 complete -F "_roscomplete_roscreate_pkg" "roscreate-pkg"
+complete -F "_roscomplete_roswtf" -o filenames "roswtf"

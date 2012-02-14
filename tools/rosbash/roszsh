@@ -235,7 +235,7 @@ function _roscomplete_rosbag {
 function _roscomplete_rospack {
     reply=()
     if [[ ${CURRENT} == 2 ]]; then
-        opts="help find list list-names langs depends depends-manifests depends1 depends-indent depends-why rosdep rosdep0 vcs vcs0 depends-on depends-on1 export plugins cflags-only-I cflags-only-other libs-only-L libs-only-l libs-only-other profile"
+        opts="help find list list-names list-duplicates langs depends depends-manifests depends1 depends-indent depends-msgsrv depends-why rosdep rosdep0 vcs vcs0 depends-on depends-on1 export plugins cflags-only-I cflags-only-other libs-only-L libs-only-l libs-only-other profile"
         reply=(${=opts})
     else
         opts=`rospack list-names`

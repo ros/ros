@@ -575,7 +575,8 @@ class RosMakeAll:
         """
         main command-line entrypoint
         """
-        parser = OptionParser(usage="usage: %prog [options] [PACKAGE]...", prog='rosmake')
+        parser = OptionParser(usage="usage: %prog [options] [PACKAGE]...",
+                              description="rosmake recursively builds all dependencies before building a package", prog='rosmake')
         parser.add_option("--test-only", dest="test_only", default=False,
                           action="store_true", help="only run tests")
         parser.add_option("-t", dest="test", default=False,

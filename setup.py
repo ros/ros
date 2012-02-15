@@ -63,7 +63,8 @@ setup(name='ros_comm',
 
           'tools/rosmsg/scripts/rosmsg',
           'tools/rosmsg/scripts/rossrv',
-
+          'tools/rosmsg/scripts/rosmsg-proto',
+          
           'tools/rosnode/scripts/rosnode',
           'tools/rosparam/scripts/rosparam',
           'tools/rosservice/scripts/rosservice',

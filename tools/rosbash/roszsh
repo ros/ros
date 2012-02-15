@@ -423,6 +423,9 @@ function _roscomplete_rostopic {
 										elif [[ ${CURRENT} == 4 ]]; then
 												opts=`_msg_opts ${=${(s: :)words[-1]}}`
 												reply=(${=opts})
+										elif [[ ${CURRENT} == 5 ]]; then
+												opts=`rosrun rosmsg rosmsgproto msg -s ${=${(s: :)words[-1]}}`
+												reply=(${=opts})
 										fi
 										;;
 		        esac
@@ -447,6 +450,14 @@ function _roscomplete_rosservice {
                 ;;
             find)
                 opts=`_srv_opts ${=${(s: :)words[-1]}}`
+                reply=(${=opts})
+                ;;
+        esac
+    elif [[ ${CURRENT} == 4 ]]; then
+        case ${=${(s: :)words}[2]} in
+            call)
+                type=`rosservice type ${=${(s: :)words[-1]}}`
+                opts=`rosrun rosmsg rosmsgproto srv -s ${type}`
                 reply=(${=opts})
                 ;;
         esac

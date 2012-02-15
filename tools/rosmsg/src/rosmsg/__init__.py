@@ -473,12 +473,16 @@ def list_types(package, mode=MODE_MSG):
     """
     rospack = rospkg.RosPack()
     if mode == MODE_MSG:
-        return [genmsg.resource_name(package, t) for t in _list_types(rospack, package, 'msg', '.msg')]
+        subdir = 'msg'
     elif mode == MODE_SRV:
-        return [genmsg.resource_name(package, t) for t in _list_types(rospack, package, 'srv', '.srv')]
+        subdir = 'srv'
     else:
         raise ValueError('Unknown mode for list_types: %s'%mode)
 
+    path = os.path.join(rospack.get_path(package), subdir)
+    
+    return [genmsg.resource_name(package, t) for t in _list_types(path, subdir, mode)]
+    
 def _msg_filter(ext):
     def mfilter(f):
         """
@@ -488,18 +492,19 @@ def _msg_filter(ext):
         return os.path.isfile(f) and f.endswith(ext)
     return mfilter
 
-def _list_types(rospack, package, subdir, ext):
+def _list_types(path, subdir, ext):
     """
     List all messages in the specified package
     :param package str: name of package to search
     :param include_depends bool: if True, will also list messages in package dependencies
     :returns [str]: message type names
     """
-    path = os.path.join(rospack.get_path(package), subdir)
-    types = _list_resources(package, path, _msg_filter(ext))
-    return [x[:-len(ext)] for x in types]
+    types = _list_resources(path, _msg_filter(ext))
+    result = [x[:-len(ext)] for x in types]
+    result.sort()
+    return result
 
-def _list_resources(package, path, rfilter=os.path.isfile):
+def _list_resources(path, rfilter=os.path.isfile):
     """
     List resources in a package directory within a particular
     subdirectory. This is useful for listing messages, services, etc...
@@ -627,10 +632,10 @@ def rosmsg_cmd_package(mode, full):
                       dest="single_line", default=False,action="store_true",
                       help="list all msgs on a single line")
     options, arg = _stdin_arg(parser, full)
-    if options.single_line:    
-        print(' '.join(list_types(arg,mode=mode)))
-    else:
-        print('\n'.join(list_types(arg, mode=mode)))
+    joinstring='\n'
+    if options.single_line:
+        joinstring=' '
+    print(joinstring.join(list_types(arg, mode=mode)))
     
 def rosmsg_cmd_packages(mode, full, argv=None):
     if argv is None:
@@ -640,18 +645,22 @@ def rosmsg_cmd_packages(mode, full, argv=None):
                       dest="single_line", default=False,action="store_true",
                       help="list all packages on a single line")
     options, args = parser.parse_args(argv[1:])
-    rospack = rospkg.RosPack()    
+    rospack = rospkg.RosPack()
+    joinstring='\n'
     if options.single_line:
-        print(' '.join([p for p, _ in iterate_packages(rospack, mode)]))
-    else:
-        print('\n'.join([p for p, _ in iterate_packages(rospack, mode)]))
+        joinstring=' '
+    p1 = [p for p, _ in iterate_packages(rospack, mode)]
+    p1.sort()
+    print(joinstring.join(p1))
 
 def fullusage(cmd):
     """
     :param cmd: command name, ``str``
     :returns: usage text for cmd, ``str``
     """
-    return """Commands:
+    return """rosmsg is a command-line tool for displaying information about ROS Message types.
+
+Commands:
 \t%(cmd)s show\tShow message description
 \t%(cmd)s md5\tDisplay message md5sum
 \t%(cmd)s package\tList messages in a package
@@ -688,6 +697,9 @@ def rosmsgmain(mode=MODE_MSG):
             rosmsg_cmd_packages(ext, full)
         elif command == 'md5':
             rosmsg_cmd_md5(ext, full)
+        elif command == '--help':
+            print(fullusage('ros'+mode[1:]))
+            sys.exit(0)
         else:
             print(fullusage('ros'+mode[1:]))
             sys.exit(os.EX_USAGE)

@@ -142,7 +142,7 @@ std_msgs/String s2
             rosmsg_cmd_packages(MODE_MSG, 'foo', ['packages', '-s'])
             val = b.getvalue().strip()
             packages2 = val.split(' ')
-            assert 'std_msgs' in packages2, packages2
+            assert 'std_msgs' in packages2
         assert set(packages1) == set(packages2), "%s vs. %s"%(packages1, packages2)
 
 from contextlib import contextmanager

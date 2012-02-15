@@ -665,7 +665,7 @@ def rosmsg_cmd_list(mode, full, argv=None):
     else:
         raise ValueError('Unknown mode for iterate_packages: %s'%mode)
     rospack = rospkg.RosPack()
-    packs = iterate_packages(rospack, mode)
+    packs = sorted([x for x in iterate_packages(rospack, mode)])
     for (p, direc) in packs:
         for file in _list_types(direc, subdir, mode):
             print( "%s/%s"%(p, file))

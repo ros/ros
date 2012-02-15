@@ -449,7 +449,7 @@ def get_pkg_msg_specs(package):
             specs.append(typespec)
         except Exception as e:
             failures.append(t)
-            print("ERROR: unable to load %s"%t)
+            print("ERROR: unable to load %s, %s"%(t, e))
     return specs, failures
 
 def load_package_dependencies(package, load_recursive=False):

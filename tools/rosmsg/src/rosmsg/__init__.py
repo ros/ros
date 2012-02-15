@@ -652,6 +652,24 @@ def rosmsg_cmd_packages(mode, full, argv=None):
     p1 = [p for p, _ in iterate_packages(rospack, mode)]
     p1.sort()
     print(joinstring.join(p1))
+    
+def rosmsg_cmd_list(mode, full, argv=None):
+    if argv is None:
+        argv = sys.argv[1:]
+    parser = OptionParser(usage="usage: ros%s list"%mode[1:])
+    options, args = parser.parse_args(argv[1:])
+    if mode == MODE_MSG:
+        subdir = 'msg'
+    elif mode == MODE_SRV:
+        subdir = 'srv'
+    else:
+        raise ValueError('Unknown mode for iterate_packages: %s'%mode)
+    rospack = rospkg.RosPack()
+    packs = iterate_packages(rospack, mode)
+    for (p, direc) in packs:
+        for file in _list_types(direc, subdir, mode):
+            print( "%s/%s"%(p, file))
+        
 
 def fullusage(cmd):
     """
@@ -662,6 +680,7 @@ def fullusage(cmd):
 
 Commands:
 \t%(cmd)s show\tShow message description
+\t%(cmd)s list\tList all messages
 \t%(cmd)s md5\tDisplay message md5sum
 \t%(cmd)s package\tList messages in a package
 \t%(cmd)s packages\tList packages that contain messages
@@ -695,6 +714,8 @@ def rosmsgmain(mode=MODE_MSG):
             rosmsg_cmd_package(ext, full)
         elif command == 'packages':
             rosmsg_cmd_packages(ext, full)
+        elif command == 'list':
+            rosmsg_cmd_list(ext, full)
         elif command == 'md5':
             rosmsg_cmd_md5(ext, full)
         elif command == '--help':

@@ -119,10 +119,11 @@ def represent_ordered_mapping(self, tag, mapping, flow_style=None):
             node.flow_style = best_style
     return node
 
-yaml.representer.BaseRepresenter.represent_mapping = represent_ordered_mapping
+if "OrderedDict" in collections.__dict__:
+    yaml.representer.BaseRepresenter.represent_mapping = represent_ordered_mapping
+    yaml.representer.Representer.add_representer(collections.OrderedDict,
+                                                 yaml.representer.SafeRepresenter.represent_dict)
 
-yaml.representer.Representer.add_representer(collections.OrderedDict,
-        yaml.representer.SafeRepresenter.represent_dict)
 ## end recipe for ordered yaml output ######
 
 

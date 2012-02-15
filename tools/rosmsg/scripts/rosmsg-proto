@@ -39,7 +39,7 @@ import sys
 try:
     import yaml
     import collections
-    if "OrderedDict" in collections.__dict__:
+    if "OrderedDict" not in collections.__dict__:
         # don't want to fail
         sys.exit(0)
 except:

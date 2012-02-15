@@ -509,7 +509,7 @@ function _roscomplete_rosmsg {
 
 
     if [[ ${CURRENT} == 2 ]]; then
-        opts="show users md5 package packages"
+        opts="show list md5 package packages"
         reply=(${=opts})
     elif [[ ${CURRENT} == 3 ]]; then
         case ${=${(s: :)words}[2]} in
@@ -521,7 +521,7 @@ function _roscomplete_rosmsg {
                 opts=`rospack list-names`
                 reply=(${=opts})
                 ;;
-            packages)
+            packages|list)
                 # This shouldn't really have a completion rule
                 ;;
         esac
@@ -572,7 +572,7 @@ function _roscomplete_rossrv {
 
 
     if [[ ${CURRENT} == 2 ]]; then
-        opts="show users md5 package packages"
+        opts="show list md5 package packages"
         reply=(${=opts})
     elif [[ ${CURRENT} == 3 ]]; then
         case ${=${(s: :)words}[2]} in
@@ -584,7 +584,7 @@ function _roscomplete_rossrv {
                 opts=`rospack list-names`
                 reply=(${=opts})
                 ;;
-            packages)
+            packages|list)
                 # This shouldn't really have a completion rule
                 ;;
         esac

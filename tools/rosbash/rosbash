@@ -363,7 +363,7 @@ function _roscomplete_rossrv {
     arg="${COMP_WORDS[COMP_CWORD]}"
 
     if [[ $COMP_CWORD == 1 ]]; then
-        opts="show users md5 package packages"
+        opts="show list md5 package packages"
         COMPREPLY=($(compgen -W "$opts" -- ${arg}))
     elif [[ $COMP_CWORD == 2 ]]; then
         case ${COMP_WORDS[1]} in
@@ -375,7 +375,7 @@ function _roscomplete_rossrv {
                 opts=`rospack list-names`
                 COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
                 ;;
-            packages)
+            packages|list)
                 # This shouldn't really have a completion rule
                 ;;
         esac
@@ -722,7 +722,7 @@ function _roscomplete_rosmsg {
     arg="${COMP_WORDS[COMP_CWORD]}"
 
     if [[ $COMP_CWORD == 1 ]]; then
-        opts="show users md5 package packages"
+        opts="show list md5 package packages"
         COMPREPLY=($(compgen -W "$opts" -- ${arg}))
     elif [[ $COMP_CWORD == 2 ]]; then
         case ${COMP_WORDS[1]} in
@@ -734,7 +734,7 @@ function _roscomplete_rosmsg {
                 opts=`rospack list-names`
                 COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
                 ;;
-            packages)
+            packages|list)
                 # This shouldn't really have a completion rule
                 ;;
         esac

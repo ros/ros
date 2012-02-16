@@ -35,11 +35,9 @@ catkin_project(roslib
   )
 
 #integration tests
-find_package(GTest)
-if(GTEST_FOUND)
-  add_gtest(${PROJECT_NAME}-utest test/utest.cpp)
-  target_link_libraries(${PROJECT_NAME}-utest roslib ${Boost_LIBRARIES} ${ROS_LIBRARIES})
 
-  add_gtest(${PROJECT_NAME}-test_package test/package.cpp)
-  target_link_libraries(${PROJECT_NAME}-test_package roslib ${ROS_LIBRARIES})
-endif(GTEST_FOUND)
+add_gtest(${PROJECT_NAME}-utest test/utest.cpp)
+target_link_libraries(${PROJECT_NAME}-utest roslib ${Boost_LIBRARIES} ${ROS_LIBRARIES})
+
+add_gtest(${PROJECT_NAME}-test_package test/package.cpp)
+target_link_libraries(${PROJECT_NAME}-test_package roslib ${ROS_LIBRARIES})

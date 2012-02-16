@@ -104,7 +104,10 @@ function(add_gtest exe)
   endif()
 
   # Create the program, with basic + gtest build flags
-  find_package(GTest REQUIRED)
+  find_package(GTest)
+  if(NOT GTEST_FOUND)
+    message("Warning: GTest not found; C++ tests will fail to build.")
+  endif()
   include_directories(${GTEST_INCLUDE_DIRS})
   add_executable(${exe} EXCLUDE_FROM_ALL ${_gtest_DEFAULT_ARGS})
   target_link_libraries(${exe} ${GTEST_LIBRARIES} ${THREADS_LIBRARY})

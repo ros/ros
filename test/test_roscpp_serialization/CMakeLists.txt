@@ -2,7 +2,6 @@ project(test_roscpp_serialization)
 catkin_project(test_roscpp_serialization)
 
 find_package(ROS COMPONENTS roscpp xmlrpcpp rosconsole rosunit rostest)
-find_package(GTest REQUIRED)
 include_directories(include ${ROS_INCLUDE_DIRS} ${GTEST_INCLUDE_DIRS})
 
 add_message_files(

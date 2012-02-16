@@ -126,7 +126,6 @@ target_link_libraries(${PROJECT_NAME}-test_version)
 # also the output of test_spinners has to be visually inspected
 # because there is no automatic way to ensure that an error condition
 # provokes a particular message.
-find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
 add_executable(${PROJECT_NAME}-test_spinners EXCLUDE_FROM_ALL test/test_spinners.cpp)
 add_dependencies(tests ${PROJECT_NAME}-test_spinners) 

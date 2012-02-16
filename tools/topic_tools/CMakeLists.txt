@@ -46,7 +46,6 @@ install(DIRECTORY include/
 add_gtest(${PROJECT_NAME}-utest test/utest.cpp)
 target_link_libraries(${PROJECT_NAME}-utest topic_tools)
 
-find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
 add_executable(${PROJECT_NAME}-test_shapeshifter EXCLUDE_FROM_ALL test/test_shapeshifter.cpp)
 target_link_libraries(${PROJECT_NAME}-test_shapeshifter ${GTEST_LIBRARIES} topic_tools)

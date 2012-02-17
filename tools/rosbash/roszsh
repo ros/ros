@@ -421,7 +421,11 @@ function _roscomplete_rostopic {
 												opts=`rostopic list 2> /dev/null`
 												reply=(${=opts})
 										elif [[ ${CURRENT} == 4 ]]; then
-												opts=`_msg_opts ${=${(s: :)words[-1]}}`
+												if [[ ${=${(s: :)words}[$(( ${CURRENT} ))]} =~ / ]]; then
+														opts=`_msg_opts ${=${(s: :)words[-1]}} | sed -s 's/.*\///'`
+												else
+										    		opts=`_msg_opts ${=${(s: :)words[-1]}}`
+                    		fi
 												reply=(${=opts})
 										elif [[ ${CURRENT} == 5 ]]; then
 												opts=`rosmsg-proto msg -s ${=${(s: :)words[-1]}}`
@@ -614,7 +618,7 @@ compctl -K "_roscomplete_rospack" "rospack"
 compctl -K "_roscomplete_rosbag" "rosbag"
 compctl -K "_roscomplete_rosnode" "rosnode"
 compctl -K "_roscomplete_rosparam" "rosparam"
-compctl -K "_roscomplete_rostopic" "rostopic"
+compctl -x 'p[0,2]' -K "_roscomplete_rostopic" - 'n[1,/] p[3]' -K "_roscomplete_rostopic" - 'p[3]' -S '' -K "_roscomplete_rostopic" - 'p[4]' -K "_roscomplete_rostopic" -- "rostopic"
 compctl -K "_roscomplete_rosservice" "rosservice"
 compctl -x 'p[1]' -k "(md5 package packages show users)" - 'p[2]' -S '' -K "_roscomplete_rosmsg" -- "rosmsg"
 compctl -x 'p[1]' -k "(md5 package packages show users)" - 'p[2]' -S '' -K "_roscomplete_rossrv" -- "rossrv"

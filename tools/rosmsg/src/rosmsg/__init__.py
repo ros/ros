@@ -313,7 +313,7 @@ def rosmsg_cmd_prototype(args):
                 message_type=results[0]
     
         if mode == MODE_SRV:
-            msg_class = roslib.message.get_service_class(message_type)
+            msg_class = genpy.message.get_service_class(message_type)
             if (msg_class == None):
                 raise RosMsgProtoException("Unknown service class: %s"%message_type)
             instance = msg_class()._request_class()

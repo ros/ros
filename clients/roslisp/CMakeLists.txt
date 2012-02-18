@@ -12,5 +12,6 @@ foreach(dir
     utils)
   install(DIRECTORY ${dir}
           DESTINATION "share/roslisp"
-          PATTERN ".svn" EXCLUDE)
+          PATTERN ".svn" EXCLUDE
+          PATTERN "genmsg_lisp.py" EXCLUDE)
 endforeach()

@@ -386,6 +386,9 @@ _unspecified = _Unspecified()
 def get_param(param_name, default=_unspecified):
     """
     Retrieve a parameter from the param server
+
+    NOTE: this method is not thread-safe.
+    
     @param default: (optional) default value to return if key is not set
     @type  default: any
     @return: parameter value
@@ -405,6 +408,9 @@ def get_param(param_name, default=_unspecified):
 def get_param_names():
     """
     Retrieve list of parameter names.
+
+    NOTE: this method is not thread-safe.
+    
     @return: parameter names
     @rtype: [str]
     @raise ROSException: if parameter server reports an error
@@ -419,6 +425,9 @@ def get_param_names():
 def set_param(param_name, param_value):
     """
     Set a parameter on the param server
+
+    NOTE: this method is not thread-safe.
+    
     @param param_name: parameter name
     @type  param_name: str
     @param param_value: parameter value
@@ -436,6 +445,9 @@ def set_param(param_name, param_value):
 def search_param(param_name):
     """
     Search for a parameter on the param server
+
+    NOTE: this method is not thread-safe.
+    
     @param param_name: parameter name
     @type  param_name: str
     @return: key of matching parameter or None if no matching parameter. 
@@ -448,6 +460,9 @@ def search_param(param_name):
 def delete_param(param_name):
     """
     Delete a parameter on the param server
+
+    NOTE: this method is not thread-safe.
+    
     @param param_name: parameter name
     @type  param_name: str
     @raise KeyError: if parameter is not set    
@@ -459,6 +474,9 @@ def delete_param(param_name):
 def has_param(param_name):
     """
     Test if parameter exists on the param server
+
+    NOTE: this method is not thread-safe.
+    
     @param param_name: parameter name
     @type  param_name: str
     @raise ROSException: if parameter server reports an error

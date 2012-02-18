@@ -50,6 +50,7 @@ import rospkg
 import genmsg
 import genpy
 
+import roslib.message
 import rosbag
 
 from optparse import OptionParser
@@ -158,7 +159,7 @@ def get_array_type_instance(field_type, default_package = None):
             if default_package is None:
                 return None
             field_type = default_package + "/" + field_type
-    msg_class = genpy.message.get_message_class(field_type)
+    msg_class = roslib.message.get_message_class(field_type)
     if (msg_class == None):
         # not important enough to raise exception?
         return None
@@ -313,12 +314,12 @@ def rosmsg_cmd_prototype(args):
                 message_type=results[0]
     
         if mode == MODE_SRV:
-            msg_class = genpy.message.get_service_class(message_type)
+            msg_class = roslib.message.get_service_class(message_type)
             if (msg_class == None):
                 raise RosMsgProtoException("Unknown service class: %s"%message_type)
             instance = msg_class()._request_class()
         elif mode == MODE_MSG:
-            msg_class = genpy.message.get_message_class(message_type)
+            msg_class = roslib.message.get_message_class(message_type)
             if (msg_class == None):
                 raise RosMsgProtoException("Unknown message class: %s"%message_type)
             instance = msg_class()
@@ -596,7 +597,7 @@ def rosmsg_cmd_show(mode, full):
 
 def rosmsg_md5(mode, type_):
     try:
-        msg_class = genpy.message.get_message_class(type_)
+        msg_class = roslib.message.get_message_class(type_)
     except ImportError:
         raise IOError("cannot load [%s]"%(type_))
     if msg_class is not None:

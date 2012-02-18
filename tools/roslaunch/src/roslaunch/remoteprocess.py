@@ -83,6 +83,16 @@ def ssh_check_known_hosts(ssh, address, port, username=None, logger=None):
         # the cause of the corrupt builds has been fixed.
         return "cannot load SSH host keys -- your known_hosts file may be corrupt"
 
+    # #3158: resolve the actual host using the user's ~/.ssh/config
+    ssh_config = paramiko.SSHConfig()
+    try:
+        with open(os.path.join(os.path.expanduser('~'), '.ssh', 'config')) as f:
+            ssh_config.parse(f)
+            config_lookup = ssh_config.lookup(address)
+            resolved_address = config_lookup['hostname'] if 'hostname' in config_lookup else address
+    except:
+        resolved_address = address
+
     # #1849: paramiko will raise an SSHException with an 'Unknown
     # server' message if the address is not in the known_hosts
     # file. This causes a lot of confusion to users, so we try
@@ -93,7 +103,7 @@ def ssh_check_known_hosts(ssh, address, port, username=None, logger=None):
     override = os.environ.get('ROSLAUNCH_SSH_UNKNOWN', 0)
     if override == '1':
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    elif hk.lookup(address) is None:
+    elif hk.lookup(resolved_address) is None:
         port_str = user_str = ''
         if port != 22:
             port_str = "-p %s "%port
@@ -107,7 +117,7 @@ Please manually:
 then try roslaunching again.
 
 If you wish to configure roslaunch to automatically recognize unknown
-hosts, please set the environment variable ROSLAUNCH_SSH_UNKNOWN=1"""%(address, user_str, port_str, address)
+hosts, please set the environment variable ROSLAUNCH_SSH_UNKNOWN=1"""%(resolved_address, user_str, port_str, resolved_address)
         
 class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
     """
@@ -145,6 +155,18 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
         except ImportError as e:
             _logger.error("cannot use SSH: paramiko is not installed")
             return None, "paramiko is not installed"
+		#load user's ssh configuration
+        config_block = {'hostname': None, 'user': None, 'identityfile': None}
+        ssh_config = paramiko.SSHConfig()
+        try:
+            with open(os.path.join(os.path.expanduser('~'), '.ssh','config')) as f:
+                ssh_config.parse(f)
+                config_block.update(ssh_config.lookup(address))
+        except:
+            pass
+        address = config_block['hostname'] or address
+        username = username or config_block['user']
+        identity_file = os.path.expanduser(config_block['identityfile'])
         #load ssh client and connect
         ssh = paramiko.SSHClient()
         err_msg = ssh_check_known_hosts(ssh, address, port, username=username, logger=_logger)
@@ -153,7 +175,7 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
             username_str = '%s@'%username if username else ''
             try:
                 if not password: #use SSH agent
-                    ssh.connect(address, port, username, timeout=TIMEOUT_SSH_CONNECT)
+                    ssh.connect(address, port, username, timeout=TIMEOUT_SSH_CONNECT, key_filename=identity_file)
                 else: #use SSH with login/pass
                     ssh.connect(address, port, username, password, timeout=TIMEOUT_SSH_CONNECT)
             except paramiko.BadHostKeyException:

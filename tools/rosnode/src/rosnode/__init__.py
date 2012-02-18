@@ -126,6 +126,40 @@ def get_node_names(namespace=None):
                 nodes.extend(l)
     return list(set(nodes))
 
+def get_machines_by_nodes():
+    """
+    Find machines connected to nodes. This is a very costly procedure as it
+    must do N lookups with the Master, where N is the number of nodes.
+    
+    @return: list of machines connected
+    @rtype: [str]
+    @raise ROSNodeIOException: if unable to communicate with master
+    """
+
+    master = scriptutil.get_master()
+
+    # get all the node names, lookup their uris, parse the hostname
+    # from the uris, and then compare the resolved hostname against
+    # the requested machine name.
+    machines = []
+    node_names = get_node_names()
+    retval = []
+    for n in node_names:
+        try:
+            code, msg, uri = master.lookupNode(ID, n)
+            # it's possible that the state changes as we are doing lookups. this is a soft-fail
+            if code != 1:
+                continue
+
+            h = urlparse.urlparse(uri).hostname
+            if h not in machines:
+                machines.append(h)
+
+        except socket.error:
+            raise ROSNodeIOException("Unable to communicate with master!")    
+    return machines
+
+
 def get_nodes_by_machine(machine):
     """
     Find nodes by machine name. This is a very costly procedure as it
@@ -569,16 +603,19 @@ def _rosnode_cmd_machine(argv):
     @raise ROSNodeException: if user enters in unrecognized machine name
     """
     args = argv[2:]
-    parser = OptionParser(usage="usage: %prog machine <machine-name>", prog=NAME)
+    parser = OptionParser(usage="usage: %prog machine [machine-name]", prog=NAME)
     (options, args) = parser.parse_args(args)
-    if len(args) == 0:
-        parser.error("please enter a machine name")
-    elif len(args) > 1:
+    if len(args) > 1:
         parser.error("please enter only one machine name")
-    nodes = get_nodes_by_machine(args[0])
-    nodes.sort()
-    print('\n'.join(nodes))
-        
+    elif len(args) == 0:
+        machines = get_machines_by_nodes()
+        machines.sort()
+        print '\n'.join(machines)
+    else:
+        nodes = get_nodes_by_machine(args[0])
+        nodes.sort()
+        print '\n'.join(nodes)
+
 def _rosnode_cmd_kill(argv):
     """
     Implements rosnode 'kill' command.
@@ -701,7 +738,7 @@ Commands:
 \trosnode ping\ttest connectivity to node
 \trosnode list\tlist active nodes
 \trosnode info\tprint information about node
-\trosnode machine\tlist nodes running on a particular machine
+\trosnode machine\tlist nodes running on a particular machine or list machines
 \trosnode kill\tkill a running node
 
 Type rosnode <command> -h for more detailed usage, e.g. 'rosnode ping -h'

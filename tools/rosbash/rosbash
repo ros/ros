@@ -639,8 +639,10 @@ function _roscomplete_rostopic {
 												opts=`_msg_opts ${COMP_WORDS[$COMP_CWORD]}`
 												COMPREPLY=($(compgen -W "$opts" -- ${arg}))
 								    elif [[ $COMP_CWORD == 4 ]]; then
-										    opts=`rosmsg-proto msg -s ${COMP_WORDS[3]}`
-										    COMPREPLY="$opts"
+								    		opts=`rosmsg-proto msg 2> /dev/null -s ${COMP_WORDS[3]}`
+												if [ 0 -eq $? ]; then
+													COMPREPLY="$opts"
+												fi
 										fi
 										;;
 		        esac
@@ -671,8 +673,10 @@ function _roscomplete_rosservice {
         case ${COMP_WORDS[1]} in
             call)
                 type=`rosservice type ${COMP_WORDS[2]}`
-                opts=`rosmsg-proto srv -s ${type}`
-                COMPREPLY="$opts"
+                opts=`rosmsg-proto srv 2> /dev/null -s ${type}`
+                if [ 0 -eq $? ]; then
+                  COMPREPLY="$opts"
+                fi
             ;;
         esac
     fi

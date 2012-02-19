@@ -428,7 +428,7 @@ function _roscomplete_rostopic {
                     		fi
 												reply=(${=opts})
 										elif [[ ${CURRENT} == 5 ]]; then
-												opts=`rosmsg-proto msg -s ${=${(s: :)words[-1]}}`
+												opts=`rosmsg-proto msg 2> /dev/null -s ${=${(s: :)words[-1]}}`
 												reply=(${=opts})
 										fi
 										;;
@@ -461,7 +461,7 @@ function _roscomplete_rosservice {
         case ${=${(s: :)words}[2]} in
             call)
                 type=`rosservice type ${=${(s: :)words[-1]}}`
-                opts=`rosmsg-proto srv -s ${type}`
+                opts=`rosmsg-proto srv 2> /dev/null -s ${type}`
                 reply=(${=opts})
                 ;;
         esac

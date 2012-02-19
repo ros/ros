@@ -32,4 +32,5 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import rosmsg
-rosmsg.rosmsgmain('.srv')
+from rosmsg import MODE_SRV
+rosmsg.rosmsgmain(rosmsg.MODE_SRV)

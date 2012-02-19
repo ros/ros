@@ -9,11 +9,12 @@ find_package(ROS COMPONENTS roscpp xmlrpcpp rosconsole)
 
 include_directories(include ${ROS_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 
-add_library(${PROJECT_NAME} SHARED src/connection.cpp)
+add_library(${PROJECT_NAME} src/connection.cpp)
 target_link_libraries(${PROJECT_NAME} ${ROS_LIBRARIES} ${Boost_LIBRARIES})
 
 install(TARGETS ${PROJECT_NAME}
-        DESTINATION lib)
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib)
 
 install(DIRECTORY include/
         DESTINATION include

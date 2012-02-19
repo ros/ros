@@ -7,7 +7,7 @@ include_directories(include)
 find_package(ROS COMPONENTS roscpp rosconsole xmlrpcpp rosunit rostest)
 include_directories(${ROS_INCLUDE_DIRS})
 
-add_library(topic_tools SHARED src/shape_shifter.cpp src/parse.cpp)
+add_library(topic_tools src/shape_shifter.cpp src/parse.cpp)
 target_link_libraries(topic_tools ${ROS_LIBRARIES})
 
 add_executable(switch_mux src/switch_mux.cpp)
@@ -33,6 +33,7 @@ add_service_files(DIRECTORY srv
 generate_messages(DEPENDENCIES std_msgs)
 
 install(TARGETS topic_tools switch_mux mux relay drop throttle
+    ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION share/topic_tools/bin
     )

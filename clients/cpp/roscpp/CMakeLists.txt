@@ -23,7 +23,7 @@ CHECK_FUNCTION_EXISTS(trunc HAVE_TRUNC)
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/src/libros/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-add_library(roscpp SHARED
+add_library(roscpp 
   src/libros/master.cpp
   src/libros/network.cpp
   src/libros/subscriber.cpp
@@ -93,7 +93,8 @@ generate_messages()
 
 #explicitly install library and includes
 install(TARGETS roscpp
-  DESTINATION lib
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
  )
 install(DIRECTORY include/
         DESTINATION include

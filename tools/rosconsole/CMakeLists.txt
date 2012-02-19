@@ -23,16 +23,25 @@ find_package(Boost COMPONENTS regex thread)
 
 include_directories(include)
 
-add_library(rosconsole SHARED src/rosconsole/rosconsole.cpp)
+add_library(rosconsole src/rosconsole/rosconsole.cpp)
 
 find_library(LOG4CXX_LIBRARY log4cxx)
 if(NOT LOG4CXX_LIBRARY)
   message(FATAL_ERROR "Couldn't find log4cxx library")
+else()
+  if(MINGW)
+    # Assuming mingw_cross here: it is static and we need to add all of it's dependencies. 
+    # Todo: we should use pkg-config to find these (write a better FindLog4cxx to do this jazz). 
+    set(LOG4CXX_LIBRARIES "log4cxx;aprutil-1;iconv;expat;apr-1;rpcrt4;shell32;ws2_32;advapi32;kernel32;msvcrt") 
+  else()  
+    set(LOG4CXX_LIBRARIES ${LOG4CXX_LIBRARY}) 
+  endif() 
 endif()
-target_link_libraries(rosconsole ${ROS_LIBRARIES} ${LOG4CXX_LIBRARY} ${Boost_LIBRARIES})
+target_link_libraries(rosconsole ${ROS_LIBRARIES} ${LOG4CXX_LIBRARIES} ${Boost_LIBRARIES})
 
 install(TARGETS rosconsole
-    DESTINATION lib)
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib)
 
 install(DIRECTORY include/
         DESTINATION include

@@ -14,7 +14,7 @@ if(WIN32)
   add_definitions(-D_WINDOWS)
 endif()
 
-add_library(xmlrpcpp SHARED
+add_library(xmlrpcpp 
   src/XmlRpcClient.cpp
   src/XmlRpcDispatch.cpp
   src/XmlRpcServer.cpp
@@ -38,5 +38,6 @@ install(DIRECTORY src/
 
 #explicitly install library and includes
 install(TARGETS xmlrpcpp
-  DESTINATION lib
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
  )

@@ -304,7 +304,7 @@ def rosmsg_cmd_prototype(args):
         if not '/' in message_type:
             # if only one such msg or srv exists, use it
             results = []
-            for found in rosmsg_search(mode, message_type):
+            for found in rosmsg_search(rospkg.RosPack(), mode, message_type):
                 results.append(found)
             if len(results) > 1:
                 raise RosMsgProtoException("Ambiguous message name %s"%message_type)

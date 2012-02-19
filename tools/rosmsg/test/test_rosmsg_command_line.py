@@ -41,26 +41,31 @@ import rospkg
         
 from subprocess import Popen, PIPE, check_call, call
 
+_SCRIPT_FOLDER = os.path.join(os.getcwd(), 'scripts')
+
+
 class TestRosmsg(unittest.TestCase):
 
     def setUp(self):
-        pass
+        self.new_environ = os.environ
+        self.new_environ["PYTHONPATH"] = os.path.join(os.getcwd(), "src")+':'+os.environ['PYTHONPATH']
 
     ## test that the rosmsg command works
     def test_cmd_help(self):
         sub = ['show', 'md5', 'package', 'packages', 'list']
         
         for cmd in ['rosmsg', 'rossrv']:
-            output = Popen([cmd], stdout=PIPE).communicate()[0]
+            glob_cmd=[os.path.join(_SCRIPT_FOLDER, cmd)]
+            output = Popen(glob_cmd, stdout=PIPE, env=self.new_environ).communicate()[0]
             self.assert_('Commands' in output)
-            output = Popen([cmd, '-h'], stdout=PIPE).communicate()[0]
+            output = Popen(glob_cmd+['-h'], stdout=PIPE, env=self.new_environ).communicate()[0]
             self.assert_('Commands' in output)
             self.assert_('Traceback' not in output)
             for c in sub:
-                self.assert_("%s %s"%(cmd, c) in output, output)
+                self.assert_("%s %s"%(cmd, c) in output, "%s %s"%(cmd, c) + " not in "+ output + " of " + str(glob_cmd))
                 
             for c in sub:
-                output = Popen([cmd, c, '-h'], stdout=PIPE).communicate()[0]
+                output = Popen(glob_cmd + [c, '-h'], stdout=PIPE, env=self.new_environ).communicate()[0]
                 self.assert_('Usage' in output)
                 self.assert_("%s %s"%(cmd, c) in output, output)
             
@@ -88,16 +93,20 @@ class TestRosmsg(unittest.TestCase):
             self.assert_(p not in l1)
 
     def test_cmd_list(self):
-        # - single line
-        output1 = Popen(['rosmsg', 'list'], stdout=PIPE).communicate()[0]
+        # - multi-line
+        output1 = Popen([os.path.join(_SCRIPT_FOLDER,'rosmsg'), 'list'], stdout=PIPE).communicate()[0]
         l1 = [x.strip() for x in output1.split('\n') if x.strip()]
         for p in ['std_msgs/String', 'test_ros/Floats']:
             self.assert_(p in l1)
+        for p in ['std_srvs/Empty', 'roscpp/Empty']:
+            self.assert_(p not in l1)
 
-        output1 = Popen(['rossrv', 'list'], stdout=PIPE).communicate()[0]
+        output1 = Popen([os.path.join(_SCRIPT_FOLDER,'rossrv'), 'list'], stdout=PIPE).communicate()[0]
         l1 = [x.strip() for x in output1.split('\n') if x.strip()]
         for p in ['std_srvs/Empty', 'roscpp/Empty']:
             self.assert_(p in l1)
+        for p in ['std_msgs/String', 'test_ros/Floats']:
+            self.assert_(p not in l1)
         
     def test_cmd_package(self):
         # this test is obviously very brittle, but should stabilize as the tests stabilize

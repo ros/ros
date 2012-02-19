@@ -112,7 +112,7 @@ class TestRosmsg(unittest.TestCase):
         for m in ['test_ros/RosmsgA',
                   'test_ros/RosmsgB',
                   'test_ros/RosmsgC']:
-            assert m in l, l
+            self.assertTrue(m in l, l)
         
         output = Popen(['rossrv', 'package', '-s', 'test_ros'], stdout=PIPE).communicate()[0]
         output2 = Popen(['rossrv', 'package','test_ros'], stdout=PIPE).communicate()[0]        
@@ -121,7 +121,7 @@ class TestRosmsg(unittest.TestCase):
         self.assertEquals(l, l2)
         
         for m in ['test_ros/RossrvA', 'test_ros/RossrvB']:
-            assert m in l, l
+            self.assertTrue(m in l, l)
         
     ## test that the rosmsg/rossrv show command works
     def test_cmd_show(self):

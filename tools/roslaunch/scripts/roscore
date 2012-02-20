@@ -31,6 +31,30 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import roslaunch
 import sys
-roslaunch.main(['roscore', '--core']+sys.argv[1:])
+from optparse import OptionParser
+
+NAME = 'roscore'
+
+def _get_optparse():
+
+    parser = OptionParser(usage="usage: %prog [options]",
+                          prog=NAME,
+                          description="roscore will start up a ROS Master, a ROS Parameter Server and a rosout logging node",
+                          epilog="See http://www.ros.org/wiki/roscore"
+                          )
+    parser.add_option("-p",
+                      dest="port", default=False, action="store_true",
+                      help="The port to use")
+    return parser
+
+
+parser = _get_optparse()
+(options, args) = parser.parse_args(sys.argv[1:])
+
+if len(args) > 0:
+    parser.error("roscore does not take arguments")
+
+
+import roslaunch
+roslaunch.main(['roscore', '--core'] + sys.argv[1:])

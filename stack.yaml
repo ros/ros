@@ -1,5 +1,5 @@
 Catkin-ProjectName: ros_comm
-Version: 1.7.13
+Version: 1.7.14
 Depends: catkin, genmsg, std_msgs, roscpp_core, ros,
          apr, boost, log4cxx 
 Description: ROS communications-related libraries and tools

@@ -76,5 +76,21 @@ class TestRospyClient(unittest.TestCase):
         finally:
             sys.argv = orig_argv
     
+    def test_load_command_line_node_params(self):
+        
+        from rospy.client import load_command_line_node_params
+        
+        assert {} == load_command_line_node_params([])
+        assert {} == load_command_line_node_params(['a', 'b', 'c'])        
+        assert {} == load_command_line_node_params(['a:=b'])        
+        assert {'a': 'b'} == load_command_line_node_params(['_a:=b'])        
+        assert {'a': 'b', 'foo': 'bar'} == load_command_line_node_params(['_a:=b', 'blah', '_foo:=bar', 'baz'])        
+        # test yaml unmarshal
+        assert {'a': 1} == load_command_line_node_params(['_a:=1'])        
+        try:
+            load_command_line_node_params(['_a:=b:=c'])        
+        except rospy.exceptions.ROSInitException:
+            pass
+
 if __name__ == '__main__':
     rosunit.unitrun('test_rospy', sys.argv[0], TestRospyClient, coverage_packages=['rospy.client'])

@@ -16,8 +16,8 @@ except:
 
 PKG = 'ros_comm'
 gen = ['msg', 'srv']
-packages = [PKG]
-package_dir = {PKG: 'src/%s'%PKG}
+packages = []
+package_dir = {}
 if 'CATKIN_BINARY_DIR' in os.environ:
      build_d = os.environ['CATKIN_BINARY_DIR']
      for t in gen:

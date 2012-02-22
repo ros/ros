@@ -1,0 +1,3 @@
+
+export ROSLISP_SYSTEMS_DIRECTORY=@CMAKE_INSTALL_PREFIX@/share/common-lisp/systems
+

@@ -610,11 +610,11 @@ def _rosnode_cmd_machine(argv):
     elif len(args) == 0:
         machines = get_machines_by_nodes()
         machines.sort()
-        print '\n'.join(machines)
+        print('\n'.join(machines))
     else:
         nodes = get_nodes_by_machine(args[0])
         nodes.sort()
-        print '\n'.join(nodes)
+        print('\n'.join(nodes))
 
 def _rosnode_cmd_kill(argv):
     """

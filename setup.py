@@ -14,9 +14,22 @@ try:
 except:
     pass
 
-setup(name='ros_comm',
+PKG = 'ros_comm'
+gen = ['msg', 'srv']
+packages = [PKG]
+package_dir = {PKG: 'src/%s'%PKG}
+if 'CATKIN_BINARY_DIR' in os.environ:
+     build_d = os.environ['CATKIN_BINARY_DIR']
+     for t in gen:
+         p = os.path.join(build_d, 'gen', 'py', PKG, t)
+         if os.path.isdir(p):
+             # e.g. std_msgs.msg = build/gen/py/std_msgs/msg
+             package_dir["%s.%s"%(PKG, t)] = p
+             packages.append("%s.%s"%(PKG, t))
+
+setup(name=PKG,
       version=version,
-      packages=['rosbag',
+      packages=packages + ['rosbag',
                 'rosgraph',
                 'rosgraph.impl',
                 'roslaunch',
@@ -31,8 +44,10 @@ setup(name='ros_comm',
                 'rostest',
                 'roswtf',
                 'message_filters',
+                'test_ros',
+                'test_rosbag',
                 ],
-      package_dir = {
+      package_dir = dict(package_dir, **{
           'rosbag':'tools/rosbag/src/rosbag',
           'rosgraph':'tools/rosgraph/src/rosgraph',
           'rosgraph.impl':'tools/rosgraph/src/rosgraph/impl',
@@ -48,7 +63,9 @@ setup(name='ros_comm',
           'rostest': 'tools/rostest/src/rostest',
           'roswtf': 'utilities/roswtf/src/roswtf',
           'message_filters': 'utilities/message_filters/src/message_filters',
-                     },
+          'test_ros': 'test/test_ros/src/test_ros',
+          'test_rosbag': 'test/test_rosbag/src/test_rosbag',
+                     }),
       install_requires=['rospkg', 'genmsg', 'genpy', 'roslib'],
       scripts = [
           'tools/rosbag/scripts/rosbag',

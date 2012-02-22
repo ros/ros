@@ -11,6 +11,7 @@
 #	HG_REVISION: the revision to update
 
 $(HG_DIR):
+	mkdir -p $(HG_DIR)
 	hg clone $(HG_URL) $(HG_DIR)
 	cd $(HG_DIR) && hg update $(HG_BRANCH) && hg update $(HG_REVISION)
 	touch rospack_nosubdirs

@@ -119,7 +119,7 @@ function rospython {
 
 function roscd {
     local rosvals
-    if [[ $1 = "--help" ]] | [[ $# -ne 1 ]]; then
+    if [[ $1 = "--help" ]] | [[ $# -gt 1 ]]; then
         echo -e "usage: roscd package\n\nJump to target package."
         return 0
     fi

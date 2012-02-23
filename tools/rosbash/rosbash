@@ -448,11 +448,13 @@ function _roscomplete_file {
 }
 
 function _roscomplete_launch {
-    _roscomplete_search_dir "-type f -regex .*\.launch$\|.*\.test$"
     arg="${COMP_WORDS[COMP_CWORD]}"
+    COMPREPLY=()
     if [[ ${arg} =~ \-\-.* ]]; then
         COMPREPLY=(${COMPREPLY[@]} $(compgen -W "--files --args --nodes --find-node --child --local --screen --server_uri --run_id --wait --port --core --pid --dump-params" -- ${arg}))
+        
     else
+        _roscomplete_search_dir "( -name *.launch -o -name *.test ) -type f" 
         if [[ $COMP_CWORD == 1 ]]; then
            COMPREPLY=($(compgen -o plusdirs -f -X "!*.launch" -- ${arg}) ${COMPREPLY[@]} $(compgen -o plusdirs -f -X "!*.test" -- ${arg}) ${COMPREPLY[@]})
         fi
@@ -460,11 +462,11 @@ function _roscomplete_launch {
 }
 
 function _roscomplete_test {
-    _roscomplete_search_dir "-type f -regex .*\.launch$\|.*\.test$"
     arg="${COMP_WORDS[COMP_CWORD]}"
     if [[ ${arg} =~ \-\-.* ]]; then
         COMPREPLY=(${COMPREPLY[@]} $(compgen -W "--bare --bare-limit --bare-name --pkgdir --package" -- ${arg}))
     else
+        _roscomplete_search_dir "( -name *.launch -o -name *.test ) -type f" 
         if [[ $COMP_CWORD == 1 ]]; then
            COMPREPLY=($(compgen -o plusdirs -f -X "!*.launch" -- ${arg}) ${COMPREPLY[@]} $(compgen -o plusdirs -f -X "!*.test" -- ${arg}) ${COMPREPLY[@]})
         fi

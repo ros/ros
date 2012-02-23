@@ -10,19 +10,11 @@ else()
     @CMAKE_INSTALL_PREFIX@/share/common-lisp/ros/roslisp/scripts)
 endif()
 
-set(@PROJECT_NAME@_LISP_INSTALL_DIR share/common-lisp/ros/@PROJECT_NAME@)
-
-macro(register_asdf_directory ARG_ASDF_DIRECTORY)
+macro(roslisp_package ARG_NAME)
   install(CODE
-    "file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/share/common-lisp/systems)")
-  install(CODE
-    "file(GLOB ASDF_FILES RELATIVE \"${@PROJECT_NAME@_SOURCE_DIR}/${ARG_ASDF_DIRECTORY}\"
-          \"${@PROJECT_NAME@_SOURCE_DIR}/${ARG_ASDF_DIRECTORY}/*.asd\")
-     foreach(file \${ASDF_FILES})
-       execute_process(
-         COMMAND ln -s ../ros/${PROJECT_NAME}/${ARG_ASDF_DIRECTORY}/\${file}
-                   ${CMAKE_INSTALL_PREFIX}/share/common-lisp/systems/\${file})
-     endforeach()")
+    "file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/share/common-lisp/ros)
+     execute_process(
+       COMMAND ln -s ../../${ARG_NAME} ${CMAKE_INSTALL_PREFIX}/share/common-lisp/ros/${ARG_NAME})")
 endmacro()
 
 # Build up a list of executables, in order to make them depend on each

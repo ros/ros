@@ -4,7 +4,6 @@ find_package(catkin REQUIRED)
 
 catkin_project(roslisp
   CFG_EXTRAS roslisp-extras.cmake)
-
 add_subdirectory(env-hooks)
 
 # HACK(lorenz): how can wie already use roslisp-extras.cmake here?
@@ -12,7 +11,9 @@ configure_file(${roslisp_SOURCE_DIR}/cmake/roslisp-extras.cmake.in
   ${roslisp_BINARY_DIR}/cmake/roslisp-extras.cmake @ONLY)
 include(${roslisp_BINARY_DIR}/cmake/roslisp-extras.cmake)
 
-register_asdf_directory(asdf)
+# use roslisp_package to make the package available in roslisp's asdf
+# tree.
+roslisp_package(roslisp)
 
 foreach(dir
     asdf
@@ -24,13 +25,13 @@ foreach(dir
     s-xml-rpc
     utils)
   install(DIRECTORY ${dir}
-          DESTINATION ${roslisp_LISP_INSTALL_DIR}
-          PATTERN ".svn" EXCLUDE
-          PATTERN "genmsg_lisp.py" EXCLUDE)
+      DESTINATION share/${PROJECT_NAME}
+      PATTERN ".svn" EXCLUDE
+      PATTERN "genmsg_lisp.py" EXCLUDE)
 endforeach()
 
 install(DIRECTORY scripts
-  DESTINATION ${roslisp_LISP_INSTALL_DIR}
+  DESTINATION share/${PROJECT_NAME}
   USE_SOURCE_PERMISSIONS
   PATTERN ".svn" EXCLUDE
   PATTERN "genmsg_lisp.py" EXCLUDE)

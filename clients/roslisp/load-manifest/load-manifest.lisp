@@ -252,11 +252,11 @@ package."
       (when debug-print (format t "~&asdf-ros-search not invoked since *current-ros-package* is ~a" *current-ros-package*))))
 
 (asdf:initialize-source-registry
- (let ((roslisp-systems-directory (sb-posix:getenv "ROSLISP_SYSTEMS_DIRECTORY"))
+ (let ((roslisp-package-directory (sb-posix:getenv "ROSLISP_PACKAGE_DIRECTORY"))
        (catkin-source-directory (sb-posix:getenv "CATKIN_SOURCE_DIR")))
    `(:source-registry
-     ,@(when roslisp-systems-directory
-         `((:directory ,roslisp-systems-directory)))
+     ,@(when roslisp-package-directory
+         `((:tree ,roslisp-package-directory)))
      ,@(when catkin-source-directory
          `((:tree ,catkin-source-directory)))
      :inherit-configuration)))

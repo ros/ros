@@ -443,7 +443,7 @@ class RosMakeAll:
         except rospkg.ResourceNotFound as ex:
             with self._result_lock:
                 self.result[argument][p] = False
-            self.printer.print_verbose ("[SKIP] Package not found\n")
+            self.printer.print_verbose ("[SKIP] Package %s not found\n" % p)
             self.output[argument][p] = "Package not found %s"%ex
             return (False, return_string)
             

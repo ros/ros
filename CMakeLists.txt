@@ -5,9 +5,10 @@ find_package(ROS COMPONENTS catkin genmsg cpp_common rostime
   )
 catkin_stack()
 
-# Must export python before recursing into subdirs, so that rostest is
-# linked into build/bin before anybody calls add_rostest().
-catkin_export_python()
+# Must call catkin_python_setup() before recursing into subdirs
+# so that rostest is available in build-space
+# before anybody calls add_rostest().
+catkin_python_setup()
 
 foreach(subdir
     tools/rostest

@@ -4,10 +4,10 @@ find_package(catkin)
 find_package(Boost COMPONENTS thread)
 catkin_stack()
 
-# Must call catkin_export_python() early, to ensure that things like
-# rosunit are symlinked into build/bin, and can be found by things like
+# Must call catkin_python_setup() early, to ensure that things like
+# rosunit are available in build-space, and can be found by things like
 # add_gtest(), which is called from within lower-level CMakeLists.txts.
-catkin_export_python()
+catkin_python_setup()
 
 foreach(subdir
     env-hooks

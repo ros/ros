@@ -4,10 +4,12 @@ install(FILES rosbash rostcsh roszsh
         DESTINATION share/rosbash)
 install(PROGRAMS scripts/rosrun
         DESTINATION bin)
-if(NOT EXISTS ${CMAKE_BINARY_DIR}/bin/rosrun)
-  message(STATUS "   Making toplevel symlink for bash script rosrun")
-  execute_process(COMMAND /bin/ln -sf ${CMAKE_CURRENT_SOURCE_DIR}/scripts/rosrun ${CMAKE_BINARY_DIR}/bin/rosrun)
-endif()
+
+message(STATUS "   Making toplevel forward script for bash script rosrun")
+set(BASH_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/scripts/rosrun)
+configure_file(${catkin_EXTRAS_DIR}/templates/script.bash.in
+  ${CMAKE_BINARY_DIR}/bin/rosrun
+  @ONLY)
 
 catkin_add_env_hooks(15.rosbash
   SHELLS bash zsh

@@ -1,6 +1,7 @@
 tinyxml:
   ubuntu: libtinyxml-dev
   debian: libtinyxml-dev
+  macports: tinyxml
   osxbrew:
     homebrew:
       packages: [ tinyxml ]
@@ -246,6 +247,7 @@ intltool:
   fedora: intltool
   gentoo: dev-util/intltool
   freebsd: intltool
+  macports: intltool
 unzip:
   ubuntu: unzip
   debian: unzip

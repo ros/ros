@@ -32,9 +32,7 @@ add_service_files(DIRECTORY srv
 
 generate_messages(DEPENDENCIES std_msgs test_ros)
 
-catkin_project(test_rospy
-  MSGS_DIRS msg
-  )
+catkin_project(test_rospy)
 
 add_nosetests(test/unit)
 

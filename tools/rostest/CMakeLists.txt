@@ -6,7 +6,6 @@ find_package(Boost COMPONENTS thread)
 
 include_directories(include ${Boost_INCLUDE_DIRS})
 catkin_project(rostest
-  VERSION 0.0.1
   INCLUDE_DIRS include
   CFG_EXTRAS ${PROJECT_NAME}-extras.cmake
   )

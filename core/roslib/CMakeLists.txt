@@ -29,7 +29,6 @@ install(PROGRAMS scripts/gendeps
         DESTINATION share/roslib/bin)
 
 catkin_project(roslib
-  VERSION 0.0.1
   LIBRARIES roslib
   INCLUDE_DIRS include
   )

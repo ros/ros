@@ -6,7 +6,6 @@ catkin_project(topic_tools
   )
 include_directories(include)
 find_package(ROS COMPONENTS roscpp rosconsole xmlrpcpp rosunit rostest rostime)
-message("ROS_INCLUDE_DIRS: ${ROS_INCLUDE_DIRS}")
 include_directories(${ROS_INCLUDE_DIRS})
 
 add_library(topic_tools src/shape_shifter.cpp src/parse.cpp)

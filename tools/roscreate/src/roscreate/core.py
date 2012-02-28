@@ -63,16 +63,19 @@ def author_name():
         login = name
         name = pwd.getpwnam(login)[4]
         name = ''.join(name.split(',')) # strip commas
-        if type(name) == str:
-            name = name.decode('utf-8')
     except:
         #pwd failed
         pass
+
+    if type(name) == str:
+        name = name.decode('utf-8')
     return name
 
 def read_template(tmplf):
     p = os.path.join(roslib.packages.get_pkg_dir('roscreate'), tmplf)
     with open(p, 'r') as f:
         t = f.read()
+    if type(t) == str:
+        t = t.decode('utf-8')
     return t
     

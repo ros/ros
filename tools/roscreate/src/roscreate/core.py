@@ -59,11 +59,11 @@ def author_name():
         # in case pwnam is not set
         if not name:
             name = login
-        elif type(name) == str:
-            name = name.decode('utf-8')
     except:
         #pwd failed
         pass
+    if type(name) == str:
+        name = name.decode('utf-8')
     return name
 
 def read_template(tmplf):
@@ -80,6 +80,8 @@ def read_template(tmplf):
         r = rospkg.RosPack()
         with open(os.path.join(r.get_path('roscreate'), 'templates', tmplf)) as f:
             t = f.read()
+    if type(t) == str:
+        t = t.decode('utf-8')
     return t
 
     

@@ -8,7 +8,7 @@ if(MSVC)
   add_definitions(-D_SCL_SECURE_NO_WARNINGS)
 endif()
 
-add_library(roslib SHARED src/package.cpp)
+add_library(roslib src/package.cpp)
 target_link_libraries(roslib ${Boost_LIBRARIES} ${ROS_LIBRARIES})
 
 if(NOT (APPLE OR WIN32 OR MINGW))
@@ -18,7 +18,8 @@ endif()
 
 #explicitly install library and includes
 install(TARGETS roslib
-  DESTINATION lib
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
   )
 
 install(DIRECTORY include/

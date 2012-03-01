@@ -134,6 +134,9 @@ _logfatal_handlers = []
 def rospydebug(msg, *args):
     """Internal rospy client library debug logging"""
     _rospy_logger.debug(msg, *args)
+def rospyinfo(msg, *args):
+    """Internal rospy client library debug logging"""
+    _rospy_logger.info(msg, *args)
 def rospyerr(msg, *args):
     """Internal rospy client library error logging"""
     _rospy_logger.error(msg, *args)

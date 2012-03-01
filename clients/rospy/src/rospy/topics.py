@@ -285,17 +285,33 @@ class _TopicImpl(object):
 
     def add_connection(self, c):
         """
-        Add a connection to this topic. 
+        Add a connection to this topic.  If any previous connections
+        to same endpoint exist, drop them.
+
         @param c: connection instance
         @type  c: Transport
-        @return: True if connection was added
-        @rtype: bool
+        @return: True if connection was added, ``bool``
         """
+        rospyinfo("topic[%s] adding connection to [%s]"%(self.resolved_name, c.endpoint_id))
         with self.c_lock:
             # c_lock is to make add_connection thread-safe, but we
             # still make a copy of self.connections so that the rest of the
             # code can use self.connections in an unlocked manner
             new_connections = self.connections[:]
+
+            # if we have a connection to the same endpoint_id, drop
+            # the old one.  NOTE: this does not add to
+            # dead_connections.  Should probably update dead
+            # connections to not contain references to reconnect
+            # endpoints.
+            for oldc in self.connections:
+                if oldc.endpoint_id == c.endpoint_id:
+                    try:
+                        oldc.close()
+                    except:
+                        pass
+                    new_connections.remove(oldc)
+            
             new_connections.append(c)
             self.connections = new_connections
 

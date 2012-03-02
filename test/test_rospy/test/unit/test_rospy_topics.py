@@ -57,6 +57,35 @@ class ConnectionOverride(rospy.impl.transport.Transport):
 # test rospy API verifies that the rospy module exports the required symbols
 class TestRospyTopics(unittest.TestCase):
 
+    def test_add_connection(self):
+        from rospy.topics import _TopicImpl
+        from std_msgs.msg import String
+        t = _TopicImpl('/foo', String)
+        c1 = ConnectionOverride('c1')
+        c1b = ConnectionOverride('c1')
+        c2 = ConnectionOverride('c2')
+        c3 = ConnectionOverride('c3')
+        assert not t.has_connection('c1')
+        t.add_connection(c1)
+        assert t.get_num_connections() == 1
+        assert t.has_connection('c1')        
+        t.add_connection(c1b)
+        assert t.get_num_connections() == 1
+        assert t.has_connection('c1')
+        # should not remove
+        t.remove_connection(c1)
+        assert t.has_connection('c1')
+        t.remove_connection(c1b)        
+        assert not t.has_connection('c1')
+
+        t = _TopicImpl('/foo', String)
+        t.add_connection(c1)
+        t.add_connection(c2)
+        t.add_connection(c3)
+        for x in ['c1', 'c2', 'c3']:
+            assert t.has_connection(x)
+        assert t.get_num_connections() == 3
+        
     def test_Publisher(self):
         import rospy
         from rospy.impl.registration import get_topic_manager, Registration

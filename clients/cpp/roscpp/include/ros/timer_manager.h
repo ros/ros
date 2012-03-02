@@ -330,30 +330,41 @@ int32_t TimerManager<T, D, E>::add(const D& period, const boost::function<void(c
 template<class T, class D, class E>
 void TimerManager<T, D, E>::remove(int32_t handle)
 {
-  boost::mutex::scoped_lock lock(timers_mutex_);
+  CallbackQueueInterface* callback_queue = 0;
+  uint64_t remove_id = 0;
 
-  typename V_TimerInfo::iterator it = timers_.begin();
-  typename V_TimerInfo::iterator end = timers_.end();
-  for (; it != end; ++it)
   {
-    const TimerInfoPtr& info = *it;
-    if (info->handle == handle)
+    boost::mutex::scoped_lock lock(timers_mutex_);
+
+    typename V_TimerInfo::iterator it = timers_.begin();
+    typename V_TimerInfo::iterator end = timers_.end();
+    for (; it != end; ++it)
     {
-      info->removed = true;
-      info->callback_queue->removeByID((uint64_t)info.get());
-      timers_.erase(it);
-      break;
+      const TimerInfoPtr& info = *it;
+      if (info->handle == handle)
+      {
+        info->removed = true;
+        callback_queue = info->callback_queue;
+        remove_id = (uint64_t)info.get();
+        timers_.erase(it);
+        break;
+      }
+    }
+
+    {
+      boost::mutex::scoped_lock lock2(waiting_mutex_);
+      // Remove from the waiting list if it's in it
+      L_int32::iterator it = std::find(waiting_.begin(), waiting_.end(), handle);
+      if (it != waiting_.end())
+      {
+        waiting_.erase(it);
+      }
     }
   }
 
+  if (callback_queue)
   {
-    boost::mutex::scoped_lock lock2(waiting_mutex_);
-    // Remove from the waiting list if it's in it
-    L_int32::iterator it = std::find(waiting_.begin(), waiting_.end(), handle);
-    if (it != waiting_.end())
-    {
-      waiting_.erase(it);
-    }
+    callback_queue->removeByID(remove_id);
   }
 }
 

@@ -36,6 +36,7 @@
 #include <gtest/gtest.h>
 #include <ros/callback_queue.h>
 #include <ros/console.h>
+#include <ros/timer.h>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/bind.hpp>
@@ -157,14 +158,20 @@ typedef boost::shared_ptr<SelfRemovingCallback> SelfRemovingCallbackPtr;
 TEST(CallbackQueue, removeSelf)
 {
   CallbackQueue queue;
-  SelfRemovingCallbackPtr cb(new SelfRemovingCallback(&queue, 1));
-  queue.addCallback(cb, 1);
-  queue.addCallback(cb, 1);
-  queue.addCallback(cb, 1);
+  SelfRemovingCallbackPtr cb1(new SelfRemovingCallback(&queue, 1));
+  CountingCallbackPtr cb2(new CountingCallback());
+  queue.addCallback(cb1, 1);
+  queue.addCallback(cb2, 1);
+  queue.addCallback(cb2, 1);
 
+  queue.callOne();
+
+  queue.addCallback(cb2, 1);
+  
   queue.callAvailable();
 
-  EXPECT_EQ(cb->count, 1U);
+  EXPECT_EQ(cb1->count, 1U);
+  EXPECT_EQ(cb2->count, 1U);
 }
 
 class RecursiveCallback : public CallbackInterface
@@ -310,6 +317,85 @@ TEST(CallbackQueue, threadedCallOne)
   size_t i = runThreadedTest(cb, callOneThread);
   ROS_INFO_STREAM(i);
   EXPECT_EQ(cb->count, i);
+}
+
+// this class is just an ugly hack
+// to access the constructor Timer(TimerOptions)
+namespace ros
+{
+class NodeHandle
+{
+public:
+  static Timer createTimer(const TimerOptions& ops)
+  {
+    return Timer(ops);
+  }
+};
+}
+
+void dummyTimer(const ros::TimerEvent&)
+{
+}
+
+CallbackQueueInterface* recursiveTimerQueue;
+
+void recursiveTimer(const ros::TimerEvent&)
+{
+  // wait until the timer is TimerRecreationCallback is garbaged
+  WallDuration(2).sleep();
+
+  TimerOptions ops(Duration(0.1), dummyTimer, recursiveTimerQueue, false, false);
+  Timer t = ros::NodeHandle::createTimer(ops);
+  t.start();
+}
+
+class TimerRecursionCallback : public CallbackInterface
+{
+public:
+  TimerRecursionCallback(CallbackQueueInterface* _queue)
+  : queue(_queue)
+  {}
+
+  virtual CallResult call()
+  {
+    TimerOptions ops(Duration(0.1), recursiveTimer, queue, false, false);
+    Timer t = ros::NodeHandle::createTimer(ops);
+    t.start();
+
+    // wait until the recursiveTimer has been fired
+    WallDuration(1).sleep();
+
+    return Success;
+  }
+
+  CallbackQueueInterface* queue;
+};
+typedef boost::shared_ptr<TimerRecursionCallback> TimerRecursionCallbackPtr;
+
+TEST(CallbackQueue, recursiveTimer)
+{
+  // ensure that the test does not dead-lock, see #3867
+  ros::Time::init();
+  CallbackQueue queue;
+  recursiveTimerQueue = &queue;
+  TimerRecursionCallbackPtr cb(new TimerRecursionCallback(&queue));
+  queue.addCallback(cb, 1);
+
+  boost::thread_group tg;
+  bool done = false;
+
+  for (uint32_t i = 0; i < 2; ++i)
+  {
+    tg.create_thread(boost::bind(callOneThread, &queue, boost::ref(done)));
+  }
+
+  while (!queue.isEmpty())
+  {
+    ros::WallDuration(0.01).sleep();
+  }
+
+  done = true;
+  tg.join_all();
 }
 
 int main(int argc, char** argv)

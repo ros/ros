@@ -53,9 +53,11 @@ target_link_libraries(${PROJECT_NAME}-param_update_test ${ROS_LIBRARIES})
 
 add_executable(${PROJECT_NAME}-real_time_test EXCLUDE_FROM_ALL real_time_test.cpp)
 target_link_libraries(${PROJECT_NAME}-real_time_test ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
+add_dependencies(${PROJECT_NAME}-real_time_test rosgraph_msgs_gencpp)
 
 add_executable(${PROJECT_NAME}-sim_time_test EXCLUDE_FROM_ALL sim_time_test.cpp)
 target_link_libraries(${PROJECT_NAME}-sim_time_test ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
+add_dependencies(${PROJECT_NAME}-sim_time_test rosgraph_msgs_gencpp)
 
 # Call a service
 add_executable(${PROJECT_NAME}-service_adv EXCLUDE_FROM_ALL service_adv.cpp)
@@ -69,12 +71,14 @@ target_link_libraries(${PROJECT_NAME}-service_call ${GTEST_LIBRARIES} ${ROS_LIBR
 
 add_executable(${PROJECT_NAME}-service_deadlock EXCLUDE_FROM_ALL service_deadlock.cpp)
 target_link_libraries(${PROJECT_NAME}-service_deadlock ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
+add_dependencies(${PROJECT_NAME}-service_deadlock std_srvs_gencpp)
 
 add_executable(${PROJECT_NAME}-service_call_repeatedly EXCLUDE_FROM_ALL service_call_repeatedly.cpp)
 target_link_libraries(${PROJECT_NAME}-service_call_repeatedly ${ROS_LIBRARIES})
 
 add_executable(${PROJECT_NAME}-service_exception EXCLUDE_FROM_ALL service_exception.cpp)
 target_link_libraries(${PROJECT_NAME}-service_exception ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
+add_dependencies(${PROJECT_NAME}-service_exception std_srvs_gencpp)
 
 
 # Repeatedly call ros::init()
@@ -135,6 +139,7 @@ target_link_libraries(${PROJECT_NAME}-incrementing_sequence ${GTEST_LIBRARIES} $
 
 add_executable(${PROJECT_NAME}-subscription_callback_types EXCLUDE_FROM_ALL subscription_callback_types.cpp)
 target_link_libraries(${PROJECT_NAME}-subscription_callback_types ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
+add_dependencies(${PROJECT_NAME}-subscription_callback_types std_msgs_gencpp)
 
 add_executable(${PROJECT_NAME}-service_callback_types EXCLUDE_FROM_ALL service_callback_types.cpp)
 target_link_libraries(${PROJECT_NAME}-service_callback_types ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
@@ -150,8 +155,11 @@ target_link_libraries(${PROJECT_NAME}-subscribe_retry_tcp ${GTEST_LIBRARIES} ${R
 
 add_executable(${PROJECT_NAME}-subscribe_star EXCLUDE_FROM_ALL subscribe_star.cpp)
 target_link_libraries(${PROJECT_NAME}-subscribe_star ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
+add_dependencies(${PROJECT_NAME}-subscribe_star std_srvs_gencpp)
+
 add_executable(${PROJECT_NAME}-publisher_for_star_subscriber EXCLUDE_FROM_ALL publisher_for_star_subscriber.cpp)
 target_link_libraries(${PROJECT_NAME}-publisher_for_star_subscriber ${ROS_LIBRARIES})
+add_dependencies(${PROJECT_NAME}-publisher_for_star_subscriber std_srvs_gencpp)
 
 add_executable(${PROJECT_NAME}-parameter_validation EXCLUDE_FROM_ALL parameter_validation.cpp)
 target_link_libraries(${PROJECT_NAME}-parameter_validation ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
@@ -176,9 +184,11 @@ target_link_libraries(${PROJECT_NAME}-test_search_param ${GTEST_LIBRARIES} ${ROS
 
 add_executable(${PROJECT_NAME}-left_right EXCLUDE_FROM_ALL left_right.cpp)
 target_link_libraries(${PROJECT_NAME}-left_right ${ROS_LIBRARIES})
+add_dependencies(${PROJECT_NAME}-left_right std_msgs_gencpp)
 
 add_executable(${PROJECT_NAME}-string_msg_expect EXCLUDE_FROM_ALL string_msg_expect.cpp)
 target_link_libraries(${PROJECT_NAME}-string_msg_expect ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
+add_dependencies(${PROJECT_NAME}-string_msg_expect std_msgs_gencpp)
 
 add_dependencies(tests
 ${PROJECT_NAME}-handles

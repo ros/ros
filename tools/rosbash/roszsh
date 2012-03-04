@@ -69,7 +69,11 @@ function roscd {
         return 0
     fi
     if [ -z $1 ]; then
-      cd ${ROS_ROOT}
+      if [ -z $ROS_WORKSPACE ]; then
+        echo -e "No ROS_WORKSPACE set.  Please set ROS_WORKSPACE to use roscd with no arguments."
+        return 1
+      fi
+      cd ${ROS_WORKSPACE}
       return 0
     fi
 
@@ -78,7 +82,11 @@ function roscd {
       echo "roscd: No such package '$1'"
       return 1
     elif [ -z ${rosvals[1]} ]; then
-      cd ${ROS_ROOT}
+      if [ -z $ROS_WORKSPACE ]; then
+        echo -e "No ROS_WORKSPACE set.  Please set ROS_WORKSPACE to use roscd with no arguments."
+        return 1
+      fi
+      cd ${ROS_WORKSPACE}
       return 0
     else
 			cd ${rosvals[2]}${rosvals[3]}${rosvals[4]}

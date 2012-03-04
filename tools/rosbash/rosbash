@@ -1,3 +1,7 @@
+# rosbash - functions to support ROS users
+# Useful things to know:
+# 'local' variables get unset after function, all others stay forever
+# COMPREPLY is the var used by bash complete builtin
 
 function _rossed {
     if [[ `uname` == Darwin || `uname` == FreeBSD ]]; then
@@ -7,9 +11,13 @@ function _rossed {
     fi
 }
 
-
-
+# _ros_location_find
+# based on $ROS_LOCATIONS, which the user can set to any colon
+# separated of key=folder pairs also resolves keys 'log' and
+# 'test_results' to ROS defaults finally resolves to package, then
+# stack echoes its result
 function _ros_location_find {
+    local homedir ROS_LOCATION_KEYS_ARR ROS_LOCATIONS_ARR loc
     homedir=`echo $HOME | sed -e "s/\//\t\//g" -e "s/\t/\\\\\/g"`
     ROS_LOCATION_KEYS_ARR=(`echo $ROS_LOCATIONS | _rossed -e 's/([^:=]*)=([^:=]*)(:*[^=])*(:|$)/\1 /g'`)
     ROS_LOCATIONS_ARR=(`echo $ROS_LOCATIONS | _rossed -e 's/([^:=]*)=([^:=]*)(:*[^=])*(:|$)/\2 /g' -e "s/~/${homedir}/g"`)
@@ -43,6 +51,7 @@ function _ros_location_find {
 }
 
 function _ros_list_locations {
+    local ROS_LOCATION_KEYS packages stacks
     ROS_LOCATION_KEYS=`echo $ROS_LOCATIONS | _rossed -e 's/([^:=]*)=([^:=]*)(:*[^=])*(:|$)/\1 /g'`
     packages=`export ROS_CACHE_TIMEOUT=-1.0 && rospack list-names`
     stacks=`export ROS_CACHE_TIMEOUT=-1.0 && rosstack list-names`
@@ -51,6 +60,7 @@ function _ros_list_locations {
 }
 
 function _ros_package_find {
+    local loc
     loc=`export ROS_CACHE_TIMEOUT=-1.0 && rospack find $1 2> /dev/null`
     if [[ $? != 0 ]]; then
         return 1
@@ -60,20 +70,25 @@ function _ros_package_find {
 }
 
 function _ros_list_packages {
+    local packages
     packages=`export ROS_CACHE_TIMEOUT=-1.0 && rospack list-names`
     echo $packages | tr ' ' '\n'
     return 0
 }
 
 function _ros_list_stacks {
+    local stacks
     stacks=`export ROS_CACHE_TIMEOUT=-1.0 && rosstack list-names`
     echo $stacks | tr ' ' '\n'
     return 0
 }
 
+# takes as argument either just a package-path or just a pkgname
+# returns 0 for no argument or if package (+ path) exist, 1 else
+# on success with arguments returns [pkgname, abspath, relpath basename] 
 function _ros_decode_path {
     local rosname rosdir reldir last
-
+    rosvals=()
     if [[ -z $1 ]]; then
         return 0
     fi
@@ -101,6 +116,7 @@ function _ros_decode_path {
 }
 
 function rospython {
+  local pkgname
   if [[ $1 = "--help" ]]; then
     echo -e "usage: rospython [package] \n\nRun python loading package manifest first."
     return 0
@@ -193,7 +209,7 @@ function rosls {
 }
 
 function _roscmd {
-    local pkgdir exepath opt catkin_source_dir catkin_binary_dir
+    local pkgdir exepath opt catkin_source_dir catkin_binary_dir opts arg
     if [[ -n $CATKIN_SOURCE_DIR ]]; then
         catkin_source_dir=`ROS_ROOT=$CATKIN_SOURCE_DIR ROS_PACKAGE_PATH= _ros_package_find $1`
     fi 
@@ -308,9 +324,6 @@ function _msg_opts {
     else
         pkgname=${1}
     fi
-
-    echo Pkg: $pkgname
-    echo Msg: $msgname
 
     if [[ -z ${searchmsg} ]]; then
         pkgs=(`rospack list`)
@@ -482,6 +495,7 @@ function _roscomplete_test {
 }
 
 function _roscomplete_rosbag {
+    local opts
     COMPREPLY=()
     arg="${COMP_WORDS[COMP_CWORD]}"
 
@@ -523,6 +537,7 @@ function _roscomplete_rosbag {
 }
 
 function _roscomplete_rospack {
+    local arg opts
     COMPREPLY=()
     arg="${COMP_WORDS[COMP_CWORD]}"
 
@@ -537,6 +552,7 @@ function _roscomplete_rospack {
 }
 
 function _roscomplete_rosnode {
+    local arg opts
     COMPREPLY=()
     arg="${COMP_WORDS[COMP_CWORD]}"
 
@@ -573,6 +589,7 @@ function _roscomplete_rosnode {
 
 }
 function _roscomplete_rosparam {
+    local arg opts
     COMPREPLY=()
     arg="${COMP_WORDS[COMP_CWORD]}"
 
@@ -602,6 +619,7 @@ function _roscomplete_rosparam {
 
 }
 function _roscomplete_rostopic {
+    local arg opts
     COMPREPLY=()
     arg="${COMP_WORDS[COMP_CWORD]}"
 
@@ -661,6 +679,7 @@ function _roscomplete_rostopic {
 }
 
 function _roscomplete_rosservice {
+    local arg opts
     COMPREPLY=()
     arg="${COMP_WORDS[COMP_CWORD]}"
 
@@ -732,6 +751,7 @@ function _msg_opts {
 }
 
 function _roscomplete_rosmsg {
+    local arg opts
     COMPREPLY=()
     arg="${COMP_WORDS[COMP_CWORD]}"
 
@@ -757,6 +777,7 @@ function _roscomplete_rosmsg {
 }
 
 function _roscomplete_roscreate_pkg {
+    local arg opts
     COMPREPLY=()
     arg="${COMP_WORDS[COMP_CWORD]}"
 
@@ -780,7 +801,7 @@ function _roscomplete_roswtf {
 }
 
 function _roscomplete_rosclean {
-    local arg
+    local arg opts
     COMPREPLY=()
     arg="${COMP_WORDS[COMP_CWORD]}"
     if [[ $COMP_CWORD == 1 ]]; then

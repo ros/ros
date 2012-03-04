@@ -1,6 +1,67 @@
+# roszsh - functions to support ROS users
+# Useful things to know:
+# 'local' variables get unset after function, all others stay forever
+# 'reply' is the var used by zsh compctl builtin
+
+function _rossed {
+    if [[ `uname` == Darwin || `uname` == FreeBSD ]]; then
+        sed -E "$@"
+    else
+        sed -r "$@"
+    fi
+}
+
+# _ros_location_find
+# based on $ROS_LOCATIONS, which the user can set to any colon
+# separated of key=folder pairs also resolves keys 'log' and
+# 'test_results' to ROS defaults finally resolves to package, then
+# stack echoes its result
+function _ros_location_find {
+    local homedir ROS_LOCATION_KEYS_ARR ROS_LOCATIONS_ARR loc
+    homedir=`echo $HOME | sed -e "s/\//\t\//g" -e "s/\t/\\\\\/g"`
+    ROS_LOCATION_KEYS_ARR=(`echo $ROS_LOCATIONS | _rossed -e 's/([^:=]*)=([^:=]*)(:*[^=])*(:|$)/\1 /g'`)
+    ROS_LOCATIONS_ARR=(`echo $ROS_LOCATIONS | _rossed -e 's/([^:=]*)=([^:=]*)(:*[^=])*(:|$)/\2 /g' -e "s/~/${homedir}/g"`)
+
+    for (( i = 1 ; i <= ${#ROS_LOCATION_KEYS_ARR[@]} ; i++ )); do
+        if [[ $1 == ${ROS_LOCATION_KEYS_ARR[$i]} ]]; then
+            echo ${ROS_LOCATIONS_ARR[i]}
+            return 0
+        fi
+    done
+
+    if [[ $1 == log ]]; then
+        echo `roslaunch-logs`
+        return 0
+    elif [[ $1 == test_results ]]; then
+        echo `rosrun rosunit test_results_dir.py`
+        return 0
+    fi
+
+    loc=`export ROS_CACHE_TIMEOUT=-1.0 && rospack find $1 2> /dev/null`
+    if [[ $? != 0 ]]; then
+        loc=`export ROS_CACHE_TIMEOUT=-1.0 && rosstack find $1 2> /dev/null`
+        if [[ $? != 0 ]]; then
+            return 1
+        fi
+        echo $loc
+        return 0
+    fi
+    echo $loc
+    return 0
+}
+
+function _ros_list_locations {
+    local ROS_LOCATION_KEYS packages stacks
+    ROS_LOCATION_KEYS=`echo $ROS_LOCATIONS | _rossed -e 's/([^:=]*)=([^:=]*)(:*[^=])*(:|$)/\1 /g'`
+    packages=`export ROS_CACHE_TIMEOUT=-1.0 && rospack list-names`
+    stacks=`export ROS_CACHE_TIMEOUT=-1.0 && rosstack list-names`
+    echo $packages $stacks log test_results $ROS_LOCATION_KEYS | tr ' ' '\n'
+    return 0
+}
+
 function _ros_decode_path {
     local rosname rosdir reldir last rospackdir rosstack_result rosstackdir
-
+    rosvals=()
     if [[ -z $1 ]]; then
         return 0
     fi
@@ -138,7 +199,7 @@ function rosls {
 }
 
 function _roscmd {
-    local pkgdir exepath opt
+    local pkgdir exepath opt arg
     pkgdir=`export ROS_CACHE_TIMEOUT=-1.0 && rospack find $1 2> /dev/null`
     if [[ $? != 0 ]] ; then
         echo "Couldn't find package [$1]"
@@ -232,7 +293,7 @@ function _roscomplete_sub_dir {
 }
 
 function _roscomplete_search_dir {
-    local words arg opts pkgdir
+    local words arg opts pkgdir pkgdir_result stack_result
     reply=()
 		words=(${=BUFFER})
     pkgdir=`export ROS_CACHE_TIMEOUT=-1.0 && rospack find ${words[2]} 2> /dev/null`
@@ -264,6 +325,7 @@ function _roscomplete_launchfile {
 }
 
 function _roscomplete_rosbag {
+    local opts
     reply=()
 
     if [[ ${CURRENT} == 2 ]]; then
@@ -305,6 +367,7 @@ function _roscomplete_rosbag {
 }
 
 function _roscomplete_rospack {
+    local opts
     reply=()
     if [[ ${CURRENT} == 2 ]]; then
         opts="help find list list-names list-duplicates langs depends depends-manifests depends1 depends-indent depends-msgsrv depends-why rosdep rosdep0 vcs vcs0 depends-on depends-on1 export plugins cflags-only-I cflags-only-other libs-only-L libs-only-l libs-only-other profile"
@@ -316,6 +379,7 @@ function _roscomplete_rospack {
 }
 
 function _roscomplete_rosnode {
+    local opts
     reply=()
 
     if [[ ${CURRENT} == 2 ]]; then
@@ -348,11 +412,11 @@ function _roscomplete_rosnode {
                 ;;
         esac
     fi
-
 }
-function _roscomplete_rosparam {
-    reply=()
 
+function _roscomplete_rosparam {
+    local opts
+    reply=()
 
     if [[ ${CURRENT} == 2 ]]; then
         opts="set get load dump delete list"
@@ -446,6 +510,7 @@ function _roscomplete_rostopic {
 }
 
 function _roscomplete_rosservice {
+    local opts
     reply=()
 
 
@@ -478,6 +543,7 @@ function _roscomplete_rosservice {
 }
 
 function _msg_opts {
+    local pkgname msgname searchmsg pkgs count pkgname2 opts result
     unset searchmsg
 
     if [[ $1 =~ .+/.* ]]; then
@@ -517,6 +583,7 @@ function _msg_opts {
 }
 
 function _roscomplete_rosmsg {
+    local opts
     reply=()
 
 
@@ -541,6 +608,7 @@ function _roscomplete_rosmsg {
 }
 
 function _srv_opts {
+    local pkgname srvname searchsrv pkgs count opts pkgpath result
     unset searchsrv
 
     if [[ $1 =~ .+/.* ]]; then
@@ -580,8 +648,8 @@ function _srv_opts {
 }
 
 function _roscomplete_rossrv {
+    local opts
     reply=()
-
 
     if [[ ${CURRENT} == 2 ]]; then
         opts="show list md5 package packages"
@@ -603,17 +671,16 @@ function _roscomplete_rossrv {
     fi
 }
 
-
-
 function _roscomplete_roscreate_pkg {
+    local opts
     reply=()
-
 
     if [[ ${CURRENT} > 2 ]]; then
         opts=`rospack list-names`
         reply=(${=opts})
     fi
 }
+
 compctl -K "_roscomplete_sub_dir" -S / "roscd" "rospd" "rosls"
 compctl -K "_roscomplete_rosmake" "rosmake"
 

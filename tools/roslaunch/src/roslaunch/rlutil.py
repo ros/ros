@@ -73,8 +73,8 @@ def check_log_disk_usage():
 def resolve_launch_arguments(args):
     """
     Resolve command-line args to roslaunch filenames.
-    @return: resolved filenames
-    @rtype: [str]
+
+    :returns: resolved filenames, ``[str]``
     """
 
     # strip remapping args for processing
@@ -110,7 +110,7 @@ def _wait_for_master():
     """
     Block until ROS Master is online
     
-    @raise RuntimeError: if unexpected error occurs
+    :raise: :exc:`RuntimeError` If unexpected error occurs
     """
     m = roslaunch.core.Master() # get a handle to the default master
     is_running = m.is_running()
@@ -151,13 +151,11 @@ def change_terminal_name(args, is_core):
 
 def get_or_generate_uuid(options_runid, options_wait_for_master):
     """
-    @param options_runid: run_id value from command-line or None
-    @type  options_runid: str
-    @param options_wait_for_master: the wait_for_master command
+    :param options_runid: run_id value from command-line or ``None``, ``str``
+    :param options_wait_for_master: the wait_for_master command
       option. If this is True, it means that we must retrieve the
       value from the parameter server and need to avoid any race
-      conditions with the roscore being initialized.
-    @type  options_wait_for_master: bool
+      conditions with the roscore being initialized. ``bool``
     """
 
     # Three possible sources of the run_id:
@@ -186,10 +184,8 @@ def check_roslaunch(f):
     Check roslaunch file for errors, returning error message if check fails. This routine
     is mainly to support rostest's roslaunch_check.
 
-    @param f: roslaunch file name
-    @type  f: str
-    @return: error message or None
-    @rtype: str
+    :param f: roslaunch file name, ``str``
+    :returns: error message or ``None``
     """
     try:
         rl_config = roslaunch.config.load_config_default([f], DEFAULT_MASTER_PORT, verbose=False)
@@ -234,10 +230,9 @@ def check_roslaunch(f):
                           
 def print_file_list(roslaunch_files):
     """
-    @param roslaunch_files: list of launch files to load
-    @type  roslaunch_files: str
+    :param roslaunch_files: list of launch files to load, ``str``
 
-    @return list of files involved in processing roslaunch_files, including the files themselves.
+    :returns: list of files involved in processing roslaunch_files, including the files themselves.
     """
     from roslaunch.config import load_config_default, get_roscore_filename
     import roslaunch.xmlloader

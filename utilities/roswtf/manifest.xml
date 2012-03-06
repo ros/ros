@@ -9,7 +9,7 @@
   <license>BSD</license>
   <review status="Doc reviewed" notes="1/4/2010. end-user docs passed. plugin API requires more work."/>
   <url>http://ros.org/wiki/roswtf</url>
-  <rosdep name="paramiko" />
+  <rosdep name="python-paramiko" />
   <export>
     <rosdoc config="rosdoc.yaml" />
   </export>

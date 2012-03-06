@@ -9,7 +9,7 @@ roslaunch is a tool for easily launching multiple ROS <a href="http://ros.org/wi
   <license>BSD</license>
   <review status="Doc reviewed" notes="01/18/2010"/>
   <url>http://ros.org/wiki/roslaunch</url>
-  <rosdep name="paramiko"/>
+  <rosdep name="python-paramiko"/>
   <rosdep name="python-yaml"/>
   <export>
     <rosdoc config="rosdoc.yaml"/>

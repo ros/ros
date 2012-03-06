@@ -92,7 +92,6 @@ void SubscriptionQueue::push(const SubscriptionCallbackHelperPtr& helper, const 
 
 void SubscriptionQueue::clear()
 {
-  boost::recursive_mutex::scoped_lock cb_lock(callback_mutex_);
   boost::mutex::scoped_lock queue_lock(queue_mutex_);
 
   queue_.clear();

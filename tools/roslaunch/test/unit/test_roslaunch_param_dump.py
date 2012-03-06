@@ -106,12 +106,12 @@ def test_dump_params():
     with fakestdout() as b:
         assert dump_params([node_rosparam_f])
         s = b.getvalue().strip()
-        assert s == SAMPLE1, s
+        assert s == SAMPLE1, "[%s]\nvs\n[%s]"%(s, SAMPLE1)
     node_rosparam_f = os.path.join(test_d, 'test-node-rosparam-load-ns.xml')
     with fakestdout() as b:
         assert dump_params([node_rosparam_f])
         s = b.getvalue().strip()
-        assert s == SAMPLE2, s
+        assert s == SAMPLE2, "[%s]\nvs\n[%s]"%(s, SAMPLE2)
         
     invalid_f = os.path.join(test_d, 'invalid-xml.xml')
     with fakestdout() as b:

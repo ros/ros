@@ -115,9 +115,6 @@ boost:
   debian:
     squeeze: libboost1.42-all-dev
     wheezy: libboost-all-dev
-     lenny: |
-       if [ ! -f /opt/ros/lib/libboost_date_time-gcc43-mt*-1_37.a ] ; then
-         mkdir -p ~/ros/ros-deps
     lenny: |
       if [ ! -f /opt/ros/lib/libboost_date_time-gcc43-mt*-1_37.a ] ; then
         mkdir -p ~/ros/ros-deps

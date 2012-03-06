@@ -37,7 +37,12 @@ import struct
 import unittest
 import time
 
-import numpy
+try:
+    import numpy
+    disable = False
+except ImportError:
+    print "cannot import numpy, test is disabled"
+    disable = True
 
 # this is partially a teste of the rospy/Tutorials/numpy
 from test_rospy.msg import Floats
@@ -47,6 +52,8 @@ import cStringIO
 class TestRospyNumpy(unittest.TestCase):
 
     def test_floats(self):
+        if disable:
+            return
         vals = [1.0, 2.1, 3.2, 4.3, 5.4, 6.5]
         b = cStringIO.StringIO()
         f = Floats(numpy.array([1.0, 2.1, 3.2, 4.3, 5.4, 6.5], dtype=numpy.float32))

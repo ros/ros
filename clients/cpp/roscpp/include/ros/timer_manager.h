@@ -371,24 +371,24 @@ void TimerManager<T, D, E>::remove(int32_t handle)
 template<class T, class D, class E>
 void TimerManager<T, D, E>::schedule(const TimerInfoPtr& info)
 {
+  boost::mutex::scoped_lock lock(timers_mutex_);
+
+  if (info->removed)
+  {
+    return;
+  }
+
+  updateNext(info, T::now());
   {
     boost::mutex::scoped_lock lock(waiting_mutex_);
 
-    if (info->removed)
-    {
-      return;
-    }
-
-    updateNext(info, T::now());
     waiting_.push_back(info->handle);
+    // waitingCompare requires a lock on the timers_mutex_
     waiting_.sort(boost::bind(&TimerManager::waitingCompare, this, _1, _2));
   }
 
-  {
-    boost::mutex::scoped_lock lock(timers_mutex_);
-    new_timer_ = true;
-    timers_cond_.notify_one();
-  }
+  new_timer_ = true;
+  timers_cond_.notify_one();
 }
 
 template<class T, class D, class E>

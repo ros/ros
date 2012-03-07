@@ -41,7 +41,7 @@ import rospkg
         
 from subprocess import Popen, PIPE, check_call, call
 
-_SCRIPT_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), 'scripts'))
+_SCRIPT_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'scripts'))
 
 class TestRosmsg(unittest.TestCase):
 

@@ -119,7 +119,9 @@ class TestRosserviceOnline(unittest.TestCase):
         # test with empty headers
         for v in ['{}', '{header: {}}', '{header: {seq: 0}}']:
             output = Popen([cmd, 'call', name, v], stdout=PIPE).communicate()[0]
-            val = yaml.load(output.strip())['header']
+            output = output.strip()
+            self.assert_(output, output)
+            val = yaml.load(output)['header']
             self.assertEquals('', val['frame_id'])
             self.assert_(val['seq'] >= 0)
             self.assertEquals(0, val['stamp']['secs'])

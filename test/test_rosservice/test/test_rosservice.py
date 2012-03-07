@@ -37,7 +37,7 @@ import unittest
 import cStringIO
 import time
         
-import rostest
+import rosunit
 
 from subprocess import Popen, PIPE, check_call, call
 
@@ -360,4 +360,4 @@ class TestRosservice(unittest.TestCase):
 
 NAME = 'test_rosservice'
 if __name__ == '__main__':
-    rostest.unitrun('test_rosservice', NAME, TestRosservice, sys.argv, coverage_packages=['rosservice'])
+    rosunit.unitrun('test_rosservice', NAME, TestRosservice, sys.argv, coverage_packages=['rosservice'])

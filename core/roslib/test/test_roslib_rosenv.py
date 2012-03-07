@@ -54,17 +54,6 @@ class EnvTest(unittest.TestCase):
       self.fail("get_ros_root should have failed")
     except: pass
 
-    real_ros_root = get_ros_root(required=True)
-    
-    # make sure that ros root is a directory
-    p = os.path.join(real_ros_root, 'Makefile')
-    env = {'ROS_ROOT': p}
-    self.assertEquals(p, get_ros_root(required=False, env=env))
-    try:
-      get_ros_root(required=True, env=env)
-      self.fail("get_ros_root should have failed")
-    except: pass
-    
   def test_get_ros_package_path(self):
     from roslib.rosenv import get_ros_package_path
     self.assertEquals(None, get_ros_package_path(required=False, env={}))
@@ -111,40 +100,3 @@ class EnvTest(unittest.TestCase):
     # make sure test works with os.environ
     self.assertEquals(os.environ.get('ROS_MASTER_URI', None), get_master_uri(required=False))
 
-  def test_get_test_results_dir(self):
-    from roslib.rosenv import get_ros_root, get_test_results_dir
-    import tempfile, os
-    base = tempfile.gettempdir()
-    ros_test_results_dir = os.path.join(base, 'ros_test_results_dir')
-    ros_home_dir = os.path.join(base, 'ros_home_dir')
-    home_dir = os.path.expanduser('~')
-
-    # ROS_TEST_RESULTS_DIR has precedence
-    env = {'ROS_ROOT': get_ros_root(), 'ROS_TEST_RESULTS_DIR': ros_test_results_dir, 'ROS_HOME': ros_home_dir }
-    self.assertEquals(ros_test_results_dir, get_test_results_dir(env=env))
-
-    env = {'ROS_ROOT': get_ros_root(), 'ROS_HOME': ros_home_dir }
-    self.assertEquals(os.path.join(ros_home_dir, 'test_results'), get_test_results_dir(env=env))
-
-    env = {'ROS_ROOT': get_ros_root()}
-    self.assertEquals(os.path.join(home_dir, '.ros', 'test_results'), get_test_results_dir(env=env))
-
-    # test default assignment of env. Don't both checking return value as we would duplicate get_test_results_dir
-    self.assert_(get_test_results_dir() is not None)
-
-  def test_get_ros_home(self):
-    from roslib.rosenv import get_ros_root, get_ros_home
-    import tempfile, os
-    base = tempfile.gettempdir()
-    ros_home_dir = os.path.join(base, 'ros_home_dir')
-    home_dir = os.path.expanduser('~')
-
-    # ROS_HOME has precedence
-    env = {'ROS_ROOT': get_ros_root(), 'ROS_HOME': ros_home_dir }
-    self.assertEquals(ros_home_dir, get_ros_home(env=env))
-
-    env = {'ROS_ROOT': get_ros_root()}
-    self.assertEquals(os.path.join(home_dir, '.ros'), get_ros_home(env=env))
-
-    # test default assignment of env. Don't both checking return value 
-    self.assert_(get_ros_home() is not None)

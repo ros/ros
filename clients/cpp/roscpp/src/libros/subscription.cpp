@@ -750,24 +750,31 @@ bool Subscription::addCallback(const SubscriptionCallbackHelperPtr& helper, cons
 
 void Subscription::removeCallback(const SubscriptionCallbackHelperPtr& helper)
 {
-  boost::mutex::scoped_lock cbs_lock(callbacks_mutex_);
-  for (V_CallbackInfo::iterator it = callbacks_.begin();
-       it != callbacks_.end(); ++it)
+  CallbackInfoPtr info;
   {
-    if ((*it)->helper_ == helper)
+    boost::mutex::scoped_lock cbs_lock(callbacks_mutex_);
+    for (V_CallbackInfo::iterator it = callbacks_.begin();
+         it != callbacks_.end(); ++it)
     {
-      const CallbackInfoPtr& info = *it;
-      info->subscription_queue_->clear();
-      info->callback_queue_->removeByID((uint64_t)info.get());
-      callbacks_.erase(it);
-
-      if (!helper->isConst())
+      if ((*it)->helper_ == helper)
       {
-        --nonconst_callbacks_;
-      }
+        info = *it;
+        callbacks_.erase(it);
 
-      break;
+        if (!helper->isConst())
+        {
+          --nonconst_callbacks_;
+        }
+
+        break;
+      }
     }
+  }
+
+  if (info)
+  {
+    info->subscription_queue_->clear();
+    info->callback_queue_->removeByID((uint64_t)info.get());
   }
 }
 

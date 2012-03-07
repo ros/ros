@@ -40,7 +40,9 @@ import rosmake
 
 ## make sure that rospack is built, it is a requirement for rosmake
 def assert_rospack_built():
-    if subprocess.call(["rospack","help"], stdout=subprocess.PIPE, stderr=subprocess.PIPE):
+    p = subprocess.Popen(["rospack","help"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    output = p.communicate()
+    if p.returncode != 0:
         print("rospack not available.\nPlease install rospack before using rosmake and make sure it is available on your path.", file=sys.stderr)
         sys.exit(-1)
 

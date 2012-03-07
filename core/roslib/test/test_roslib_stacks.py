@@ -67,26 +67,15 @@ class RoslibStacksTest(unittest.TestCase):
         test_dir = os.path.join(roslib.packages.get_pkg_dir('roslib'), 'test', 'stack_tests', 's1')
         env = os.environ.copy()
         env['ROS_PACKAGE_PATH'] = test_dir
-        self.assertEquals(set(['ros', 'foo', 'bar']), set(list_stacks(env=env)))
+        val = set(list_stacks(env=env))
+        # ros stack not guaranteed to list anymore as ROS_ROOT may not be set
+        if 'ros' in val:
+            val.remove('ros')
+        self.assertEquals(set(['foo', 'bar']), val)
 
 
     def test_list_stacks_by_path(self):
         from roslib.stacks import list_stacks_by_path
-
-        # test with the ros stack
-        rr = rospkg.get_ros_root()
-        self.assertEquals(['ros'], list_stacks_by_path(rr))
-        stacks = []
-        self.assertEquals(['ros'], list_stacks_by_path(rr, stacks))
-        self.assertEquals(['ros'], stacks)
-        self.assertEquals(['ros'], list_stacks_by_path(rr, stacks))
-
-        stacks.extend(['fake_stack', 'fake_stack2'])
-        self.assertEquals(['ros', 'fake_stack', 'fake_stack2'], list_stacks_by_path(rr, stacks))
-
-        cache = {}
-        self.assertEquals(['ros'], list_stacks_by_path(rr, cache=cache))
-        self.assertEquals({'ros': rr}, cache)
 
         # test with synthetic stacks
         test_dir = os.path.join(roslib.packages.get_pkg_dir('roslib'), 'test', 'stack_tests')
@@ -132,7 +121,6 @@ class RoslibStacksTest(unittest.TestCase):
     def test_get_stack_dir(self):
         import roslib.packages
         from roslib.stacks import get_stack_dir, InvalidROSStackException, list_stacks
-        self.assertEquals(rospkg.get_ros_root(), get_stack_dir('ros'))
         try:
             get_stack_dir('non_existent')
             self.fail("should have raised")

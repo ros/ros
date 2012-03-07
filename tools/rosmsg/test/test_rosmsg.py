@@ -148,7 +148,7 @@ std_msgs/String s2
     def test_rosmsg_cmd_list(self):
         from rosmsg import rosmsg_cmd_list, MODE_MSG, MODE_SRV
         with fakestdout() as b:
-            rosmsg_cmd_list(MODE_MSG, ['list'])
+            rosmsg_cmd_list(MODE_MSG, 'messages', ['list'])
             val = b.getvalue().strip()
             packages1 = val.split('\n')
             assert 'std_msgs/String' in packages1

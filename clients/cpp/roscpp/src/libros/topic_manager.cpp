@@ -799,7 +799,6 @@ PublicationPtr TopicManager::lookupPublicationWithoutLock(const string &topic)
 bool TopicManager::unsubscribe(const std::string &topic, const SubscriptionCallbackHelperPtr& helper)
 {
   SubscriptionPtr sub;
-  L_Subscription::iterator it;
 
   {
     boost::mutex::scoped_lock lock(subs_mutex_);
@@ -809,8 +808,9 @@ bool TopicManager::unsubscribe(const std::string &topic, const SubscriptionCallb
       return false;
     }
 
+    L_Subscription::iterator it;
     for (it = subscriptions_.begin();
-         it != subscriptions_.end() && !sub; ++it)
+         it != subscriptions_.end(); ++it)
     {
       if ((*it)->getName() == topic)
       {
@@ -833,7 +833,16 @@ bool TopicManager::unsubscribe(const std::string &topic, const SubscriptionCallb
     {
       boost::mutex::scoped_lock lock(subs_mutex_);
 
-      subscriptions_.erase(it);
+      L_Subscription::iterator it;
+      for (it = subscriptions_.begin();
+           it != subscriptions_.end(); ++it)
+      {
+        if ((*it)->getName() == topic)
+        {
+          subscriptions_.erase(it);
+          break;
+        }
+      }
 
       if (!unregisterSubscriber(topic))
       {

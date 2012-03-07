@@ -39,25 +39,6 @@ import rospkg
 
 class RoslibStacksTest(unittest.TestCase):
   
-    def test_stack_of(self):
-        import roslib.packages
-        from roslib.stacks import stack_of
-        self.assertEquals('ros', stack_of('roslib'))
-        # due to caching, test twice
-        self.assertEquals('ros', stack_of('roslib'))
-        try:
-            stack_of('fake_roslib')
-            self.fail("should have failed")
-        except roslib.packages.InvalidROSPkgException:
-            pass
-
-        # test unary
-        test_dir = os.path.join(roslib.packages.get_pkg_dir('roslib'), 'test', 'stack_tests_unary')
-        env = os.environ.copy()
-        env['ROS_PACKAGE_PATH'] = test_dir
-        for s in ['foo', 'bar']:
-            self.assertEquals(s, stack_of(s, env=env))
-
     def test_list_stacks(self):
         from roslib.stacks import list_stacks
         l = list_stacks()

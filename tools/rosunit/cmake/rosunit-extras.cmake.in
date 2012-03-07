@@ -3,54 +3,18 @@ macro(rosunit_initialize_tests)
     find_program_required(ROSUNIT_EXE rosunit
                           PATHS @PROJECT_SOURCE_DIR@/scripts
                           NO_DEFAULT_PATH)
-    find_program_required(ROSUNIT_SUMMARIZE_EXE summarize_results.py
-                          PATHS @PROJECT_SOURCE_DIR@/scripts
-                          NO_DEFAULT_PATH)
-    find_program_required(ROSUNIT_CHECK_TEST_RAN_EXE check_test_ran.py
-                          PATHS @PROJECT_SOURCE_DIR@/scripts
-                          NO_DEFAULT_PATH)
   else()
     find_program_required(ROSUNIT_EXE rosunit
                           PATHS @CMAKE_INSTALL_PREFIX@/bin
-                          NO_DEFAULT_PATH)
-    find_program_required(ROSUNIT_SUMMARIZE_EXE summarize_results.py
-                          PATHS @CMAKE_INSTALL_PREFIX@/share/rosunit/bin
-                          NO_DEFAULT_PATH)
-    find_program_required(ROSUNIT_CHECK_TEST_RAN_EXE check_test_ran.py
-                          PATHS @CMAKE_INSTALL_PREFIX@/share/rosunit/bin
                           NO_DEFAULT_PATH)
   endif()
 endmacro()
 
 rosunit_initialize_tests()
 
-# This is a macro to ensure that ${PROJECT_NAME}_CACHE gets set in a higher
-# scope where we can check it later.
-macro(append_test_to_cache CACHENAME)
-  set(cachefile ${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/${PROJECT_NAME}.${CACHENAME})
-  if(NOT ${PROJECT_NAME}_CACHE)
-    file(WRITE ${cachefile} "#\n# This is ${cachefile}\n#\n")
-    # Write out the directory that we'll use as CWD later when running
-    # tests
-    file(APPEND ${cachefile} "${PROJECT_SOURCE_DIR}\n")
-    set(${PROJECT_NAME}_CACHE TRUE)
-    set(${PROJECT_NAME}_CACHE TRUE PARENT_SCOPE)
-    # One test target per project
-    add_custom_target(${PROJECT_NAME}_run_tests
-      COMMAND ${CATKIN_ENV} ${PYTHON_EXECUTABLE}
-      ${catkin_EXTRAS_DIR}/test/runtests.py ${cachefile}
-      COMMAND ${CATKIN_ENV} ${PYTHON_EXECUTABLE}
-      ${ROSUNIT_SUMMARIZE_EXE} --nodeps ${PROJECT_NAME})
-    add_dependencies(test ${PROJECT_NAME}_run_tests)
-    add_dependencies(${PROJECT_NAME}_run_tests tests)
-  endif()
-
-  # gotcha:  you need a newline or the message doesn't appear
-  # in the cache.   pfft.
-  file(APPEND ${cachefile} "${ARGN}\n")
-endmacro()
-
 function(add_pyunit file)
+
+  message(WARNING "add_pyunit() is deprecated.  For Python tests, use add_nostests() instead.")
 
   # Look for optional TIMEOUT argument, #2645
   parse_arguments(_pyunit "TIMEOUT;WORKING_DIRECTORY" "" ${ARGN})
@@ -88,79 +52,6 @@ function(add_pyunit file)
   string(REPLACE "/" "_" _testname ${file})
   # We use rostest to call the executable to get process control, #1629
   append_test_to_cache(catkin-tests "${_chdir_prefix}${ROSUNIT_EXE} --name=${_testname} --time-limit=${_pyunit_TIMEOUT} --package=${PROJECT_NAME} -- ${_file_name} ${_covarg}${_chdir_suffix}")
-  append_test_to_cache(catkin-tests "${ROSUNIT_CHECK_TEST_RAN_EXE} ${CMAKE_BINARY_DIR}/test_results/${PROJECT_NAME}/TEST-${_testname}.xml")
+  append_test_to_cache(catkin-tests "${CHECK_TEST_RAN_EXE} ${CMAKE_BINARY_DIR}/test_results/${PROJECT_NAME}/TEST-${_testname}.xml")
 endfunction()
 
-function(add_gtest exe)
-
-  # Look for optional TIMEOUT argument, #2645
-  parse_arguments(_gtest "TIMEOUT;WORKING_DIRECTORY" "" ${ARGN})
-  if(NOT _gtest_TIMEOUT)
-    set(_gtest_TIMEOUT 60.0)
-  endif()
-  if(_gtest_WORKING_DIRECTORY)
-    set(_chdir_prefix "bash -c \"cd ${_gtest_WORKING_DIRECTORY} && ")
-    set(_chdir_suffix "\"")
-  endif()
-
-  # Create the program, with basic + gtest build flags
-  find_package(GTest)
-  if(NOT GTEST_FOUND)
-    message("Warning: GTest not found; C++ tests will fail to build.")
-  endif()
-  include_directories(${GTEST_INCLUDE_DIRS})
-  add_executable(${exe} EXCLUDE_FROM_ALL ${_gtest_DEFAULT_ARGS})
-  target_link_libraries(${exe} ${GTEST_LIBRARIES} ${THREADS_LIBRARY})
-
-  # Make sure the executable is built before running tests
-  add_dependencies(tests ${exe})
-
-  # Create a legal test name, in case the target name has slashes in it
-  string(REPLACE "/" "_" _testname ${exe})
-  get_target_property(_exe_path ${exe} RUNTIME_OUTPUT_DIRECTORY)
-  # We use rosunit to call the executable to get process control, #1629, #3112
-  append_test_to_cache(catkin-tests "${_chdir_prefix}${ROSUNIT_EXE} --name=${_testname} --time-limit=${_gtest_TIMEOUT} --package=${PROJECT_NAME} ${_exe_path}/${exe}${_chdir_suffix}")
-  append_test_to_cache(catkin-tests "${ROSUNIT_CHECK_TEST_RAN_EXE} ${CMAKE_BINARY_DIR}/test_results/${PROJECT_NAME}/TEST-${_testname}.xml")
-endfunction()
-
-function(add_nosetests dir)
-  # Check that nosetests is installed.
-  find_program(nosetests_path nosetests)
-  if(NOT nosetests_path)
-    message(FATAL_ERROR "Can't find nosetests executable... try installing package 'python-nose'")
-  endif()
-
-  parse_arguments(_nose "WORKING_DIRECTORY" "" ${ARGN})
-  if(_nose_WORKING_DIRECTORY)
-    set(_chdir_prefix "bash -c \"cd ${_nose_WORKING_DIRECTORY} && ")
-    set(_chdir_suffix "\"")
-  endif()
-
-  # Check that the directory exists
-  set(_dir_name _dir_name-NOTFOUND)
-  if(IS_ABSOLUTE ${dir})
-    set(_dir_name ${dir})
-  else()
-    find_file(_dir_name ${dir}
-              PATHS ${CMAKE_CURRENT_SOURCE_DIR}
-              NO_DEFAULT_PATH
-              NO_CMAKE_FIND_ROOT_PATH)  # for cross-compilation.  thanks jeremy.
-    if(NOT _dir_name)
-      message(FATAL_ERROR "Can't find nosetests dir \"${dir}\"")
-    endif()
-  endif()
-
-  # We look for ROS_TEST_COVERAGE=1
-  # to indicate that coverage reports are being requested.
-  if("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
-    set(_covarg "--with-coverage")
-  else()
-    set(_covarg)
-  endif()
-
-  set(output_dir_name ${CMAKE_BINARY_DIR}/test_results/${PROJECT_NAME})
-  append_test_to_cache(catkin-tests "${CMAKE_COMMAND} -E make_directory ${output_dir_name}")
-  string(REPLACE "/" "." output_file_name ${dir})
-  append_test_to_cache(catkin-tests "${_chdir_prefix}${nosetests_path} --where=${_dir_name} --with-xunit --xunit-file=${output_dir_name}/${output_file_name}.xml ${_covarg}${_chdir_suffix}")
-  append_test_to_cache(catkin-tests "${ROSUNIT_CHECK_TEST_RAN_EXE} ${output_dir_name}/${output_file_name}.xml")
-endfunction()

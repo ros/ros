@@ -83,19 +83,11 @@ def construct_ordered_mapping(self, node, deep=False):
         mapping[key] = value
     return mapping
 
-yaml.constructor.BaseConstructor.construct_mapping = construct_ordered_mapping
-
-
 def construct_yaml_map_with_ordered_dict(self, node):
     data = collections.OrderedDict()
     yield data
     value = self.construct_mapping(node)
     data.update(value)
-
-yaml.constructor.Constructor.add_constructor(
-        'tag:yaml.org,2002:map',
-        construct_yaml_map_with_ordered_dict)
-
 
 def represent_ordered_mapping(self, tag, mapping, flow_style=None):
     value = []
@@ -119,11 +111,6 @@ def represent_ordered_mapping(self, tag, mapping, flow_style=None):
         else:
             node.flow_style = best_style
     return node
-
-if "OrderedDict" in collections.__dict__:
-    yaml.representer.BaseRepresenter.represent_mapping = represent_ordered_mapping
-    yaml.representer.Representer.add_representer(collections.OrderedDict,
-                                                 yaml.representer.SafeRepresenter.represent_dict)
 
 ## end recipe for ordered yaml output ######
 
@@ -258,7 +245,19 @@ def create_names_filter(names):
     return lambda obj : filter(lambda slotname : not slotname in names, obj.__slots__)
 
 
+def init_rosmsg_proto():
+    if "OrderedDict" in collections.__dict__:
+        yaml.constructor.BaseConstructor.construct_mapping = construct_ordered_mapping
+        yaml.constructor.Constructor.add_constructor(
+            'tag:yaml.org,2002:map',
+            construct_yaml_map_with_ordered_dict)
+
+        yaml.representer.BaseRepresenter.represent_mapping = represent_ordered_mapping
+        yaml.representer.Representer.add_representer(collections.OrderedDict,
+                                                     yaml.representer.SafeRepresenter.represent_dict)
+    
 def rosmsg_cmd_prototype(args):
+    init_rosmsg_proto()
     parser = OptionParser(usage="usage: rosmsgproto msg/srv [options]",
                           description="Produces output or a msg or service request, intended for tab completion support.")
     parser.add_option("-f","--flow_style",

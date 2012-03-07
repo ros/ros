@@ -74,8 +74,7 @@ def get_ros_root(required=True, env=None):
     @type  required: bool
     @param env: override environment dictionary
     @type  env: dict
-    @raise ROSEnvException: if required is True and ROS_ROOT is not
-    set validly
+    @raise ROSEnvException: if required is True and ROS_ROOT is not set
     """
     if env is None:
         env = os.environ
@@ -88,23 +87,7 @@ Please set to the location of your ROS installation
 before continuing.
 """%globals())
 
-        p = env[ROS_ROOT]
-        #Test:
-        # 1. Is a path
-        # 2. Is a directory
-        if not os.path.exists(p):
-            raise ROSEnvException("""
-The %s environment variable has not been set properly:
-%s does not exist.
-Please update your ROS installation before continuing.
-"""%(ROS_ROOT, p))
-        if not os.path.isdir(p):
-            raise ROSEnvException("""
-The %s environment variable has not been set properly:
-%s is not a directory.
-Please update your ROS installation before continuing.
-"""%(ROS_ROOT, p))
-        return p
+        return env[ROS_ROOT]
     except Exception as e:
         if required:
             raise

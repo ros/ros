@@ -6,15 +6,9 @@ function(add_rostest file)
     find_program_required(ROSTEST_EXE rostest 
                           PATHS @PROJECT_SOURCE_DIR@/scripts
                           NO_DEFAULT_PATH)
-    find_program_required(ROSUNIT_CHECK_TEST_RAN_EXE check_test_ran.py
-                          PATHS @PROJECT_SOURCE_DIR@/scripts
-                          NO_DEFAULT_PATH)
   else()
     find_program_required(ROSTEST_EXE rostest 
                           PATHS @CMAKE_INSTALL_PREFIX@/bin
-                          NO_DEFAULT_PATH)
-    find_program_required(ROSUNIT_CHECK_TEST_RAN_EXE check_test_ran.py
-                          PATHS @CMAKE_INSTALL_PREFIX@/share/rosunit/bin
                           NO_DEFAULT_PATH)
   endif()
 
@@ -39,5 +33,5 @@ function(add_rostest file)
   endif()
 
   append_test_to_cache(catkin-tests "${_chdir_prefix}${ROSTEST_EXE} --pkgdir=${PROJECT_SOURCE_DIR} --package=${PROJECT_NAME} ${_file_name}${_chdir_suffix}")
-  append_test_to_cache(catkin-tests "${ROSUNIT_CHECK_TEST_RAN_EXE} ${CMAKE_BINARY_DIR}/test_results/${PROJECT_NAME}/TEST-rostest__test_${file}")
+  append_test_to_cache(catkin-tests "${CHECK_TEST_RAN_EXE} ${CMAKE_BINARY_DIR}/test_results/${PROJECT_NAME}/TEST-rostest__test_${file}")
 endfunction()

@@ -33,6 +33,8 @@
 #include <ros/time.h>
 #include <sys/time.h>
 
+#include <boost/date_time/posix_time/ptime.hpp>
+
 using namespace ros;
 
 /// \todo All the tests in here that use randomized values are not unit tests, replace them
@@ -229,6 +231,23 @@ TEST(Time, DontMungeStreamState)
   
   EXPECT_EQ(oss.width(), 13);
   EXPECT_EQ(oss.fill(), 'N');
+}
+
+TEST(Time, ToFromBoost)
+{
+  std::vector<ros::Time> v1;
+  std::vector<ros::Time> v2;
+  generate_rand_times(100, 1000, v1,v2);
+
+  for (uint32_t i = 0; i < v1.size(); i++)
+  {
+    Time t = v1[i];
+    // dont assume that nanosecond are available
+    t.nsec = uint32_t(t.nsec / 1000.0) * 1000;
+    boost::posix_time::ptime b = t.toBoost();
+    Time tt = Time::fromBoost(b);
+    EXPECT_EQ(t, tt);
+  }
 }
 
 /************************************* Duration Tests *****************/

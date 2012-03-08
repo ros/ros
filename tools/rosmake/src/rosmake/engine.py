@@ -277,10 +277,14 @@ class Printer:
 class RosMakeAll:
     def __init__(self):
         self._result_lock = threading.Lock()
+
+        self.rospack = rospkg.RosPack()
+        self.rosstack = rospkg.RosStack()
+
         self.printer = Printer()
         self.result = {}
         self.paths = {}
-        self.dependency_tracker = parallel_build.DependencyTracker()
+        self.dependency_tracker = parallel_build.DependencyTracker(rospack=self.rospack)
         self.flag_tracker = package_stats.PackageFlagTracker(self.dependency_tracker)
         self.output = {}
         self.profile = {}
@@ -629,16 +633,10 @@ class RosMakeAll:
         
 
         options, args = parser.parse_args()
+        self.printer.print_all('rosmake starting...')
 
-        # TODO: retest whther this logic is necessary now that we are using rospkg
-        # force a rebuild of the package cache at the top                
-        cmd = ["rospack", "profile"]
-        command_line = subprocess.Popen(cmd, stdout=subprocess.PIPE,  stderr=subprocess.STDOUT)
-        (pstd_out, pstd_err) = command_line.communicate() # pstd_err should be None due to pipe above          
-        # above is necessary for "roscreate-pkg foo && rosmake foo" to work
-
-        self.rospack = rospack = rospkg.RosPack()
-        self.rosstack = rosstack = rospkg.RosStack()
+        rospack = self.rospack
+        rosstack = self.rosstack
 
         testing = False
         building = True
@@ -708,7 +706,6 @@ class RosMakeAll:
 
         self.printer.print_all( "Packages requested are: %s"%packages)
         
-
         # Setup logging
         if self.logging_enabled:
           date_time_stamp =  "rosmake_output-" + time.strftime("%Y%m%d-%H%M%S")
@@ -778,13 +775,13 @@ class RosMakeAll:
           for pkg in self.build_list:
             if pkg in self.specified_packages:
               new_list.append(pkg)
-              self.dependency_tracker = parallel_build.DependencyTracker(self.specified_packages) # this will make the tracker only respond to packages in the list
+              self.dependency_tracker = parallel_build.DependencyTracker(self.specified_packages, rospack=self.rospack) # this will make the tracker only respond to packages in the list
         
           self.printer.print_all("specified-only option was used, only building packages %s"%new_list)
           self.build_list = new_list
 
         if options.pre_clean:
-          build_queue = parallel_build.BuildQueue(self.build_list, parallel_build.DependencyTracker([]), robust_build = True)
+          build_queue = parallel_build.BuildQueue(self.build_list, parallel_build.DependencyTracker([], rospack=self.rospack), robust_build = True)
           self.parallel_build_pkgs(build_queue, "clean", threads = options.threads)
 
         build_passed = True
@@ -800,7 +797,7 @@ class RosMakeAll:
         tests_passed = True
         if build_passed and testing:
             self.printer.print_verbose ("Testing packages %s"% packages)
-            build_queue = parallel_build.BuildQueue(self.specified_packages, parallel_build.DependencyTracker(self.specified_packages), robust_build = True)
+            build_queue = parallel_build.BuildQueue(self.specified_packages, parallel_build.DependencyTracker(self.specified_packages, rospack=self.rospack), robust_build = True)
             tests_passed = self.parallel_build_pkgs(build_queue, "test", threads = 1)
 
 

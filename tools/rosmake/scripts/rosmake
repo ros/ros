@@ -36,6 +36,7 @@ import sys
 import subprocess
 import threading
 
+import rospkg
 import rosmake
 
 ## make sure that rospack is built, it is a requirement for rosmake
@@ -44,14 +45,17 @@ def assert_rospack_built():
     output = p.communicate()
     if p.returncode != 0:
         print("rospack not available.\nPlease install rospack before using rosmake and make sure it is available on your path. %s %s"%(output[0], output[1]), file=sys.stderr)
-        sys.exit(-1)
+        sys.exit(1)
 
 result = 1
 with rosmake.Printer():
     rma = rosmake.RosMakeAll()
     
-    if rma.main():
-        result = 0
+    try:
+        if rma.main():
+            result = 0
+    except rospkg.ResourceNotFound as e:
+        print("cannot find required resource: %s"%(str(e)))
 
 #make sure the thread is done
 rosmake.Printer().join()

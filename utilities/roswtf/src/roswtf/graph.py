@@ -113,8 +113,6 @@ def simtime_check(ctx):
             ctx.errors.append(WtfError("Cannot talk to ROS master"))
             raise WtfException("roswtf lost connection to the ROS Master at %s"%rosgraph.rosenv.get_master_uri())
 
-        if code != 1:
-            raise WtfException("cannot get published topics from master: %s"%msg)
         for topic, _ in pubtopics:
             if topic in ['/time', '/clock']:
                 return

@@ -455,8 +455,8 @@ class ServiceProxy(_Service):
                     self.uri = master.lookupService(self.resolved_name)
                 except socket.error:
                     raise ServiceException("unable to contact master")
-                except rosgraph.MasterError:
-                    logger.error("[%s]: lookup service failed with message [%s]", self.resolved_name, msg)
+                except rosgraph.MasterError as e:
+                    logger.error("[%s]: lookup service failed with message [%s]", self.resolved_name, str(e))
                     raise ServiceException("service [%s] unavailable"%self.resolved_name)
                 
                 # validate

@@ -93,7 +93,6 @@ from rospy.msg import serialize_message, args_kwds_to_message
 
 from rospy.impl.registration import get_topic_manager, set_topic_manager, Registration, get_registration_listeners
 from rospy.impl.tcpros import get_tcpros_handler, DEFAULT_BUFF_SIZE
-from rospy.impl.transport import DeadTransport
 
 _logger = logging.getLogger('rospy.topics')
 
@@ -207,7 +206,7 @@ class _TopicImpl(object):
         # lock is used for to serialize call order that methods that
         # modify self.connections. Because add/removing connections is
         # a rare event, we go through the extra hassle of making a
-        # copy of the connections/dead_connections/callbacks lists
+        # copy of the connections/callbacks lists
         # when modifying, then setting the reference to the new copy.
         # With this pattern, other code can use these lists without
         # having to acquire c_lock
@@ -216,8 +215,6 @@ class _TopicImpl(object):
         self.closed = False
         # number of Topic instances using this
         self.ref_count = 0
-        #STATS
-        self.dead_connections = [] #for retaining stats on old conns
 
     def __del__(self):
         # very similar to close(), but have to be more careful in a __del__ what we call
@@ -230,8 +227,7 @@ class _TopicImpl(object):
                 except:
                     pass
             del self.connections[:]
-            del self.dead_connections[:]            
-        self.c_lock = self.dead_connections = self.connections = self.handler = self.data_class = self.type = None
+        self.c_lock = self.connections = self.handler = self.data_class = self.type = None
 
     def close(self):
         """close I/O"""
@@ -250,11 +246,6 @@ class _TopicImpl(object):
                 del self.connections[:]
             self.handler = None
             
-            # note: currently not deleting self.dead_connections. not
-            # sure what the right policy here as dead_connections is
-            # for statistics only. they should probably be moved to
-            # the topic manager instead.
-
     def get_num_connections(self):
         with self.c_lock:
             return len(self.connections)
@@ -300,10 +291,7 @@ class _TopicImpl(object):
             new_connections = self.connections[:]
 
             # if we have a connection to the same endpoint_id, drop
-            # the old one.  NOTE: this does not add to
-            # dead_connections.  Should probably update dead
-            # connections to not contain references to reconnect
-            # endpoints.
+            # the old one.
             for oldc in self.connections:
                 if oldc.endpoint_id == c.endpoint_id:
                     try:
@@ -331,12 +319,9 @@ class _TopicImpl(object):
             # still make a copy of self.connections so that the rest of the
             # code can use self.connections in an unlocked manner
             new_connections = self.connections[:]
-            new_dead_connections = self.dead_connections[:]                        
             if c in new_connections:
                 new_connections.remove(c)
-                new_dead_connections.append(DeadTransport(c))
             self.connections = new_connections
-            self.dead_connections = new_dead_connections
 
     def get_stats_info(self): # STATS
         """
@@ -347,9 +332,8 @@ class _TopicImpl(object):
         """
         # save referenceto avoid locking
         connections = self.connections
-        dead_connections = self.dead_connections
-        return [(c.id, c.endpoint_id, c.direction, c.transport_type, self.resolved_name, True) for c in connections] + \
-               [(c.id, c.endpoint_id, c.direction, c.transport_type, self.resolved_name, False) for c in dead_connections]
+        return [(c.id, c.endpoint_id, c.direction, c.transport_type, self.resolved_name, True) for c in connections] 
+
 
     def get_stats(self): # STATS
         """Get the stats for this topic (API stub)"""
@@ -527,11 +511,10 @@ class _SubscriberImpl(_TopicImpl):
         """
         # save reference to avoid locking
         conn = self.connections
-        dead_conn = self.dead_connections        
         #for now drop estimate is -1
         stats = (self.resolved_name, 
                  [(c.id, c.stat_bytes, c.stat_num_msg, -1, not c.done)
-                  for c in chain(conn, dead_conn)] )
+                  for c in conn] )
         return stats
 
     def add_callback(self, cb, cb_args):
@@ -786,9 +769,8 @@ class _PublisherImpl(_TopicImpl):
         """
         # save reference to avoid lock
         conn = self.connections
-        dead_conn = self.dead_connections        
         return (self.resolved_name, self.message_data_sent,
-                [(c.id, c.stat_bytes, c.stat_num_msg, not c.done) for c in chain(conn, dead_conn)] )
+                [(c.id, c.stat_bytes, c.stat_num_msg, not c.done) for c in conn] )
 
     def add_subscriber_listener(self, l):
         """

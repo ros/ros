@@ -43,7 +43,7 @@ namespace ros
 void SingleThreadedSpinner::spin(CallbackQueue* queue)
 {
   boost::recursive_mutex::scoped_try_lock spinlock(spinmutex);
-  if(not spinlock.owns_lock()) {
+  if(!spinlock.owns_lock()) {
     ROS_ERROR("SingleThreadedSpinner: You've attempted to call spin "
               "from multiple threads.  Use a MultiThreadedSpinner instead.");
     return;
@@ -71,7 +71,7 @@ MultiThreadedSpinner::MultiThreadedSpinner(uint32_t thread_count)
 void MultiThreadedSpinner::spin(CallbackQueue* queue)
 {
   boost::recursive_mutex::scoped_try_lock spinlock(spinmutex);
-  if (not spinlock.owns_lock()) {
+  if (!spinlock.owns_lock()) {
     ROS_ERROR("MultiThreadeSpinner: You've attempted to call ros::spin "
               "from multiple threads... "
               "but this spinner is already multithreaded.");
@@ -140,7 +140,7 @@ void AsyncSpinnerImpl::start()
     return;
 
   boost::recursive_mutex::scoped_try_lock spinlock(spinmutex);
-  if (not spinlock.owns_lock()) {
+  if (!spinlock.owns_lock()) {
     ROS_ERROR("AsyncSpinnerImpl: Attempt to call spin from multiple "
               "threads.  We already spin multithreaded.");
     return;

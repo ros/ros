@@ -1,0 +1,7 @@
+<launch>
+  <node pkg="rosbag" type="double_pub" name="double_pub"/>
+  <node name="recorder" pkg="rosbag" type="record" output="screen"
+        args="chatter rettahc -O /tmp/test_rosbag_record_one_publisher_two_topics --duration=5"/>
+  <test test-name="topic_count" pkg="rosbag" type="topic_count.py"/>
+</launch>
+

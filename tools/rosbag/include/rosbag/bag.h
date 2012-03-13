@@ -494,10 +494,17 @@ void Bag::doWrite(std::string const& topic, ros::Time const& time, T const& msg,
     else {
         // Store the connection info by the address of the connection header
 
-        std::map<ros::M_string, uint32_t>::iterator header_connection_ids_iter = header_connection_ids_.find(*connection_header);
+        // Add the topic name to the connection header, so that when we later search by 
+        // connection header, we can disambiguate connections that differ only by topic name (i.e.,
+        // same callerid, same message type), #3755.  This modified connection header is only used
+        // for our bookkeeping, and will not appear in the resulting .bag.
+        ros::M_string connection_header_copy(*connection_header);
+        connection_header_copy["topic"] = topic;
+
+        std::map<ros::M_string, uint32_t>::iterator header_connection_ids_iter = header_connection_ids_.find(connection_header_copy);
         if (header_connection_ids_iter == header_connection_ids_.end()) {
             conn_id = connections_.size();
-            header_connection_ids_[*connection_header] = conn_id;
+            header_connection_ids_[connection_header_copy] = conn_id;
         }
         else {
             conn_id = header_connection_ids_iter->second;

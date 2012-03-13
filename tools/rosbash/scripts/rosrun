@@ -32,7 +32,7 @@ if [[ -n $CATKIN_BINARY_DIR && -f $CATKIN_BINARY_DIR/etc/packages.list ]]; then
 fi 
 pkgdir=`rospack find $1`
 if [[ -z $catkin_source_dir && -z $catkin_binary_dir && -z $pkgdir ]]; then
-    return 2
+    exit 2
 fi
 if [[ ! $2 == */* ]]; then 
   # The -perm /mode usage is not available in find on the Mac

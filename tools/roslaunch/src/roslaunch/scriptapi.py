@@ -36,7 +36,7 @@
 Scripting interface for roslaunch
 """
 
-from roslaunch.core import Node, Test, Master, RLException
+from roslaunch.core import Node, Master, RLException
 
 import roslaunch.config
 import roslaunch.parent

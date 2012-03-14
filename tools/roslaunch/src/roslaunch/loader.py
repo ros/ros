@@ -37,11 +37,9 @@ General routines and representations for loading roslaunch model.
 """
 
 import os
-import sys
 from copy import deepcopy
 
-from roslaunch.core import Param, RosbinExecutable, Node, Test, Machine, \
-    RLException, PHASE_SETUP
+from roslaunch.core import Param, RosbinExecutable, RLException, PHASE_SETUP
 
 from rosgraph.names import make_global_ns, ns_join, PRIV_NAME, load_mappings, is_legal_name, canonicalize_name
 

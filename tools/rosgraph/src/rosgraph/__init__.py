@@ -49,3 +49,8 @@ def myargv(argv=None):
         argv = sys.argv
     return [a for a in argv if not names.REMAP in a]
 
+__all__ = ['myargv',
+        'get_master_uri', 'ROS_MASTER_URI', 'ROS_NAMESPACE', 'ROS_HOSTNAME', 'ROS_IP',
+        'Master', 'MasterFailure', 'MasterError', 'MasterException',
+        'is_master_online']
+

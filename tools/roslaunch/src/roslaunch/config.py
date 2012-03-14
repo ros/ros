@@ -39,7 +39,6 @@ the roslaunch file.
 
 import os
 import logging
-import sys
 import types
 
 import rospkg
@@ -47,7 +46,7 @@ import rospkg.distro
 import rosgraph.names
 import rosgraph.network
 
-from .core import Master, local_machine, get_ros_root, is_machine_local, RLException
+from .core import Master, local_machine, is_machine_local, RLException
 import roslaunch.loader
 import roslaunch.xmlloader
 

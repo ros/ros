@@ -46,7 +46,6 @@ on the parent to provide feedback.
 """
 
 import logging
-import sys
 
 import roslaunch.config
 from roslaunch.core import printlog_bold, printerrlog, RLException

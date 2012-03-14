@@ -50,9 +50,8 @@ import rosgraph.network
 
 from roslaunch.core import *
 #from roslaunch.core import setup_env
-from roslaunch.config import ROSLaunchConfig
 from roslaunch.nodeprocess import create_master_process, create_node_process
-from roslaunch.pmon import start_process_monitor, ProcessListener, FatalProcessLaunch
+from roslaunch.pmon import start_process_monitor, ProcessListener
 
 from roslaunch.rlutil import update_terminal_name
 

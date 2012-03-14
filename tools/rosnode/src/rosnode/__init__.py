@@ -113,7 +113,6 @@ def get_node_names(namespace=None):
     except socket.error:
         raise ROSNodeIOException("Unable to communicate with master!")
     nodes = []
-    import itertools
     if namespace:
         # canonicalize namespace with leading/trailing slash
         g_ns = rosgraph.names.make_global_ns(namespace)
@@ -136,27 +135,25 @@ def get_machines_by_nodes():
     @raise ROSNodeIOException: if unable to communicate with master
     """
 
-    master = scriptutil.get_master()
+    master = rosgraph.Master(ID)
 
     # get all the node names, lookup their uris, parse the hostname
     # from the uris, and then compare the resolved hostname against
     # the requested machine name.
     machines = []
     node_names = get_node_names()
-    retval = []
     for n in node_names:
         try:
-            code, msg, uri = master.lookupNode(ID, n)
-            # it's possible that the state changes as we are doing lookups. this is a soft-fail
-            if code != 1:
-                continue
-
+            uri = master.lookupNode(n)
             h = urlparse.urlparse(uri).hostname
             if h not in machines:
                 machines.append(h)
 
         except socket.error:
             raise ROSNodeIOException("Unable to communicate with master!")    
+        except rosgraph.MasterError:
+            # it's possible that the state changes as we are doing lookups. this is a soft-fail
+            continue
     return machines
 
 
@@ -360,7 +357,6 @@ def rosnode_ping_all(verbose=False):
         raise ROSNodeIOException("Unable to communicate with master!")
 
     nodes = []
-    import itertools
     for s in state:
         for t, l in s:
             nodes.extend(l)

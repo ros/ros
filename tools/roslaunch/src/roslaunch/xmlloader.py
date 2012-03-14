@@ -39,7 +39,6 @@ Roslaunch XML file parser.
 from __future__ import print_function
 
 import itertools
-import os
 import sys
 import traceback
 import logging
@@ -47,9 +46,9 @@ import logging
 from xml.dom.minidom import parse, parseString
 from xml.dom import Node as DomNode #avoid aliasing
 
-from rosgraph.names import make_global_ns, ns_join, is_global, is_private, PRIV_NAME, is_legal_name
+from rosgraph.names import make_global_ns, ns_join, is_private, is_legal_name
 
-from .core import Param, Node, Test, Machine, RLException, get_ros_package_path
+from .core import Param, Node, Test, Machine, RLException
 from . import loader
 from . import substitution_args
 

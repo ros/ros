@@ -50,10 +50,6 @@ import rosgraph
 import roslaunch.core
 from rosmaster import DEFAULT_MASTER_PORT
 
-import rosgraph
-
-from . import config
-
 def check_log_disk_usage():
     """
     Check size of log directory. If high, print warning to user

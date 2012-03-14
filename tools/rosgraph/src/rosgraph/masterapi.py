@@ -37,8 +37,6 @@ Master directly using XML-RPC, this API provides a safer abstraction in the even
 the Master API is changed.
 """
 
-import os
-import sys
 import xmlrpclib
 
 from . names import make_caller_id

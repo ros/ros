@@ -40,7 +40,6 @@ NAME='rostopic'
 
 import os
 import sys
-import itertools
 import math
 import socket
 import time

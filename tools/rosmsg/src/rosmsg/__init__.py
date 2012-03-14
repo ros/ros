@@ -41,14 +41,11 @@ from __future__ import print_function
 import collections
 import inspect
 import os
-import platform
 import sys
-import subprocess
 import yaml
 
 import rospkg
 import genmsg
-import genpy
 
 import roslib.message
 import rosbag
@@ -70,14 +67,14 @@ MAX_DEFAULT_NON_FLOW_ITEMS = 4
 ## copied from the web, recipe for ordered yaml output ######
 def construct_ordered_mapping(self, node, deep=False):
     if not isinstance(node, yaml.MappingNode):
-        raise ConstructorError(None, None,
+        raise yaml.constructor.ConstructorError(None, None,
                 "expected a mapping node, but found %s" % node.id,
                 node.start_mark)
     mapping = collections.OrderedDict()
     for key_node, value_node in node.value:
         key = self.construct_object(key_node, deep=deep)
         if not isinstance(key, collections.Hashable):
-            raise ConstructorError("while constructing a mapping", node.start_mark,
+            raise yaml.constructor.ConstructorError("while constructing a mapping", node.start_mark,
                     "found unhashable key", key_node.start_mark)
         value = self.construct_object(value_node, deep=deep)
         mapping[key] = value
@@ -123,7 +120,6 @@ def get_array_type_instance(field_type, default_package = None):
     field_type = field_type.strip().rstrip("[]")
     if field_type == "empty":
         return None
-    is_std_msg = False
     if not "/" in field_type:
         # is either built-in, Header, or in same package
         # it seems built-in types get a priority

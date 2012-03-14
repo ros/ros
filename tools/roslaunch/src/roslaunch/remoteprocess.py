@@ -37,7 +37,6 @@ Process handler for launching ssh-based roslaunch child processes.
 """
 
 import os
-import sys
 import socket
 import traceback
 import xmlrpclib

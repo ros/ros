@@ -36,7 +36,6 @@
 Convience methods for manipulating XML-RPC APIs
 """
 
-import socket
 import xmlrpclib
 
 import rosgraph

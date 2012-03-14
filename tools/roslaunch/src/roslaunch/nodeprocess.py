@@ -37,9 +37,7 @@ Local process implementation for running and monitoring nodes.
 """
 
 import os
-import sys
 import signal
-import socket
 import subprocess 
 import time
 import traceback

@@ -36,7 +36,6 @@ Core roslaunch model and lower-level utility routines.
 
 import os
 import logging
-from operator import itemgetter
 
 import socket
 import sys
@@ -47,8 +46,6 @@ import rospkg
 import rosgraph
 import rosgraph.names 
 import rosgraph.network
-
-from . import substitution_args
 
 from xml.sax.saxutils import escape 
 try:

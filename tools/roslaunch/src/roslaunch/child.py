@@ -44,11 +44,9 @@ invoke methods on the parent to provide feedback.
 """
 
 import logging
-import sys
-import time
 import traceback
 
-import roslaunch.core 
+import roslaunch.core
 import roslaunch.pmon
 import roslaunch.server
 

@@ -40,12 +40,12 @@ from __future__ import print_function
 import os
 import sys
 
-from xml.dom.minidom import parse, parseString
+from xml.dom.minidom import parse
 from xml.dom import Node as DomNode
 
 import rospkg
 
-from .substitution_args import resolve_args, SubstitutionException
+from .substitution_args import resolve_args
 
 NAME="roslaunch-deps"
 

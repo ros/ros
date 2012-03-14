@@ -38,7 +38,6 @@ Integrates roslaunch remote process launching capabilities.
 
 import logging
 import socket
-import sys
 import time
 
 import rosgraph.network as network

@@ -36,9 +36,9 @@
 from __future__ import print_function
 
 """
-ROS msg library for Python
-
-Implements: U{http://ros.org/wiki/msg}
+Warning: do not use this library.  It is unstable and most of the routines
+here have been superceded by other libraries (e.g. genmsg).  These
+routines will likely be *deleted* in future releases.
 """
 
 try:
@@ -47,9 +47,7 @@ except ImportError:
     from io import StringIO # Python 3.x
 
 import os
-import itertools
 import sys
-import re
 import string
 
 import rospkg

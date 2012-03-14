@@ -33,7 +33,9 @@
 # Revision $Id$
 
 """
-Library for manipulating ROS Names. See U{http://ros.org/wiki/Names}.
+Warning: do not use this library.  It is unstable and most of the routines
+here have been superceded by other libraries (e.g. genmsg).  These
+routines will likely be *deleted* in future releases.
 """
 
 import os

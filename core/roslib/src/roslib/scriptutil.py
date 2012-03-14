@@ -34,10 +34,9 @@
 # $Author$
 
 """
-Common ros script utilities, such as methods convenience methods for
-creating master xmlrpc proxies and executing rospack. This library
-is relatively immature and much of the functionality here will
-likely be moved elsewhere as the API solidifies.
+Warning: do not use this library.  It is unstable and most of the routines
+here have been superceded by other libraries (e.g. rospkg).  These
+routines will likely be *deleted* in future releases.
 """
 
 import os

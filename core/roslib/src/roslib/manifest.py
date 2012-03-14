@@ -35,7 +35,9 @@
 # $Author$
 
 """
-Python parser for rospack manifest.xml files. See U{http://ros.org/wiki/Manifest}
+Warning: do not use this library.  It is unstable and most of the routines
+here have been superceded by other libraries (e.g. rospkg).  These
+routines will likely be *deleted* in future releases.
 """
 
 import sys

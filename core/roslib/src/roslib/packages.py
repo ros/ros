@@ -34,12 +34,9 @@
 # $Author$
 
 """
-Python utilities for manipulating ROS packages.
-See: U{http://ros.org/wiki/Packages}
-
-Warning: while most of this API is stable, some parts are still fairly
-experimental and incomplete. In particular, the L{ROSPackages} class
-in very experimental.
+Warning: do not use this library.  It is unstable and most of the routines
+here have been superceded by other libraries (e.g. rospkg).  These
+routines will likely be *deleted* in future releases.
 """
 
 import os
@@ -54,6 +51,7 @@ import rospkg
 import roslib.manifest
 
 SRC_DIR = 'src'
+# TODO: these really don't belong here
 CATKIN_SOURCE_DIR = 'CATKIN_SOURCE_DIR'
 CATKIN_BINARY_DIR = 'CATKIN_BINARY_DIR'
 
@@ -388,6 +386,8 @@ def list_pkgs_by_path(path, packages=None, cache=None, env=None):
 
 def find_node(pkg, node_type, rospack=None, catkin_packages_cache=None):
     """
+    Warning: unstable API due to catkin.
+
     Locate the executable that implements the node
     
     :param node_type: type of node, ``str``
@@ -437,6 +437,7 @@ def _executable_filter(test_path):
     s = os.stat(test_path)
     return (s.st_mode & (stat.S_IRUSR | stat.S_IXUSR) == (stat.S_IRUSR | stat.S_IXUSR))
     
+# TODO: this routine really belongs in catkin
 def _load_catkin_packages_cache(catkin_packages_cache, env=None):
     """
     env[CATKIN_BINARY_DIR] *must* be set
@@ -483,8 +484,13 @@ def _find_resource(d, resource_name, filter_fn=None):
             dirs.remove(x)
     return [os.path.abspath(m) for m in matches]
 
+# TODO: this routine really belongs in rospkg, but the catkin-isms really, really don't
+# belong in rospkg.  With more thought, they can probably be abstracted out so as
+# to no longer be catkin-specific. 
 def find_resource(pkg, resource_name, filter_fn=None, rospack=None, catkin_packages_cache=None):
     """
+    Warning: unstable API due to catkin.
+
     Locate the file named resource_name in package, optionally
     matching specified filter.  find_resource() will return a list of
     matches, but only for a given scope.  If the resource is found in

@@ -33,14 +33,9 @@
 # Revision $Id$
 
 """
-Network APIs for ROS-based systems, including IP address and ROS
-TCP header libraries. Because ROS-based runtimes must respect the
-ROS_IP and ROS_HOSTNAME environment variables, ROS-specific APIs
-are necessary for correctly retrieving local IP address
-information.
-
-roslib.network supports the netifaces library as an optional
-add-on. netifaces improves IP address configuration detection.
+Warning: do not use this library.  It is unstable and most of the routines
+here have been superceded by other libraries (e.g. rosgraph).  These
+routines will likely be *deleted* in future releases.
 """
 
 import os

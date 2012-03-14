@@ -34,10 +34,9 @@
 # Revision $Id$
 
 """
-Python utilities for manipulating ROS Stacks.
-See: U{http://ros.org/wiki/Stacks}
-
-Warning: this API is still fairly experimental and incomplete.
+Warning: do not use this library.  It is unstable and most of the routines
+here have been superceded by other libraries (e.g. rospkg).  These
+routines will likely be *deleted* in future releases.
 """
 
 import os

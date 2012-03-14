@@ -32,10 +32,11 @@
 #
 # Revision $Id$
 
+
 """
-ROS environment variables as well as routines for determining
-configuration values that have environment overrides
-(e.g. ROS_LOG_DIR, ROS_HOME, ROS_TEST_RESULTS_DIR).
+Warning: do not use this library.  It is unstable and most of the routines
+here have been superceded by other libraries (e.g. rospkg).  These
+routines will likely be *deleted* in future releases.
 """
 
 import os

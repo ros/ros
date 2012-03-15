@@ -200,23 +200,16 @@ class TestRospyTopics(unittest.TestCase):
         impl.remove_connection(co1)
         self.failIf(impl.has_connection('co1'))
         self.assert_(impl.has_connections())
-        # TODO: need to validate DeadTransport better
-        self.assert_([d for d in impl.dead_connections if d.endpoint_id == 'co1'])
         
         self.assert_(impl.has_connection('co3'))
         impl.remove_connection(co3)        
         self.failIf(impl.has_connection('co3'))
         self.assert_(impl.has_connections())
-        for id in ['co1', 'co3']:
-            self.assert_([d for d in impl.dead_connections if d.endpoint_id == id])
         
         self.assert_(impl.has_connection('co2'))
         impl.remove_connection(co2)        
         self.failIf(impl.has_connection('co2'))
         self.failIf(impl.has_connections())
-        for id in ['co1', 'co2', 'co3']:
-            self.assert_([d for d in impl.dead_connections if d.endpoint_id == id])
-
 
         # test publish() latch on a new Publisher object (this was encountered in testing, so I want a test case for it)
         pub = Publisher('bar', data_class, latch=True)

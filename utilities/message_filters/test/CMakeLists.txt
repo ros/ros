@@ -28,8 +28,7 @@ target_link_libraries(${PROJECT_NAME}-test_chain message_filters ${GTEST_LIBRARI
 add_executable(${PROJECT_NAME}-time_sequencer_unittest EXCLUDE_FROM_ALL time_sequencer_unittest.cpp)
 add_dependencies(tests ${PROJECT_NAME}-time_sequencer_unittest)
 target_link_libraries(${PROJECT_NAME}-time_sequencer_unittest message_filters ${GTEST_LIBRARIES})
-add_rostest(time_sequencer_unittest.xml)
 add_executable(${PROJECT_NAME}-test_subscriber EXCLUDE_FROM_ALL test_subscriber.cpp)
 add_dependencies(tests ${PROJECT_NAME}-test_subscriber)
 target_link_libraries(${PROJECT_NAME}-test_subscriber message_filters ${GTEST_LIBRARIES})
-add_rostest(test_subscriber.xml)
+

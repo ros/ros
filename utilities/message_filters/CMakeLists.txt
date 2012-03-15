@@ -22,3 +22,7 @@ install(DIRECTORY include/
         PATTERN ".svn" EXCLUDE)
 
 add_subdirectory(test)
+
+# Ugly workaround for check_test_ran macro issue
+add_rostest(test/time_sequencer_unittest.xml)
+add_rostest(test/test_subscriber.xml)

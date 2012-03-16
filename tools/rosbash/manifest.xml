@@ -5,7 +5,7 @@
 Assorted shell commands for using ros with bash.
 
 </description>
-  <author>Jeremy Leibs</author>
+  <author>Jeremy Leibs, Thibault Kruse</author>
   <license>BSD</license>
   <url>http://pr.willowgarage.com/wiki/rosbash</url>
   <review status="doc reviewed"/>

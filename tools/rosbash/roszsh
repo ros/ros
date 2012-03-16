@@ -11,6 +11,15 @@ function _rossed {
     fi
 }
 
+function _rosfind {
+    if [[ `uname` == Darwin || `uname` == FreeBSD ]]; then
+        # BSD find needs -E for extended regexp
+        find -E "$@"
+    else
+        find "$@"
+    fi
+}
+
 # _ros_location_find
 # based on $ROS_LOCATIONS, which the user can set to any colon
 # separated of key=folder pairs also resolves keys 'log' and
@@ -321,7 +330,7 @@ function _roscomplete_file {
 }
 
 function _roscomplete_launchfile {
-    _roscomplete_search_dir "( -name *.launch -o -name *.test ) -type f" 
+    _roscomplete_search_dir "-type f -regex .*\.launch$\|.*\.test$"
 }
 
 function _roscomplete_rosbag {

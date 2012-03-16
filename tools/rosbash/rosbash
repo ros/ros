@@ -11,6 +11,15 @@ function _rossed {
     fi
 }
 
+function _rosfind {
+    if [[ `uname` == Darwin || `uname` == FreeBSD ]]; then
+        # BSD find needs -E for extended regexp
+        find -E "$@"
+    else
+        find "$@"
+    fi
+}
+
 # _ros_location_find
 # based on $ROS_LOCATIONS, which the user can set to any colon
 # separated of key=folder pairs also resolves keys 'log' and
@@ -424,7 +433,7 @@ function _roscomplete_search_dir {
         fi 
         pkgdir=`_ros_package_find ${COMP_WORDS[1]}`
         if [[ -n "$catkin_source_dir" || -n "$catkin_binary_dir" || -n "$pkgdir" ]]; then
-            opts=`find -L $catkin_source_dir $catkin_binary_dir $pkgdir ${1} ! -regex ".*/[.].*" ! -regex ".*$pkgdir\/build\/.*"  -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
+            opts=`_rosfind -L $catkin_source_dir $catkin_binary_dir $pkgdir ${1} ! -regex ".*/[.].*" ! -regex ".*$pkgdir\/build\/.*"  -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
         else
             opts=""
         fi
@@ -475,7 +484,7 @@ function _roscomplete_launch {
         COMPREPLY=(${COMPREPLY[@]} $(compgen -W "--files --args --nodes --find-node --child --local --screen --server_uri --run_id --wait --port --core --pid --dump-params" -- ${arg}))
         
     else
-        _roscomplete_search_dir "( -name *.launch -o -name *.test ) -type f" 
+        _roscomplete_search_dir "-type f -regex .*\.launch$\|.*\.test$"
         if [[ $COMP_CWORD == 1 ]]; then
            COMPREPLY=($(compgen -o plusdirs -f -X "!*.launch" -- ${arg}) ${COMPREPLY[@]} $(compgen -o plusdirs -f -X "!*.test" -- ${arg}) ${COMPREPLY[@]})
         fi
@@ -487,7 +496,7 @@ function _roscomplete_test {
     if [[ ${arg} =~ \-\-.* ]]; then
         COMPREPLY=(${COMPREPLY[@]} $(compgen -W "--bare --bare-limit --bare-name --pkgdir --package" -- ${arg}))
     else
-        _roscomplete_search_dir "( -name *.launch -o -name *.test ) -type f" 
+        _roscomplete_search_dir "-type f -regex .*\.launch$\|.*\.test$"
         if [[ $COMP_CWORD == 1 ]]; then
            COMPREPLY=($(compgen -o plusdirs -f -X "!*.launch" -- ${arg}) ${COMPREPLY[@]} $(compgen -o plusdirs -f -X "!*.test" -- ${arg}) ${COMPREPLY[@]})
         fi

@@ -187,6 +187,8 @@ class Timer(threading.Thread):
         last_expected, last_real, last_duration = None, None, None
         while not rospy.core.is_shutdown() and not self._shutdown:
             r.sleep()
+            if self._shutdown:
+                break
             current_real = rospy.rostime.get_rostime()
             start = time.time()
             self._callback(TimerEvent(last_expected, last_real, current_expected, current_real, last_duration))

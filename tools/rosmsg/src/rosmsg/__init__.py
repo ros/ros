@@ -390,8 +390,8 @@ def get_srv_text(type_, raw=False, rospack=None):
     msg_search_path = {}
     for p in rospack.list():
         path = rospack.get_path(p)
-        msg_search_path[p] = os.path.join(path, 'msg')
-        srv_search_path[p] = os.path.join(path, 'srv')
+        msg_search_path[p] = [os.path.join(path, 'msg')]
+        srv_search_path[p] = [os.path.join(path, 'srv')]
         
     #TODO: cache context somewhere
     context = genmsg.MsgContext.create_default()
@@ -418,7 +418,7 @@ def get_msg_text(type_, raw=False, rospack=None):
         rospack = rospkg.RosPack()
     search_path = {}
     for p in rospack.list():
-        search_path[p] = os.path.join(rospack.get_path(p), 'msg')
+        search_path[p] = [os.path.join(rospack.get_path(p), 'msg')]
 
     context = genmsg.MsgContext.create_default()
     try:

@@ -218,7 +218,7 @@ function rosls {
 }
 
 function _roscmd {
-    local pkgdir exepath opt catkin_source_dir catkin_binary_dir opts arg
+    local pkgdir exepath opt catkin_source_dir catkin_binary_dir opts
     if [[ -n $CATKIN_SOURCE_DIR ]]; then
         catkin_source_dir=`ROS_ROOT=$CATKIN_SOURCE_DIR ROS_PACKAGE_PATH= _ros_package_find $1`
     fi 

@@ -332,7 +332,7 @@ class TCPROSServer(object):
                     write_ros_handshake_header(sock, {'error' : 'node shutting down'})
                     return
         except rospy.exceptions.TransportInitError as e:
-            logwarn(str(e))
+            rospywarn(str(e))
             if sock is not None:
                 sock.close()
         except Exception as e:

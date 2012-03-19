@@ -217,6 +217,7 @@ function rosls {
     ls ${rosvals[1]}${rosvals[2]}${rosvals[3]} $2
 }
 
+# sets arg as return value
 function _roscmd {
     local pkgdir exepath opt catkin_source_dir catkin_binary_dir opts
     if [[ -n $CATKIN_SOURCE_DIR ]]; then

@@ -207,8 +207,9 @@ function rosls {
     ls ${rosvals[2]}${rosvals[3]}${rosvals[4]} $2
 }
 
+# sets arg as return value
 function _roscmd {
-    local pkgdir exepath opt arg
+    local pkgdir exepath opt
     pkgdir=`export ROS_CACHE_TIMEOUT=-1.0 && rospack find $1 2> /dev/null`
     if [[ $? != 0 ]] ; then
         echo "Couldn't find package [$1]"

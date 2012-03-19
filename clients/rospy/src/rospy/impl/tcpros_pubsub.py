@@ -37,6 +37,7 @@
 import socket
 import threading
 import time
+import xmlrpclib
 
 from rospy.core import logwarn, logerr, logdebug, rospyerr
 import rospy.exceptions
@@ -149,7 +150,7 @@ class TCPROSPub(TCPROSTransportProtocol):
             base.update(self.headers)
         return base
 
-def robust_connect_subscriber(conn, dest_addr, dest_port, pub_uri, receive_cb):
+def robust_connect_subscriber(conn, dest_addr, dest_port, pub_uri, receive_cb, resolved_topic_name):
     """
     Keeps trying to create connection for subscriber.  Then passes off to receive_loop once connected.
     """
@@ -165,8 +166,23 @@ def robust_connect_subscriber(conn, dest_addr, dest_port, pub_uri, receive_cb):
             rospyerr("unable to create subscriber transport: %s.  Will try again in %ss", e, interval)
             interval = interval * 2
             time.sleep(interval)
+            
+            # check to see if publisher state has changed
+            conn.done = not check_if_still_publisher(resolved_topic_name, pub_uri)
 	
-    conn.receive_loop(receive_cb)	    
+    if not conn.done:
+        conn.receive_loop(receive_cb)	    
+
+def check_if_still_publisher(resolved_topic_name, pub_uri):
+    try:
+        s = xmlrpclib.ServerProxy(pub_uri)
+        code, msg, val = s.getPublications(rospy.names.get_name())
+        if code == 1:
+            return len([t for t in val if t[0] == resolved_topic_name]) > 0
+        else:
+            return False
+    except:
+        return False
 
 class TCPROSHandler(rospy.impl.transport.ProtocolHandler):
     """
@@ -225,7 +241,7 @@ class TCPROSHandler(rospy.impl.transport.ProtocolHandler):
                              queue_size=sub.queue_size, buff_size=sub.buff_size,
                              tcp_nodelay=sub.tcp_nodelay)
         conn = TCPROSTransport(protocol, resolved_name)
-        t = threading.Thread(name=resolved_name, target=robust_connect_subscriber, args=(conn, dest_addr, dest_port, pub_uri, sub.receive_callback,))
+        t = threading.Thread(name=resolved_name, target=robust_connect_subscriber, args=(conn, dest_addr, dest_port, pub_uri, sub.receive_callback,resolved_name))
         # don't enable this just yet, need to work on this logic
         #rospy.core._add_shutdown_thread(t)
         t.start()

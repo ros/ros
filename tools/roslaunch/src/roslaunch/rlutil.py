@@ -185,7 +185,7 @@ def check_roslaunch(f):
     """
     try:
         rl_config = roslaunch.config.load_config_default([f], DEFAULT_MASTER_PORT, verbose=False)
-    except roslaunch.RLException as e:
+    except roslaunch.core.RLException as e:
         return str(e)
     
     errors = []

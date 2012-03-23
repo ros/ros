@@ -175,6 +175,8 @@ def find_boost(search_paths):
     result = find_versions(search_paths)
     if result is None:
       return None
+    if len(result) > 1:
+      sys.stderr.write("WARN, found multiple boost versions '%s', using latest"%result)
     return result[-1]
 
 def search_paths(sysroot):
@@ -233,7 +235,7 @@ def find_lib(ver, name, full_lib = link_static):
     dir = lib_dir(ver)
 
     if dir is None:
-      raise BoostError('Could not locate library [%s]'%(name))
+      raise BoostError('Could not locate library [%s], version %s'%(name, ver))
     
     for p in search_paths:
         globstr = os.path.join(dir, p) 
@@ -244,7 +246,7 @@ def find_lib(ver, name, full_lib = link_static):
             else:
                 return os.path.basename(libs[0])
             
-    raise BoostError('Could not locate library [%s] in lib directory [%s]'%(name, dir))
+    raise BoostError('Could not locate library [%s], version %s in lib directory [%s]'%(name, ver, dir))
   
 def include_dirs(ver, prefix = ''):
     if ver.is_system_install or no_L_or_I:

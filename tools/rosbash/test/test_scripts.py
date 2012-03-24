@@ -47,12 +47,13 @@ class TestWithFiles(unittest.TestCase):
         subprocess.check_call("touch foo.launch", shell=True, cwd=self.test_root_path)
         subprocess.check_call("touch bar.launch", shell=True, cwd=self.test_root_path)
 
-        cmd = make_bash_pre_command(['roslaunch', 'roslaunch'], 2)
-        cmd += "_roscomplete_launch roslaunch roslaunch; echo $COMPREPLY'"
+        cmd = make_bash_pre_command(['rosbash', 'rosbash'], 2)
+        cmd += "_roscomplete_launch rosbash rosbash; echo $COMPREPLY'"
         p = subprocess.Popen(cmd,
                              shell=True,
                              stdout=subprocess.PIPE,
                              cwd=self.test_root_path)
         output = p.communicate()
         self.assertEqual(0, p.returncode, (p.returncode, output, cmd))
-        self.assertEqual('example.launch\n', output[0], (p.returncode, output[0], cmd))
+        
+        self.assertTrue('example.launch' in output[0], (p.returncode, output[0], cmd))

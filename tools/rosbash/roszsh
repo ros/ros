@@ -331,7 +331,7 @@ function _roscomplete_file {
 }
 
 function _roscomplete_launchfile {
-    _roscomplete_search_dir "-type f -regex .*\.launch$\|.*\.test$"
+    _roscomplete_search_dir "( -type f -regex .*\.launch$ -o -type f -regex .*\.test$ )"
 }
 
 function _roscomplete_rosbag {

@@ -324,7 +324,7 @@ gtest:
     homebrew:
       packages: [ gtest ]
       options: [ --universal ]
-  gentoo: dev-util/gtest
+  gentoo: dev-cpp/gtest
   freebsd: googletest
 autoconf:
   ubuntu: autoconf

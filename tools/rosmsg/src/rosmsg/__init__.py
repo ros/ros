@@ -592,7 +592,10 @@ def rosmsg_cmd_show(mode, full):
 
 def rosmsg_md5(mode, type_):
     try:
-        msg_class = roslib.message.get_message_class(type_)
+        if type_ == 'msg':
+            msg_class = roslib.message.get_message_class(type_)
+        else:
+            msg_class = roslib.message.get_service_class(type_)            
     except ImportError:
         raise IOError("cannot load [%s]"%(type_))
     if msg_class is not None:

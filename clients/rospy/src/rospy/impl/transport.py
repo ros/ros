@@ -79,6 +79,12 @@ class Transport(object):
         # Number of messages that have passed through this transport
         self.stat_num_msg = 0         
     
+    def fileno(self):
+        """
+        Get a file descriptor for select() if available
+        """
+        return None
+    
     ## callback function to invoke when this connection is
     ## closed. Function will be passed this transport as an argument.
     ## @param self

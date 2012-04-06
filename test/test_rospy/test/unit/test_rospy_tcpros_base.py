@@ -55,7 +55,7 @@ class MockSock:
     def close(self):
         self.buff = None
 class MockEmptySock:
-    def __init__(self, buff):
+    def __init__(self):
         global g_fileno
         g_fileno += 1
         self._fileno = g_fileno

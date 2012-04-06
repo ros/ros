@@ -332,7 +332,7 @@ class TCPROSServer(object):
                     write_ros_handshake_header(sock, {'error' : 'node shutting down'})
                     return
         except rospy.exceptions.TransportInitError as e:
-            rospywarn(str(e))
+            logwarn(str(e))
             if sock is not None:
                 sock.close()
         except Exception as e:
@@ -440,6 +440,10 @@ class TCPROSTransport(Transport):
         # #1852 have to hold onto latched messages on subscriber side
         self.is_latched = False
         self.latch = None
+
+        # save the fileno separately so we can garbage collect the
+        # socket but still unregister will poll objects
+        self._fileno = None
         
         # these fields are actually set by the remote
         # publisher/service. they are set for tools that connect
@@ -447,6 +451,12 @@ class TCPROSTransport(Transport):
         self.md5sum = None
         self.type = None 
             
+    def fileno(self):
+        """
+        Get descriptor for select
+        """
+        return self._fileno
+        
     def set_socket(self, sock, endpoint_id):
         """
         Set the socket for this transport
@@ -460,6 +470,7 @@ class TCPROSTransport(Transport):
             raise TransportInitError("socket already initialized")
         self.socket = sock
         self.endpoint_id = endpoint_id
+        self._fileno = sock.fileno()
 
     def connect(self, dest_addr, dest_port, endpoint_id, timeout=None):
         """
@@ -507,7 +518,12 @@ class TCPROSTransport(Transport):
             # FATAL: no reconnection as error is unknown
             self.done = True
             if self.socket:
-                self.socket.close()
+                try:
+                    self.socket.shutdown()
+                except:
+                    pass
+                finally:
+                    self.socket.close()
             self.socket = None
             
             #logerr("Unknown error initiating TCP/IP socket to %s:%s (%s): %s"%(dest_addr, dest_port, endpoint_id, str(e)))
@@ -699,7 +715,12 @@ class TCPROSTransport(Transport):
                     # set socket to None so we reconnect
                     try:
                         if self.socket is not None:
-                            self.socket.close()
+                            try:
+                                self.socket.shutdown()
+                            except:
+                                pass
+                            finally:
+                                self.socket.close()
                     except:
                         pass
                     self.socket = None
@@ -725,11 +746,16 @@ class TCPROSTransport(Transport):
 
     def close(self):
         """close i/o and release resources"""
-        self.done = True
-        try:        
-            if self.socket is not None:
-                self.socket.close()
-        finally:
-            self.socket = self.read_buff = self.write_buff = self.protocol = None
-            super(TCPROSTransport, self).close()
+        if not self.done:
+            try:
+                if self.socket is not None:
+                    try:
+                        self.socket.shutdown()
+                    except:
+                        pass
+                    finally:
+                        self.socket.close()
+            finally:
+                self.socket = self.read_buff = self.write_buff = self.protocol = None
+                super(TCPROSTransport, self).close()
 

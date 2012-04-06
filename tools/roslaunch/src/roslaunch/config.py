@@ -222,11 +222,11 @@ class ROSLaunchConfig(object):
         """
         summary = '\nSUMMARY\n========'
         if self.clear_params:
-            summary += '\n\nCLEAR PARAMETERS\n' + '\n'.join([' * %s'%p for p in self.clear_params])
+            summary += '\n\nCLEAR PARAMETERS\n' + '\n'.join(sorted([' * %s'%p for p in self.clear_params]))
         if self.params:
-            summary += '\n\nPARAMETERS\n' + '\n'.join([' * %s'%k for k in self.params])
+            summary += '\n\nPARAMETERS\n' + '\n'.join(sorted([' * %s'%k for k in self.params]))
         if not local:
-            summary += '\n\nMACHINES\n' + '\n'.join([' * %s'%k for k in self.machines if k])
+            summary += '\n\nMACHINES\n' + '\n'.join(sorted([' * %s'%k for k in self.machines if k]))
         summary += '\n\nNODES\n'
         namespaces = {}
         if local:
@@ -240,7 +240,7 @@ class ROSLaunchConfig(object):
             else:
                 namespaces[ns].append(n)
         for k,v in namespaces.iteritems():
-            summary += '  %s\n'%k + '\n'.join(['    %s'%_summary_name(n) for n in v])
+            summary += '  %s\n'%k + '\n'.join(sorted(['    %s'%_summary_name(n) for n in v]))
             summary += '\n'
         return summary
 

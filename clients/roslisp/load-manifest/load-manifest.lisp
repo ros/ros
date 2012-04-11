@@ -257,7 +257,15 @@ package."
          `((:tree ,roslisp-package-directory)))
      ,@(when catkin-source-directory
          `((:tree ,catkin-source-directory)))
-     :inherit-configuration)))
+     ;; NOTE(lorenz): this looks to me as sort of an ugly hack but we
+     ;; should not break the user's source registry
+     ;; configuration. Instead, we inherit the user's configuration if
+     ;; it exists and just add our entries at the beginning.
+     ,@(if (and (boundp 'asdf:*source-registry-parameter*)
+                (eq (car asdf:*source-registry-parameter*)
+                    :source-registry))
+           (cdr asdf:*source-registry-parameter*)
+           (list :inherit-configuration)))))
 
 (setq asdf:*system-definition-search-functions* 
       (append asdf:*system-definition-search-functions*

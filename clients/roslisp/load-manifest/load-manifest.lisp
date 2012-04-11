@@ -273,7 +273,7 @@ package."
   (dolist (p (asdf-paths-to-add package))
     (pushnew p asdf:*central-registry* :test #'equal)))
 
-(defun load-system (package &optional (asdf-name package))
+(defun load-system (package &optional (asdf-name package) force)
   "Sets *CURRENT-ROS-PACKAGE* and performs an asdf load operation on `package'"
   (let ((*current-ros-package* package))
-    (asdf:operate 'asdf:load-op asdf-name)))
+    (asdf:operate 'asdf:load-op asdf-name :force force)))

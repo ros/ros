@@ -22,6 +22,7 @@
    (:file "slave" :depends-on ("sockets" "tcpros" "rosout"))
    (:file "command-line-args" :depends-on ("roslisp" "rosout" "namespace"))
    (:file "client" :depends-on ("sockets" "namespace" "command-line-args" "msg" "rosout" "master"))
+   (:file "persistent-service" :depends-on ("sockets" "namespace" "roslisp" "tcpros"))
    (:file "debug-levels" :depends-on ("params" "client" "rosout"))
    (:file "node" :depends-on ("client"))
    (:file "msg-serialization-stream" :depends-on ("roslisp"))

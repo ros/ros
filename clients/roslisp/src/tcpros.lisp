@@ -343,42 +343,65 @@
              (concatenate 'string "error processing request: " msg))))))))
 
 
+(defun tcpros-establish-service-connection (hostname port service-name request-class &optional (persistent nil))
+  (check-type hostname string)
+  (multiple-value-bind (stream socket) (tcp-connect hostname port)
+    (handler-bind
+        ((error (lambda (e)
+                  (declare (ignore e))
+                  (socket-close socket))))
+      (send-tcpros-header
+       stream
+       "service" service-name
+       "md5sum" (md5sum request-class) 
+       "callerid" (caller-id)
+       "persistent" (if persistent "1" "0")))
+    (values
+     stream socket
+     (with-function-timeout *tcp-timeout* (lambda () (parse-tcpros-header stream))))))
+
+(define-condition service-call-error (error)
+  ((message :initarg :message :reader service-call-error-message)))
+
+(defun tcpros-do-service-request (stream request response-type)
+  (tcpros-write request stream)
+  (let ((ok-byte (read-byte stream)))
+    (unless (eq ok-byte 1)
+      (error 'service-call-error-message
+             :message (handler-case
+                          (deserialize-string stream)
+                        ;; TODO(lorenz): don't catch all errors.
+                        (error nil))))
+    (let ((len (deserialize-int stream)))
+      (declare (ignore len))
+      (deserialize response-type stream))))
+
 (defun tcpros-call-service (hostname port service-name req response-type)
   (check-type hostname string)
   (dotimes (retry-count *setup-tcpros-subscription-max-retry* (error 'simple-error
-                                :format-control "Timeout when
+                                                                     :format-control "Timeout when
     trying to communicate with ~a:~a for service ~a, check service node
     status. Change *tcp-timeout* to increase wait-time."
-                                 :format-arguments (list hostname port
-                                                         service-name)))
+                                                                     :format-arguments (list hostname port
+                                                                                             service-name)))
     (when (> retry-count 0) (ros-warn (roslisp tcpros) "Failed to communicate
       with ~a:~a for service-name ~a, retrying: ~a" hostname port
       service-name retry-count))
     (handler-case
         (return
-  (mvbind (str socket) (tcp-connect hostname port)
-    (unwind-protect
-         (progn
-           (send-tcpros-header str "service" service-name "md5sum" (md5sum (class-name (class-of req))) 
-                               "callerid" (caller-id))
-           (with-function-timeout *tcp-timeout* (lambda () (parse-tcpros-header str)))
-           (tcpros-write req str)
-           (let ((ok-byte (read-byte str)))
-             (unless (eq ok-byte 1)
-               (let (message )
+          (multiple-value-bind (str socket)
+              (tcpros-establish-service-connection hostname port service-name (class-name (class-of req)))
+            (unwind-protect
                  (handler-case
-                     (setf message (deserialize-string str))
-                   (error nil))
-                 (when (null message)
-                   (setf message ""))
-                 (unless (string= message "")
-                   (setf message (concatenate 'string " with message: " message)))
-                 (roslisp-error "service-call to ~a:~a with request ~a failed~a" hostname port req message)))
-             (let ((len (deserialize-int str)))
-               (declare (ignore len))
-               (deserialize response-type str))))
-      (socket-close socket))))
-  (function-timeout () ;;just retry
+                     (tcpros-do-service-request str req response-type)
+                   (service-call-error (e)
+                     (if (service-call-error-message e)
+                         (roslisp-error "service-call to ~a:~a with request ~a failed with message: ~a"
+                                        hostname port req (service-call-error-message e))
+                         (roslisp-error "service-call to ~a:~a with request ~a failed."
+                                        hostname port req))))
+              (socket-close socket))))
+      (function-timeout () ;;just retry
         nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

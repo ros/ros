@@ -43,8 +43,6 @@
 ;; The operations called by client code
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-
 (defun advertise (topic topic-type &key (latch nil))
   "TOPIC is a string naming a ros topic
 TOPIC-TYPE is either a string that equals the ros datatype of the topic (e.g. robot_msgs/Pose) or the symbol naming the message type in lisp (e.g. 'robot_msgs:<Pose>)
@@ -189,11 +187,9 @@ Returns the response object from the service."
     (with-fully-qualified-name service-name
       (mvbind (host port) (parse-rosrpc-uri (lookup-service service-name))
         ;; No error checking: lookup service should signal an error if there are problems
-
         (let ((obj (if (= 1 (length request-args))
                        (first request-args)
                        (apply #'make-service-request service-type request-args))))
-
           (ros-debug (roslisp call-service) "Calling service at host ~a and port ~a with ~a" host port obj)
           (tcpros-call-service host port service-name obj response-type))))))
     

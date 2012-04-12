@@ -146,7 +146,10 @@
    :*master-uri*
 
    :standalone-exec-debug-hook
-   :*running-from-command-line*))
+   :*running-from-command-line*
+
+   :persistent-service :call-persistent-service
+   :close-persistent-service :persistent-service-ok))
    
 
 (in-package :roslisp)

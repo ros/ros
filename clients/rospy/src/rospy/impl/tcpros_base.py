@@ -515,6 +515,9 @@ class TCPROSTransport(Transport):
             rospyerr("Unable to initiate TCP/IP socket to %s:%s (%s): %s"%(dest_addr, dest_port, endpoint_id, traceback.format_exc()))            
             raise
         except Exception as e:
+            #logerr("Unknown error initiating TCP/IP socket to %s:%s (%s): %s"%(dest_addr, dest_port, endpoint_id, str(e)))
+            rospywarn("Unknown error initiating TCP/IP socket to %s:%s (%s): %s"%(dest_addr, dest_port, endpoint_id, traceback.format_exc()))            
+
             # FATAL: no reconnection as error is unknown
             self.done = True
             if self.socket:
@@ -526,8 +529,6 @@ class TCPROSTransport(Transport):
                     self.socket.close()
             self.socket = None
             
-            #logerr("Unknown error initiating TCP/IP socket to %s:%s (%s): %s"%(dest_addr, dest_port, endpoint_id, str(e)))
-            rospywarn("Unknown error initiating TCP/IP socket to %s:%s (%s): %s"%(dest_addr, dest_port, endpoint_id, traceback.format_exc()))            
             raise TransportInitError(str(e)) #re-raise i/o error
                 
     def _validate_header(self, header):
@@ -550,23 +551,32 @@ class TCPROSTransport(Transport):
 
     def write_header(self):
         """Writes the TCPROS header to the active connection."""
-        sock = self.socket
         # socket may still be getting spun up, so wait for it to be writable
+        sock = self.socket
+        protocol = self.protocol
+        # race condition on close, better fix is to pass these in,
+        # functional style, but right now trying to cause minimal
+        # perturbance to codebase.
+        if sock is None or protocol is None:
+            return
         fileno = sock.fileno()
         ready = None
         while not ready:
             _, ready, _ = select.select([], [fileno], [])
         logger.debug("[%s]: writing header", self.name)
         sock.setblocking(1)
-        self.stat_bytes += write_ros_handshake_header(sock, self.protocol.get_header_fields())
+        self.stat_bytes += write_ros_handshake_header(sock, protocol.get_header_fields())
 
     def read_header(self):
         """
         Read TCPROS header from active socket
         @raise TransportInitError if header fails to validate
         """
-        self.socket.setblocking(1)
-        self._validate_header(read_ros_handshake_header(self.socket, self.read_buff, self.protocol.buff_size))
+        sock = self.socket
+        if sock is None:
+            return
+        sock.setblocking(1)
+        self._validate_header(read_ros_handshake_header(sock, self.read_buff, self.protocol.buff_size))
                 
     def send_message(self, msg, seq):
         """

@@ -180,7 +180,6 @@ class Topic(object):
             get_topic_manager().release_impl(self.reg_type, resolved_name)
             self.impl = self.resolved_name = self.type = self.md5sum = self.data_class = None
 
-
 # #3808
 class Poller(object):
     """
@@ -532,7 +531,7 @@ class Subscriber(Topic):
                 self.impl.remove_callback(self.callback, self.callback_args)
             self.callback = self.callback_args = None
             super(Subscriber, self).unregister()
-            
+
 class _SubscriberImpl(_TopicImpl):
     """
     Underyling L{_TopicImpl} implementation for subscriptions.

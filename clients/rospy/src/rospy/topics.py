@@ -181,6 +181,7 @@ class Topic(object):
             self.impl = self.resolved_name = self.type = self.md5sum = self.data_class = None
 
 
+# #3808
 class Poller(object):
     """
     select.poll/kqueue abstraction to handle socket failure detection
@@ -193,15 +194,23 @@ class Poller(object):
             self.remove_fd = self.remove_poll
             self.error_iter = self.error_poll_iter
         except:
-            # poll() not available, try kqueue
-            self.poller = select.kqueue()
-            self.add_fd = self.add_kqueue
-            self.remove_fd = self.remove_kqueue
-            self.error_iter = self.error_kqueue_iter
-            self.kevents = []
-            
-            #TODO: fallback for Windows
-            
+            try:
+                # poll() not available, try kqueue
+                self.poller = select.kqueue()
+                self.add_fd = self.add_kqueue
+                self.remove_fd = self.remove_kqueue
+                self.error_iter = self.error_kqueue_iter
+                self.kevents = []
+            except:
+                #TODO: non-Noop impl for Windows
+                self.poller = self.noop
+                self.add_fd = self.noop
+                self.remove_fd = self.noop
+                self.error_iter = self.noop
+
+    def noop(self, *args):
+        pass
+
     def add_poll(self, fd):
         self.poller.register(fd)
 
@@ -326,6 +335,21 @@ class _TopicImpl(object):
             return True
         return False
 
+    def _remove_connection(self, connections, c):
+        # Remove from poll instance as well as connections
+        try:
+            self.connection_poll.remove_fd(c.fileno())
+        except:
+            pass
+        try:
+            # not necessarily correct from an abstraction point of
+            # view, but will prevent accident connection leaks
+            c.close()
+        except:
+            pass
+        if c in connections:
+            connections.remove(c)
+
     def add_connection(self, c):
         """
         Add a connection to this topic.  If any previous connections
@@ -346,11 +370,7 @@ class _TopicImpl(object):
             # the old one.
             for oldc in self.connections:
                 if oldc.endpoint_id == c.endpoint_id:
-                    try:
-                        oldc.close()
-                    except:
-                        pass
-                    new_connections.remove(oldc)
+                    self._remove_connection(new_connections, oldc)
 
             # #3808: "garbage collect" bad sockets whenever we add new
             # connections. This allows at most one stale connection
@@ -366,21 +386,11 @@ class _TopicImpl(object):
             # rospy's i/o is blocking-based, which has the obvious
             # issues.
 
-            if self.connection_poll is not None:
-                for fd in self.connection_poll.error_iter():
-                    # Remove from poll instance as well as connections
-                    try:
-                        self.poller.remove_fd(fd)
-                    except:
-                        pass
-                    to_remove = [x for x in new_connections if x.fileno() == fd]
-                    for x in to_remove:
-                        rospydebug("removing connection to %s, connection error detected"%(x.endpoint_id))
-                        try:
-                            x.close()
-                        except:
-                            pass
-                        new_connections.remove(x)
+            for fd in self.connection_poll.error_iter():
+                to_remove = [x for x in new_connections if x.fileno() == fd]
+                for x in to_remove:
+                    rospydebug("removing connection to %s, connection error detected"%(x.endpoint_id))
+                    self._remove_connection(new_connections, x)
 
             # Add new connection to poller, register for all events,
             # though we only care about POLLHUP/ERR
@@ -408,19 +418,9 @@ class _TopicImpl(object):
         with self.c_lock:
             # c_lock is to make remove_connection thread-safe, but we
             # still make a copy of self.connections so that the rest of the
-            # code can use self.connections in an unlocked manner
-
-            fd = c.fileno()
-            if fd is not None:
-                # Remove from poll instance as well as connections
-                try:
-                    self.connection_poll.remove_fd(fd)
-                except:
-                    pass
-            
+            # code can use self.connections in an unlocked manner            
             new_connections = self.connections[:]
-            if c in new_connections:
-                new_connections.remove(c)
+            self._remove_connection(new_connections, c)
             self.connections = new_connections
 
     def get_stats_info(self): # STATS

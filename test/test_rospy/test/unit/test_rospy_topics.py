@@ -66,6 +66,7 @@ class TestRospyTopics(unittest.TestCase):
         c2 = ConnectionOverride('c2')
         c3 = ConnectionOverride('c3')
         assert not t.has_connection('c1')
+        assert t.get_num_connections() == 0
         t.add_connection(c1)
         assert t.get_num_connections() == 1
         assert t.has_connection('c1')        
@@ -78,6 +79,9 @@ class TestRospyTopics(unittest.TestCase):
         t.remove_connection(c1b)        
         assert not t.has_connection('c1')
 
+        t.close()
+        assert t.get_num_connections() == 0 
+
         t = _TopicImpl('/foo', String)
         t.add_connection(c1)
         t.add_connection(c2)
@@ -85,6 +89,9 @@ class TestRospyTopics(unittest.TestCase):
         for x in ['c1', 'c2', 'c3']:
             assert t.has_connection(x)
         assert t.get_num_connections() == 3
+
+        t.close()
+        assert t.get_num_connections() == 0        
         
     def test_Publisher(self):
         import rospy
@@ -407,3 +414,15 @@ class TestRospyTopics(unittest.TestCase):
         self.assert_(impl.tcp_nodelay)
         self.assertEquals(3, impl.ref_count)
         self.failIf(impl.closed)
+
+    def test_Poller(self):
+        # no real test as this goes down to kqueue/select, just make sure that it behaves
+        from rospy.topics import Poller
+        p = Poller()
+        p.add_fd(1)
+        for x in p.error_iter():
+            pass
+        p.remove_fd(1)
+        for x in p.error_iter():
+            pass
+        

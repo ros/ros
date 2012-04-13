@@ -273,7 +273,6 @@ class _TopicImpl(object):
         # number of Topic instances using this
         self.ref_count = 0
 
-        #TODO:UNIXONLY mask out on windows
         self.connection_poll = Poller()
 
     def __del__(self):

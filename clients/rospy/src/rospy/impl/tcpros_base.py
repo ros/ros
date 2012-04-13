@@ -519,7 +519,7 @@ class TCPROSTransport(Transport):
             self.done = True
             if self.socket:
                 try:
-                    self.socket.shutdown()
+                    self.socket.shutdown(socket.SHUT_RDWR)
                 except:
                     pass
                 finally:
@@ -750,7 +750,7 @@ class TCPROSTransport(Transport):
             try:
                 if self.socket is not None:
                     try:
-                        self.socket.shutdown()
+                        self.socket.shutdown(socket.SHUT_RDWR)
                     except:
                         pass
                     finally:

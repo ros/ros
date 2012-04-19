@@ -43,9 +43,9 @@ def _get_optparse():
                           description="roscore will start up a ROS Master, a ROS Parameter Server and a rosout logging node",
                           epilog="See http://www.ros.org/wiki/roscore"
                           )
-    parser.add_option("-p",
-                      dest="port", default=False, action="store_true",
-                      help="The port to use")
+    parser.add_option("-p", "--port",
+                      dest="port", default=None,
+                      help="master port. Only valid if master is launched", metavar="PORT")
     return parser
 
 

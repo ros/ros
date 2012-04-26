@@ -187,7 +187,6 @@ def expand_to_packages(names, env=None):
     if env is None:
         env = os.environ
     ros_paths = rospkg.get_ros_paths(env)
-    print "ROS_PATHS", ros_paths, env['ROS_PACKAGE_PATH']
     rospack = rospkg.RosPack(ros_paths)
     rosstack = rospkg.RosStack(ros_paths)
     return rospkg.expand_to_packages(names, rospack, rosstack)

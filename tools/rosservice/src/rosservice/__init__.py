@@ -711,7 +711,7 @@ def _fullusage():
 
 Type rosservice <command> -h for more detailed usage, e.g. 'rosservice call -h'
 """)
-    sys.exit(os.EX_USAGE)
+    sys.exit(getattr(os, 'EX_USAGE', 1))
 
 def rosservicemain(argv=sys.argv):
     """

@@ -1619,7 +1619,7 @@ Commands:
 
 Type rostopic <command> -h for more detailed usage, e.g. 'rostopic echo -h'
 """)
-    sys.exit(os.EX_USAGE)
+    sys.exit(getattr(os, 'EX_USAGE', 1))
 
 def rostopicmain(argv=None):
     import rosbag

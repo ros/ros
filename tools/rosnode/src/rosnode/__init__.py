@@ -740,7 +740,7 @@ Commands:
 Type rosnode <command> -h for more detailed usage, e.g. 'rosnode ping -h'
 """)
     if return_error:
-        sys.exit(os.EX_USAGE)
+        sys.exit(getattr(os, 'EX_USAGE', 1))
     else:
         sys.exit(0)
 

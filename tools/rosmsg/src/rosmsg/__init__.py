@@ -334,15 +334,15 @@ def rosmsg_cmd_prototype(args):
     except KeyError as e:
         if not options.silent:
             sys.stderr.write("Unknown message type: %s"%e, file=sys.stderr)
-            sys.exit(os.EX_USAGE)
+            sys.exit(getattr(os, 'EX_USAGE', 1))
     # except rospkg.InvalidROSPkgException as e:
     #     if not options.silent:
     #         print(file=sys.stderr, "Invalid package: '%s'"%e)
-    #         sys.exit(os.EX_USAGE)
+    #         sys.exit(getattr(os, 'EX_USAGE', 1))
     except ValueError, e:
         if not options.silent:
             sys.stderr.write("Invalid type: '%s'"%e)
-            sys.exit(os.EX_USAGE)
+            sys.exit(getattr(os, 'EX_USAGE', 1))
     except RosMsgProtoException as e:
         if not options.silent:
             sys.stderr.write(str(e))
@@ -350,7 +350,7 @@ def rosmsg_cmd_prototype(args):
     except RosMsgProtoArgsException as e:
         if not options.silent:
             sys.stderr.write("%s"%e)
-            sys.exit(os.EX_USAGE)
+            sys.exit(getattr(os, 'EX_USAGE', 1))
     except KeyboardInterrupt:
         pass
 
@@ -722,16 +722,16 @@ def rosmsgmain(mode=MODE_MSG):
             sys.exit(0)
         else:
             print(fullusage('ros'+mode[1:]))
-            sys.exit(os.EX_USAGE)
+            sys.exit(getattr(os, 'EX_USAGE', 1))
     except KeyError as e:
         print("Unknown message type: %s"%e, file=sys.stderr)
-        sys.exit(os.EX_USAGE)
+        sys.exit(getattr(os, 'EX_USAGE', 1))
     except rospkg.ResourceNotFound as e:
         print("Invalid package: %s"%e, file=sys.stderr)
-        sys.exit(os.EX_USAGE)        
+        sys.exit(getattr(os, 'EX_USAGE', 1))
     except ValueError as e:
         print("Invalid type: '%s'"%e, file=sys.stderr)
-        sys.exit(os.EX_USAGE)          
+        sys.exit(getattr(os, 'EX_USAGE', 1))
     except ROSMsgException as e:
         print(str(e), file=sys.stderr)
         sys.exit(1)        

@@ -75,7 +75,7 @@ Commands:
 \trosclean check\tCheck usage of log files
 \trosclean purge\tRemove log files
 """)
-    sys.exit(os.EX_USAGE)
+    sys.exit(getattr(os, 'EX_USAGE', 1))
     
 def _get_check_dirs():
     home_dir = rospkg.get_ros_home()

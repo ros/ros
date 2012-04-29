@@ -583,7 +583,22 @@ endmacro(rosbuild_add_library_module)
 # part of the "core" build that happens during a 'make' in ros, so we can
 # assume that's already built.
 macro(rosbuild_add_gtest_build_flags exe)
+  if (NOT GTEST_FOUND)
+    # gtest is installed but there might not be any library (e.g. Ubuntu Precise), so build it
+    if (EXISTS "/usr/src/gtest")
+      if (NOT EXISTS "${CMAKE_BINARY_DIR}/gtest")
+        # for now, this would only work on Ubuntu
+        add_subdirectory("/usr/src/gtest/" ${CMAKE_BINARY_DIR}/gtest)
+      endif()
+    else()
+      message(WARNING "GTest not found; C++ tests will fail to build.")
+    endif()
+  endif()
   rosbuild_add_compile_flags(${exe} ${_gtest_CFLAGS_OTHER})
+  if (LIBRARY_OUTPUT_PATH)
+    # add this as GTest builds there
+    set_target_properties(${exe} PROPERTIES LINK_FLAGS "-L${LIBRARY_OUTPUT_PATH}")
+  endif()
   target_link_libraries(${exe} ${_gtest_LIBRARIES})
   rosbuild_add_link_flags(${exe} ${_gtest_LDFLAGS_OTHER})
   rosbuild_declare_test(${exe})

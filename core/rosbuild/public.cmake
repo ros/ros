@@ -586,9 +586,9 @@ macro(rosbuild_add_gtest_build_flags exe)
   if (NOT GTEST_FOUND)
     # gtest is installed but there might not be any library (e.g. Ubuntu Precise), so build it
     if (EXISTS "/usr/src/gtest")
-      if (NOT EXISTS "${CMAKE_BINARY_DIR}/gtest")
+      if (NOT EXISTS "${CMAKE_BINARY_DIR}/_gtest_from_src")
         # for now, this would only work on Ubuntu
-        add_subdirectory("/usr/src/gtest/" ${CMAKE_BINARY_DIR}/gtest)
+        add_subdirectory("/usr/src/gtest/" ${CMAKE_BINARY_DIR}/_gtest_from_src)
       endif()
     else()
       message(WARNING "GTest not found; C++ tests will fail to build.")

@@ -46,6 +46,9 @@
 #include "log4cxx/rollingfileappender.h"
 #include "log4cxx/patternlayout.h"
 #include "log4cxx/helpers/pool.h"
+#ifdef _MSC_VER
+  #include "log4cxx/helpers/transcoder.h" // to decode std::string -> LogStrings on windows
+#endif
 
 /**
  * @mainpage
@@ -75,10 +78,18 @@ public:
   void init()
   {
     //calculate log directory
+#ifdef _MSC_VER
+    std::string log_file_name_str = ros::file_log::getLogDirectory() + "/rosout.log";
+    LOG4CXX_DECODE_CHAR(log_file_name, log_file_name_str); // this instantiates log_file_name as type LogString as well
+    std::string empty_str = "";
+    LOG4CXX_DECODE_CHAR(log_empty, empty_str);
+#else
     std::string log_file_name = ros::file_log::getLogDirectory() + "/rosout.log";
+    std::string log_empty = "";
+#endif
 
     logger_ = log4cxx::Logger::getRootLogger();
-    log4cxx::LayoutPtr layout = new log4cxx::PatternLayout("");
+    log4cxx::LayoutPtr layout = new log4cxx::PatternLayout(log_empty);
     log4cxx::RollingFileAppenderPtr appender = new log4cxx::RollingFileAppender(layout, log_file_name, true);
     logger_->addAppender( appender );
     appender->setMaximumFileSize(100*1024*1024);
@@ -86,7 +97,7 @@ public:
     log4cxx::helpers::Pool pool;
     appender->activateOptions(pool);
 
-    std::cout << "logging to " << log_file_name << std::endl;
+    std::cout << "logging to " << log_file_name.c_str() << std::endl;
 
     LOG4CXX_INFO(logger_, "\n\n" << ros::Time::now() << "  Node Startup\n");
 

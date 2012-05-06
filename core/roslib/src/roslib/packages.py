@@ -397,40 +397,7 @@ def find_node(pkg, node_type, rospack=None, catkin_packages_cache=None):
 
     if rospack is None:
         rospack = rospkg.RosPack()
-
-    # TODO: figure out how to generalize find_resource to take multiple resource name options
-    if sys.platform in ['win32', 'cygwin']:
-        # Windows logic requires more file patterns to resolve and is
-        # not case-sensitive, so leave it separate
-
-        # in the near-term, just hack in support for .exe/.bat. In the long
-        # term this needs to:
-        #
-        #  * parse PATHEXT to generate matches
-        #  * perform case-insensitive compares against potential
-        #    matches, in path-ext order
-
-        # - We still have to look for bare node_type as user may have
-        #   specified extension manually
-        node_type = node_type.lower()
-        matches = [node_type, node_type+'.exe', node_type+'.bat']
-
-        d = rospack.get_path(pkg)
-        for p, dirs, files in os.walk(d):
-            # case insensitive
-            files = [f.lower() for f in files]
-            for m in matches:
-                if m in files:
-                    test_path = os.path.join(p, m)
-                    s = os.stat(test_path)
-                    if (s.st_mode & (stat.S_IRUSR | stat.S_IXUSR) ==
-                        (stat.S_IRUSR | stat.S_IXUSR)):
-                        return test_path
-            to_prune = [x for x in dirs if x.startswith('.')]
-            for x in to_prune:
-                dirs.remove(x)
-    else:
-        return find_resource(pkg, node_type, filter_fn=_executable_filter,
+    return find_resource(pkg, node_type, filter_fn=_executable_filter,
                              rospack=rospack, catkin_packages_cache=catkin_packages_cache)
 
 def _executable_filter(test_path):
@@ -468,20 +435,51 @@ def _find_resource(d, resource_name, filter_fn=None):
     """
     subroutine of find_resource
     """
-    #UNIXONLY
     matches = []
-    for p, dirs, files in os.walk(d):
-        if resource_name in files:
-            test_path = os.path.join(p, resource_name)
-            if filter_fn is not None:
-                if filter_fn(test_path):
+    # TODO: figure out how to generalize find_resource to take multiple resource name options
+    if sys.platform in ['win32', 'cygwin']:
+        # Windows logic requires more file patterns to resolve and is
+        # not case-sensitive, so leave it separate
+
+        # in the near-term, just hack in support for .exe/.bat. In the long
+        # term this needs to:
+        #
+        #  * parse PATHEXT to generate matches
+        #  * perform case-insensitive compares against potential
+        #    matches, in path-ext order
+
+        # - We still have to look for bare node_type as user may have
+        #   specified extension manually
+        resource_name = resource_name.lower()
+        patterns = [resource_name, resource_name+'.exe', resource_name+'.bat']
+        for p, dirs, files in os.walk(d):
+            # case insensitive
+            files = [f.lower() for f in files]
+            for name in patterns:
+                if name in files:
+                    test_path = os.path.join(p, name)
+                    if filter_fn is not None:
+                        if filter_fn(test_path):
+                            matches.append(test_path)
+                    else:
+                        matches.append(test_path)
+            # remove .svn/.git/etc
+            to_prune = [x for x in dirs if x.startswith('.')]
+            for x in to_prune:
+                dirs.remove(x)
+    else: #UNIX            
+        for p, dirs, files in os.walk(d):
+            if resource_name in files:
+                test_path = os.path.join(p, resource_name)
+                if filter_fn is not None:
+                    if filter_fn(test_path):
+                        matches.append(test_path)
+                else:
                     matches.append(test_path)
-            else:
-                matches.append(test_path)
-        # remove .svn/.git/etc
-        to_prune = [x for x in dirs if x.startswith('.')]
-        for x in to_prune:
-            dirs.remove(x)
+            # remove .svn/.git/etc
+            to_prune = [x for x in dirs if x.startswith('.')]
+            for x in to_prune:
+                dirs.remove(x)
     return [os.path.abspath(m) for m in matches]
 
 # TODO: this routine really belongs in rospkg, but the catkin-isms really, really don't

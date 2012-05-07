@@ -251,12 +251,18 @@ package."
 
 (asdf:initialize-source-registry
  (let ((roslisp-package-directory (sb-posix:getenv "ROSLISP_PACKAGE_DIRECTORY"))
-       (catkin-source-directory (sb-posix:getenv "CATKIN_SOURCE_DIR")))
+       (catkin-source-directory (sb-posix:getenv "CATKIN_SOURCE_DIR"))
+       (ros-package-path (sb-posix:getenv "ROS_PACKAGE_PATH")))
    `(:source-registry
      ,@(when roslisp-package-directory
          `((:tree ,roslisp-package-directory)))
      ,@(when catkin-source-directory
          `((:tree ,catkin-source-directory)))
+     ,@(when ros-package-path
+         (mapcan (lambda (path)
+                   (when (and path (> (length path) 0))
+                     `((:tree ,path))))
+                 (asdf:split-string ros-package-path :separator '(#\:))))
      ;; NOTE(lorenz): this looks to me as sort of an ugly hack but we
      ;; should not break the user's source registry
      ;; configuration. Instead, we inherit the user's configuration if

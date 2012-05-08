@@ -80,15 +80,18 @@ def rosgraph_main():
           if g.nn_nodes:
               print('Nodes:')
               for n in g.nn_nodes:
+                  prefix = n + '|'
                   print('  ' + n + ' :')
                   print('    Inbound:')
-                  if n in g.nn_edges.edges_by_end:
-                      for c in g.nt_all_edges.edges_by_end[n]:
-                          print('      ' + c.start)
+                  for k in g.nn_edges.edges_by_end.iterkeys():
+                      if k.startswith(prefix):
+                          for c in g.nn_edges.edges_by_end[k]:
+                              print('      ' + c.start)
                   print('    Outbound:')
-                  if n in g.nn_edges.edges_by_start:
-                      for c in g.nt_all_edges.edges_by_start[n]:
-                          print('      ' + c.end)
+                  for k in g.nn_edges.edges_by_start.iterkeys():
+                      if k.startswith(prefix):
+                          for c in g.nn_edges.edges_by_start[k]:
+                              print('      ' + c.end)
           if g.srvs:
               print('Services:')
               for s in g.srvs:

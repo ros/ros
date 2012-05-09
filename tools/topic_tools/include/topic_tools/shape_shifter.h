@@ -43,6 +43,7 @@
 #include <string.h>
 
 #include <ros/message_traits.h>
+#include "macros.h"
 
 namespace topic_tools
 {
@@ -55,7 +56,7 @@ public:
 };
 
 
-class ShapeShifter 
+class TOPIC_TOOLS_DECL ShapeShifter
 {
 public:
   typedef boost::shared_ptr<ShapeShifter> Ptr;

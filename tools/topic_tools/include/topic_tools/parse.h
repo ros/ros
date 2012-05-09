@@ -28,12 +28,13 @@
 // Reusable parser routines
 
 #include <string>
+#include "macros.h"
 
 namespace topic_tools
 {
 
 // Strip any leading namespace qualification from a topic (or other kind
 // of) ROS name
-bool getBaseName(const std::string& full_name, std::string& base_name);
+TOPIC_TOOLS_DECL bool getBaseName(const std::string& full_name, std::string& base_name);
 
 }

@@ -5,7 +5,7 @@ catkin_project(topic_tools
   DEPENDS roscpp rosconsole xmlrpcpp rostime
   )
 include_directories(include)
-find_package(ROS COMPONENTS roscpp rosconsole xmlrpcpp rosunit rostest rostime)
+find_package(ROS COMPONENTS cpp_common roscpp rosconsole xmlrpcpp rosunit rostest rostime)
 include_directories(${ROS_INCLUDE_DIRS})
 
 add_library(topic_tools src/shape_shifter.cpp src/parse.cpp)

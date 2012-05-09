@@ -1,6 +1,7 @@
 tinyxml:
   ubuntu: libtinyxml-dev
   debian: libtinyxml-dev
+  macports: tinyxml
   osxbrew:
     homebrew:
       packages: [ tinyxml ]
@@ -113,19 +114,9 @@ boost:
         packages: [libboost1.46-all-dev]
   debian:
     squeeze: libboost1.42-all-dev
+    wheezy: libboost-all-dev
     lenny: |
       if [ ! -f /opt/ros/lib/libboost_date_time-gcc43-mt*-1_37.a ] ; then
-        mkdir -p ~/ros/ros-deps
-        cd ~/ros/ros-deps
-        wget --tries=10 http://pr.willowgarage.com/downloads/boost_1_37_0.tar.gz
-        tar xzf boost_1_37_0.tar.gz
-        cd boost_1_37_0
-        ./configure --prefix=/opt/ros
-        make
-        sudo make install
-      fi
-    3.1: |
-      if [ ! -f /opt/ros/lib/libboost_date_time-gcc33-mt*-1_37.a ] ; then
         mkdir -p ~/ros/ros-deps
         cd ~/ros/ros-deps
         wget --tries=10 http://pr.willowgarage.com/downloads/boost_1_37_0.tar.gz
@@ -253,6 +244,7 @@ intltool:
   fedora: intltool
   gentoo: dev-util/intltool
   freebsd: intltool
+  macports: intltool
 unzip:
   ubuntu: unzip
   debian: unzip
@@ -332,7 +324,7 @@ gtest:
     homebrew:
       packages: [ gtest ]
       options: [ --universal ]
-  gentoo: dev-util/gtest
+  gentoo: dev-cpp/gtest
   freebsd: googletest
 autoconf:
   ubuntu: autoconf

@@ -48,6 +48,10 @@ if sys.hexversion > 0x03000000: #Python3
 else:
     python3 = False
 
+import threading
+
+rospack_lock = threading.Lock()
+
 def rospackexec(args):
     """
     @return: result of executing rospack command (via subprocess). string will be strip()ed.
@@ -55,11 +59,12 @@ def rospackexec(args):
     @raise roslib.exceptions.ROSLibException: if rospack command fails
     """
     rospack_bin = os.path.join(roslib.rosenv.get_ros_root(), 'bin', 'rospack')
-    if python3:
-        val = subprocess.Popen([rospack_bin] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
-        val = val.decode().strip()
-    else:
-        val = (subprocess.Popen([rospack_bin] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0] or '').strip()        
+    with rospack_lock:
+        if python3:
+            val = subprocess.Popen([rospack_bin] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
+            val = val.decode().strip()
+        else:
+            val = (subprocess.Popen([rospack_bin] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0] or '').strip()        
     if val.startswith('rospack:'): #rospack error message
         raise roslib.exceptions.ROSLibException(val)
     return val
@@ -120,13 +125,14 @@ def rosstackexec(args):
     @raise roslib.exceptions.ROSLibException: if rosstack command fails
     """
     rosstack_bin = os.path.join(roslib.rosenv.get_ros_root(), 'bin', 'rosstack')
-    if python3:
-        val = subprocess.Popen([rosstack_bin] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
-        val = val.decode().strip()
-    else:
-        val = (subprocess.Popen([rosstack_bin] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0] or '').strip()
-    if val.startswith('rosstack:'): #rospack error message
-        raise roslib.exceptions.ROSLibException(val)
+    with rospack_lock:
+        if python3:
+            val = subprocess.Popen([rosstack_bin] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
+            val = val.decode().strip()
+        else:
+            val = (subprocess.Popen([rosstack_bin] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0] or '').strip()
+        if val.startswith('rosstack:'): #rospack error message
+            raise roslib.exceptions.ROSLibException(val)
     return val
 
 def rosstack_depends_on(s):

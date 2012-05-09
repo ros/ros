@@ -58,6 +58,9 @@ from optparse import OptionParser
 
 import rosdep
 
+# #3883
+_popen_lock = threading.Lock()
+
 def make_command():
     """
     @return: name of 'make' command
@@ -386,13 +389,19 @@ class RosMakeAll:
         if self.ros_parallel_jobs > 0:
             local_env['ROS_PARALLEL_JOBS'] = "-l%d" % self.ros_parallel_jobs
         elif "ROS_PARALLEL_JOBS" not in os.environ: #if no environment setup and no args fall back to # cpus
-            local_env['ROS_PARALLEL_JOBS'] = "-l%d" % parallel_build.num_cpus()
+            # num_cpus check can (on OS X) trigger a Popen(), which has
+            #the multithreading bug we wish to avoid on Py2.7.
+            with _popen_lock:
+                local_env['ROS_PARALLEL_JOBS'] = "-l%d" % parallel_build.num_cpus()
         local_env['SVN_CMDLINE'] = "svn --non-interactive"
         cmd = ["bash", "-c", "cd %s && %s "%(self.get_path(package), make_command()) ] #UNIXONLY
         if argument:
             cmd[-1] += argument
         self.printer.print_full_verbose (cmd)
-        command_line = subprocess.Popen(cmd, stdout=subprocess.PIPE,  stderr=subprocess.STDOUT, env=local_env, preexec_fn=self._subprocess_setup)
+        # #3883: make sure only one Popen command occurs at a time due to
+        # http://bugs.python.org/issue13817
+        with _popen_lock:
+            command_line = subprocess.Popen(cmd, stdout=subprocess.PIPE,  stderr=subprocess.STDOUT, env=local_env, preexec_fn=self._subprocess_setup)
         (pstd_out, pstd_err) = command_line.communicate() # pstd_err should be None due to pipe above
         return (command_line.returncode, pstd_out)
 
@@ -626,13 +635,6 @@ class RosMakeAll:
                     self.printer.print_all("Keyboard interrupt caught in pkg %s"%pkg)
                     return False
         return True
-            
-        # The check for presence doesn't check for updates
-        #if os.path.exists(os.path.join(os.environ["ROS_ROOT"], "bin/rospack")):
-        #    return True
-        #else:
-        #    print "Rosmake detected that rospack was not built.  Building it for you because it is required."
-        #    return subprocess.call(["make", "-C", os.path.join(os.environ["ROS_ROOT"], "tools/rospack")])
 
 
 
@@ -894,7 +896,6 @@ class RosMakeAll:
           if "rospack" in self.build_list:
               self.printer.print_all( "Rosmake detected that rospack was requested to be cleaned.  Cleaning it for it was skipped earlier.")
               self.assert_prebuild_built(["tools/rospack"], 'clean')
-              #subprocess.check_call(["make", "-C", os.path.join(os.environ["ROS_ROOT"], "tools/rospack"), "clean"])
 
 
         build_passed = True

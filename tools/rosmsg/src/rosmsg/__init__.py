@@ -592,7 +592,7 @@ def rosmsg_cmd_show(mode, full):
 
 def rosmsg_md5(mode, type_):
     try:
-        if type_ == MODE_MSG:
+        if mode == MODE_MSG:
             msg_class = roslib.message.get_message_class(type_)
         else:
             msg_class = roslib.message.get_service_class(type_)            

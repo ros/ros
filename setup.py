@@ -3,16 +3,16 @@
 from setuptools import setup
 
 import os
+import rospkg.stack
 import sys
-sys.path.insert(0, 'src')
 
 version = '0.0.0'
 try:
-    import yaml
-    d = yaml.load(open('stack.yaml'))
-    version = d['Version']
-except:
+    version = rospkg.stack.parse_stack_file(os.path.join(os.path.dirname(__file__), 'stack.xml')).version
+except Exception, e:
     pass
+
+sys.path.insert(0, 'src')
 
 PKG = 'ros_comm'
 gen = ['msg', 'srv']

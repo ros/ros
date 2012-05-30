@@ -1,9 +1,33 @@
 <stack>
-  <description brief="ros_comm">ROS communications-related packages, including core client libraries (roscpp, rospy, roslisp) and graph introspection tools (rostopic, rosnode, rosservice, rosparam).</description>
-  <author>Maintained by Ken Conley</author>
-  <license>BSD,LGPL</license>  
+  <name>ros_comm</name>
+  <version>1.8.9</version> <!-- also update version in clients/cpp/roscpp/include/ros/common.h -->
+  <description brief="ROS communications-related libraries and tools">
+    ROS communications-related packages, including core client libraries (roscpp, rospy, roslisp) and graph introspection tools (rostopic, rosnode, rosservice, rosparam).
+  </description>
+  <author>Morgan Quigley mquigley@cs.stanford.edu, Troy Straszheim straszheim@willowgarage.com, Josh Faust, Brian Gerkey, Tim Field, Jeremy Leibs, Ken Conley et al</author>
+  <maintainer>Ken Conley kwc@willowgarage.com</maintainer>
+  <license>BSD</license>  
+  <copyright>Willow Garage</copyright>
+  <url>http://www.ros.org/wiki/ros_comm</url>
   <review status="doc reviewed" notes="REP 100"/>
-  <url>http://ros.org/wiki/ros_comm</url>
-  <depend stack="ros" /> <!-- rosclean, roslang, roslib, rosunit -->
 
+  <build_depends>apr</build_depends>
+  <build_depends>boost</build_depends>
+  <build_depends>catkin</build_depends>
+  <build_depends>genmsg</build_depends>
+  <build_depends>log4cxx</build_depends>
+  <build_depends>python-paramiko</build_depends>
+  <build_depends>python-yaml</build_depends>
+  <build_depends>ros</build_depends>
+  <build_depends>roscpp_core</build_depends>
+  <build_depends>std_msgs</build_depends>
+
+  <depends>apr</depends>
+  <depends>boost</depends>
+  <depends>log4cxx</depends>
+  <depends>python-paramiko</depends>
+  <depends>python-yaml</depends>
+  <depends>ros</depends>
+  <depends>roscpp_core</depends>
+  <depends>std_msgs</depends>
 </stack>

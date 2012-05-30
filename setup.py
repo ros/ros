@@ -1,17 +1,16 @@
 #!/usr/bin/env python
 
+import rospkg.stack
 from setuptools import setup
-
 import sys
-sys.path.insert(0, 'src')
 
-version = '0.0.0'
 try:
-    import yaml
-    d = yaml.load(open('stack.yaml'))
-    version = d['Version']
-except:
-    pass
+    version = rospkg.stack.parse_stack_file('stack.xml').version
+except Exception, e:
+    print >> sys.stderr, 'Could not extract version from your stack.xml:\n%s' % e
+    sys.exit(-1)
+
+sys.path.insert(0, 'src')
 
 setup(name='roslib',
       version=version,

@@ -75,7 +75,7 @@ install(PROGRAMS
         tools/rosunit/scripts/check_test_ran.py
         DESTINATION share/rosunit/bin)
 
-install(FILES stack.yaml DESTINATION share/${PROJECT_NAME})
+install(FILES stack.xml DESTINATION share/${PROJECT_NAME})
 
 install(DIRECTORY tools/roscreate/templates/
   DESTINATION share/roscreate/templates

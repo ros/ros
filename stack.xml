@@ -4,9 +4,15 @@
   <description brief="ROS communications-related libraries and tools">
     ROS communications-related packages, including core client libraries (roscpp, rospy, roslisp) and graph introspection tools (rostopic, rosnode, rosservice, rosparam).
   </description>
-  <author>Morgan Quigley mquigley@cs.stanford.edu, Troy Straszheim straszheim@willowgarage.com, Josh Faust, Brian Gerkey, Tim Field, Jeremy Leibs, Ken Conley et al</author>
-  <maintainer>Ken Conley kwc@willowgarage.com</maintainer>
-  <license>BSD</license>  
+  <author email="mquigley@cs.stanford.edu">Morgan Quigley</author>
+  <author email="straszheim@willowgarage.com">Troy Straszheim</author>
+  <author>Josh Faust</author>
+  <author>Brian Gerkey</author>
+  <author>Tim Field</author>
+  <author>Jeremy Leibs</author>
+  <author>Ken Conley</author>
+  <maintainer email="kwc@willowgarage.com">Ken Conley</maintainer>
+  <license>BSD</license>
   <copyright>Willow Garage</copyright>
   <url>http://www.ros.org/wiki/ros_comm</url>
   <review status="doc reviewed" notes="REP 100"/>

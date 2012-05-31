@@ -2,9 +2,16 @@
   <name>ros</name>
   <version>1.8.7</version>
   <description brief="ROS core">ROS packaging system</description>
-  <author>Eric Berger, Ken Conley, Josh Faust, Tully Foote, Brian Gerkey, Jeremy Leibs, Morgan Quigley, Rob Wheeler, et al</author>
-  <maintainer>Ken Conley kwc@willowgarage.com</maintainer>
-  <license>BSD</license>  
+  <author>Eric Berger</author>
+  <author>Ken Conley</author>
+  <author>Josh Faust</author>
+  <author>Tully Foote</author>
+  <author>Brian Gerkey</author>
+  <author>Jeremy Leibs</author>
+  <author>Morgan Quigley</author>
+  <author>Rob Wheeler</author>
+  <maintainer email="kwc@willowgarage.com">Ken Conley</maintainer>
+  <license>BSD</license>
   <copyright>Willow Garage</copyright>
   <url>http://www.ros.org/wiki/ROS</url>
   <review status="doc reviewed" notes=""/>

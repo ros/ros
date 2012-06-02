@@ -1,5 +1,4 @@
 <package>
-  <catkin/>
   <description brief="roscreate">
 
      roscreate contains tools that assist in the creation of ROS filesystem resources. There are currently

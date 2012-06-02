@@ -1,5 +1,4 @@
 <package>
-  <catkin/>
   <description brief="ROS Build System">
 
 rosbuild contains scripts for managing the CMake-based build system for ROS. 

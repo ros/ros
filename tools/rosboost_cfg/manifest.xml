@@ -1,5 +1,4 @@
 <package>
-  <catkin/>
   <description brief="Contains scripts for determining the boost configuration on a system">
 
      Contains scripts used by the rosboost-cfg tool for determining cflags/lflags/etc. of boost on your system

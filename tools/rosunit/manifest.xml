@@ -1,6 +1,4 @@
 <package>
-  <catkin/>
-
   <description brief="Unit testing for ROS">
 
      Unit-testing package for ROS. This is a lower-level library for rostest and handles unit tests, whereas rostest handles integration tests.

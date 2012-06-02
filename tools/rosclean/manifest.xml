@@ -1,5 +1,4 @@
 <package>
-  <catkin/>
   <description brief="rosclean">
 
      rosclean: cleanup filesystem resources (e.g. log files).

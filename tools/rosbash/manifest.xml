@@ -1,5 +1,4 @@
 <package>
-<catkin/>
 <description brief="ros bash tools">
 
 Assorted shell commands for using ros with bash.

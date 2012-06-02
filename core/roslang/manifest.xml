@@ -1,5 +1,4 @@
 <package>
-  <catkin/>
   <description brief="ROS client library base">
 
      roslang is a common package that all

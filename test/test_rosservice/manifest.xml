@@ -1,5 +1,4 @@
 <package>
-  <catkin/>
   <description brief="test_rosservice">
 
      Tests for the rosservice tool

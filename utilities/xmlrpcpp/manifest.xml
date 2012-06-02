@@ -1,5 +1,4 @@
 <package>
-<catkin/>
 <description brief="A C++ XML-RPC library">
 
 XmlRpc++ is a C++ implementation of the XML-RPC protocol. This version is

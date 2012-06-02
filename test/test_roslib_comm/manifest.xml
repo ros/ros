@@ -1,5 +1,4 @@
 <package>
-  <catkin/>
   <description brief="roslib tests">
     Unit tests verifying that roslib is operating as expected.
   </description>

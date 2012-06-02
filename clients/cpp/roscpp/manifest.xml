@@ -1,5 +1,4 @@
 <package>
-  <catkin/>
   <description brief="ROS C++ client library">
 
 <p>

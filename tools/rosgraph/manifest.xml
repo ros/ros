@@ -1,5 +1,4 @@
 <package>
-  <catkin/>
   <description brief="rosgraph command-line tool">
 
 <p>

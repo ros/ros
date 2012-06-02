@@ -1,5 +1,4 @@
 <package>
-  <catkin/>
   <description brief="A Lisp client library for ROS">This package is a Lisp client library for ROS, the Robot Operating System.</description>
   <author>Bhaskara Marthi, Brian Gerkey, Lorenz Mösenlechner, Thibault Kruse</author>
   <license>BSD</license>

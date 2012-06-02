@@ -1,5 +1,4 @@
 <package>
-  <catkin/>
   <description brief="ROS integration tests">
     ROS high-level (language-neutral) integration test framework.
   </description>

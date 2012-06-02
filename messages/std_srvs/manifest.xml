@@ -1,5 +1,4 @@
 <package>
-  <catkin/>
   <description brief="Common ROS Services">
 
     Common service definitions. Currently just the 'Empty' service.

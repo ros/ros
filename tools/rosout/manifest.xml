@@ -1,5 +1,4 @@
 <package>
-  <catkin/>
   <description brief="rosout">
      System-wide logging mechanism for messages sent to the /rosout topic.
   </description>

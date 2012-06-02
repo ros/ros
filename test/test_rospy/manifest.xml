@@ -1,5 +1,4 @@
 <package>
-  <catkin/>
   <description brief="rospy tests">
     rospy unit and integration test framework.
   </description>

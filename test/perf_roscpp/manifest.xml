@@ -1,5 +1,4 @@
 <package>
-  <catkin/>
   <description brief="perf_roscpp">
 
      This is a set of performance tests for roscpp, mainly to provide numbers to optimize against.

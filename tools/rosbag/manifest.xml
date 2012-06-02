@@ -1,5 +1,4 @@
 <package>
-  <catkin/>
   <description brief="ROS Bag Tools">
     This is a set of tools for recording from and playing back to ROS
     topics.  It is intended to be high performance and avoids

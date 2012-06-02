@@ -1,5 +1,4 @@
 <package>
-  <catkin/>
   <description>
   A simple performance test of the serialization/deserialization scheme, so we can get some decent numbers to target optimization efforts.
   </description>

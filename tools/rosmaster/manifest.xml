@@ -1,5 +1,4 @@
 <package>
-  <catkin/>
   <description brief="rosmaster">
 
      ROS <a href="http://ros.org/wiki/Master">Master</a> implementation.

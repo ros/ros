@@ -1,5 +1,4 @@
 <package>
-  <catkin/>
   <description brief="test_rosbag">
 
     A package for testing rosbag functionality.

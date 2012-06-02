@@ -1,5 +1,4 @@
 <package>
-  <catkin/>
   <description brief="Tests roscpp templated serialization and message generation">
     Set of tests to test templated serialization, message generation, and using messages with custom allocators
 

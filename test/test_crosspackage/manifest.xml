@@ -1,5 +1,4 @@
 <package>
-  <catkin/>
   <description brief="test_crosspackage">
     This is a general purpose test package for placing things relevant
     to other tests where we want to verify that they work when going

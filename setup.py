@@ -1,20 +1,21 @@
 #!/usr/bin/env python
 
-import rospkg.stack
 from setuptools import setup
 import sys
+from xml.etree.ElementTree import ElementTree
 
 try:
-    version = rospkg.stack.parse_stack_file('stack.xml').version
+    root = ElementTree(None, 'stack.xml')
+    version = root.findtext('version')
 except Exception, e:
     print >> sys.stderr, 'Could not extract version from your stack.xml:\n%s' % e
     sys.exit(-1)
 
 sys.path.insert(0, 'src')
 
-setup(name='roslib',
-      version=version,
-      packages=['ros', 'roslib', 'rosunit', 'rosmake', 'rosclean', 'roscreate', 'rosboost_cfg'],
+setup(name = 'roslib',
+      version = version,
+      packages = ['ros', 'roslib', 'rosunit', 'rosmake', 'rosclean', 'roscreate', 'rosboost_cfg'],
       package_dir = {'ros':'core/roslib/src/ros',
                      'roslib':'core/roslib/src/roslib',
                      'rosunit':'tools/rosunit/src/rosunit',

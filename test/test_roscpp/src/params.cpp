@@ -134,28 +134,6 @@ TEST(Params, deleteParam)
   ASSERT_FALSE( param::get( "test_delete_param", param ) );
 }
 
-TEST(Params, deleteXmlParam)
-{
-  XmlRpc::XmlRpcValue param;
-  std::cout << "(1)" << std::endl;
-  std::cout << param::getCached( "test_delete_xml_param", param ) << std::endl;
-  std::cout << "(2)" << std::endl;
-  std::cout << param::getCached( "test_delete_xml_param", param ) << std::endl;
-  std::cout << "(3)" << std::endl;
-  param::set( "test_delete_xml_param", "asdf" );
-  std::cout << "(4)" << std::endl;
-  param::getCached( "test_delete_xml_param", param );
-  std::cout << "(5)" << std::endl;
-  param::del( "test_delete_xml_param" );
-  std::cout << "(6)" << std::endl;
-  std::cout << param::getCached( "test_delete_xml_param", param ) << std::endl;
-  std::cout << "(7)" << std::endl;
-  std::cout << param::getCached( "test_delete_xml_param", param ) << std::endl;
-  ASSERT_FALSE( param::getCached( "test_delete_xml_param", param ) );
-  sleep(1);
-  ASSERT_FALSE( param::getCached( "test_delete_xml_param", param ) );
-}
-
 TEST(Params, hasParam)
 {
   ASSERT_TRUE( param::has( "string" ) );

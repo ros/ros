@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 
-from setuptools import setup
-
 import os
-import rospkg.stack
+from setuptools import setup
 import sys
+from xml.etree.ElementTree import ElementTree
 
-version = '0.0.0'
 try:
-    version = rospkg.stack.parse_stack_file(os.path.join(os.path.dirname(__file__), 'stack.xml')).version
+    root = ElementTree(None, 'stack.xml')
+    version = root.findtext('version')
 except Exception, e:
-    pass
+    print >> sys.stderr, 'Could not extract version from your stack.xml:\n%s' % e
+    sys.exit(-1)
 
 sys.path.insert(0, 'src')
 
@@ -27,9 +27,9 @@ if 'CATKIN_BINARY_DIR' in os.environ:
              package_dir["%s.%s"%(PKG, t)] = p
              packages.append("%s.%s"%(PKG, t))
 
-setup(name=PKG,
-      version=version,
-      packages=packages + ['rosbag',
+setup(name = PKG,
+      version = version,
+      packages = packages + ['rosbag',
                 'rosgraph',
                 'rosgraph.impl',
                 'roslaunch',
@@ -66,7 +66,7 @@ setup(name=PKG,
           'test_ros': 'test/test_ros/src/test_ros',
           'test_rosbag': 'test/test_rosbag/src/test_rosbag',
                      }),
-      install_requires=['rospkg', 'genmsg', 'genpy', 'roslib'],
+      install_requires = ['rospkg', 'genmsg', 'genpy', 'roslib'],
       scripts = [
           'tools/rosbag/scripts/rosbag',
           'tools/rosgraph/scripts/rosgraph',

@@ -152,6 +152,7 @@ class ParamDictionary(object):
         @type  key: str
         @return: parameter value
         """
+        print('master: get_param', key)
         try:
             self.lock.acquire()
             val = self.parameters
@@ -162,6 +163,7 @@ class ParamDictionary(object):
                     if not type(val) == dict:
                         raise KeyError(val)
                     val = val[ns]
+            print('master: get_param', key, val)
             return val
         finally:
             self.lock.release()
@@ -263,6 +265,7 @@ class ParamDictionary(object):
         [(subscribers, param_key, param_value)*]. The empty dictionary
         represents an unset parameter.
         """
+        print('master: delete_param', key)
         try:
             self.lock.acquire()
             if key == GLOBALNS:

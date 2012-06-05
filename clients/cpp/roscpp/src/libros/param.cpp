@@ -67,6 +67,7 @@ void set(const std::string &key, const XmlRpc::XmlRpcValue &v)
       // we already have the cached state and our value will be correct
       if (g_subscribed_params.find(mapped_key) != g_subscribed_params.end())
       {
+        std::cout << "setting key " << mapped_key << std::endl;
         g_params[mapped_key] = v;
       }
     }
@@ -140,6 +141,7 @@ bool del(const std::string &key)
       M_Param::iterator param_it = g_params.find(mapped_key);
       if (param_it != g_params.end())
       {
+        std::cout << "erasing param from cache" << " key " << mapped_key << std::endl;
         g_params.erase(param_it);
       }
     }
@@ -148,6 +150,7 @@ bool del(const std::string &key)
   XmlRpc::XmlRpcValue params, result, payload;
   params[0] = this_node::getName();
   params[1] = mapped_key;
+  std::cout << "master.deleteParam" << " params " << params.toXml() << std::endl;
   // We don't loop here, because validateXmlrpcResponse() returns false
   // both when we can't contact the master and when the master says, "I
   // don't have that param."
@@ -155,6 +158,7 @@ bool del(const std::string &key)
   {
     return false;
   }
+  std::cout << "master.deleteParam" << " result " << result.toXml() << " result.valid " << result.valid() << std::endl;
 
   return true;
 }
@@ -162,6 +166,7 @@ bool del(const std::string &key)
 bool getImpl(const std::string &key, XmlRpc::XmlRpcValue &v, bool use_cache)
 {
   std::string mapped_key = ros::names::resolve(key);
+  std::cout << "getImpl" << " v " << v.toXml() << std::endl;
 
   if (use_cache)
   {
@@ -169,11 +174,14 @@ bool getImpl(const std::string &key, XmlRpc::XmlRpcValue &v, bool use_cache)
 
     if (g_subscribed_params.find(mapped_key) != g_subscribed_params.end())
     {
+      std::cout << "Foo" << " key " << mapped_key << std::endl;
       M_Param::iterator it = g_params.find(mapped_key);
       if (it != g_params.end())
       {
+        std::cout << "Ping" << std::endl;
         if (it->second.valid())
         {
+          std::cout << "Ding " << it->second.toXml() << std::endl;
           ROS_DEBUG_NAMED("cached_parameters", "Using cached parameter value for key [%s]", mapped_key.c_str());
 
           v = it->second;
@@ -181,6 +189,7 @@ bool getImpl(const std::string &key, XmlRpc::XmlRpcValue &v, bool use_cache)
         }
         else
         {
+          std::cout << "Dong " << it->second.toXml() << std::endl;
           ROS_DEBUG_NAMED("cached_parameters", "Cached parameter is invalid for key [%s]", mapped_key.c_str());
           return false;
         }
@@ -188,6 +197,7 @@ bool getImpl(const std::string &key, XmlRpc::XmlRpcValue &v, bool use_cache)
     }
     else
     {
+      std::cout << "Bar" << std::endl;
       // parameter we've never seen before, register for update from the master
       if (g_subscribed_params.insert(mapped_key).second)
       {
@@ -195,15 +205,18 @@ bool getImpl(const std::string &key, XmlRpc::XmlRpcValue &v, bool use_cache)
         params[0] = this_node::getName();
         params[1] = XMLRPCManager::instance()->getServerURI();
         params[2] = mapped_key;
+        std::cout << "Pong " << result.toXml() << std::endl;
 
         if (!master::execute("subscribeParam", params, result, payload, false))
         {
+          std::cout << "Ding" << std::endl;
           ROS_DEBUG_NAMED("cached_parameters", "Subscribe to parameter [%s]: call to the master failed", mapped_key.c_str());
           g_subscribed_params.erase(mapped_key);
           use_cache = false;
         }
         else
         {
+          std::cout << "Dong " << payload.toXml() << std::endl;
           ROS_DEBUG_NAMED("cached_parameters", "Subscribed to parameter [%s]", mapped_key.c_str());
         }
       }
@@ -218,12 +231,14 @@ bool getImpl(const std::string &key, XmlRpc::XmlRpcValue &v, bool use_cache)
   // both when we can't contact the master and when the master says, "I
   // don't have that param."
   bool ret = master::execute("getParam", params, result, v, false);
+  std::cout << "ret " << ret << " v.type " << v.getType() << " v.valid " << v.valid() << std::endl;
 
   if (use_cache)
   {
     boost::mutex::scoped_lock lock(g_params_mutex);
 
     ROS_DEBUG_NAMED("cached_parameters", "Caching parameter [%s] with value type [%d]", mapped_key.c_str(), v.getType());
+    std::cout << "use_cache" << " key " << mapped_key << " v.valid " << v.valid() << " v " << v.toXml() << std::endl;
     g_params[mapped_key] = v;
   }
 
@@ -402,7 +417,20 @@ void update(const std::string& key, const XmlRpc::XmlRpcValue& v)
 
   boost::mutex::scoped_lock lock(g_params_mutex);
 
-  g_params[clean_key] = v;
+  M_Param::iterator param_it = g_params.find(clean_key);
+  if (param_it != g_params.end())
+  {
+    if (v.getType() == XmlRpc::XmlRpcValue::TypeStruct && v.size() == 0)
+    {
+      std::cout << "deleting key " << clean_key << std::endl;
+      g_params.erase(clean_key);
+    }
+  }
+  else
+  {
+    std::cout << "updating key " << clean_key << std::endl;
+    g_params[clean_key] = v;
+  }
 }
 
 void paramUpdateCallback(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcValue& result)
@@ -411,6 +439,7 @@ void paramUpdateCallback(XmlRpc::XmlRpcValue& params, XmlRpc::XmlRpcValue& resul
   result[1] = std::string("");
   result[2] = 0;
 
+  std::cout << "paramUpdateCallback" << " params[1] " << (std::string)params[1] << " params[2].type " << params[2].getType() << " params[2].size " << params[2].size() << " params[2] " << params[2].toXml() << " xml " << params.toXml() << " xml.valid " << params.valid() << std::endl;
   ros::param::update((std::string)params[1], params[2]);
 }
 

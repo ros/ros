@@ -40,6 +40,7 @@ are necessary for correctly retrieving local IP address
 information.
 """
 
+import logging
 import os
 import socket
 import struct
@@ -81,6 +82,8 @@ if 0:
         _use_netifaces = False
 else:
     _use_netifaces = False
+
+logger = logging.getLogger('rosgraph.network')
 
 def parse_http_host_and_port(url):
     """
@@ -131,8 +134,16 @@ def get_address_override():
     # check ROS_HOSTNAME and ROS_IP environment variables, which are
     # aliases for each other
     if ROS_HOSTNAME in os.environ:
+        if os.environ[ROS_HOSTNAME] == '':
+            msg = 'invalid ROS_HOSTNAME (an empty string)'
+            sys.stderr.write(msg + '\n')
+            logger.warn(msg)
         return os.environ[ROS_HOSTNAME]
     elif ROS_IP in os.environ:
+        if os.environ[ROS_IP] == '':
+            msg = 'invalid ROS_IP (an empty string)'
+            sys.stderr.write(msg + '\n')
+            logger.warn(msg)
         return os.environ[ROS_IP]
     return None
 

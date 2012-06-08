@@ -90,12 +90,20 @@ std::string determineHost()
   // First, did the user set ROS_HOSTNAME?
   if ( get_environment_variable(ip_env, "ROS_HOSTNAME")) {
     ROSCPP_LOG_DEBUG( "determineIP: using value of ROS_HOSTNAME:%s:", ip_env.c_str());
+    if (ip_env.size() == 0)
+    {
+      ROS_WARN("invalid ROS_HOSTNAME (an empty string)");
+    }
     return ip_env;
   }
 
   // Second, did the user set ROS_IP?
   if ( get_environment_variable(ip_env, "ROS_IP")) {
     ROSCPP_LOG_DEBUG( "determineIP: using value of ROS_IP:%s:", ip_env.c_str());
+    if (ip_env.size() == 0)
+    {
+      ROS_WARN("invalid ROS_IP (an empty string)");
+    }
     return ip_env;
   }
 

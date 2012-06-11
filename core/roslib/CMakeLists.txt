@@ -1,5 +1,6 @@
 project(roslib)
-find_package(ROS COMPONENTS catkin rospack rosunit)
+find_package(catkin REQUIRED)
+find_package(ROS REQUIRED COMPONENTS rospack rosunit)
 
 include_directories(include ${Boost_INCLUDE_DIRS} ${ROS_INCLUDE_DIRS})
 

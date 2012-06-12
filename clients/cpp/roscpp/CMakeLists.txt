@@ -1,13 +1,13 @@
 project(roscpp)
 
-find_package(ROS COMPONENTS
+find_package(ROS REQUIRED COMPONENTS
   catkin genmsg
   cpp_common rostime rosconsole roscpp_serialization
   roscpp_traits std_msgs rosgraph_msgs xmlrpcpp rosunit
   )
 include_directories(${ROS_INCLUDE_DIRS})
 
-find_package(Boost COMPONENTS signals filesystem system)
+find_package(Boost REQUIRED COMPONENTS signals filesystem system)
 
 include_directories(include)
 

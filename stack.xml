@@ -28,6 +28,7 @@
 
   <depends>boost</depends>
   <depends>bzip2</depends>
+  <depends>catkin</depends>
   <depends>gtest</depends>
   <depends>python</depends>
   <depends>python-nose</depends>

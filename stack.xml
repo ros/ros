@@ -21,7 +21,7 @@
   <build_depends>boost</build_depends>
   <build_depends>catkin</build_depends>
   <build_depends>genmsg</build_depends>
-  <build_depends>langs</build_depends> <!-- rosgraph_msgs, std_srvs -->
+  <build_depends>langs-dev</build_depends> <!-- rosgraph_msgs, std_srvs -->
   <build_depends>log4cxx</build_depends>
   <build_depends>python-paramiko</build_depends>
   <build_depends>python-yaml</build_depends>
@@ -31,6 +31,7 @@
 
   <depends>apr</depends>
   <depends>boost</depends>
+  <depends>langs</depends>
   <depends>log4cxx</depends>
   <depends>python-paramiko</depends>
   <depends>python-yaml</depends>

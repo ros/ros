@@ -60,22 +60,26 @@ class ManifestException(roslib.exceptions.ROSLibException): pass
 def get_nodes_by_name(n, name):
     return [t for t in n.childNodes if t.nodeType == t.ELEMENT_NODE and t.tagName == name]
     
-def check_optional(name, allowXHTML=False):
+def check_optional(name, allowXHTML=False, merge_multiple=False):
     """
     Validator for optional elements.
     @raise ManifestException: if validation fails
     """
     def check(n, filename):
         n = get_nodes_by_name(n, name)
-        if len(n) > 1:
+        if len(n) > 1 and not merge_multiple:
             raise ManifestException("Invalid manifest file: must have a single '%s' element"%name)
         if n:
-            if allowXHTML:
-                return ''.join([x.toxml() for x in n[0].childNodes])
-            return _get_text(n[0].childNodes).strip()
+            values = []
+            for child in n:
+                if allowXHTML:
+                    values.append(''.join([x.toxml() for x in child.childNodes]))
+                else:
+                    values.append(_get_text(child.childNodes).strip())
+            return ', '.join(values)
     return check
 
-def check_required(name, allowXHTML=False):
+def check_required(name, allowXHTML=False, merge_multiple=False):
     """
     Validator for required elements.
     @raise ManifestException: if validation fails
@@ -85,11 +89,15 @@ def check_required(name, allowXHTML=False):
         if not n:
             #print >> sys.stderr, "Invalid manifest file[%s]: missing required '%s' element"%(filename, name)
             return ''
-        if len(n) != 1:
+        if len(n) != 1 and not merge_multiple:
             raise ManifestException("Invalid manifest file: must have only one '%s' element"%name)
-        if allowXHTML:
-            return ''.join([x.toxml() for x in n[0].childNodes])
-        return _get_text(n[0].childNodes).strip()
+        values = []
+        for child in n:
+            if allowXHTML:
+                values.append(''.join([x.toxml() for x in child.childNodes]))
+            else:
+                values.append(_get_text(child.childNodes).strip())
+        return ', '.join(values)
     return check
 
 def check_platform(name):
@@ -175,7 +183,7 @@ def check_versioncontrol(name):
         return VersionControl(e[0].attributes['type'].value, e[0].attributes['url'].value)
     return check
 
-def check(name):
+def check(name, merge_multiple=False):
     if name == 'depend':
         return check_depends('depend')
     elif name == 'export':
@@ -188,12 +196,12 @@ def check(name):
         return check_platform('platform')
     elif name in REQUIRED:
         if name in ALLOWXHTML:
-            return check_required(name, True)
-        return check_required(name)            
+            return check_required(name, True, merge_multiple)
+        return check_required(name, merge_multiple=merge_multiple)
     elif name in OPTIONAL:
         if name in ALLOWXHTML:
-            return check_optional(name, True)
-        return check_optional(name)
+            return check_optional(name, True, merge_multiple)
+        return check_optional(name, merge_multiple=merge_multiple)
     
 class Export(object):
     """
@@ -549,7 +557,7 @@ def parse(m, string, filename='string'):
     except:
         pass #manifest is missing optional 'review notes' tag
 
-    m.author = check('author')(p, filename)
+    m.author = check('author', True)(p, filename)
     m.url = check('url')(p, filename)
     m.version = check('version')(p, filename)
     m.logo = check('logo')(p, filename)

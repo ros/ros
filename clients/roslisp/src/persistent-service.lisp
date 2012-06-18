@@ -60,7 +60,7 @@
 
 (defgeneric close-peristent-service (persistent-service)
   (:method ((service persistent-service))
-    (close-socket (persistent-service-socket service))))
+    (close (persistent-service-stream service) :abort t)))
 
 (defgeneric persistent-service-ok (persistent-service)
   (:documentation "Returns T if the service is still ok, i.e. can be

@@ -149,6 +149,7 @@
    :*running-from-command-line*
 
    :persistent-service :call-persistent-service
+   :reconnect
    :close-persistent-service :persistent-service-ok))
    
 

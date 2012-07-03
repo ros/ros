@@ -44,6 +44,13 @@ install(DIRECTORY include/
         FILES_MATCHING PATTERN "*.h"
         PATTERN ".svn" EXCLUDE)
 
+install(PROGRAMS
+        scripts/mux_add
+        scripts/mux_delete
+        scripts/mux_list
+        scripts/mux_select
+        DESTINATION share/topic_tools/scripts)
+
 #Testing
 add_gtest(${PROJECT_NAME}-utest test/utest.cpp)
 target_link_libraries(${PROJECT_NAME}-utest topic_tools)

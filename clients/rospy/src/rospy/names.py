@@ -179,6 +179,7 @@ def resolve_name(name, caller_id=None):
     if not name: #empty string resolves to namespace
         return namespace(caller_id)
 
+    name = str(name)  # enforce string conversion else struct.pack might raise UnicodeDecodeError (see #3998)
     name = canonicalize_name(name)
     if name[0] == SEP: #global name
         resolved_name = name

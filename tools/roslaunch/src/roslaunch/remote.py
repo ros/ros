@@ -90,7 +90,7 @@ class ROSRemoteRunner(roslaunch.launch.ROSRemoteRunnerIF):
         self.logger.info("remote[%s] starting roslaunch", name)
         printlog("remote[%s] starting roslaunch"%name)
             
-        p = SSHChildROSLaunchProcess(self.run_id, name, server_node_uri, machine)
+        p = SSHChildROSLaunchProcess(self.run_id, name, server_node_uri, machine, self.rosconfig.master.uri)
         success = p.start()
         self.pm.register(p)
         if not success: #treat as fatal

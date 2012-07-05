@@ -41,6 +41,7 @@ import socket
 import traceback
 import xmlrpclib
 
+import rosgraph
 from roslaunch.core import printlog, printerrlog
 import roslaunch.pmon
 import roslaunch.server
@@ -122,7 +123,7 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
     """
     Process wrapper for launching and monitoring a child roslaunch process over SSH
     """
-    def __init__(self, run_id, name, server_uri, machine):
+    def __init__(self, run_id, name, server_uri, machine, master_uri=None):
         """
         :param machine: Machine instance. Must be fully configured.
             machine.env_loader is required to be set.
@@ -133,6 +134,7 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
         # env is always empty dict because we only use env_loader
         super(SSHChildROSLaunchProcess, self).__init__(name, args, {})
         self.machine = machine
+        self.master_uri = master_uri
         self.ssh = self.sshin = self.sshout = self.ssherr = None
         self.started = False
         self.uri = None
@@ -144,6 +146,9 @@ class SSHChildROSLaunchProcess(roslaunch.server.ChildROSLaunchProcess):
         """
         :returns: (ssh pipes, message).  If error occurs, returns (None, error message).
         """
+        if self.master_uri:
+            env_command = 'env %s=%s' % (rosgraph.ROS_MASTER_URI, self.master_uri)
+            command = '%s %s' % (env_command, command)
         try:
             import Crypto
         except ImportError as e:

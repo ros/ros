@@ -55,6 +55,7 @@ except ImportError:
 from optparse import OptionParser
 import rosgraph
 import rosgraph.names
+import rostopic
 
 NAME='rosnode'
 ID = '/rosnode'
@@ -98,6 +99,15 @@ def get_api_uri(master, caller_id):
         except socket.error:
             raise ROSNodeIOException("Unable to communicate with master!")
     return caller_api
+
+def lookup_uri(master, system_state, topic, uri):
+    for l in system_state[0:2]:
+        for entry in l:
+            if entry[0] == topic:
+                for n in entry[1]:
+                    if rostopic.get_api(master, n) == uri:
+                        return '%s (%s)' % (n, uri)
+    return uri
 
 def get_node_names(namespace=None):
     """
@@ -488,10 +498,11 @@ def get_node_info_description(node_name):
         
     return buff
 
-def get_node_connection_info_description(node_api):
+def get_node_connection_info_description(node_api, master):
     #turn down timeout on socket library
     socket.setdefaulttimeout(5.0)
     node = xmlrpclib.ServerProxy(node_api)
+    system_state = master.getSystemState()
 
     try:
         pid = _succeed(node.getPid(ID))
@@ -514,7 +525,7 @@ def get_node_connection_info_description(node_api):
                     buff += " * topic: %s\n"%topic
 
                     # older ros publisher implementations don't report a URI
-                    buff += "    * to: %s\n"%dest_id
+                    buff += "    * to: %s\n"%lookup_uri(master, system_state, topic, dest_id)
                     if direction == 'i':
                         buff += "    * direction: inbound\n"
                     elif direction == 'o':
@@ -553,7 +564,7 @@ def rosnode_info(node_name):
     
     print("\ncontacting node %s ..."%node_api)
 
-    print(get_node_connection_info_description(node_api))
+    print(get_node_connection_info_description(node_api, master))
 
 # backwards compatibility (deprecated)
 rosnode_debugnode = rosnode_info

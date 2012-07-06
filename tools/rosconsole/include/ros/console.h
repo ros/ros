@@ -324,12 +324,13 @@ ROSCONSOLE_DECL std::string formatToString(const char* fmt, ...);
 #define ROSCONSOLE_PRINT_AT_LOCATION(...) \
     ROSCONSOLE_PRINT_AT_LOCATION_WITH_FILTER(0, __VA_ARGS__)
 
+// inside a macro which uses args use only well namespaced variable names in order to not overlay variables coming in via args
 #define ROSCONSOLE_PRINT_STREAM_AT_LOCATION_WITH_FILTER(filter, args) \
   do \
   { \
-    std::stringstream ss; \
-    ss << args; \
-    ::ros::console::print(filter, loc.logger_, loc.level_, ss, __FILE__, __LINE__, __ROSCONSOLE_FUNCTION__); \
+    std::stringstream __rosconsole_print_stream_at_location_with_filter__ss__; \
+    __rosconsole_print_stream_at_location_with_filter__ss__ << args; \
+    ::ros::console::print(filter, loc.logger_, loc.level_, __rosconsole_print_stream_at_location_with_filter__ss__, __FILE__, __LINE__, __ROSCONSOLE_FUNCTION__); \
   } while (0)
 
 #define ROSCONSOLE_PRINT_STREAM_AT_LOCATION(args) \
@@ -392,6 +393,7 @@ ROSCONSOLE_DECL std::string formatToString(const char* fmt, ...);
     } \
   } while(0)
 
+// inside a macro which uses args use only well namespaced variable names in order to not overlay variables coming in via args
 /**
  * \brief Log to a given named logger at a given verbosity level, only the first time it is hit when enabled, with printf-style formatting
  *
@@ -402,10 +404,10 @@ ROSCONSOLE_DECL std::string formatToString(const char* fmt, ...);
   do \
   { \
     ROSCONSOLE_DEFINE_LOCATION(true, level, name); \
-    static bool hit = false; \
-    if (ROS_UNLIKELY(enabled) && ROS_UNLIKELY(!hit)) \
+    static bool __ros_log_stream_once__hit__ = false; \
+    if (ROS_UNLIKELY(enabled) && ROS_UNLIKELY(!__ros_log_stream_once__hit__)) \
     { \
-      hit = true; \
+      __ros_log_stream_once__hit__ = true; \
       ROSCONSOLE_PRINT_STREAM_AT_LOCATION(args); \
     } \
   } while(0)
@@ -430,6 +432,7 @@ ROSCONSOLE_DECL std::string formatToString(const char* fmt, ...);
     } \
   } while(0)
 
+// inside a macro which uses args use only well namespaced variable names in order to not overlay variables coming in via args
 /**
  * \brief Log to a given named logger at a given verbosity level, limited to a specific rate of printing, with printf-style formatting
  *
@@ -441,11 +444,11 @@ ROSCONSOLE_DECL std::string formatToString(const char* fmt, ...);
   do \
   { \
     ROSCONSOLE_DEFINE_LOCATION(true, level, name); \
-    static double last_hit = 0.0; \
-    ::ros::Time now = ::ros::Time::now(); \
-    if (ROS_UNLIKELY(enabled) && ROS_UNLIKELY(last_hit + rate <= now.toSec())) \
+    static double __ros_log_stream_throttle__last_hit__ = 0.0; \
+    ::ros::Time __ros_log_stream_throttle__now__ = ::ros::Time::now(); \
+    if (ROS_UNLIKELY(enabled) && ROS_UNLIKELY(__ros_log_stream_throttle__last_hit__ + rate <= __ros_log_stream_throttle__now__.toSec())) \
     { \
-      last_hit = now.toSec(); \
+      __ros_log_stream_throttle__last_hit__ = __ros_log_stream_throttle__now__.toSec(); \
       ROSCONSOLE_PRINT_STREAM_AT_LOCATION(args); \
     } \
   } while(0)

@@ -505,6 +505,17 @@ def print_runner_summary(runner_results, junit_results, runner_name='ROSUNIT'):
 
     print buff.getvalue()
 
+def _format_errors(errors):
+    formatted = []
+    for e in errors:
+        if '_testMethodName' in e[0].__dict__:
+            formatted.append(e[0]._testMethodName)
+        elif 'description' in e[0].__dict__:
+            formatted.append('%s: %s\n' % (str(e[0].description), str(e[1])))
+        else:
+            formatted.append(str(e[0].__dict__))
+    return formatted
+
 def print_unittest_summary(result):
     """
     Print summary of python unittest result to stdout
@@ -517,7 +528,7 @@ def print_unittest_summary(result):
     else:
         buff.write(" * RESULT: FAIL\n")
     buff.write(" * TESTS: %s\n"%result.testsRun)
-    buff.write(" * ERRORS: %s [%s]\n"%(len(result.errors), ', '.join([e[0]._testMethodName for e in result.errors])))
-    buff.write(" * FAILURES: %s [%s]\n"%(len(result.failures), ','.join([e[0]._testMethodName for e in result.failures])))
+    buff.write(" * ERRORS: %s [%s]\n"%(len(result.errors), ', '.join(_format_errors(result.errors))))
+    buff.write(" * FAILURES: %s [%s]\n"%(len(result.failures), ', '.join(_format_errors(result.failures))))
     print buff.getvalue()
 

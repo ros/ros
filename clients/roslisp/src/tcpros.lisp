@@ -367,7 +367,7 @@
   (tcpros-write request stream)
   (let ((ok-byte (read-byte stream)))
     (unless (eq ok-byte 1)
-      (error 'service-call-error-message
+      (error 'service-call-error
              :message (handler-case
                           (deserialize-string stream)
                         ;; TODO(lorenz): don't catch all errors.

@@ -52,19 +52,19 @@
 
 (defun encode-float-bits (float sign-byte exponent-byte mantissa-byte bias)
   (multiple-value-bind (original-mantissa original-exponent sign)
-(integer-decode-float (float float 0d0))
+      (integer-decode-float (float float 0d0))
     (multiple-value-bind (mantissa exponent) (scale original-mantissa
-original-exponent (1+ (byte-size mantissa-byte)))
+                                                    original-exponent (1+ (byte-size mantissa-byte)))
       (incf exponent (byte-size mantissa-byte))
       (when (zerop mantissa)
         (setf exponent (- bias)))
       (when (<= exponent (- bias))
         (setf (values mantissa exponent) (denormalize original-mantissa
-original-exponent bias mantissa-byte)))
+                                                      original-exponent bias mantissa-byte)))
       (incf exponent bias)
       (when (> (integer-length exponent) (byte-size exponent-byte))
         (setf mantissa 0 exponent (ldb (byte (byte-size exponent-byte) 0)
-(lognot 0))))
+                                       (lognot 0))))
       (let ((result 0))
         (setf (ldb sign-byte result) (if (plusp sign) 0 1))
         (setf (ldb exponent-byte result) exponent)
@@ -85,7 +85,7 @@ original-exponent bias mantissa-byte)))
           (if (zerop exponent)
               (setf exponent (- 1 bias (byte-size mantissa-byte)))
               (setf exponent (- (- exponent (byte-size mantissa-byte))
-bias)))
+                                bias)))
           (float (* sign (* mantissa (expt 2 exponent))) 0d0)))))
 
 (defun scale-integer (value bits)
@@ -98,12 +98,12 @@ bias)))
 (defun scale (mantissa exponent mantissa-bits)
   "Scale an integer value so it fits in the given number of bits."
   (multiple-value-bind (mantissa scale) (scale-integer mantissa
-mantissa-bits)
+                                                       mantissa-bits)
     (values mantissa (- exponent scale))))
 
 (defun denormalize (mantissa exponent bias mantissa-byte)
   (multiple-value-bind (mantissa exponent) (scale mantissa exponent
-(byte-size mantissa-byte))
+                                                  (byte-size mantissa-byte))
     (incf exponent (byte-size mantissa-byte))
     (values (ash mantissa (- exponent (1+ (- bias)))) (- bias))))
 

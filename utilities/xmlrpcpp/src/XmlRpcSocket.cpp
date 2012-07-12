@@ -265,7 +265,7 @@ XmlRpcSocket::nbWrite(int fd, std::string& s, int *bytesSoFar)
 #if defined(_WINDOWS)
     int n = send(fd, sp, nToWrite, 0);
 #else
-    int n = write(fd, sp, nToWrite);
+    int n = send(fd, sp, nToWrite, MSG_NOSIGNAL);
 #endif
     XmlRpcUtil::log(5, "XmlRpcSocket::nbWrite: send/write returned %d.", n);
 

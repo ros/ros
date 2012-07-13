@@ -37,7 +37,11 @@
 import socket
 import threading
 import time
-import xmlrpclib
+
+try:
+    from xmlrpc.client import ServerProxy  # Python 3.x
+except ImportError:
+    from xmlrpclib import ServerProxy  # Python 2.x
 
 from rospy.core import logwarn, logerr, logdebug, rospyerr
 import rospy.exceptions
@@ -175,7 +179,7 @@ def robust_connect_subscriber(conn, dest_addr, dest_port, pub_uri, receive_cb, r
 
 def check_if_still_publisher(resolved_topic_name, pub_uri):
     try:
-        s = xmlrpclib.ServerProxy(pub_uri)
+        s = ServerProxy(pub_uri)
         code, msg, val = s.getPublications(rospy.names.get_name())
         if code == 1:
             return len([t for t in val if t[0] == resolved_topic_name]) > 0

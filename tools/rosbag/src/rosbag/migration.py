@@ -32,7 +32,10 @@
 
 import collections
 import copy
-from cStringIO import StringIO
+try:
+    from cStringIO import StringIO  # Python 2.x
+except ImportError:
+    from io import StringIO  # Python 3.x
 import inspect
 import itertools
 import os

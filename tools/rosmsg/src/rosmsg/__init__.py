@@ -356,7 +356,10 @@ def rosmsg_cmd_prototype(args):
 
 #### Start of rosmsg ####
 
-from cStringIO import StringIO
+try:
+    from cStringIO import StringIO  # Python 2.x
+except ImportError:
+    from io import StringIO  # Python 3.x
 def spec_to_str(msg_context, spec, buff=None, indent=''):
     """
     Convert spec into a string representation. Helper routine for MsgSpec.

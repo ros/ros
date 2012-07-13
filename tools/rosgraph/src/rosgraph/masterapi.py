@@ -37,7 +37,10 @@ Master directly using XML-RPC, this API provides a safer abstraction in the even
 the Master API is changed.
 """
 
-import xmlrpclib
+try:
+    from xmlrpc.client import ServerProxy  # Python 3.x
+except ImportError:
+    from xmlrpclib import ServerProxy  # Python 2.x
 
 from . names import make_caller_id
 from . rosenv import get_master_uri
@@ -115,7 +118,7 @@ class Master(object):
             raise ValueError("invalid master URI: %s"%(master_uri))
 
         self.master_uri = master_uri
-        self.handle = xmlrpclib.ServerProxy(self.master_uri)
+        self.handle = ServerProxy(self.master_uri)
         
     def is_online(self):
         """

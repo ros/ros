@@ -50,9 +50,9 @@ import time
 import yaml
 
 try:
-    from cStringIO import StringIO # Python 2.x
+    from cStringIO import StringIO  # Python 2.x
 except ImportError:
-    from io import StringIO # Python 3.x
+    from io import StringIO  # Python 3.x
 
 import genmsg
 import genpy
@@ -726,8 +726,8 @@ class Bag(object):
                 return None
 
             def print_yaml(val, indent=0):
-            	indent_str = '  ' * indent
-            	
+                indent_str = '  ' * indent
+
                 if type(val) is list:
                     s = ''
                     for item in val:
@@ -736,11 +736,11 @@ class Bag(object):
                 elif type(val) is DictObject:
                     s = ''
                     for i, (k, v) in enumerate(val.__dict__.items()):
-                    	if i != 0:
-                    		s += indent_str
+                        if i != 0:
+                            s += indent_str
                         s += '%s: %s' % (k, str(v))
                         if i < len(val.__dict__) - 1:
-                        	s += '\n'
+                            s += '\n'
                     return s
                 else:
                     return indent_str + str(val)

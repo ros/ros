@@ -33,5 +33,5 @@
 from .bag import Bag, Compression, ROSBagException, ROSBagFormatException, ROSBagUnindexedException
 
 # Import rosbag main to be used by the rosbag executable
-from rosbag_main import rosbagmain
+from .rosbag_main import rosbagmain
 

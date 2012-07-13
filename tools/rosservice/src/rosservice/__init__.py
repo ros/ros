@@ -49,7 +49,10 @@ import os
 import sys
 import socket
 
-from cStringIO import StringIO
+try:
+    from cStringIO import StringIO  # Python 2.x
+except ImportError:
+    from io import StringIO  # Python 3.x
 
 import genpy
 
@@ -421,12 +424,12 @@ def call_service(service_name, service_args, service_class=None):
         raise ROSServiceException("Incompatible arguments to call service:\n%s\nProvided arguments are:\n%s\n\nService arguments are: [%s]"%(e, argsummary(service_args), genpy.message.get_printable_message_args(request)))
     try:
         return request, rospy.ServiceProxy(service_name, service_class)(request)
-    except rospy.ServiceException, e:
+    except rospy.ServiceException as e:
         raise ROSServiceException(str(e))
     except genpy.SerializationError as e:
         raise ROSServiceException("Unable to send request. One of the fields has an incorrect type:\n"+\
                                       "  %s\n\nsrv file:\n%s"%(e, rosmsg.get_srv_text(service_class._type)))
-    except rospy.ROSSerializationException, e:
+    except rospy.ROSSerializationException as e:
         raise ROSServiceException("Unable to send request. One of the fields has an incorrect type:\n"+\
                                       "  %s\n\nsrv file:\n%s"%(e, rosmsg.get_srv_text(service_class._type)))
 
@@ -560,7 +563,7 @@ def _rosservice_cmd_call(argv):
     """
     try:
         import yaml
-    except ImportError, e:
+    except ImportError as e:
         raise ROSServiceException("Cannot import yaml. Please make sure the pyyaml system dependency is installed")
 
     args = argv[2:]
@@ -610,7 +613,7 @@ def _rosservice_cmd_call(argv):
                     service_args = [service_args]
                 try:
                     _rosservice_call(service_name, service_args, verbose=options.verbose, service_class=service_class)
-                except ValueError, e:
+                except ValueError as e:
                     print(str(e), file=sys.stderr)
                     break
     else:

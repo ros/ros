@@ -169,7 +169,10 @@ class ROSTopicHz(object):
 
             self.last_printed_tn = self.msg_tn
         print("average rate: %.3f\n\tmin: %.3fs max: %.3fs std dev: %.5fs window: %s"%(rate, min_delta, max_delta, std_dev, n+1))
-    
+
+def _sleep(duration):
+    rospy.rostime.wallsleep(duration)
+
 def _rostopic_hz(topic, window_size=-1, filter_expr=None):
     """
     Periodically print the publishing rate of a topic to console until
@@ -192,7 +195,7 @@ def _rostopic_hz(topic, window_size=-1, filter_expr=None):
         sub = rospy.Subscriber(real_topic, rospy.AnyMsg, rt.callback_hz)        
     print("subscribed to [%s]"%real_topic)
     while not rospy.is_shutdown():
-        time.sleep(1.0)
+        _sleep(1.0)
         rt.print_hz()
     
 class ROSTopicBandwidth(object):
@@ -265,7 +268,7 @@ def _rostopic_bw(topic, window_size=-1):
     sub = rospy.Subscriber(real_topic, rospy.AnyMsg, rt.callback)
     print("subscribed to [%s]"%real_topic)
     while not rospy.is_shutdown():
-        time.sleep(1.0)
+        _sleep(1.0)
         rt.print_bw()
 
 # TODO: port to the version I wrote for rxplot instead as it should be more efficient
@@ -335,7 +338,7 @@ def get_topic_type(topic, blocking=False):
             if topic_type:
                 return topic_type, real_topic, msg_eval
             else:
-                time.sleep(0.1)
+                _sleep(0.1)
     return None, None, None
 
 def get_topic_class(topic, blocking=False):
@@ -676,7 +679,7 @@ def _rostopic_echo(topic, callback_echo, bag_file=None, echo_all_topics=False):
                     callback_echo.count == 0 and \
                     not rospy.is_shutdown() and \
                     not callback_echo.done:
-                time.sleep(0.1)
+                _sleep(0.1)
 
             if callback_echo.count == 0 and \
                     not rospy.is_shutdown() and \
@@ -684,7 +687,7 @@ def _rostopic_echo(topic, callback_echo, bag_file=None, echo_all_topics=False):
                 sys.stderr.write("WARNING: no messages received and simulated time is active.\nIs /clock being published?\n")
 
         while not rospy.is_shutdown() and not callback_echo.done:
-            time.sleep(0.1)
+            _sleep(0.1)
 
 _caller_apis = {}
 def get_api(master, caller_id):
@@ -1356,7 +1359,7 @@ SUBSCRIBER_TIMEOUT = 5.
 def wait_for_subscriber(pub, timeout):
     timeout_t = time.time() + timeout
     while pub.get_num_connections() == 0 and timeout_t > time.time():
-        time.sleep(0.01)
+        _sleep(0.01)
 
 def param_publish_once(pub, msg_class, param_name, verbose):
     if not rospy.has_param(param_name):

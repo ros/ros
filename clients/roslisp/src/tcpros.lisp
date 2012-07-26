@@ -374,7 +374,9 @@
                         (error nil))))
     (let ((len (deserialize-int stream)))
       (declare (ignore len))
-      (deserialize response-type stream))))
+      (prog1
+          (deserialize response-type stream)
+        (assert (not (listen stream)) () "Still bytes in the stream. It seems like we went out of sync.")))))
 
 (defun tcpros-call-service (hostname port service-name req response-type)
   (check-type hostname string)

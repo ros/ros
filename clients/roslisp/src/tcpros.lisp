@@ -364,6 +364,12 @@
   ((message :initarg :message :reader service-call-error-message)))
 
 (defun tcpros-do-service-request (stream request response-type)
+  ;; Clear the input stream. In case the service call uses a
+  ;; persistent service and the service call got interrupted after the
+  ;; request has been sent, it can happen that the result is still in
+  ;; the stream. Get rid of all old results before sending another
+  ;; request.
+  (clear-input stream)
   (tcpros-write request stream)
   (let ((ok-byte (read-byte stream)))
     (unless (eq ok-byte 1)

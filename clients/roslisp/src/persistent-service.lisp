@@ -36,7 +36,8 @@
    (service-name :initarg :service-name)
    (service-type :initarg :service-type)
    (lock :reader persistent-service-lock
-         :initform (sb-thread:make-mutex :name (gensym "PERSISTENT-SERVICE-LOCK")))))
+         :initform (sb-thread:make-mutex
+                    :name (symbol-name (gensym "PERSISTENT-SERVICE-LOCK"))))))
 
 (defgeneric call-persistent-service (service &rest request)
   (:method ((service persistent-service) &rest request)

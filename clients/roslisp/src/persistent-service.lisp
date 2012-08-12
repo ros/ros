@@ -34,24 +34,27 @@
    (request-type :reader persistent-service-request-type)
    (response-type :reader persistent-service-response-type)
    (service-name :initarg :service-name)
-   (service-type :initarg :service-type)))
+   (service-type :initarg :service-type)
+   (lock :reader persistent-service-lock
+         :initform (sb-thread:make-mutex :name (gensym "PERSISTENT-SERVICE-LOCK")))))
 
 (defgeneric call-persistent-service (service &rest request)
   (:method ((service persistent-service) &rest request)
-    (with-slots (stream socket request-type response-type)
+    (with-slots (stream socket request-type response-type lock)
         service
       (block nil
         (loop do
           (restart-case
-              (cond ((and (eql (length request) 1)
-                          (typep (car request) request-type))
-                     (return
-                       (tcpros-do-service-request stream (car request) response-type)))
-                    (t
-                     (return
-                       (tcpros-do-service-request
-                        stream (apply #'make-instance request-type request)
-                        response-type))))
+              (sb-thread:with-mutex (lock)
+                (cond ((and (eql (length request) 1)
+                            (typep (car request) request-type))
+                       (return
+                         (tcpros-do-service-request stream (car request) response-type)))
+                      (t
+                       (return
+                         (tcpros-do-service-request
+                          stream (apply #'make-instance request-type request)
+                          response-type)))))
             (reconnect ()
               :report "Try reconnecting persistent service and execute
              the call again."

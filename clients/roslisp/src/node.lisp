@@ -250,7 +250,7 @@ Assuming spin is not true, this call will return the return value of the final s
       
       (ros-info (roslisp top) "Shutdown complete")
       (close *ros-log-stream*)
-      (when *running-from-command-line* (sb-ext:exit)))))
+      (when *running-from-command-line* (sb-ext:quit)))))
 
 (defun maybe-shutdown-ros-node ()
   (unless (eq *node-status* :shutdown)

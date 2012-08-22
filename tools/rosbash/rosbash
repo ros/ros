@@ -219,22 +219,16 @@ function rosls {
 
 # sets arg as return value
 function _roscmd {
-    local pkgdir exepath opt catkin_source_dir catkin_binary_dir opts
-    if [[ -n $CATKIN_SOURCE_DIR ]]; then
-        catkin_source_dir=`ROS_ROOT=$CATKIN_SOURCE_DIR ROS_PACKAGE_PATH= _ros_package_find $1`
-    fi 
-    if [[ -n $CATKIN_BINARY_DIR && -f $CATKIN_BINARY_DIR/etc/packages.list ]]; then
-        cbd=`grep $1 $CATKIN_BINARY_DIR/etc/packages.list | cut -d " " -f 2`
-        if [[ -n $cbd ]]; then
-          catkin_binary_dir=$CATKIN_BINARY_DIR/$cbd
-        fi
-    fi 
+    local pkgdir exepath opt catkin_project_libexec_dir opts
+    if [[ -n $CATKIN_WORKSPACES ]]; then
+        catkin_project_libexec_dir=`catkin-find $1 --libexec 2> /dev/null`
+    fi
     pkgdir=`_ros_package_find $1`
-    if [[ -z $catkin_source_dir && -z $catkin_binary_dir && -z $pkgdir ]]; then
+    if [[ -z $catkin_project_libexec_dir && -z $pkgdir ]]; then
         echo "Couldn't find package [$1]"
         return 1
     fi
-    exepath=(`find -L $catkin_source_dir $catkin_binary_dir $pkgdir -name $2 -type f ! -regex .*/[.].* ! -regex .*$pkgdir\/build\/.* | uniq`)
+    exepath=(`find -L $catkin_project_libexec_dir $pkgdir -name $2 -type f ! -regex .*/[.].* ! -regex .*$pkgdir\/build\/.* | uniq`)
     if [[ ${#exepath[@]} == 0 ]] ; then
         echo "That file does not exist in that package."
         return 1
@@ -423,18 +417,12 @@ function _roscomplete_search_dir {
         COMPREPLY=($(compgen -W "${opts}" -- ${arg}))
         unset IFS
     elif [[ $COMP_CWORD == 2 ]]; then
-        if [[ -n "$CATKIN_SOURCE_DIR" ]]; then
-            catkin_source_dir=`ROS_ROOT=$CATKIN_SOURCE_DIR ROS_PACKAGE_PATH= _ros_package_find ${COMP_WORDS[1]}`
-        fi 
-        if [[ -n $CATKIN_BINARY_DIR && -f $CATKIN_BINARY_DIR/etc/packages.list ]]; then
-            cbd=`grep ${COMP_WORDS[1]} $CATKIN_BINARY_DIR/etc/packages.list | cut -d " " -f 2`
-            if [[ -n $cbd ]]; then
-              catkin_binary_dir=$CATKIN_BINARY_DIR/$cbd
-            fi
-        fi 
+        if [[ -n $CATKIN_WORKSPACES ]]; then
+            catkin_project_libexec_dir=`catkin-find ${COMP_WORDS[1]} --libexec 2> /dev/null`
+        fi
         pkgdir=`_ros_package_find ${COMP_WORDS[1]}`
-        if [[ -n "$catkin_source_dir" || -n "$catkin_binary_dir" || -n "$pkgdir" ]]; then
-            opts=`_rosfind -L $catkin_source_dir $catkin_binary_dir $pkgdir ${1} ! -regex ".*/[.].*" ! -regex ".*$pkgdir\/build\/.*"  -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
+        if [[ -n "$catkin_project_libexec_dir_dir" || -n "$pkgdir" ]]; then
+            opts=`_rosfind -L $catkin_project_libexec_dir $pkgdir ${1} ! -regex ".*/[.].*" ! -regex ".*$pkgdir\/build\/.*"  -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
         else
             opts=""
         fi

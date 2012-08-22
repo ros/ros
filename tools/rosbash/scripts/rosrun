@@ -21,24 +21,18 @@ case $2 in
 esac 
 # basename also makes .//foo into foo 
 basename=`basename $2`
-if [[ -n $CATKIN_SOURCE_DIR ]]; then
-    catkin_source_dir=`ROS_ROOT=$CATKIN_SOURCE_DIR ROS_PACKAGE_PATH= rospack find $1`
-fi 
-if [[ -n $CATKIN_BINARY_DIR && -f $CATKIN_BINARY_DIR/etc/packages.list ]]; then
-    cbd=`grep $1 $CATKIN_BINARY_DIR/etc/packages.list | cut -d " " -f 2`
-    if [[ -n $cbd ]]; then
-      catkin_binary_dir=$CATKIN_BINARY_DIR/$cbd
-    fi
-fi 
+if [[ -n $CATKIN_WORKSPACES ]]; then
+    catkin_project_libexec_dir=`catkin-find $1 --libexec 2> /dev/null`
+fi
 pkgdir=`rospack find $1`
-if [[ -z $catkin_source_dir && -z $catkin_binary_dir && -z $pkgdir ]]; then
+if [[ -z $catkin_project_libexec_dir && -z $pkgdir ]]; then
     exit 2
 fi
 if [[ ! $2 == */* ]]; then 
   # The -perm /mode usage is not available in find on the Mac
   #exepathlist=(`find $pkgdir -name $2 -type f -perm /u+x,g+x,o+x`)
   # -L: #3475
-  exepathlist=(`find -L $catkin_source_dir $catkin_binary_dir $pkgdir -name $2 -type f  -perm +111 ! -regex ".*$pkgdir\/build\/.*" | uniq`)
+  exepathlist=(`find -L $catkin_project_libexec_dir $pkgdir -name $2 -type f  -perm +111 ! -regex ".*$pkgdir\/build\/.*" | uniq`)
   if [[ ${#exepathlist[@]} == 0 ]] ; then
     echo "[rosrun] Couldn't find executable named $2 below $pkgdir"
     nonexepathlist=(`find -H $pkgdir -name $2`)

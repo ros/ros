@@ -1,5 +1,5 @@
 macro(rosunit_initialize_tests)
-  if(rosunit_SOURCE_DIR)
+  if (@PKG_BUILDSPACE@)
     find_program_required(ROSUNIT_EXE rosunit
                           PATHS @PROJECT_SOURCE_DIR@/scripts
                           NO_DEFAULT_PATH)

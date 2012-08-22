@@ -1,8 +1,7 @@
 project(roslib)
-find_package(catkin REQUIRED)
-find_package(ROS REQUIRED COMPONENTS rospack rosunit)
+find_package(catkin REQUIRED COMPONENTS rospack rosunit)
 
-include_directories(include ${Boost_INCLUDE_DIRS} ${ROS_INCLUDE_DIRS})
+include_directories(include ${Boost_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS})
 
 # Avoid a boost warning that pops up when using msvc compiler
 if(MSVC)
@@ -10,7 +9,7 @@ if(MSVC)
 endif()
 
 add_library(roslib src/package.cpp)
-target_link_libraries(roslib ${Boost_LIBRARIES} ${ROS_LIBRARIES})
+target_link_libraries(roslib ${Boost_LIBRARIES} ${catkin_LIBRARIES})
 
 if(NOT (APPLE OR WIN32 OR MINGW))
   target_link_libraries(roslib rt)
@@ -38,7 +37,11 @@ catkin_project(roslib
 #integration tests
 
 add_gtest(${PROJECT_NAME}-utest test/utest.cpp)
-target_link_libraries(${PROJECT_NAME}-utest roslib ${Boost_LIBRARIES} ${ROS_LIBRARIES})
+if(TARGET ${PROJECT_NAME}-utest)
+  target_link_libraries(${PROJECT_NAME}-utest roslib ${Boost_LIBRARIES} ${catkin_LIBRARIES})
+endif()
 
 add_gtest(${PROJECT_NAME}-test_package test/package.cpp)
-target_link_libraries(${PROJECT_NAME}-test_package roslib ${ROS_LIBRARIES})
+if(TARGET ${PROJECT_NAME}-test_package)
+  target_link_libraries(${PROJECT_NAME}-test_package roslib ${catkin_LIBRARIES})
+endif()

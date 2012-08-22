@@ -9,8 +9,9 @@ catkin_stack()
 # add_gtest(), which is called from within lower-level CMakeLists.txts.
 catkin_python_setup()
 
+catkin_add_env_hooks(10.ros SHELLS bat sh DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks)
+
 foreach(subdir
-    env-hooks
     tools/rosunit
     core/roslib
     tools/rosbash
@@ -21,7 +22,7 @@ endforeach()
 # nosetests are declared here to make them visible to the build system
 # (e.g., for Jenkins to invoke) but keep them from polluting the pristine
 # Python packages.
-find_package(ROS COMPONENTS rosunit)
+find_package(catkin COMPONENTS rosunit)
 add_nosetests(core/roslib/test)
 add_nosetests(tools/rosmake/test)
 add_nosetests(tools/rosunit/test)

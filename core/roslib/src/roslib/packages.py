@@ -46,6 +46,7 @@ import string
 
 from subprocess import Popen, PIPE
 
+from catkin.find_in_workspaces import find_in_workspaces as catkin_find
 import rospkg
 
 import roslib.manifest
@@ -384,7 +385,7 @@ def list_pkgs_by_path(path, packages=None, cache=None, env=None):
             
     return packages
 
-def find_node(pkg, node_type, rospack=None, catkin_packages_cache=None):
+def find_node(pkg, node_type, rospack=None):
     """
     Warning: unstable API due to catkin.
 
@@ -397,40 +398,12 @@ def find_node(pkg, node_type, rospack=None, catkin_packages_cache=None):
 
     if rospack is None:
         rospack = rospkg.RosPack()
-    return find_resource(pkg, node_type, filter_fn=_executable_filter,
-                             rospack=rospack, catkin_packages_cache=catkin_packages_cache)
+    return find_resource(pkg, node_type, filter_fn=_executable_filter, rospack=rospack)
 
 def _executable_filter(test_path):
     s = os.stat(test_path)
     return (s.st_mode & (stat.S_IRUSR | stat.S_IXUSR) == (stat.S_IRUSR | stat.S_IXUSR))
-    
-# TODO: this routine really belongs in catkin
-def _load_catkin_packages_cache(catkin_packages_cache, env=None):
-    """
-    env[CATKIN_BINARY_DIR] *must* be set
 
-    :param env: OS environment (defaults to os.environ if None/not set)
-    :param catkin_packages_cache: dictionary to read cache into.
-      Contents of dictionary will be replaced if cache is read. ``dict``
-
-    :raises: :exc:`KeyError` if env[CATKIN_BINARY_DIR] is not set
-    """
-    if env is None:
-        env=os.environ
-    prefix = env[CATKIN_BINARY_DIR]
-    cache_file = os.path.join(prefix, 'etc', 'packages.list')
-    if os.path.isfile(cache_file):
-        catkin_packages_cache.clear()
-        with open(cache_file, 'r') as f:
-            for l in f.readlines():
-                l = l.strip()
-                # Example:
-                # rosconsole ros_comm/tools/rosconsole\n
-                if not l:
-                    continue
-                idx = l.find(' ')
-                catkin_packages_cache[l[:idx]] = os.path.join(prefix, l[idx+1:])
-    
 def _find_resource(d, resource_name, filter_fn=None):
     """
     subroutine of find_resource
@@ -485,7 +458,7 @@ def _find_resource(d, resource_name, filter_fn=None):
 # TODO: this routine really belongs in rospkg, but the catkin-isms really, really don't
 # belong in rospkg.  With more thought, they can probably be abstracted out so as
 # to no longer be catkin-specific. 
-def find_resource(pkg, resource_name, filter_fn=None, rospack=None, catkin_packages_cache=None):
+def find_resource(pkg, resource_name, filter_fn=None, rospack=None):
     """
     Warning: unstable API due to catkin.
 
@@ -499,7 +472,6 @@ def find_resource(pkg, resource_name, filter_fn=None, rospack=None, catkin_packa
     :param filter: function that takes in a path argument and
         returns True if the it matches the desired resource, ``fn(str)``
     :param rospack: `rospkg.RosPack` instance to use
-    :param catkin_packages_cache: dictionary for caching catkin packages.list
     :returns: lists of matching paths for resource within a given scope, ``[str]``
     :raises: :exc:`rospkg.ResourceNotFound` If package does not exist 
     """
@@ -515,21 +487,19 @@ def find_resource(pkg, resource_name, filter_fn=None, rospack=None, catkin_packa
 
     if rospack is None:
         rospack = rospkg.RosPack()
-    if catkin_packages_cache is None:
-        catkin_packages_cache = {}
-        
+
     # lookup package as it *must* exist
     pkg_path = rospack.get_path(pkg)
-    
-    # load catkin packages list, if necessary
-    if CATKIN_BINARY_DIR in os.environ and not catkin_packages_cache:
-        _load_catkin_packages_cache(catkin_packages_cache)
 
     # if found in binary dir, start with that.  in any case, use matches
     # from ros_package_path
     matches = []
-    if pkg in catkin_packages_cache:
-        matches.extend(_find_resource(catkin_packages_cache[pkg], resource_name, filter_fn=filter_fn))
+    for search_in in ['libexec', 'share']:
+        try:
+            search_path = catkin_find(pkg, search_in=[search_in])
+            matches.extend(_find_resource(search_path, resource_name, filter_fn=filter_fn))
+        except RuntimeError:
+            pass
     matches.extend(_find_resource(pkg_path, resource_name, filter_fn=filter_fn))
     # Uniquify the results, in case we found the same file twice
     return list(set(matches))

@@ -8,9 +8,7 @@ install(PROGRAMS scripts/rosrun
 message(STATUS "   Making toplevel forward script for bash script rosrun")
 set(BASH_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/scripts/rosrun)
 configure_file(${catkin_EXTRAS_DIR}/templates/script.bash.in
-  ${CMAKE_BINARY_DIR}/bin/rosrun
+  ${catkin_BUILD_PREFIX}/bin/rosrun
   @ONLY)
 
-catkin_add_env_hooks(15.rosbash
-  SHELLS bash zsh
-  )
+catkin_add_env_hooks(15.rosbash SHELLS bash tcsh zsh)

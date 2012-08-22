@@ -1,0 +1,6 @@
+if @ENV_BUILDSPACE@; then
+    . @CMAKE_CURRENT_SOURCE_DIR@/rostcsh
+fi
+if @ENV_INSTALLSPACE@; then
+    . @CMAKE_INSTALL_PREFIX@/share/rosbash/rostcsh
+fi

@@ -1,2 +1,6 @@
-. @CMAKE_INSTALL_PREFIX@/share/rosbash/roszsh
-
+if @ENV_BUILDSPACE@; then
+    . @CMAKE_CURRENT_SOURCE_DIR@/roszsh
+fi
+if @ENV_INSTALLSPACE@; then
+    . @CMAKE_INSTALL_PREFIX@/share/rosbash/roszsh
+fi

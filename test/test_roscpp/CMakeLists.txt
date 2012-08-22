@@ -17,9 +17,11 @@ add_service_files(
 )
 generate_messages(DEPENDENCIES std_msgs rosgraph_msgs)
 
-find_package(ROS COMPONENTS roscpp xmlrpcpp rosconsole rostest)
-include_directories(${ROS_INCLUDE_DIRS})
-add_subdirectory(src)
+find_package(catkin COMPONENTS roscpp xmlrpcpp rosconsole rostest)
+include_directories(${catkin_INCLUDE_DIRS})
+if(GTEST_FOUND)
+  add_subdirectory(src)
+endif()
 
 add_rostest(test/real_time_test.xml)
 add_rostest(test/sim_time_test.xml)

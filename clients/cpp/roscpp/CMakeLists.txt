@@ -1,11 +1,11 @@
 project(roscpp)
 
-find_package(ROS REQUIRED COMPONENTS
-  catkin genmsg
+find_package(catkin REQUIRED COMPONENTS
+  genmsg
   cpp_common rostime rosconsole roscpp_serialization
   roscpp_traits std_msgs rosgraph_msgs xmlrpcpp rosunit
   )
-include_directories(${ROS_INCLUDE_DIRS})
+include_directories(${catkin_INCLUDE_DIRS})
 
 find_package(Boost REQUIRED COMPONENTS signals filesystem system)
 
@@ -72,10 +72,10 @@ add_library(roscpp
   src/libros/this_node.cpp
   )
 
-add_dependencies(roscpp roscpp_gencpp rosgraph_msgs_gencpp)
+add_dependencies(roscpp roscpp_gencpp rosgraph_msgs_gencpp std_msgs_gencpp)
 
 target_link_libraries(roscpp
-  ${ROS_LIBRARIES}
+  ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
   )
 
@@ -119,7 +119,9 @@ catkin_project(roscpp
   )
 
 add_gtest(${PROJECT_NAME}-test_version test/test_version.cpp)
-target_link_libraries(${PROJECT_NAME}-test_version)
+if(TARGET ${PROJECT_NAME}-test_version)
+  target_link_libraries(${PROJECT_NAME}-test_version)
+endif()
 
 # WARNING test_spinners is not actually run.  This is because this
 # infrastructure won't let me pass arguments from here through to
@@ -127,29 +129,46 @@ target_link_libraries(${PROJECT_NAME}-test_version)
 # also the output of test_spinners has to be visually inspected
 # because there is no automatic way to ensure that an error condition
 # provokes a particular message.
-include_directories(${GTEST_INCLUDE_DIRS})
-add_executable(${PROJECT_NAME}-test_spinners EXCLUDE_FROM_ALL test/test_spinners.cpp)
-add_dependencies(tests ${PROJECT_NAME}-test_spinners) 
-target_link_libraries(${PROJECT_NAME}-test_spinners roscpp ${GTEST_LIBRARIES})
+if(GTEST_FOUND)
+  include_directories(${GTEST_INCLUDE_DIRS})
+  add_executable(${PROJECT_NAME}-test_spinners EXCLUDE_FROM_ALL test/test_spinners.cpp)
+  add_dependencies(tests ${PROJECT_NAME}-test_spinners) 
+endif()
+if(TARGET ${PROJECT_NAME}-test_spinners)
+  target_link_libraries(${PROJECT_NAME}-test_spinners roscpp ${GTEST_LIBRARIES})
+endif()
 
 add_gtest(${PROJECT_NAME}-test_header test/test_header.cpp)
-target_link_libraries(${PROJECT_NAME}-test_header roscpp)
+if(TARGET ${PROJECT_NAME}-test_header)
+  target_link_libraries(${PROJECT_NAME}-test_header roscpp)
+endif()
 
 add_gtest(${PROJECT_NAME}-test_poll_set test/test_poll_set.cpp)
-target_link_libraries(${PROJECT_NAME}-test_poll_set roscpp)
+if(TARGET ${PROJECT_NAME}-test_poll_set)
+  target_link_libraries(${PROJECT_NAME}-test_poll_set roscpp)
+endif()
 
 add_gtest(${PROJECT_NAME}-test_transport_tcp test/test_transport_tcp.cpp)
-target_link_libraries(${PROJECT_NAME}-test_transport_tcp roscpp)
+if(TARGET ${PROJECT_NAME}-test_transport_tcp)
+  target_link_libraries(${PROJECT_NAME}-test_transport_tcp roscpp)
+endif()
 
 add_gtest(${PROJECT_NAME}-test_subscription_queue test/test_subscription_queue.cpp)
-target_link_libraries(${PROJECT_NAME}-test_subscription_queue roscpp)
+if(TARGET ${PROJECT_NAME}-test_subscription_queue)
+  target_link_libraries(${PROJECT_NAME}-test_subscription_queue roscpp)
+endif()
 
 add_gtest(${PROJECT_NAME}-test_callback_queue test/test_callback_queue.cpp)
-target_link_libraries(${PROJECT_NAME}-test_callback_queue roscpp)
+if(TARGET ${PROJECT_NAME}-test_callback_queue)
+  target_link_libraries(${PROJECT_NAME}-test_callback_queue roscpp)
+endif()
 
 add_gtest(${PROJECT_NAME}-test_names test/test_names.cpp)
-target_link_libraries(${PROJECT_NAME}-test_names roscpp)
+if(TARGET ${PROJECT_NAME}-test_names)
+  target_link_libraries(${PROJECT_NAME}-test_names roscpp)
+endif()
 
 add_gtest(${PROJECT_NAME}-test_args test/test_args.cpp)
-target_link_libraries(${PROJECT_NAME}-test_args roscpp)
-
+if(TARGET ${PROJECT_NAME}-test_args)
+  target_link_libraries(${PROJECT_NAME}-test_args roscpp)
+endif()

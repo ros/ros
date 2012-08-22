@@ -19,6 +19,7 @@
   <review status="Doc reviewed"/>
   <url>http://ros.org/wiki/roscpp</url>
   <depend package="roslang"/>
+  <depend package="std_msgs"/>
   <export>
     <cpp cflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --cflags roscpp`"
          lflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --libs roscpp`"/>

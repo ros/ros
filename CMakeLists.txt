@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 project(ros_comm)
-find_package(catkin REQUIRED)
-find_package(ROS REQUIRED COMPONENTS genmsg cpp_common rostime
+find_package(catkin REQUIRED COMPONENTS genmsg cpp_common rostime
   roscpp_serialization roscpp_traits std_msgs rosunit
   )
 catkin_stack()

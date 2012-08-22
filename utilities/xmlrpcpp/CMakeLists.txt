@@ -5,8 +5,8 @@ catkin_project(xmlrpcpp
   LIBRARIES xmlrpcpp
   )
 
-find_package(ROS COMPONENTS catkin cpp_common)
-include_directories(${ROS_INCLUDE_DIRS})
+find_package(catkin REQUIRED COMPONENTS cpp_common)
+include_directories(${catkin_INCLUDE_DIRS})
 
 include_directories(src)
 

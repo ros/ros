@@ -4,13 +4,13 @@ catkin_project(rosbag
   INCLUDE_DIRS include
   )
 
-find_package(ROS REQUIRED COMPONENTS cpp_common roscpp_serialization roscpp rosconsole xmlrpcpp topic_tools rosunit rostest)
+find_package(catkin REQUIRED COMPONENTS cpp_common roscpp_serialization roscpp rosconsole xmlrpcpp topic_tools rosunit rostest rosgraph_msgs)
 find_package(Boost REQUIRED COMPONENTS regex program_options)
 find_package(BZip2 REQUIRED)
 # Support large bags (>2GB) on 32-bit systems
 add_definitions(-D_FILE_OFFSET_BITS=64)
 
-include_directories(include ${BZIP2_INCLUDE_DIR} ${ROS_INCLUDE_DIRS} ${roscpp_INCLUDE_DIRS})
+include_directories(include ${BZIP2_INCLUDE_DIR} ${catkin_INCLUDE_DIRS} ${roscpp_INCLUDE_DIRS})
 add_definitions(${BZIP2_DEFINITIONS})
 
 add_library(rosbag 
@@ -18,7 +18,7 @@ add_library(rosbag
   src/message_instance.cpp src/player.cpp
   src/query.cpp src/recorder.cpp src/stream.cpp src/time_translator.cpp
   src/uncompressed_stream.cpp src/view.cpp)
-target_link_libraries(rosbag ${ROS_LIBRARIES} ${Boost_LIBRARIES} ${BZIP2_LIBRARIES})
+target_link_libraries(rosbag ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${BZIP2_LIBRARIES})
 
 add_executable(record src/record.cpp)
 target_link_libraries(record rosbag)
@@ -64,7 +64,9 @@ add_pyunit(test/test_bag.py)
 configure_file(test/test_bag.cpp.in 
                ${PROJECT_BINARY_DIR}/test/test_bag.cpp)
 add_gtest(test_bag ${PROJECT_BINARY_DIR}/test/test_bag.cpp)
-target_link_libraries(test_bag rosbag)
+if(TARGET test_bag)
+  target_link_libraries(test_bag rosbag)
+endif()
 
 configure_file(test/play_play.test.in 
                ${PROJECT_BINARY_DIR}/test/play_play.test)
@@ -80,5 +82,7 @@ add_rostest(test/record_one_publisher_two_topics.test)
 
 include_directories(${GTEST_INCLUDE_DIRS})
 add_executable(double_pub EXCLUDE_FROM_ALL test/double_pub.cpp)
-target_link_libraries(double_pub ${GTEST_LIBRARIES} ${ROS_LIBRARIES})
-add_dependencies(tests double_pub)
+target_link_libraries(double_pub ${GTEST_LIBRARIES} ${catkin_LIBRARIES})
+if(TARGET tests)
+  add_dependencies(tests double_pub)
+endif()

@@ -1,7 +1,7 @@
-find_package(ROS COMPONENTS catkin)
+find_package(catkin REQUIRED)
 
 function(add_rostest file)
-  if(rostest_SOURCE_DIR)
+  if (@PKG_BUILDSPACE@)
     find_program_required(ROSTEST_EXE rostest 
                           PATHS @PROJECT_SOURCE_DIR@/scripts
                           NO_DEFAULT_PATH)
@@ -12,7 +12,7 @@ function(add_rostest file)
   endif()
 
   parse_arguments(_rosunit "WORKING_DIRECTORY" "" ${ARGN})
-  # HACK: set ROS_TEST_RESULTS_DIR so that rostest puts results where we
+  # HACK: set CATKINROS_TEST_RESULTS_DIR so that rostest puts results where we
   # expect them to be.
   set(_rtrd_setting "ROS_TEST_RESULTS_DIR=${CATKIN_TEST_RESULTS_DIR}")
   if(_rosunit_WORKING_DIRECTORY)

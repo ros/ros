@@ -5,27 +5,27 @@ catkin_project(topic_tools
   DEPENDS roscpp rosconsole xmlrpcpp rostime
   )
 include_directories(include)
-find_package(ROS COMPONENTS cpp_common roscpp rosconsole xmlrpcpp rosunit rostest rostime)
-include_directories(${ROS_INCLUDE_DIRS})
+find_package(catkin COMPONENTS cpp_common roscpp rosconsole xmlrpcpp rosunit rostest rostime)
+include_directories(${catkin_INCLUDE_DIRS})
 
 add_library(topic_tools src/shape_shifter.cpp src/parse.cpp)
-target_link_libraries(topic_tools ${ROS_LIBRARIES})
+target_link_libraries(topic_tools ${catkin_LIBRARIES})
 
 add_executable(switch_mux src/switch_mux.cpp)
-target_link_libraries(switch_mux topic_tools ${ROS_LIBRARIES})
+target_link_libraries(switch_mux topic_tools ${catkin_LIBRARIES})
 
 add_executable(mux src/mux.cpp)
-target_link_libraries(mux topic_tools ${ROS_LIBRARIES})
+target_link_libraries(mux topic_tools ${catkin_LIBRARIES})
 add_dependencies(topic_tools topic_tools_gencpp)
 
 add_executable(relay src/relay.cpp)
-target_link_libraries(relay topic_tools ${ROS_LIBRARIES})
+target_link_libraries(relay topic_tools ${catkin_LIBRARIES})
 
 add_executable(drop src/drop.cpp)
-target_link_libraries(drop topic_tools ${ROS_LIBRARIES})
+target_link_libraries(drop topic_tools ${catkin_LIBRARIES})
 
 add_executable(throttle src/throttle.cpp)
-target_link_libraries(throttle topic_tools ${ROS_LIBRARIES})
+target_link_libraries(throttle topic_tools ${catkin_LIBRARIES})
 
 add_service_files(DIRECTORY srv
   FILES MuxAdd.srv MuxDelete.srv MuxList.srv MuxSelect.srv
@@ -53,12 +53,18 @@ install(PROGRAMS
 
 #Testing
 add_gtest(${PROJECT_NAME}-utest test/utest.cpp)
-target_link_libraries(${PROJECT_NAME}-utest topic_tools)
+if(TARGET ${PROJECT_NAME}-utest)
+  target_link_libraries(${PROJECT_NAME}-utest topic_tools)
+endif()
 
-include_directories(${GTEST_INCLUDE_DIRS})
-add_executable(${PROJECT_NAME}-test_shapeshifter EXCLUDE_FROM_ALL test/test_shapeshifter.cpp)
-target_link_libraries(${PROJECT_NAME}-test_shapeshifter ${GTEST_LIBRARIES} topic_tools)
-add_dependencies(tests ${PROJECT_NAME}-test_shapeshifter)
+if(GTEST_FOUND)
+  include_directories(${GTEST_INCLUDE_DIRS})
+  add_executable(${PROJECT_NAME}-test_shapeshifter EXCLUDE_FROM_ALL test/test_shapeshifter.cpp)
+  target_link_libraries(${PROJECT_NAME}-test_shapeshifter ${GTEST_LIBRARIES} topic_tools)
+endif()
+if(TARGET tests)
+  add_dependencies(tests ${PROJECT_NAME}-test_shapeshifter)
+endif()
 
 add_rostest(test/shapeshifter.test)
 add_rostest(test/throttle.test)

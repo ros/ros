@@ -1,2 +1,0 @@
-
-export ROSLISP_PACKAGE_DIRECTORY=@CMAKE_INSTALL_PREFIX@/share/common-lisp/ros

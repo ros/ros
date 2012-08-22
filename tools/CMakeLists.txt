@@ -1,5 +1,5 @@
-find_package(ROS REQUIRED COMPONENTS roscpp rosconsole xmlrpcpp)
-include_directories(${ROS_INCLUDE_DIRS})
+find_package(catkin REQUIRED COMPONENTS roscpp rosconsole xmlrpcpp)
+include_directories(${catkin_INCLUDE_DIRS})
 
 foreach(subdir
     # rosconsole can NOT go here since roscpp depends on it.

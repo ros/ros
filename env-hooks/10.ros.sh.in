@@ -1,20 +1,36 @@
 # generated from ros/env-hooks/10.ros.sh.in
 
 # scrub old ROS bin dirs, to avoid accidentally finding the wrong executables
-PATH=`python -c "import os; print(os.pathsep.join([x for x in \"$PATH\".split(os.pathsep) if not any([d for d in ['cturtle', 'diamondback', 'electric', 'fuerte'] if d in x])]))"`
+export PATH=`python -c "import os; print(os.pathsep.join([x for x in \"$PATH\".split(os.pathsep) if not any([d for d in ['cturtle', 'diamondback', 'electric', 'fuerte'] if d in x])]))"`
 
 export ROS_DISTRO=groovy
 if [ ! "$ROS_MASTER_URI" ] ; then
     export ROS_MASTER_URI=http://localhost:11311
 fi
 
+# python function to generate ROS package path based on all workspaces
+PYTHON_CODE_BUILD_ROS_PACKAGE_PATH=$(cat <<EOF
+from __future__ import print_function
+import os
+env_name = 'CATKIN_WORKSPACES'
+items = os.environ[env_name].split(';') if env_name in os.environ and os.environ[env_name] != '' else []
+paths = []
+for item in items:
+    if item.find(':') != -1:
+        paths.append(item.split(':')[1])
+    else:
+        path.append(os.path.join(item, 'share'))
+        path.append(os.path.join(item, 'stacks'))
+print(':'.join(paths))
+EOF
+)
+export ROS_PACKAGE_PATH=`python -c "$PYTHON_CODE_BUILD_ROS_PACKAGE_PATH"`
+
 if @ENV_BUILDSPACE@; then
-    export ROS_PACKAGE_PATH=@CMAKE_SOURCE_DIR@
     export ROS_ROOT=@CMAKE_CURRENT_SOURCE_DIR@
     export ROS_ETC_DIR=@catkin_BUILD_PREFIX@/etc/ros
 fi
 if @ENV_INSTALLSPACE@; then
-    export ROS_PACKAGE_PATH=@CMAKE_INSTALL_PREFIX@/share:@CMAKE_INSTALL_PREFIX@/stacks
     export ROS_ROOT=@CMAKE_INSTALL_PREFIX@/share/ros
     export ROS_ETC_DIR=@CMAKE_INSTALL_PREFIX@/etc/ros
 fi

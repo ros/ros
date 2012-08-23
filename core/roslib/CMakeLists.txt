@@ -36,6 +36,9 @@ catkin_project(roslib
 
 #integration tests
 
+include_directories(${GTEST_INCLUDE_DIRS})
+link_directories(${GTEST_LIBRARY_DIRS})
+
 add_gtest(${PROJECT_NAME}-utest test/utest.cpp)
 if(TARGET ${PROJECT_NAME}-utest)
   target_link_libraries(${PROJECT_NAME}-utest roslib ${Boost_LIBRARIES} ${catkin_LIBRARIES})

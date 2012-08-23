@@ -1,4 +1,5 @@
 <stack>
+  <name>foo</name>
   <description brief="foo">
      foo
   </description>
@@ -7,6 +8,7 @@
      1.6.0-manifest
   </version>
   <license>BSD</license>
+  <copyright/>
 </stack>
 
 

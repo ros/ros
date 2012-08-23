@@ -72,7 +72,7 @@ class RoslibPackagesTest(unittest.TestCase):
     self.assertEquals((None, None), roslib.packages.get_dir_pkg(os.path.dirname(path)))
     
 def get_roslib_path():
-    return os.path.abspath(os.path.join(get_test_path(), '..'))
+    return os.path.realpath(os.path.abspath(os.path.join(get_test_path(), '..')))
 
 def get_test_path():
     return os.path.abspath(os.path.dirname(__file__))

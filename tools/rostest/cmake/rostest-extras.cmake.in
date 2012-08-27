@@ -4,23 +4,14 @@ function(add_rostest file)
   if (@PKG_BUILDSPACE@)
     find_program_required(ROSTEST_EXE rostest 
                           PATHS @PROJECT_SOURCE_DIR@/scripts
-                          NO_DEFAULT_PATH)
+                          NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
   else()
     find_program_required(ROSTEST_EXE rostest 
                           PATHS @CMAKE_INSTALL_PREFIX@/bin
-                          NO_DEFAULT_PATH)
+                          NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
   endif()
 
-  parse_arguments(_rosunit "WORKING_DIRECTORY" "" ${ARGN})
-  # HACK: set CATKINROS_TEST_RESULTS_DIR so that rostest puts results where we
-  # expect them to be.
-  set(_rtrd_setting "ROS_TEST_RESULTS_DIR=${CATKIN_TEST_RESULTS_DIR}")
-  if(_rosunit_WORKING_DIRECTORY)
-    set(_chdir_prefix "bash -c \"cd ${_rosunit_WORKING_DIRECTORY} && ${_rtrd_setting} ")
-  else()
-    set(_chdir_prefix "bash -c \"${_rtrd_setting} ")
-  endif()
- set(_chdir_suffix "\"")
+  parse_arguments(_rostest "WORKING_DIRECTORY" "" ${ARGN})
 
   # Check that the file exists, #1621
   set(_file_name _file_name-NOTFOUND)
@@ -39,6 +30,6 @@ function(add_rostest file)
   string(REPLACE "/" "_" _testname ${file})
   get_filename_component(_output_name ${_testname} NAME_WE)
   set(_output_name "${_output_name}.xml")
-  append_test_to_cache(catkin-tests "${_chdir_prefix}${ROSTEST_EXE} --pkgdir=${PROJECT_SOURCE_DIR} --package=${PROJECT_NAME} ${_file_name}${_chdir_suffix}")
-  append_test_to_cache(catkin-tests "${CHECK_TEST_RAN_EXE} ${CATKIN_TEST_RESULTS_DIR}/${PROJECT_NAME}/TEST-rostest__${_output_name}")
+  set(cmd "${ROSTEST_EXE} --pkgdir=${PROJECT_SOURCE_DIR} --package=${PROJECT_NAME} ${_file_name}")
+  catkin_run_tests_target("rostest" ${_testname} "rostest-${_output_name}" COMMAND ${cmd} WORKING_DIRECTORY ${_rostest_WORKING_DIRECTORY})
 endfunction()

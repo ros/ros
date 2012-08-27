@@ -21,10 +21,6 @@ function(add_pyunit file)
   if(NOT _pyunit_TIMEOUT)
     set(_pyunit_TIMEOUT 60.0)
   endif()
-  if(_pyunit_WORKING_DIRECTORY)
-    set(_chdir_prefix "bash -c \"cd ${_pyunit_WORKING_DIRECTORY} && ")
-    set(_chdir_suffix "\"")
-  endif()
 
   # Check that the file exists, #1621
   set(_file_name _file_name-NOTFOUND)
@@ -51,7 +47,7 @@ function(add_pyunit file)
   # Create a legal test name, in case the target name has slashes in it
   string(REPLACE "/" "_" _testname ${file})
   # We use rostest to call the executable to get process control, #1629
-  append_test_to_cache(catkin-tests "${_chdir_prefix}${ROSUNIT_EXE} --name=${_testname} --time-limit=${_pyunit_TIMEOUT} --package=${PROJECT_NAME} -- ${_file_name} ${_covarg}${_chdir_suffix}")
-  append_test_to_cache(catkin-tests "${CHECK_TEST_RAN_EXE} ${CMAKE_BINARY_DIR}/test_results/${PROJECT_NAME}/TEST-${_testname}.xml")
+  set(cmd "${ROSUNIT_EXE} --name=${_testname} --time-limit=${_pyunit_TIMEOUT} --package=${PROJECT_NAME} -- ${_file_name} ${_covarg}")
+  catkin_run_tests_target("rosunit" ${_testname} "rosunit-${_testname}.xml" COMMAND ${cmd} WORKING_DIRECTORY ${_pyunit_WORKING_DIRECTORY})
 endfunction()
 

@@ -1,8 +1,12 @@
 project(rosconsole)
+find_package(catkin REQUIRED COMPONENTS cpp_common rostime rosunit)
 catkin_project(rosconsole
   LIBRARIES rosconsole
   INCLUDE_DIRS include
+  CFG_EXTRAS rosconsole-extras.cmake
   )
+
+include(cmake/rosconsole-extras.cmake.in)
 
 # See ticket: https://code.ros.org/trac/ros/ticket/3626
 # On mac use g++-4.2
@@ -14,8 +18,6 @@ IF(${CMAKE_SYSTEM} MATCHES "Darwin-11.*")
     set(CMAKE_CXX_COMPILER /usr/bin/clang++)
   ENDIF(EXISTS "/usr/bin/g++-4.2")
 ENDIF(${CMAKE_SYSTEM} MATCHES "Darwin-11.*")
-
-find_package(catkin REQUIRED COMPONENTS cpp_common rostime rosunit)
 
 include_directories(${catkin_INCLUDE_DIRS})
 

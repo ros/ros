@@ -107,9 +107,9 @@ def xml_results_file(test_pkg, test_name, is_rostest=False):
         if c in test_name:
             test_name = test_name.replace(c, '_')
     if is_rostest:
-        return os.path.join(test_dir, 'TEST-rostest__%s.xml'%test_name)
+        return os.path.join(test_dir, 'rostest-%s.xml'%test_name)
     else:
-        return os.path.join(test_dir, 'TEST-%s.xml'%test_name)        
+        return os.path.join(test_dir, 'rosunit-%s.xml'%test_name)
     
 def rostest_name_from_path(pkg_dir, test_file):
     """
@@ -156,5 +156,6 @@ def create_xml_runner(test_pkg, test_name, results_file=None, is_rostest=False):
     
     print "[ROSUNIT] Outputting test results to %s"%results_file
     outstream = open(results_file, 'w')
+    outstream.write('<?xml version="1.0" encoding="utf-8"?>\n')
     return XMLTestRunner(stream=outstream)
     

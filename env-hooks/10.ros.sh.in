@@ -19,8 +19,8 @@ for item in items:
     if item.find(':') != -1:
         paths.append(item.split(':')[1])
     else:
-        path.append(os.path.join(item, 'share'))
-        path.append(os.path.join(item, 'stacks'))
+        paths.append(os.path.join(item, 'share'))
+        paths.append(os.path.join(item, 'stacks'))
 print(':'.join(paths))
 EOF
 )

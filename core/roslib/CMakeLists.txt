@@ -2,6 +2,7 @@ project(roslib)
 find_package(catkin REQUIRED COMPONENTS rospack rosunit)
 
 include_directories(include ${Boost_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS})
+link_directories(${catkin_LIBRARY_DIRS})
 
 # Avoid a boost warning that pops up when using msvc compiler
 if(MSVC)

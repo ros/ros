@@ -5,6 +5,9 @@ find_package(catkin REQUIRED COMPONENTS genmsg cpp_common rostime
   )
 catkin_stack()
 
+include_directories(${catkin_INCLUDE_DIRS})
+link_directories(${catkin_LIBRARY_DIRS})
+
 # Must call catkin_python_setup() before recursing into subdirs
 # so that rostest is available in build-space
 # before anybody calls add_rostest().

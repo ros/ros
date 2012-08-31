@@ -1,14 +1,14 @@
 cmake_minimum_required(VERSION 2.8)
 project(xmlrpcpp)
 catkin_project(xmlrpcpp
-  INCLUDE_DIRS src
+  INCLUDE_DIRS include
   LIBRARIES xmlrpcpp
   )
 
 find_package(catkin REQUIRED COMPONENTS cpp_common)
 include_directories(${catkin_INCLUDE_DIRS})
 
-include_directories(src)
+include_directories(include)
 
 if(WIN32)
   add_definitions(-D_WINDOWS)
@@ -31,7 +31,7 @@ if(WIN32)
 endif()
 
 message("TODO: consider moving xmlrpcpp's headers into a subdirectory")
-install(DIRECTORY src/
+install(DIRECTORY include/
         DESTINATION include
         FILES_MATCHING PATTERN "*.h"
         PATTERN ".svn" EXCLUDE)

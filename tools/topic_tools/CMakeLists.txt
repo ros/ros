@@ -34,22 +34,20 @@ add_service_files(DIRECTORY srv
 generate_messages(DEPENDENCIES std_msgs)
 
 install(TARGETS topic_tools switch_mux mux relay drop throttle
-    ARCHIVE DESTINATION lib
-    LIBRARY DESTINATION lib
-    RUNTIME DESTINATION share/topic_tools/bin
-    )
+  ARCHIVE DESTINATION ${PROJECT_LIB_DESTINATION}
+  LIBRARY DESTINATION ${PROJECT_LIB_DESTINATION}
+  RUNTIME DESTINATION ${PROJECT_LIBEXEC_DESTINATION})
 
 install(DIRECTORY include/
-        DESTINATION include
-        FILES_MATCHING PATTERN "*.h"
-        PATTERN ".svn" EXCLUDE)
+  DESTINATION ${PROJECT_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h")
 
 install(PROGRAMS
-        scripts/mux_add
-        scripts/mux_delete
-        scripts/mux_list
-        scripts/mux_select
-        DESTINATION share/topic_tools/scripts)
+  scripts/mux_add
+  scripts/mux_delete
+  scripts/mux_list
+  scripts/mux_select
+  DESTINATION ${PROJECT_LIBEXEC_DESTINATION})
 
 #Testing
 add_gtest(${PROJECT_NAME}-utest test/utest.cpp)

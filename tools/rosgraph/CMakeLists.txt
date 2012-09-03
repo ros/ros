@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(rosgraph)
 find_package(catkin REQUIRED COMPONENTS rostest)
+catkin_project(rosgraph)
 
 add_rostest(test/rostest/masterapi.test)
 
@@ -8,11 +9,8 @@ add_rostest(test/rostest/masterapi.test)
 # want to get rid of package layout copy, but need to be able to
 # locate etc first.
 install(FILES conf/python_logging.conf
-  DESTINATION etc/ros
-  )
+  DESTINATION etc/ros)
 install(FILES conf/python_logging.conf
-  DESTINATION share/rosgraph/conf
-  )
+  DESTINATION ${PROJECT_SHARE_DESTINATION}/conf)
 install(PROGRAMS scripts/rosgraph
-  DESTINATION share/rosgraph/scripts
-  )
+  DESTINATION share/rosgraph/scripts)

@@ -30,27 +30,25 @@ target_link_libraries(play rosbag)
 #target_link_libraries(example_write rosbag)
 
 install(DIRECTORY include/
-        DESTINATION include
-        FILES_MATCHING PATTERN "*.h"
-        PATTERN ".svn" EXCLUDE)
+  DESTINATION ${PROJECT_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h")
 install(TARGETS rosbag record play
-        RUNTIME DESTINATION share/rosbag/bin
-        ARCHIVE DESTINATION lib
-        LIBRARY DESTINATION lib)
+  ARCHIVE DESTINATION {PROJECT_LIB_DESTINATION}
+  LIBRARY DESTINATION ${PROJECT_LIB_DESTINATION}
+  RUNTIME DESTINATION ${PROJECT_LIBEXEC_DESTINATION})
 install(PROGRAMS
-        scripts/bag2png.py
-        scripts/bagsort.py
-        scripts/fastrebag.py
-        scripts/fixbag.py
-        scripts/fixbag_batch.py
-        scripts/fix_md5sums.py
-        scripts/fix_moved_messages.py
-        scripts/fix_msg_defs.py
-        scripts/makerule.py
-        scripts/savemsg.py
-        scripts/topic_renamer.py
-        DESTINATION share/rosbag/bin
-        )
+  scripts/bag2png.py
+  scripts/bagsort.py
+  scripts/fastrebag.py
+  scripts/fixbag.py
+  scripts/fixbag_batch.py
+  scripts/fix_md5sums.py
+  scripts/fix_moved_messages.py
+  scripts/fix_msg_defs.py
+  scripts/makerule.py
+  scripts/savemsg.py
+  scripts/topic_renamer.py
+  DESTINATION ${PROJECT_LIBEXEC_DESTINATION})
 
 download_test_data(http://pr.willowgarage.com/data/rosbag/test_indexed_1.2.bag
   test/test_indexed_1.2.bag 523cc0deb66269c84be4a7c605ff5eb3)

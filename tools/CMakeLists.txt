@@ -21,5 +21,4 @@ foreach(subdir
 endforeach()
 
 install(PROGRAMS rosservice/scripts/rosservice
-  DESTINATION share/rosservice/scripts
-  )
+  DESTINATION lib/rosservice)

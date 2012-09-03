@@ -39,13 +39,12 @@ endif()
 target_link_libraries(rosconsole ${catkin_LIBRARIES} ${LOG4CXX_LIBRARIES} ${Boost_LIBRARIES})
 
 install(TARGETS rosconsole
-    ARCHIVE DESTINATION lib
-    LIBRARY DESTINATION lib)
+  ARCHIVE DESTINATION ${PROJECT_LIB_DESTINATION}
+  LIBRARY DESTINATION ${PROJECT_LIB_DESTINATION})
 
 install(DIRECTORY include/
-        DESTINATION include
-        FILES_MATCHING PATTERN "*.h"
-        PATTERN ".svn" EXCLUDE)
+  DESTINATION ${PROJECT_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h")
 
 add_gtest(${PROJECT_NAME}-utest test/utest.cpp)
 if(TARGET ${PROJECT_NAME}-utest)

@@ -30,6 +30,5 @@ install(PROGRAMS nodes/hztest
   DESTINATION share/rostest/nodes/hztest
   )
 install(DIRECTORY include/
-        DESTINATION include
-        FILES_MATCHING PATTERN "*.h"
-        PATTERN ".svn" EXCLUDE)
+  DESTINATION ${PROJECT_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h")

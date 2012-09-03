@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 2.8)
 project(ros_comm)
 find_package(catkin REQUIRED COMPONENTS genmsg cpp_common rostime
-  roscpp_serialization roscpp_traits std_msgs rosunit
-  )
+  roscpp_serialization roscpp_traits std_msgs rosunit)
 catkin_stack()
+catkin_project(ros_comm)
 
 include_directories(${catkin_INCLUDE_DIRS})
 link_directories(${catkin_LIBRARY_DIRS})
@@ -70,10 +70,3 @@ install(PROGRAMS
         clients/cpp/roscpp/rosbuild/scripts/genmsg_cpp.py
         clients/cpp/roscpp/rosbuild/scripts/gensrv_cpp.py
         DESTINATION share/roscpp/rosbuild/scripts)
-
-# install all manifests
-install_matching_to_share(manifest.xml)
-
-install(FILES stack.xml
-        DESTINATION share/ros_comm)
-

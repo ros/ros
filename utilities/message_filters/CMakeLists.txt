@@ -1,25 +1,25 @@
 project(message_filters)
+find_package(catkin REQUIRED COMPONENTS roscpp xmlrpcpp rosconsole)
 catkin_project(${PROJECT_NAME}
   INCLUDE_DIRS include
   LIBRARIES message_filters
   DEPENDS roscpp xmlrpcpp rosconsole
 )
-find_package(Boost COMPONENTS signals thread)
-find_package(catkin COMPONENTS roscpp xmlrpcpp rosconsole)
+find_package(Boost REQUIRED COMPONENTS signals thread)
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+link_directories(${catkin_LIBRARY_DIRS})
 
 add_library(${PROJECT_NAME} src/connection.cpp)
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 install(TARGETS ${PROJECT_NAME}
-        ARCHIVE DESTINATION lib
-        LIBRARY DESTINATION lib)
+  ARCHIVE DESTINATION ${PROJECT_LIB_DESTINATION}
+  LIBRARY DESTINATION ${PROJECT_LIB_DESTINATION})
 
 install(DIRECTORY include/
-        DESTINATION include
-        FILES_MATCHING PATTERN "*.h"
-        PATTERN ".svn" EXCLUDE)
+  DESTINATION ${PROJECT_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h")
 
 # Ugly workaround for check_test_ran macro issue
 #add_subdirectory(test)

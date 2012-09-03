@@ -1,5 +1,9 @@
 project(roslib)
 find_package(catkin REQUIRED COMPONENTS rospack rosunit)
+catkin_project(roslib
+  LIBRARIES roslib
+  INCLUDE_DIRS include
+  )
 
 include_directories(include ${Boost_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS})
 link_directories(${catkin_LIBRARY_DIRS})
@@ -19,21 +23,15 @@ endif()
 
 #explicitly install library and includes
 install(TARGETS roslib
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION ${PROJECT_LIB_DESTINATION}
+  LIBRARY DESTINATION ${PROJECT_LIB_DESTINATION}
   )
 
 install(DIRECTORY include/
-        DESTINATION include
-        FILES_MATCHING PATTERN "*.h"
-        PATTERN ".svn" EXCLUDE)
+  DESTINATION ${PROJECT_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h")
 install(PROGRAMS scripts/gendeps
-        DESTINATION share/roslib/bin)
-
-catkin_project(roslib
-  LIBRARIES roslib
-  INCLUDE_DIRS include
-  )
+  DESTINATION share/roslib/bin)
 
 #integration tests
 

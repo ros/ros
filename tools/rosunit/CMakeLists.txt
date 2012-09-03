@@ -4,3 +4,12 @@ find_package(catkin REQUIRED)
 catkin_project(${PROJECT_NAME}
   CFG_EXTRAS ${PROJECT_NAME}-extras.cmake
   )
+
+install(PROGRAMS
+  scripts/test_results_dir.py
+  scripts/summarize_results.py
+  scripts/rosunit
+  scripts/pycoverage_to_html.py
+  scripts/clean_junit_xml.py
+  scripts/check_test_ran.py
+  DESTINATION share/rosunit/bin)

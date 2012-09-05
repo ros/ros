@@ -408,7 +408,7 @@ function _roscomplete_rossrv {
 }
 
 function _roscomplete_search_dir {
-    local arg opts pkgdir catkin_source_dir catkin_binary_dir
+    local arg opts pkgdir catkin_project_libexec_dir
     COMPREPLY=()
     arg="${COMP_WORDS[COMP_CWORD]}"
     if [[ $COMP_CWORD == 1 ]]; then

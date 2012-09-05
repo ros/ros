@@ -52,9 +52,6 @@ import rospkg
 import roslib.manifest
 
 SRC_DIR = 'src'
-# TODO: these really don't belong here
-CATKIN_SOURCE_DIR = 'CATKIN_SOURCE_DIR'
-CATKIN_BINARY_DIR = 'CATKIN_BINARY_DIR'
 
 # aliases
 ROS_PACKAGE_PATH = rospkg.environment.ROS_PACKAGE_PATH

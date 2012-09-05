@@ -40,7 +40,7 @@ import traceback
 
 import rospy.names 
 
-from rospy.core import add_log_handler, get_caller_id
+from rospy.core import get_caller_id
 from rospy.exceptions import ROSException
 from rospy.topics import Publisher, Subscriber
 from rospy.rostime import Time
@@ -68,7 +68,7 @@ def init_rosout():
 
 _in_rosout = False
 ## log an error to the /rosout topic
-def _rosout(level, msg):
+def _rosout(level, msg, fname, line, func):
     global _in_rosout
     try:
         if _rosout_pub is not None:
@@ -78,7 +78,7 @@ def _rosout(level, msg):
                     _in_rosout = True
                     msg = str(msg)
                     topics = get_topic_manager().get_topics()
-                    l = Log(level=level, name=str(rospy.names.get_caller_id()), msg=str(msg), topics=topics)
+                    l = Log(level=level, name=str(rospy.names.get_caller_id()), msg=str(msg), topics=topics, file=fname, line=line, function=func)
                     l.header.stamp = Time.now()
                     _rosout_pub.publish(l)
                 finally:
@@ -90,27 +90,23 @@ def _rosout(level, msg):
         logger.error("Unable to report rosout: %s\n%s", e, traceback.format_exc())
         return False
 
-def _rosout_debug(msg):
-    _rosout(Log.DEBUG, msg)
-def _rosout_info(msg):
-    _rosout(Log.INFO, msg)
-def _rosout_warn(msg):
-    _rosout(Log.WARN, msg)
-def _rosout_error(msg):
-    _rosout(Log.ERROR, msg)
-def _rosout_fatal(msg):
-    _rosout(Log.FATAL, msg)
+_logging_to_rospy_levels = {
+      logging.DEBUG: Log.DEBUG,
+      logging.INFO: Log.INFO,
+      logging.WARNING: Log.WARN,
+      logging.ERROR: Log.ERROR,
+      logging.CRITICAL: Log.FATAL,
+      }
+
+class RosOutHandler(logging.Handler):
+   def emit(self, record):
+      _rosout(_logging_to_rospy_levels[record.levelno], record.getMessage(),
+            record.filename, record.lineno, record.funcName)
 
 ## Load loggers for publishing to /rosout
 ## @param level int: Log level. Loggers >= level will be loaded.
 def load_rosout_handlers(level):
-    if Log.DEBUG >= level:
-        add_log_handler(Log.DEBUG, _rosout_debug)
-    if Log.INFO >= level:
-        add_log_handler(Log.INFO, _rosout_info)
-    if Log.WARN >= level:
-        add_log_handler(Log.WARN, _rosout_warn)
-    if Log.ERROR >= level:
-        add_log_handler(Log.ERROR, _rosout_error)
-    if Log.FATAL >= level:
-        add_log_handler(Log.FATAL, _rosout_fatal)
+    logger = logging.getLogger('rosout')
+    logger.addHandler(RosOutHandler())
+    if level != None:
+        logger.setLevel(level)

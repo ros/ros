@@ -151,7 +151,7 @@ def _init_node_params(argv, node_name):
 
 _init_node_args = None
 
-def init_node(name, argv=None, anonymous=False, log_level=INFO, disable_rostime=False, disable_rosout=False, disable_signals=False):
+def init_node(name, argv=None, anonymous=False, log_level=None, disable_rostime=False, disable_rosout=False, disable_signals=False):
     """
     Register client node with the master under the specified name.
     This MUST be called from the main Python thread unless
@@ -257,7 +257,7 @@ def init_node(name, argv=None, anonymous=False, log_level=INFO, disable_rostime=
         name = "%s_%s_%s"%(name, os.getpid(), int(time.time()*1000))
 
     resolved_node_name = rospy.names.resolve_name(name)
-    rospy.core.configure_logging(resolved_node_name, level=_rospy_to_logging_levels[log_level])
+    rospy.core.configure_logging(resolved_node_name)
     # #1810
     rospy.names.initialize_mappings(resolved_node_name)
     
@@ -278,15 +278,17 @@ def init_node(name, argv=None, anonymous=False, log_level=INFO, disable_rostime=
 
     rospy.core.set_initialized(True)
 
-    rospy.impl.rosout.load_rosout_handlers(log_level)
     if not disable_rosout:
         rospy.impl.rosout.init_rosout()
-    logdebug("init_node, name[%s], pid[%s]", resolved_node_name, os.getpid())    
+        rospy.impl.rosout.load_rosout_handlers(log_level)
+
     if not disable_rostime:
         if not rospy.impl.simtime.init_simtime():
             raise rospy.exceptions.ROSInitException("Failed to initialize time. Please check logs for additional details")
     else:
         rospy.rostime.set_rostime_initialized(True)
+
+    logdebug("init_node, name[%s], pid[%s]", resolved_node_name, os.getpid())    
 
 #_master_proxy is a MasterProxy wrapper
 _master_proxy = None

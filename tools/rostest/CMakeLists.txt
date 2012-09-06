@@ -29,6 +29,6 @@ install(PROGRAMS scripts/roslaunch-check.py
 install(PROGRAMS nodes/hztest
   DESTINATION share/rostest/nodes/hztest
   )
-install(DIRECTORY include/
+install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PROJECT_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h")

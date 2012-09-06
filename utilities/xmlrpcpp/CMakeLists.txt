@@ -31,7 +31,7 @@ endif()
 
 message("TODO: consider moving xmlrpcpp's headers into a subdirectory")
 install(DIRECTORY include/
-  DESTINATION ${CATKIN_PROJECT_INCLUDE_DESTINATION}
+  DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h")
 
 install(TARGETS xmlrpcpp

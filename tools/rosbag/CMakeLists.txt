@@ -29,7 +29,7 @@ target_link_libraries(play rosbag)
 #rosbuild_add_executable(example_write examples/write.cpp)
 #target_link_libraries(example_write rosbag)
 
-install(DIRECTORY include/
+install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PROJECT_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h")
 install(TARGETS rosbag record play

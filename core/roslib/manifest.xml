@@ -9,8 +9,8 @@
   <review status="Doc reviewed" notes="2010/01/12"/>
   <url>http://ros.org/wiki/roslib</url>
   <export>
-    <cpp cflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --cflags roslib`"
-         lflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --libs roslib`"/>
+    <cpp cflags="`pkg-config --cflags roslib`"
+         lflags="`pkg-config --libs roslib`"/>
     <rosdoc config="${prefix}/rosdoc.yaml" />
   </export>
 

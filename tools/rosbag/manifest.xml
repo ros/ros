@@ -9,8 +9,8 @@
   <review status="Doc reviewed" notes="2010/01/20"/>
   <url>http://ros.org/wiki/rosbag</url>
   <export>
-    <cpp cflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --cflags rosbag`"
-         lflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --libs rosbag`"/>
+    <cpp cflags="`pkg-config --cflags rosbag`"
+         lflags="`pkg-config --libs rosbag`"/>
     <rosdoc config="${prefix}/rosdoc.yaml" />
   </export>
   <rosdep name="python-imaging"/>

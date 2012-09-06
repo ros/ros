@@ -10,7 +10,7 @@
   <license>BSD</license>
   <review status="Doc reviewed" notes="2010/01/07"/>
   <export>
-    <cpp cflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --cflags topic_tools`"
-         lflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --libs topic_tools`"/>
+    <cpp cflags="`pkg-config --cflags topic_tools`"
+         lflags="`pkg-config --libs topic_tools`"/>
   </export>
 </package>

@@ -5,8 +5,8 @@
   <author>Josh Faust</author>
   <url>http://www.ros.org/wiki/rosconsole</url>
   <export>
-    <cpp cflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --cflags rosconsole`"
-         lflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --libs rosconsole`"/>
+    <cpp cflags="`pkg-config --cflags rosconsole`"
+         lflags="`pkg-config --libs rosconsole`"/>
   </export>
   <rosdep name="apr"/>
   <rosdep name="log4cxx"/>

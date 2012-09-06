@@ -9,8 +9,8 @@
   <license>BSD</license>
 
   <export>
-    <cpp cflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --cflags rostest`"
-         lflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --libs rostest`"/>
+    <cpp cflags="`pkg-config --cflags rostest`"
+         lflags="`pkg-config --libs rostest`"/>
     <rosdoc config="rosdoc.yaml" />
   </export>
 

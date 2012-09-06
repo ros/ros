@@ -4,8 +4,8 @@
   <license>BSD</license>
   <review status="Doc reviewed" notes=""/>
   <export>
-    <cpp cflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --cflags message_filters`"
-         lflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --libs message_filters`"/>
+    <cpp cflags="`pkg-config --cflags message_filters`"
+         lflags="`pkg-config --libs message_filters`"/>
     <rosdoc config="rosdoc.yaml" />
   </export>
   <url>http://ros.org/wiki/message_filters</url>

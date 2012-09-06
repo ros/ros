@@ -21,8 +21,8 @@
   <depend package="roslang"/>
   <depend package="std_msgs"/>
   <export>
-    <cpp cflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --cflags roscpp`"
-         lflags="`PKG_CONFIG_PATH=${prefix}/../../lib/pkgconfig pkg-config --libs roscpp`"/>
+    <cpp cflags="`pkg-config --cflags roscpp`"
+         lflags="`pkg-config --libs roscpp`"/>
     <roslang cmake="${prefix}/rosbuild/roscpp.cmake"/>
   </export>
   <rosdep name="pkg-config"/>

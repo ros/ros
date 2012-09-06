@@ -41,13 +41,13 @@ foreach(subdir
   add_subdirectory(${subdir})
 endforeach()
 
-add_nosetests(test/test_roslib_comm/test)
-add_nosetests(tools/rosmaster/test)
-add_nosetests(tools/rosmsg/test)
-add_nosetests(tools/rosparam/test)
-add_nosetests(tools/rosgraph/test)
-add_nosetests(tools/roslaunch/test/unit)
-add_nosetests(utilities/roswtf/test)
+catkin_add_nosetests(test/test_roslib_comm/test)
+catkin_add_nosetests(tools/rosmaster/test)
+catkin_add_nosetests(tools/rosmsg/test)
+catkin_add_nosetests(tools/rosparam/test)
+catkin_add_nosetests(tools/rosgraph/test)
+catkin_add_nosetests(tools/roslaunch/test/unit)
+catkin_add_nosetests(utilities/roswtf/test)
 
 # install legacy infrastructure needed by rosbuild
 # rospy

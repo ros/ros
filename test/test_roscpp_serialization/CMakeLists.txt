@@ -32,11 +32,11 @@ add_message_files(
 )
 generate_messages(DEPENDENCIES std_msgs rosgraph_msgs)
 
-add_gtest(${PROJECT_NAME}-serialization src/serialization.cpp)
+catkin_add_gtest(${PROJECT_NAME}-serialization src/serialization.cpp)
 target_link_libraries(${PROJECT_NAME}-serialization ${catkin_LIBRARIES} ${GTEST_LIBRARIES})
 add_dependencies(${PROJECT_NAME}-serialization test_roscpp_serialization_gencpp)
 
-add_gtest(${PROJECT_NAME}-generated_messages src/generated_messages.cpp)
+catkin_add_gtest(${PROJECT_NAME}-generated_messages src/generated_messages.cpp)
 target_link_libraries(${PROJECT_NAME}-generated_messages ${catkin_LIBRARIES} ${GTEST_LIBRARIES})
 add_dependencies(${PROJECT_NAME}-generated_messages test_roscpp_serialization_gencpp)
 

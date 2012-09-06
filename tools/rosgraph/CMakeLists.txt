@@ -9,8 +9,8 @@ add_rostest(test/rostest/masterapi.test)
 # want to get rid of package layout copy, but need to be able to
 # locate etc first.
 install(FILES conf/python_logging.conf
-  DESTINATION etc/ros)
+  DESTINATION ${CATKIN_GLOBAL_ETC_DESTINATION}/ros)
 install(FILES conf/python_logging.conf
-  DESTINATION ${PROJECT_SHARE_DESTINATION}/conf)
+  DESTINATION ${CATKIN_PROJECT_SHARE_DESTINATION}/conf)
 install(PROGRAMS scripts/rosgraph
-  DESTINATION share/rosgraph/scripts)
+  DESTINATION ${CATKIN_PROJECT_BIN_DESTINATION})

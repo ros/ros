@@ -101,23 +101,23 @@ generate_messages()
 
 #explicitly install library and includes
 install(TARGETS roscpp
-  ARCHIVE DESTINATION ${PROJECT_LIB_DESTINATION}
-  LIBRARY DESTINATION ${PROJECT_LIB_DESTINATION})
+  ARCHIVE DESTINATION ${CATKIN_PROJECT_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PROJECT_LIB_DESTINATION})
 install(DIRECTORY include/
-  DESTINATION ${PROJECT_INCLUDE_DESTINATION}
+  DESTINATION ${CATKIN_PROJECT_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h")
 # install legacy infrastructure needed by rosbuild
 install(FILES rosbuild/roscpp.cmake
-  DESTINATION ${PROJECT_SHARE_DESTINATION}/rosbuild)
+  DESTINATION ${CATKIN_PROJECT_SHARE_DESTINATION}/rosbuild)
 install(PROGRAMS 
   rosbuild/scripts/genmsg_cpp.py
   rosbuild/scripts/gensrv_cpp.py
-  DESTINATION ${PROJECT_SHARE_DESTINATION}/rosbuild/scripts)
+  DESTINATION ${CATKIN_PROJECT_SHARE_DESTINATION}/rosbuild/scripts)
 install(FILES 
   rosbuild/scripts/msg_gen.py
-  DESTINATION ${PROJECT_SHARE_DESTINATION}/rosbuild/scripts)
+  DESTINATION ${CATKIN_PROJECT_SHARE_DESTINATION}/rosbuild/scripts)
 
-add_gtest(${PROJECT_NAME}-test_version test/test_version.cpp)
+catkin_add_gtest(${PROJECT_NAME}-test_version test/test_version.cpp)
 if(TARGET ${PROJECT_NAME}-test_version)
   target_link_libraries(${PROJECT_NAME}-test_version)
 endif()
@@ -137,37 +137,37 @@ if(TARGET ${PROJECT_NAME}-test_spinners)
   target_link_libraries(${PROJECT_NAME}-test_spinners roscpp ${GTEST_LIBRARIES})
 endif()
 
-add_gtest(${PROJECT_NAME}-test_header test/test_header.cpp)
+catkin_add_gtest(${PROJECT_NAME}-test_header test/test_header.cpp)
 if(TARGET ${PROJECT_NAME}-test_header)
   target_link_libraries(${PROJECT_NAME}-test_header roscpp)
 endif()
 
-add_gtest(${PROJECT_NAME}-test_poll_set test/test_poll_set.cpp)
+catkin_add_gtest(${PROJECT_NAME}-test_poll_set test/test_poll_set.cpp)
 if(TARGET ${PROJECT_NAME}-test_poll_set)
   target_link_libraries(${PROJECT_NAME}-test_poll_set roscpp)
 endif()
 
-add_gtest(${PROJECT_NAME}-test_transport_tcp test/test_transport_tcp.cpp)
+catkin_add_gtest(${PROJECT_NAME}-test_transport_tcp test/test_transport_tcp.cpp)
 if(TARGET ${PROJECT_NAME}-test_transport_tcp)
   target_link_libraries(${PROJECT_NAME}-test_transport_tcp roscpp)
 endif()
 
-add_gtest(${PROJECT_NAME}-test_subscription_queue test/test_subscription_queue.cpp)
+catkin_add_gtest(${PROJECT_NAME}-test_subscription_queue test/test_subscription_queue.cpp)
 if(TARGET ${PROJECT_NAME}-test_subscription_queue)
   target_link_libraries(${PROJECT_NAME}-test_subscription_queue roscpp)
 endif()
 
-add_gtest(${PROJECT_NAME}-test_callback_queue test/test_callback_queue.cpp)
+catkin_add_gtest(${PROJECT_NAME}-test_callback_queue test/test_callback_queue.cpp)
 if(TARGET ${PROJECT_NAME}-test_callback_queue)
   target_link_libraries(${PROJECT_NAME}-test_callback_queue roscpp)
 endif()
 
-add_gtest(${PROJECT_NAME}-test_names test/test_names.cpp)
+catkin_add_gtest(${PROJECT_NAME}-test_names test/test_names.cpp)
 if(TARGET ${PROJECT_NAME}-test_names)
   target_link_libraries(${PROJECT_NAME}-test_names roscpp)
 endif()
 
-add_gtest(${PROJECT_NAME}-test_args test/test_args.cpp)
+catkin_add_gtest(${PROJECT_NAME}-test_args test/test_args.cpp)
 if(TARGET ${PROJECT_NAME}-test_args)
   target_link_libraries(${PROJECT_NAME}-test_args roscpp)
 endif()

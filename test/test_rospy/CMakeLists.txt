@@ -34,7 +34,7 @@ generate_messages(DEPENDENCIES std_msgs test_ros)
 
 catkin_project(test_rospy)
 
-add_nosetests(test/unit)
+catkin_add_nosetests(test/unit)
 
 # integration tests
 # - accidentally wrote two integration tests for client param API. They are different enough that it's no harm in having both

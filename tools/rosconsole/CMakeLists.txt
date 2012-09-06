@@ -39,26 +39,26 @@ endif()
 target_link_libraries(rosconsole ${catkin_LIBRARIES} ${LOG4CXX_LIBRARIES} ${Boost_LIBRARIES})
 
 install(TARGETS rosconsole
-  ARCHIVE DESTINATION ${PROJECT_LIB_DESTINATION}
-  LIBRARY DESTINATION ${PROJECT_LIB_DESTINATION})
+  ARCHIVE DESTINATION ${CATKIN_PROJECT_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PROJECT_LIB_DESTINATION})
 
 install(DIRECTORY include/
-  DESTINATION ${PROJECT_INCLUDE_DESTINATION}
+  DESTINATION ${CATKIN_PROJECT_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h")
 
-add_gtest(${PROJECT_NAME}-utest test/utest.cpp)
+catkin_add_gtest(${PROJECT_NAME}-utest test/utest.cpp)
 if(TARGET ${PROJECT_NAME}-utest)
   target_link_libraries(${PROJECT_NAME}-utest ${PROJECT_NAME})
 endif()
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL Linux)
-  add_gtest(${PROJECT_NAME}-assertion_test test/assertion_test.cpp)
+  catkin_add_gtest(${PROJECT_NAME}-assertion_test test/assertion_test.cpp)
   if(TARGET ${PROJECT_NAME}-assertion_test)
     target_link_libraries(${PROJECT_NAME}-assertion_test ${PROJECT_NAME})
   endif()
 endif()
 
-add_gtest(${PROJECT_NAME}-thread_test test/thread_test.cpp)
+catkin_add_gtest(${PROJECT_NAME}-thread_test test/thread_test.cpp)
 if(TARGET ${PROJECT_NAME}-thread_test)
   target_link_libraries(${PROJECT_NAME}-thread_test ${PROJECT_NAME})
 endif()

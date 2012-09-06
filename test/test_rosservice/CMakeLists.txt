@@ -9,6 +9,6 @@ add_service_files(DIRECTORY srv
   )
 generate_messages(DEPENDENCIES std_msgs)
 
-add_nosetests(test)
+catkin_add_nosetests(test)
 add_rostest(test/rosservice.test)
 

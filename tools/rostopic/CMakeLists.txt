@@ -6,4 +6,4 @@ catkin_project(rostopic)
 add_rostest(test/rostopic.test)
 
 install(PROGRAMS scripts/rostopic
-  DESTINATION ${PROJECT_LIBEXEC_DESTINATION})
+  DESTINATION ${CATKIN_PROJECT_BIN_DESTINATION})

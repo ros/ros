@@ -1,6 +1,6 @@
-if @ENV_BUILDSPACE@; then
+if @BUILDSPACE@; then
     export ROSLISP_PACKAGE_DIRECTORY=@CMAKE_BINARY_DIR@/gen/lisp
 fi
-if @ENV_INSTALLSPACE@; then
+if @INSTALLSPACE@; then
     export ROSLISP_PACKAGE_DIRECTORY=@CMAKE_INSTALL_PREFIX@/share/common-lisp/ros
 fi

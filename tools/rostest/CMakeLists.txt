@@ -11,7 +11,7 @@ catkin_project(rostest
   )
 find_package(catkin COMPONENTS rostest)
 
-add_gtest(test_permuter test/test_permuter.cpp)
+catkin_add_gtest(test_permuter test/test_permuter.cpp)
 if(TARGET test_permuter)
   target_link_libraries(test_permuter ${Boost_LIBRARIES})
 endif()
@@ -30,5 +30,5 @@ install(PROGRAMS nodes/hztest
   DESTINATION share/rostest/nodes/hztest
   )
 install(DIRECTORY include/
-  DESTINATION ${PROJECT_INCLUDE_DESTINATION}
+  DESTINATION ${CATKIN_PROJECT_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h")

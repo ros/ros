@@ -14,11 +14,11 @@ add_library(${PROJECT_NAME} src/connection.cpp)
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 install(TARGETS ${PROJECT_NAME}
-  ARCHIVE DESTINATION ${PROJECT_LIB_DESTINATION}
-  LIBRARY DESTINATION ${PROJECT_LIB_DESTINATION})
+  ARCHIVE DESTINATION ${CATKIN_PROJECT_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PROJECT_LIB_DESTINATION})
 
 install(DIRECTORY include/
-  DESTINATION ${PROJECT_INCLUDE_DESTINATION}
+  DESTINATION ${CATKIN_PROJECT_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h")
 
 # Ugly workaround for check_test_ran macro issue
@@ -28,37 +28,37 @@ find_package(catkin COMPONENTS rosunit rostest)
 include_directories(${GTEST_INCLUDE_DIRS})
 
 # ********** Tests **********
-add_gtest(${PROJECT_NAME}-msg_cache_unittest test/msg_cache_unittest.cpp)
+catkin_add_gtest(${PROJECT_NAME}-msg_cache_unittest test/msg_cache_unittest.cpp)
 if(TARGET ${PROJECT_NAME}-msg_cache_unittest)
   target_link_libraries(${PROJECT_NAME}-msg_cache_unittest message_filters ${GTEST_LIBRARIES})
 endif()
 
-add_gtest(${PROJECT_NAME}-time_synchronizer_unittest test/time_synchronizer_unittest.cpp)
+catkin_add_gtest(${PROJECT_NAME}-time_synchronizer_unittest test/time_synchronizer_unittest.cpp)
 if(TARGET ${PROJECT_NAME}-time_synchronizer_unittest)
   target_link_libraries(${PROJECT_NAME}-time_synchronizer_unittest message_filters ${GTEST_LIBRARIES})
 endif()
 
-add_gtest(${PROJECT_NAME}-test_synchronizer test/test_synchronizer.cpp)
+catkin_add_gtest(${PROJECT_NAME}-test_synchronizer test/test_synchronizer.cpp)
 if(TARGET ${PROJECT_NAME}-test_synchronizer)
   target_link_libraries(${PROJECT_NAME}-test_synchronizer message_filters ${GTEST_LIBRARIES})
 endif()
 
-add_gtest(${PROJECT_NAME}-test_exact_time_policy test/test_exact_time_policy.cpp)
+catkin_add_gtest(${PROJECT_NAME}-test_exact_time_policy test/test_exact_time_policy.cpp)
 if(TARGET ${PROJECT_NAME}-test_exact_time_policy)
   target_link_libraries(${PROJECT_NAME}-test_exact_time_policy message_filters ${GTEST_LIBRARIES})
 endif()
 
-add_gtest(${PROJECT_NAME}-test_approximate_time_policy test/test_approximate_time_policy.cpp)
+catkin_add_gtest(${PROJECT_NAME}-test_approximate_time_policy test/test_approximate_time_policy.cpp)
 if(TARGET ${PROJECT_NAME}-test_approximate_time_policy)
   target_link_libraries(${PROJECT_NAME}-test_approximate_time_policy message_filters ${GTEST_LIBRARIES})
 endif()
 
-add_gtest(${PROJECT_NAME}-test_simple test/test_simple.cpp)
+catkin_add_gtest(${PROJECT_NAME}-test_simple test/test_simple.cpp)
 if(TARGET ${PROJECT_NAME}-test_simple)
   target_link_libraries(${PROJECT_NAME}-test_simple message_filters ${GTEST_LIBRARIES})
 endif()
 
-add_gtest(${PROJECT_NAME}-test_chain test/test_chain.cpp)
+catkin_add_gtest(${PROJECT_NAME}-test_chain test/test_chain.cpp)
 if(TARGET ${PROJECT_NAME}-test_chain)
   target_link_libraries(${PROJECT_NAME}-test_chain message_filters ${GTEST_LIBRARIES})
 endif()

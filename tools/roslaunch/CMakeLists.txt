@@ -8,8 +8,8 @@ add_rostest(test/rostests/env.test)
 add_rostest(test/rostests/params_basic.test)
 
 install(FILES resources/roscore.xml
-  DESTINATION etc/ros)
+  DESTINATION ${CATKIN_GLOBAL_ETC_DESTINATION}/ros)
 
 # install example launch files
 install(DIRECTORY resources
-  DESTINATION ${PROJECT_SHARE_DESTINATION})
+  DESTINATION ${CATKIN_PROJECT_SHARE_DESTINATION})

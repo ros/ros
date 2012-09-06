@@ -30,12 +30,12 @@ target_link_libraries(play rosbag)
 #target_link_libraries(example_write rosbag)
 
 install(DIRECTORY include/
-  DESTINATION ${PROJECT_INCLUDE_DESTINATION}
+  DESTINATION ${CATKIN_PROJECT_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h")
 install(TARGETS rosbag record play
   ARCHIVE DESTINATION {PROJECT_LIB_DESTINATION}
-  LIBRARY DESTINATION ${PROJECT_LIB_DESTINATION}
-  RUNTIME DESTINATION ${PROJECT_LIBEXEC_DESTINATION})
+  LIBRARY DESTINATION ${CATKIN_PROJECT_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PROJECT_BIN_DESTINATION})
 install(PROGRAMS
   scripts/bag2png.py
   scripts/bagsort.py
@@ -48,7 +48,7 @@ install(PROGRAMS
   scripts/makerule.py
   scripts/savemsg.py
   scripts/topic_renamer.py
-  DESTINATION ${PROJECT_LIBEXEC_DESTINATION})
+  DESTINATION ${CATKIN_PROJECT_BIN_DESTINATION})
 
 download_test_data(http://pr.willowgarage.com/data/rosbag/test_indexed_1.2.bag
   test/test_indexed_1.2.bag 523cc0deb66269c84be4a7c605ff5eb3)
@@ -61,7 +61,7 @@ add_pyunit(test/test_bag.py)
 
 configure_file(test/test_bag.cpp.in 
                ${PROJECT_BINARY_DIR}/test/test_bag.cpp)
-add_gtest(test_bag ${PROJECT_BINARY_DIR}/test/test_bag.cpp)
+catkin_add_gtest(test_bag ${PROJECT_BINARY_DIR}/test/test_bag.cpp)
 if(TARGET test_bag)
   target_link_libraries(test_bag rosbag)
 endif()

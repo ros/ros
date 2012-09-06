@@ -1,6 +1,6 @@
-if @ENV_BUILDSPACE@; then
+if @BUILDSPACE@; then
     . @CMAKE_CURRENT_SOURCE_DIR@/rosbash
 fi
-if @ENV_INSTALLSPACE@; then
+if @INSTALLSPACE@; then
     . @CMAKE_INSTALL_PREFIX@/share/rosbash/rosbash
 fi

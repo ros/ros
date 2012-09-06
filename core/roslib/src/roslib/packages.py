@@ -475,8 +475,9 @@ def find_resource(pkg, resource_name, filter_fn=None, rospack=None):
 
     # New resource-location policy in Fuerte, induced by the new catkin 
     # build system:
-    #   (1) If CATKIN_BINARY_DIR is set, look recursively there.  If the
-    #       resource is found, done.  Else continue:
+    #   (1) Use catkin_find to find libexec and share locations, look
+    #       recursively there.  If the resource is found, done.
+    #       Else continue:
     #   (2) If ROS_PACKAGE_PATH is set, look recursively there.  If the
     #       resource is found, done.  Else raise
     #
@@ -493,7 +494,7 @@ def find_resource(pkg, resource_name, filter_fn=None, rospack=None):
     matches = []
     for search_in in ['libexec', 'share']:
         try:
-            search_path = catkin_find(pkg, search_in=[search_in])
+            search_path = catkin_find(search_in=[search_in], project=pkg)
             matches.extend(_find_resource(search_path, resource_name, filter_fn=filter_fn))
         except RuntimeError:
             pass

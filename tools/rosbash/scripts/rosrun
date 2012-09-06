@@ -22,7 +22,7 @@ esac
 # basename also makes .//foo into foo 
 basename=`basename $2`
 if [[ -n $CATKIN_WORKSPACES ]]; then
-    catkin_project_libexec_dir=`catkin_find $1 --libexec 2> /dev/null`
+    catkin_project_libexec_dir=`catkin_find --first-only --libexec $1 2> /dev/null`
 fi
 pkgdir=`rospack find $1`
 if [[ -z $catkin_project_libexec_dir && -z $pkgdir ]]; then

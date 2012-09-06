@@ -12,4 +12,4 @@ install(PROGRAMS
   scripts/pycoverage_to_html.py
   scripts/clean_junit_xml.py
   scripts/check_test_ran.py
-  DESTINATION share/rosunit/bin)
+  DESTINATION share/rosunit/scripts)

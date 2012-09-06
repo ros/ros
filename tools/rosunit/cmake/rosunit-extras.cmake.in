@@ -1,12 +1,12 @@
 macro(rosunit_initialize_tests)
-  if (@PKG_BUILDSPACE@)
+  if (@BUILDSPACE@)
     find_program_required(ROSUNIT_EXE rosunit
-                          PATHS @PROJECT_SOURCE_DIR@/scripts
-                          NO_DEFAULT_PATH)
+      PATHS @PROJECT_SOURCE_DIR@/scripts
+      NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
   else()
     find_program_required(ROSUNIT_EXE rosunit
-                          PATHS @CMAKE_INSTALL_PREFIX@/bin
-                          NO_DEFAULT_PATH)
+      PATHS @CMAKE_INSTALL_PREFIX@/bin
+      NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
   endif()
 endmacro()
 

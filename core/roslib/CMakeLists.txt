@@ -23,12 +23,12 @@ endif()
 
 #explicitly install library and includes
 install(TARGETS roslib
-  ARCHIVE DESTINATION ${PROJECT_LIB_DESTINATION}
-  LIBRARY DESTINATION ${PROJECT_LIB_DESTINATION}
+  ARCHIVE DESTINATION ${CATKIN_PROJECT_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PROJECT_LIB_DESTINATION}
   )
 
 install(DIRECTORY include/
-  DESTINATION ${PROJECT_INCLUDE_DESTINATION}
+  DESTINATION ${CATKIN_PROJECT_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h")
 install(PROGRAMS scripts/gendeps
   DESTINATION share/roslib/bin)
@@ -38,12 +38,12 @@ install(PROGRAMS scripts/gendeps
 include_directories(${GTEST_INCLUDE_DIRS})
 link_directories(${GTEST_LIBRARY_DIRS})
 
-add_gtest(${PROJECT_NAME}-utest test/utest.cpp WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+catkin_add_gtest(${PROJECT_NAME}-utest test/utest.cpp WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 if(TARGET ${PROJECT_NAME}-utest)
   target_link_libraries(${PROJECT_NAME}-utest roslib ${Boost_LIBRARIES} ${catkin_LIBRARIES})
 endif()
 
-add_gtest(${PROJECT_NAME}-test_package test/package.cpp)
+catkin_add_gtest(${PROJECT_NAME}-test_package test/package.cpp)
 if(TARGET ${PROJECT_NAME}-test_package)
   target_link_libraries(${PROJECT_NAME}-test_package roslib ${catkin_LIBRARIES})
 endif()

@@ -1,0 +1,8 @@
+# generated from ros/core/roslib/cmake/roslib-extras.cmake.in
+
+# set path to gendeps executable
+if (@BUILDSPACE@)
+  set(gendeps_exe @CMAKE_CURRENT_SOURCE_DIR@/scripts/gendeps)
+else()
+  set(gendeps_exe @CMAKE_INSTALL_PREFIX@/lib/roslib/gendeps)
+endif()

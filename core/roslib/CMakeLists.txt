@@ -1,9 +1,9 @@
 project(roslib)
 find_package(catkin REQUIRED COMPONENTS rospack)
 catkin_project(roslib
-  LIBRARIES roslib
   INCLUDE_DIRS include
-  )
+  LIBRARIES roslib
+  CFG_EXTRAS roslib-extras.cmake)
 
 include_directories(include ${Boost_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS})
 link_directories(${catkin_LIBRARY_DIRS})
@@ -31,7 +31,7 @@ install(DIRECTORY include/
   DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h")
 install(PROGRAMS scripts/gendeps
-  DESTINATION share/roslib/bin)
+  DESTINATION ${CATKIN_PROJECT_BIN_DESTINATION})
 
 #integration tests
 

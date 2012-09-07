@@ -373,7 +373,8 @@ macro(rosbuild_init)
 
   # ${gendeps_exe} is a convenience variable that roslang cmake rules
   # must reference as a dependency of msg/srv generation
-  set(gendeps_exe ${roslib_path}/bin/gendeps)
+  # ${gendeps_exe} is set by roslib-extras.cmake
+  find_package(catkin REQUIRED COMPONENTS roslib)
 
   # If the roslang package is available, pull in cmake/roslang.cmake from
   # there; it will in turn include message-generation logic from client
@@ -753,9 +754,8 @@ macro(rosbuild_gendeps _pkg _msgfile)
   if(NOT ${_pkg}_${_msgfile}_GENDEPS_COMPUTED)
     # Call out to the gendeps tool to get full paths to .msg files on
     # which this one depends, for proper dependency tracking
-    # ${roslib_path} was determined inside rospack()
     execute_process(
-      COMMAND ${roslib_path}/bin/gendeps ${_input}
+      COMMAND ${gendeps_exe} ${_input}
       OUTPUT_VARIABLE __other_msgs
       ERROR_VARIABLE __rospack_err_ignore
       OUTPUT_STRIP_TRAILING_WHITESPACE)

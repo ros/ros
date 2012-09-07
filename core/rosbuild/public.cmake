@@ -319,12 +319,12 @@ macro(rosbuild_init)
   # conditional to ignore failures (most often happens when a stale NFS
   # handle lingers in the test results directory), because CMake doesn't
   # seem to be able to do it.
-  add_custom_target(clean-test-results
+  add_custom_target(rosbuild_clean-test-results
                     if ! rm -rf ${rosbuild_test_results_dir}/${PROJECT_NAME}\; then echo "WARNING: failed to remove test-results directory"\; fi)
-  # Make the tests target depend on clean-test-results, which will ensure
+  # Make the tests target depend on rosbuild_clean-test-results, which will ensure
   # that test results are deleted before we try to build tests, and thus
   # before we try to run tests.
-  add_dependencies(tests clean-test-results)
+  add_dependencies(tests rosbuild_clean-test-results)
   # The 'test-future' target runs the future tests
   add_custom_target(test-future)
 

@@ -1,5 +1,5 @@
 project(roslib)
-find_package(catkin REQUIRED COMPONENTS rospack rosunit)
+find_package(catkin REQUIRED COMPONENTS rospack)
 catkin_project(roslib
   LIBRARIES roslib
   INCLUDE_DIRS include
@@ -34,6 +34,8 @@ install(PROGRAMS scripts/gendeps
   DESTINATION share/roslib/bin)
 
 #integration tests
+
+catkin_add_nosetests(test)
 
 include_directories(${GTEST_INCLUDE_DIRS})
 link_directories(${GTEST_LIBRARY_DIRS})

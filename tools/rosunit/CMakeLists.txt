@@ -13,3 +13,5 @@ install(PROGRAMS
   scripts/clean_junit_xml.py
   scripts/check_test_ran.py
   DESTINATION share/rosunit/scripts)
+
+catkin_add_nosetests(test)

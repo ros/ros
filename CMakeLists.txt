@@ -13,22 +13,17 @@ catkin_python_setup()
 catkin_add_env_hooks(10.ros SHELLS bat sh DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks)
 
 foreach(subdir
-    tools/rosunit
+    core/roslang
     core/roslib
+    tools/rosboost_cfg
     tools/rosbash
+    tools/rosclean
+    tools/roscreate
+    tools/rosmake
+    tools/rosunit
     )
   add_subdirectory(${subdir})
 endforeach()
-
-# nosetests are declared here to make them visible to the build system
-# (e.g., for Jenkins to invoke) but keep them from polluting the pristine
-# Python packages.
-find_package(catkin COMPONENTS rosunit)
-catkin_add_nosetests(core/roslib/test)
-catkin_add_nosetests(tools/rosmake/test)
-catkin_add_nosetests(tools/rosunit/test)
-catkin_add_nosetests(tools/rosclean/test)
-catkin_add_nosetests(tools/roscreate/test)
 
 # INSTALLATION
 install(FILES config/rosconsole.config
@@ -48,8 +43,6 @@ install(DIRECTORY core/mk/
   DESTINATION ${CATKIN_PROJECT_SHARE_DESTINATION}/core/mk
   PATTERN ".svn" EXCLUDE
   )
-install(FILES core/roslang/cmake/roslang.cmake
-  DESTINATION share/roslang/cmake)
 
 install(DIRECTORY tools/roscreate/templates/
   DESTINATION share/roscreate/templates

@@ -1,5 +1,8 @@
 project(test_roscpp)
-catkin_project(${PROJECT_NAME})
+
+find_package(catkin COMPONENTS genmsg roscpp rosgraph_msgs rostest std_msgs)
+
+include_directories(${catkin_INCLUDE_DIRS})
 
 add_message_files(
   DIRECTORY msg
@@ -17,8 +20,6 @@ add_service_files(
 )
 generate_messages(DEPENDENCIES std_msgs rosgraph_msgs)
 
-find_package(catkin COMPONENTS roscpp xmlrpcpp rosconsole rostest)
-include_directories(${catkin_INCLUDE_DIRS})
 if(GTEST_FOUND)
   add_subdirectory(src)
 endif()

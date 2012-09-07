@@ -21,6 +21,7 @@ foreach(subdir
     tools/rosconsole
     clients/cpp/roscpp
     clients/roslisp
+    clients/rospy
     tools
     utilities/message_filters
 
@@ -41,32 +42,4 @@ foreach(subdir
   add_subdirectory(${subdir})
 endforeach()
 
-catkin_add_nosetests(test/test_roslib_comm/test)
-catkin_add_nosetests(tools/rosmaster/test)
 catkin_add_nosetests(tools/rosmsg/test)
-catkin_add_nosetests(tools/rosparam/test)
-catkin_add_nosetests(tools/rosgraph/test)
-catkin_add_nosetests(tools/roslaunch/test/unit)
-catkin_add_nosetests(utilities/roswtf/test)
-
-# install legacy infrastructure needed by rosbuild
-# rospy
-install(FILES clients/rospy/rosbuild/rospy.cmake
-        DESTINATION share/rospy/rosbuild)
-install(PROGRAMS
-        clients/rospy/rosbuild/scripts/genmsg_py.py
-        clients/rospy/rosbuild/scripts/gensrv_py.py
-        DESTINATION share/rospy/rosbuild/scripts)
-install(FILES
-        clients/rospy/rosbuild/scripts/genutil.py
-        DESTINATION share/rospy/rosbuild/scripts)
-# roslisp
-install(FILES clients/roslisp/rosbuild/roslisp.cmake
-        DESTINATION share/roslisp/rosbuild)
-install(PROGRAMS
-        clients/roslisp/rosbuild/scripts/genmsg_lisp.py
-        DESTINATION share/roslisp/rosbuild/scripts)
-install(PROGRAMS
-        clients/cpp/roscpp/rosbuild/scripts/genmsg_cpp.py
-        clients/cpp/roscpp/rosbuild/scripts/gensrv_cpp.py
-        DESTINATION share/roscpp/rosbuild/scripts)

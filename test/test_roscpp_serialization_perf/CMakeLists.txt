@@ -1,6 +1,7 @@
 project(test_roscpp_serialization_perf)
-catkin_project(test_roscpp_serialization_perf)
-find_package(catkin COMPONENTS cpp_common rostime roscpp_serialization roscpp_traits)
+
+find_package(catkin REQUIRED COMPONENTS cpp_common genmsg rostime roscpp_serialization roscpp_traits)
+
 include_directories(${catkin_INCLUDE_DIRS})
 
 add_message_files(
@@ -20,4 +21,3 @@ endif()
 add_dependencies(${PROJECT_NAME}-pointcloud_serdes ${PROJECT_NAME}_gencpp) 
 #rosbuild_add_compile_flags(pointcloud_serdes "-O3 -funroll-loops")
 #rosbuild_add_compile_flags(pointcloud_serdes "-march=prescott")
-

@@ -1,5 +1,6 @@
 project(test_crosspackage)
-catkin_project(test_crosspackage)
+
+find_package(catkin REQUIRED COMPONENTS genmsg)
 
 add_message_files(
   DIRECTORY msg

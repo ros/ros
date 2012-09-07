@@ -4,3 +4,8 @@ find_package(catkin REQUIRED COMPONENTS rostest)
 
 add_rostest(test/rosmaster.test)
 add_rostest(test/paramserver.test)
+
+catkin_add_nosetests(test)
+
+install(FILES manifest.xml
+  DESTINATION share/rosmaster)

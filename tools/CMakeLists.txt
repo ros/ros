@@ -20,5 +20,12 @@ foreach(subdir
   add_subdirectory(${subdir})
 endforeach()
 
+install(FILES rosmsg/manifest.xml
+  DESTINATION share/rosmsg)
+
+install(FILES rosservice/manifest.xml
+  DESTINATION share/rosservice)
 install(PROGRAMS rosservice/scripts/rosservice
   DESTINATION lib/rosservice)
+
+catkin_add_nosetests(rosmsg/test)

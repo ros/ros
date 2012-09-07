@@ -3,9 +3,9 @@ if(GTEST_FOUND)
 endif()
 
 project(test_roscpp_serialization)
-catkin_project(test_roscpp_serialization)
 
-find_package(catkin COMPONENTS roscpp xmlrpcpp rosconsole rosunit rostest)
+find_package(catkin REQUIRED COMPONENTS genmsg roscpp xmlrpcpp rosconsole rosunit rostest)
+
 include_directories(include ${catkin_INCLUDE_DIRS} ${GTEST_INCLUDE_DIRS})
 
 add_message_files(

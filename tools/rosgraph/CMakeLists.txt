@@ -14,3 +14,5 @@ install(FILES conf/python_logging.conf
   DESTINATION ${CATKIN_PROJECT_SHARE_DESTINATION}/conf)
 install(PROGRAMS scripts/rosgraph
   DESTINATION ${CATKIN_PROJECT_BIN_DESTINATION})
+
+catkin_add_nosetests(test)

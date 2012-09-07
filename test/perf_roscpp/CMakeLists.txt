@@ -1,7 +1,8 @@
 project(perf_roscpp)
-catkin_project(perf_roscpp)
-find_package(Boost COMPONENTS thread)
-find_package(catkin COMPONENTS roscpp xmlrpcpp rosconsole)
+
+find_package(catkin REQUIRED COMPONENTS genmsg roscpp xmlrpcpp rosconsole)
+find_package(Boost REQUIRED COMPONENTS thread)
+
 include_directories(include ${Boost_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS})
 
 add_message_files(
@@ -10,7 +11,7 @@ add_message_files(
   LatencyMessage.msg
   ThroughputMessage.msg
 )
-generate_messages(DEPENDENCIES)
+generate_messages()
 
 #common commands for building c++ executables and libraries
 add_library(${PROJECT_NAME} EXCLUDE_FROM_ALL src/intra.cpp src/inter.cpp)

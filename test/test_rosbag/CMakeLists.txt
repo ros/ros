@@ -1,6 +1,6 @@
 project(test_rosbag)
-catkin_project(test_rosbag)
-find_package(catkin COMPONENTS rosunit rostest)
+
+find_package(catkin REQUIRED COMPONENTS genmsg rosunit rostest)
 
 add_message_files(
   DIRECTORY msg_current
@@ -46,17 +46,15 @@ download_test_data(http://pr.willowgarage.com/data/test_rosbag/renamed_gen3.bag 
 download_test_data(http://pr.willowgarage.com/data/test_rosbag/subunmigrated_gen1.bag test/subunmigrated_gen1.bag c78b85016aa34669e36d1eb5a7b5f2c7 )
 download_test_data(http://pr.willowgarage.com/data/test_rosbag/unmigrated_gen1.bag test/unmigrated_gen1.bag 87d8d3a1c9679609533803709d21cea2 )
 
-
 configure_file(test/migrate_test.py.in
-               ${PROJECT_BINARY_DIR}/test/migrate_test.py)
+  ${PROJECT_BINARY_DIR}/test/migrate_test.py)
 add_pyunit(${PROJECT_BINARY_DIR}/test/migrate_test.py TIMEOUT 120.0)
 configure_file(test/random_record.xml.in
-               ${PROJECT_BINARY_DIR}/test/random_record.xml)
+  ${PROJECT_BINARY_DIR}/test/random_record.xml)
 add_rostest(${PROJECT_BINARY_DIR}/test/random_record.xml)
 configure_file(test/random_play.xml.in
-               ${PROJECT_BINARY_DIR}/test/random_play.xml)
+  ${PROJECT_BINARY_DIR}/test/random_play.xml)
 add_rostest(${PROJECT_BINARY_DIR}/test/random_play.xml)
 configure_file(test/random_play_sim.xml.in
-               ${PROJECT_BINARY_DIR}/test/random_play_sim.xml)
+  ${PROJECT_BINARY_DIR}/test/random_play_sim.xml)
 add_rostest(${PROJECT_BINARY_DIR}/test/random_play_sim.xml)
-

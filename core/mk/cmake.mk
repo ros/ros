@@ -30,7 +30,7 @@ test: all
 test-nobuild:
 	@mkdir -p build
 	cd build && cmake $(CMAKE_FLAGS) -Drosbuild_test_nobuild=1 ..
-	if cd build && make clean-test-results && make -k test; then make test-results; else make test-results && exit 1; fi
+	if cd build && make rosbuild_clean-test-results && make -k test; then make test-results; else make test-results && exit 1; fi
 tests: all
 	cd build && make $@
 test-future: all

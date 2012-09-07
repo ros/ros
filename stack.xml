@@ -1,6 +1,6 @@
 <stack>
   <name>ros</name>
-  <version>1.9.5</version>
+  <version>1.9.6</version>
   <description brief="ROS core">ROS packaging system</description>
   <author>Eric Berger</author>
   <author>Ken Conley</author>

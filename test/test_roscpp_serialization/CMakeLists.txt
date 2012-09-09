@@ -33,12 +33,16 @@ add_message_files(
 generate_messages(DEPENDENCIES std_msgs rosgraph_msgs)
 
 catkin_add_gtest(${PROJECT_NAME}-serialization src/serialization.cpp)
-target_link_libraries(${PROJECT_NAME}-serialization ${catkin_LIBRARIES} ${GTEST_LIBRARIES})
-add_dependencies(${PROJECT_NAME}-serialization test_roscpp_serialization_gencpp)
+if(TARGET ${PROJECT_NAME}-serialization)
+  target_link_libraries(${PROJECT_NAME}-serialization ${catkin_LIBRARIES} ${GTEST_LIBRARIES})
+  add_dependencies(${PROJECT_NAME}-serialization test_roscpp_serialization_gencpp)
+endif()
 
 catkin_add_gtest(${PROJECT_NAME}-generated_messages src/generated_messages.cpp)
-target_link_libraries(${PROJECT_NAME}-generated_messages ${catkin_LIBRARIES} ${GTEST_LIBRARIES})
-add_dependencies(${PROJECT_NAME}-generated_messages test_roscpp_serialization_gencpp)
+if(TARGET ${PROJECT_NAME}-generated_messages)
+  target_link_libraries(${PROJECT_NAME}-generated_messages ${catkin_LIBRARIES} ${GTEST_LIBRARIES})
+  add_dependencies(${PROJECT_NAME}-generated_messages test_roscpp_serialization_gencpp)
+endif()
 
 add_executable(${PROJECT_NAME}-builtin_types EXCLUDE_FROM_ALL src/builtin_types.cpp)
 add_dependencies(tests ${PROJECT_NAME}-builtin_types) 

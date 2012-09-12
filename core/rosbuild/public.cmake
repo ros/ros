@@ -438,7 +438,11 @@ macro(rosbuild_init)
   #
   find_program(GTEST_EXE NAMES gtest-config DOC "gtest-config executable" ONLY_CMAKE_FIND_ROOT_PATH)
   if (NOT GTEST_EXE)
-    set(_gtest_LIBRARIES -lgtest)
+    if (GTEST_LIBRARIES)
+      set(_gtest_LIBRARIES -l${GTEST_LIBRARIES})
+    else(GTEST_LIBRARIES)
+      set(_gtest_LIBRARIES -lgtest)
+    endif(GTEST_LIBRARIES)
     # Couldn't find gtest-config. Hoping that gtest is in our path either in the system install or where ROS_BINDEPS points to
   else (NOT GTEST_EXE)
 

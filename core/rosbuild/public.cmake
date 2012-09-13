@@ -594,7 +594,6 @@ macro(rosbuild_add_gtest_build_flags exe)
       if (NOT EXISTS "${CMAKE_BINARY_DIR}/_gtest_from_src")
         # for now, this would only work on Ubuntu
         add_subdirectory("/usr/src/gtest/" ${CMAKE_BINARY_DIR}/_gtest_from_src)
-        add_dependencies(${exe} gtest gtest_main)
       endif()
     else()
       message(WARNING "GTest not found; C++ tests will fail to build.")
@@ -608,6 +607,7 @@ macro(rosbuild_add_gtest_build_flags exe)
   target_link_libraries(${exe} ${_gtest_LIBRARIES})
   rosbuild_add_link_flags(${exe} ${_gtest_LDFLAGS_OTHER})
   rosbuild_declare_test(${exe})
+  add_dependencies(${exe} gtest gtest_main)
 endmacro(rosbuild_add_gtest_build_flags)
 
 # Declare an executable to be a test harness, which excludes it from the

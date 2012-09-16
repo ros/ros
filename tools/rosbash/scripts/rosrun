@@ -21,7 +21,7 @@ case $2 in
 esac 
 # basename also makes .//foo into foo 
 basename=`basename $2`
-if [[ -n $CATKIN_WORKSPACES ]]; then
+if [[ -n $CMAKE_PREFIX_PATH ]]; then
     catkin_project_libexec_dir=`catkin_find --first-only --libexec $1 2> /dev/null`
 fi
 pkgdir=`rospack find $1`

@@ -12,16 +12,22 @@ fi
 PYTHON_CODE_BUILD_ROS_PACKAGE_PATH=$(cat <<EOF
 from __future__ import print_function
 import os
-env_name = 'CATKIN_WORKSPACES'
-items = os.environ[env_name].split(';') if env_name in os.environ and os.environ[env_name] != '' else []
+env_name = 'CMAKE_PREFIX_PATH'
+paths = [path for path in os.environ[env_name].split(os.pathsep)] if env_name in os.environ and os.environ[env_name] != '' else []
+workspaces = [path for path in paths if os.path.exists(os.path.join(path, '.CATKIN_WORKSPACE'))]
 paths = []
-for item in items:
-    if item.find(':') != -1:
-        paths.append(item.split(':')[1])
+for workspace in workspaces:
+    filename = os.path.join(workspace, '.CATKIN_WORKSPACE')
+    data = ''
+    with open(filename) as f:
+        data = f.read()
+    if data == '':
+        paths.append(os.path.join(workspace, 'share'))
+        paths.append(os.path.join(workspace, 'stacks'))
     else:
-        paths.append(os.path.join(item, 'share'))
-        paths.append(os.path.join(item, 'stacks'))
-print(':'.join(paths))
+        for source_path in data.split(';'):
+            paths.append(source_path)
+print(os.pathsep.join(paths))
 EOF
 )
 export ROS_PACKAGE_PATH=`python -c "$PYTHON_CODE_BUILD_ROS_PACKAGE_PATH"`

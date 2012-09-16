@@ -220,7 +220,7 @@ function rosls {
 # sets arg as return value
 function _roscmd {
     local pkgdir exepath opt catkin_project_libexec_dir opts
-    if [[ -n $CATKIN_WORKSPACES ]]; then
+    if [[ -n $CMAKE_PREFIX_PATH ]]; then
         catkin_project_libexec_dir=`catkin_find --first-only --libexec $1 2> /dev/null`
     fi
     pkgdir=`_ros_package_find $1`
@@ -417,7 +417,7 @@ function _roscomplete_search_dir {
         COMPREPLY=($(compgen -W "${opts}" -- ${arg}))
         unset IFS
     elif [[ $COMP_CWORD == 2 ]]; then
-        if [[ -n $CATKIN_WORKSPACES ]]; then
+        if [[ -n $CMAKE_PREFIX_PATH ]]; then
             catkin_project_libexec_dir=`catkin_find --first-only --libexec ${COMP_WORDS[1]} 2> /dev/null`
         fi
         pkgdir=`_ros_package_find ${COMP_WORDS[1]}`

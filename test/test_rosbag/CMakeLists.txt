@@ -48,7 +48,7 @@ download_test_data(http://pr.willowgarage.com/data/test_rosbag/unmigrated_gen1.b
 
 configure_file(test/migrate_test.py.in
   ${PROJECT_BINARY_DIR}/test/migrate_test.py)
-add_pyunit(${PROJECT_BINARY_DIR}/test/migrate_test.py TIMEOUT 120.0)
+catkin_add_nosetests(${PROJECT_BINARY_DIR}/test/migrate_test.py)
 configure_file(test/random_record.xml.in
   ${PROJECT_BINARY_DIR}/test/random_record.xml)
 add_rostest(${PROJECT_BINARY_DIR}/test/random_record.xml)

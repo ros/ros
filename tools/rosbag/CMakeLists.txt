@@ -57,7 +57,7 @@ download_test_data(http://pr.willowgarage.com/data/rosbag/chatter_50hz.bag
 download_test_data(http://pr.willowgarage.com/data/rosbag/test_future_version_2.1.bag
   test/test_future_version_2.1.bag ddcb5e8711b16514eb640330ed93c332)
 
-add_pyunit(test/test_bag.py)
+catkin_add_nosetests(test/test_bag.py)
 
 configure_file(test/test_bag.cpp.in 
                ${PROJECT_BINARY_DIR}/test/test_bag.cpp)

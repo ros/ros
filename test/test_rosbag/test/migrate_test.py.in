@@ -75,7 +75,7 @@ class MigrationTest(unittest.TestCase):
     self.assertEqual(res[0][1][0].old_class._md5sum, '4b12e5ff694b0e2a31b2ea9e0bd900f4')
     self.assertEqual(res[0][1][0].new_class._md5sum, 'b5d640967dccef2a24697ec4b8a571ec')
 
-  def do_test_partially_migrated(self, N):
+  def do_partially_migrated(self, N):
     tmp_rule_files = ['migrated_explicit_rules.bmr', 'migrated_mixed_rules.bmr', 'migrated_addsub_rules.bmr', 'partially_migrated_rules.bmr']
     rule_files = ["%s/test/%s"%(self.pkg_dir,r) for r in tmp_rule_files]
 
@@ -91,13 +91,13 @@ class MigrationTest(unittest.TestCase):
     
 
   def test_partially_migrated_gen1(self):
-    self.do_test_partially_migrated(1)
+    self.do_partially_migrated(1)
 
   def test_partially_migrated_gen2(self):
-    self.do_test_partially_migrated(2)
+    self.do_partially_migrated(2)
 
   def test_partially_migrated_gen3(self):
-    self.do_test_partially_migrated(3)
+    self.do_partially_migrated(3)
 
 
   def test_addsub(self):
@@ -122,7 +122,7 @@ class MigrationTest(unittest.TestCase):
     self.assertEqual(msgs[0][1].field2.field1, 42)
 
 
-  def do_test_migrated_explicit(self, N):
+  def do_migrated_explicit(self, N):
     tmp_rule_files = ['migrated_explicit_rules.bmr', 'migrated_mixed_rules.bmr', 'migrated_addsub_rules.bmr']
     rule_files = ["%s/test/%s"%(self.pkg_dir,r) for r in tmp_rule_files]
 
@@ -145,17 +145,17 @@ class MigrationTest(unittest.TestCase):
     self.assertEqual(msgs[0][1].afield4, 82)
 
   def test_migrated_explicit_gen1(self):
-    self.do_test_migrated_explicit(1)
+    self.do_migrated_explicit(1)
 
   def test_migrated_explicit_gen2(self):
-    self.do_test_migrated_explicit(2)
+    self.do_migrated_explicit(2)
 
   def test_migrated_explicit_gen3(self):
-    self.do_test_migrated_explicit(3)
+    self.do_migrated_explicit(3)
 
 
 
-  def do_test_migrated_implicit(self, N):
+  def do_migrated_implicit(self, N):
     tmp_rule_files = ['migrated_explicit_rules.bmr', 'migrated_mixed_rules.bmr', 'migrated_addsub_rules.bmr']
     rule_files = ["%s/test/%s"%(self.pkg_dir,r) for r in tmp_rule_files]
 
@@ -183,17 +183,17 @@ class MigrationTest(unittest.TestCase):
 
 
   def test_migrated_implicit_gen1(self):
-    self.do_test_migrated_implicit(1)
+    self.do_migrated_implicit(1)
 
   def test_migrated_implicit_gen2(self):
-    self.do_test_migrated_implicit(2)
+    self.do_migrated_implicit(2)
 
   def test_migrated_implicit_gen3(self):
-    self.do_test_migrated_implicit(3)
+    self.do_migrated_implicit(3)
 
 
 
-  def do_test_migrated_mixed(self, N):
+  def do_migrated_mixed(self, N):
     tmp_rule_files = ['migrated_explicit_rules.bmr', 'migrated_mixed_rules.bmr', 'migrated_addsub_rules.bmr']
     rule_files = ["%s/test/%s"%(self.pkg_dir,r) for r in tmp_rule_files]
 
@@ -222,17 +222,17 @@ class MigrationTest(unittest.TestCase):
     self.assertEqual(msgs[0][1].field2, 59)
 
   def test_migrated_mixed_gen1(self):
-    self.do_test_migrated_mixed(1)
+    self.do_migrated_mixed(1)
 
   def test_migrated_mixed_gen2(self):
-    self.do_test_migrated_mixed(2)
+    self.do_migrated_mixed(2)
 
   def test_migrated_mixed_gen3(self):
-    self.do_test_migrated_mixed(3)
+    self.do_migrated_mixed(3)
 
 
 
-  def do_test_renamed(self, N):
+  def do_renamed(self, N):
     tmp_rule_files = ['migrated_explicit_rules.bmr', 'migrated_mixed_rules.bmr', 'migrated_addsub_rules.bmr', 'renamed_rules.bmr']
     rule_files = ["%s/test/%s"%(self.pkg_dir,r) for r in tmp_rule_files]
 
@@ -257,16 +257,16 @@ class MigrationTest(unittest.TestCase):
 
 
   def test_renamed_gen1(self):
-    self.do_test_renamed(1)
+    self.do_renamed(1)
 
   def test_renamed_gen2(self):
-    self.do_test_renamed(2)
+    self.do_renamed(2)
 
   def test_renamed_gen3(self):
-    self.do_test_renamed(3)
+    self.do_renamed(3)
 
 
-  def do_test_converged(self, N):
+  def do_converged(self, N):
     tmp_rule_files = ['migrated_explicit_rules.bmr', 'migrated_mixed_rules.bmr', 'migrated_addsub_rules.bmr', 'renamed_rules.bmr', 'simple_migrated_rules.bmr', 'converged_rules.bmr']
     rule_files = ["%s/test/%s"%(self.pkg_dir,r) for r in tmp_rule_files]
 
@@ -297,16 +297,16 @@ class MigrationTest(unittest.TestCase):
 
 
   def test_converged_gen1(self):
-    self.do_test_converged(1)
+    self.do_converged(1)
 
   def test_converged_gen2(self):
-    self.do_test_converged(2)
+    self.do_converged(2)
 
   def test_converged_gen3(self):
-    self.do_test_converged(3)
+    self.do_converged(3)
 
 
-  def do_test_convergent(self, N):
+  def do_convergent(self, N):
     tmp_rule_files = ['migrated_explicit_rules.bmr', 'migrated_mixed_rules.bmr', 'migrated_addsub_rules.bmr', 'renamed_rules.bmr', 'simple_migrated_rules.bmr', 'converged_rules.bmr']
     rule_files = ["%s/test/%s"%(self.pkg_dir,r) for r in tmp_rule_files]
 
@@ -337,15 +337,15 @@ class MigrationTest(unittest.TestCase):
 
 
   def test_convergent_gen1(self):
-    self.do_test_convergent(1)
+    self.do_convergent(1)
 
   def test_convergent_gen2(self):
-    self.do_test_convergent(2)
+    self.do_convergent(2)
 
 
 
 
-  def do_test_constants_no_rules(self, N):
+  def do_constants_no_rules(self, N):
     tmp_rule_files = []
     rule_files = ["%s/test/%s"%(self.pkg_dir,r) for r in tmp_rule_files]
 
@@ -361,7 +361,7 @@ class MigrationTest(unittest.TestCase):
     self.assertEqual(res[0][1][0].new_class._md5sum, 'b45401c4d442c4da7b0a2a105075fa4a')
 
 
-  def do_test_constants_rules(self, N):
+  def do_constants_rules(self, N):
     tmp_rule_files = ['constants.bmr']
     rule_files = ["%s/test/%s"%(self.pkg_dir,r) for r in tmp_rule_files]
 
@@ -384,13 +384,13 @@ class MigrationTest(unittest.TestCase):
 
 
   def test_constants_no_rules_gen1(self):
-    self.do_test_constants_no_rules(1)
+    self.do_constants_no_rules(1)
 
   def test_constants_gen1(self):
-    self.do_test_constants_rules(1)
+    self.do_constants_rules(1)
 
   def test_constants_gen2(self):
-    self.do_test_constants_rules(2)
+    self.do_constants_rules(2)
 
 
 if __name__ == '__main__':

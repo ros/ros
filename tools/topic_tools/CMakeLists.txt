@@ -78,4 +78,4 @@ add_rostest(test/relay.test)
 #rosbuild_add_rostest(test/switch_mux_none.test)
 #rosbuild_add_rostest(test/mux_add.test)
 
-add_pyunit(test/args.py)
+catkin_add_nosetests(test/args.py)

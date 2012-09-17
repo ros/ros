@@ -1,6 +1,7 @@
 project(test_ros)
 
 find_package(catkin COMPONENTS genmsg std_msgs rosgraph_msgs rostest)
+catkin_project(${PROJECT_NAME})
 
 add_message_files(DIRECTORY msg
   FILES
@@ -24,8 +25,6 @@ add_service_files(DIRECTORY srv
 )
 
 generate_messages(DEPENDENCIES std_msgs rosgraph_msgs)
-
-catkin_project(test_ros)
 
 add_rostest(test/test-param-server.xml)
 

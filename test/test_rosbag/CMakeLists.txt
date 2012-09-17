@@ -1,6 +1,7 @@
 project(test_rosbag)
 
 find_package(catkin REQUIRED COMPONENTS genmsg rosunit rostest)
+catkin_project(${PROJECT_NAME})
 
 add_message_files(
   DIRECTORY msg_current

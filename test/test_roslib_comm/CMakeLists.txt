@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(test_roslib_comm)
 find_package(catkin REQUIRED COMPONENTS genmsg)
+catkin_project(${PROJECT_NAME})
 
 add_message_files(DIRECTORY msg
   FILES

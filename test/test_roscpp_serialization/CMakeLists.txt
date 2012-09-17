@@ -5,6 +5,7 @@ endif()
 project(test_roscpp_serialization)
 
 find_package(catkin REQUIRED COMPONENTS genmsg roscpp xmlrpcpp rosconsole rosunit rostest)
+catkin_project(${PROJECT_NAME})
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${GTEST_INCLUDE_DIRS})
 

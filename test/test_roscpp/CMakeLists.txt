@@ -1,6 +1,7 @@
 project(test_roscpp)
 
 find_package(catkin COMPONENTS genmsg roscpp rosgraph_msgs rostest std_msgs)
+catkin_project(${PROJECT_NAME})
 
 include_directories(${catkin_INCLUDE_DIRS})
 

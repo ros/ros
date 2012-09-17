@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(test_rospy)
 find_package(catkin REQUIRED COMPONENTS genmsg test_ros rosunit rostest)
+catkin_project(${PROJECT_NAME})
 
 # messages are for integration testing only
 add_message_files(DIRECTORY msg

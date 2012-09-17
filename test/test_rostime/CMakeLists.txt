@@ -1,6 +1,7 @@
 project(test_rostime)
 
 find_package(catkin COMPONENTS cpp_common rostime rosunit)
+catkin_project(${PROJECT_NAME})
 
 include_directories(${catkin_INCLUDE_DIRS})
 

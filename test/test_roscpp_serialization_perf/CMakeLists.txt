@@ -1,6 +1,7 @@
 project(test_roscpp_serialization_perf)
 
 find_package(catkin REQUIRED COMPONENTS cpp_common genmsg rostime roscpp_serialization roscpp_traits)
+catkin_project(${PROJECT_NAME})
 
 include_directories(${catkin_INCLUDE_DIRS})
 

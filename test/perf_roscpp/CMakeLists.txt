@@ -1,6 +1,8 @@
 project(perf_roscpp)
 
 find_package(catkin REQUIRED COMPONENTS genmsg roscpp xmlrpcpp rosconsole)
+catkin_project(${PROJECT_NAME})
+
 find_package(Boost REQUIRED COMPONENTS thread)
 
 include_directories(include ${Boost_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS})

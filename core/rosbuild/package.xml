@@ -1,0 +1,18 @@
+<package>
+  <name>rosbuild</name>
+  <version>1.9.9</version>
+  <description>
+
+  rosbuild contains scripts for managing the CMake-based build system for ROS.
+
+  </description>
+  <maintainer email="dthomas@willowgarage.com">Dirk Thomas</maintainer>
+  <license>BSD</license>
+
+  <url>http://ros.org/wiki/rosbuild</url>
+  <author>Brian Gerkey</author>
+  <author>Troy Straszheim</author>
+  <author>Morgan Quigley</author>
+
+  <build_depend>catkin<build_depend>
+</package>

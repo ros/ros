@@ -1,0 +1,16 @@
+<package>
+  <name>rosboost_cfg</name>
+  <version>1.9.9</version>
+  <description>
+
+    Contains scripts used by the rosboost-cfg tool for determining cflags/lflags/etc. of boost on your system
+
+  </description>
+  <maintainer email="dthomas@willowgarage.com">Dirk Thomas</maintainer>
+  <license>BSD</license>
+
+  <url>http://ros.org/wiki/rosboost_cfg</url>
+  <author>Josh Faust</author>
+
+  <build_depend>catkin</build_depend>
+</package>

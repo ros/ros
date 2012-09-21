@@ -4,6 +4,6 @@ find_package(catkin REQUIRED)
 catkin_package()
 catkin_package_export()
 
-install(DIRECTORY ,
+install(DIRECTORY .
   DESTINATION ${CATKIN_GLOBAL_SHARE_DESTINATION}/ros/core/mk
   PATTERN ".svn" EXCLUDE)

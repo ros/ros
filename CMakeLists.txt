@@ -27,20 +27,20 @@ endforeach()
 
 # INSTALLATION
 install(FILES config/rosconsole.config
-  DESTINATION ${CATKIN_PROJECT_SHARE_DESTINATION}/config)
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config)
 
 # setup our backwards-compatibility ROS_ROOT
 install(DIRECTORY core/rosbuild/
-  DESTINATION ${CATKIN_PROJECT_SHARE_DESTINATION}/core/rosbuild
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/core/rosbuild
   PATTERN ".svn" EXCLUDE
   PATTERN "bin" EXCLUDE
   )
 install(PROGRAMS
   core/rosbuild/bin/check_same_directories.py
   core/rosbuild/bin/download_checkmd5.py
-  DESTINATION ${CATKIN_PROJECT_SHARE_DESTINATION}/core/rosbuild/bin)
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/core/rosbuild/bin)
 install(DIRECTORY core/mk/
-  DESTINATION ${CATKIN_PROJECT_SHARE_DESTINATION}/core/mk
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/core/mk
   PATTERN ".svn" EXCLUDE
   )
 

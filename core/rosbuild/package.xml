@@ -14,5 +14,5 @@
   <author>Troy Straszheim</author>
   <author>Morgan Quigley</author>
 
-  <build_depend>catkin<build_depend>
+  <build_depend>catkin</build_depend>
 </package>

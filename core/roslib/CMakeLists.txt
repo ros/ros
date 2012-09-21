@@ -1,6 +1,7 @@
 project(roslib)
 find_package(catkin REQUIRED COMPONENTS rospack)
-catkin_project(roslib
+catkin_package()
+catkin_package_export(
   INCLUDE_DIRS include
   LIBRARIES roslib
   CFG_EXTRAS roslib-extras.cmake)
@@ -23,15 +24,15 @@ endif()
 
 #explicitly install library and includes
 install(TARGETS roslib
-  ARCHIVE DESTINATION ${CATKIN_PROJECT_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PROJECT_LIB_DESTINATION}
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   )
 
 install(DIRECTORY include/
   DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h")
 install(PROGRAMS scripts/gendeps
-  DESTINATION ${CATKIN_PROJECT_BIN_DESTINATION})
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 #integration tests
 

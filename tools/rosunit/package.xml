@@ -8,7 +8,7 @@
   <license>BSD</license>
 
   <url type="website">http://ros.org/wiki/rosunit</url>
-  <url type="bugtracker">https://code.ros.org/trac/ros/query?status=assigned&status=new&status=reopened&component=ros&order=priority</url>
+  <url type="bugtracker">https://code.ros.org/trac/ros/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=ros&amp;order=priority</url>
   <url type="repository">https://code.ros.org/svn/ros/stacks/ros/trunk/tools/rosunit</url>
 
   <author>Ken Conley</author>

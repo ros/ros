@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 project(roslaunch)
-find_package(catkin REQUIRED COMPONENTS rostest)
+find_package(catkin REQUIRED COMPONENTS rostest rosgraph_msgs)
 catkin_package()
 catkin_package_export()
 

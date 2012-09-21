@@ -6,6 +6,8 @@ catkin_package_export(
   LIBRARIES roslib
   CFG_EXTRAS roslib-extras.cmake)
 
+catkin_python_setup()
+
 find_package(Boost REQUIRED COMPONENTS thread)
 
 include_directories(include ${Boost_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS})

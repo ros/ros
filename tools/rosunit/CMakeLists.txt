@@ -4,6 +4,8 @@ find_package(catkin REQUIRED)
 catkin_package()
 catkin_package_export(CFG_EXTRAS ${PROJECT_NAME}-extras.cmake)
 
+catkin_python_setup()
+
 install(PROGRAMS
   scripts/test_results_dir.py
   scripts/summarize_results.py
@@ -11,6 +13,6 @@ install(PROGRAMS
   scripts/pycoverage_to_html.py
   scripts/clean_junit_xml.py
   scripts/check_test_ran.py
-  DESTINATION share/rosunit/scripts)
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/scripts)
 
 catkin_add_nosetests(test)

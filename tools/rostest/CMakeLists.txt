@@ -5,10 +5,14 @@ find_package(catkin COMPONENTS rosunit)
 find_package(Boost COMPONENTS thread)
 
 include_directories(include ${Boost_INCLUDE_DIRS})
-catkin_project(rostest
+
+catkin_package()
+catkin_package_export(
   INCLUDE_DIRS include
   CFG_EXTRAS ${PROJECT_NAME}-extras.cmake
   )
+catkin_python_setup()
+
 find_package(catkin COMPONENTS rostest)
 
 catkin_add_gtest(test_permuter test/test_permuter.cpp)
@@ -30,5 +34,5 @@ install(PROGRAMS nodes/hztest
   DESTINATION share/rostest/nodes/hztest
   )
 install(DIRECTORY include/${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PROJECT_INCLUDE_DESTINATION}
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h")

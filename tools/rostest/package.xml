@@ -1,0 +1,21 @@
+<package>
+  <name>rostest</name>
+  <version>1.9.7</version>
+  <description>
+     Integration test suite based on roslaunch that is compatible with xUnit frameworks.
+  </description>
+  <maintainer email="dthomas@willowgarage.com">Dirk Thomas</maintainer>
+  <license>BSD</license>
+
+  <author>Ken Conley</author>
+
+  <url>http://ros.org/wiki/rostest</url>
+
+  <build_depend>catkin</build_depend>
+  <build_depend>rosunit</build_depend>
+  <test_depend>rosunit</test_depend>
+
+  <export>
+    <rosdoc config="rosdoc.yaml" />
+  </export>
+</package>

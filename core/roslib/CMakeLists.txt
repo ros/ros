@@ -8,6 +8,8 @@ catkin_package_export(
 
 catkin_python_setup()
 
+catkin_add_env_hooks(10.ros SHELLS bat sh DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks)
+
 find_package(Boost REQUIRED COMPONENTS thread)
 
 include_directories(include ${Boost_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS})

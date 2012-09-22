@@ -1,0 +1,43 @@
+<package>
+  <name>roscpp</name>
+  <version>1.9.7</version>
+  <description>
+    <p>
+      roscpp is a C++ implementation of ROS. It provides
+      a <a href="http://www.ros.org/wiki/Client%20Libraries">client
+      library</a> that enables C++ programmers to quickly interface with
+      ROS <a href="http://ros.org/wiki/Topics">Topics</a>,
+      <a href="http://ros.org/wiki/Services">Services</a>,
+      and <a href="http://ros.org/wiki/Parameter Server">Parameters</a>.
+    </p>
+    <p>
+      roscpp is the most widely used ROS client library and is designed to
+      be the high-performance library for ROS.
+    </p>
+  </description>
+  <maintainer email="dthomas@willowgarage.com">Dirk Thomas</maintainer>
+  <license>BSD</license>
+
+  <url>http://ros.org/wiki/roscpp</url>
+
+  <author>Morgan Quigley</author>
+  <author>Josh Faust</author>
+  <author>Brian Gerkey</author>
+  <author>Troy Straszheim</author>
+
+  <build_depend>pkg-config</build_depend>
+  <build_depend>roslang</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>genmsg</build_depend>
+  <build_depend>cpp_common</build_depend>
+  <build_depend>rostime</build_depend>
+  <build_depend>rosconsole</build_depend>
+  <build_depend>roscpp_serialization</build_depend>
+  <build_depend>roscpp_traits</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>rosgraph_msgs</build_depend>
+  <build_depend>xmlrpcpp</build_depend>
+
+  <build_depend>rosunit</build_depend>
+  <test_depend>rosunit</test_depend>
+</package>

@@ -1,0 +1,16 @@
+<package>
+  <name>rosout</name>
+  <version>1.9.7</version>
+  <description>
+     System-wide logging mechanism for messages sent to the /rosout topic.
+  </description>
+  <maintainer email="dthomas@willowgarage.com">Dirk Thomas</maintainer>
+  <license>BSD</license>
+
+  <url>http://ros.org/wiki/rosout</url>
+
+  <author>Josh Faust</author>
+
+  <build_depend>catkin</build_depend>
+  <build_depend>roscpp</build_depend>
+</package>

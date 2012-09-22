@@ -1,6 +1,7 @@
 project(rosconsole)
 find_package(catkin REQUIRED COMPONENTS cpp_common rostime rosunit)
-catkin_project(rosconsole
+catkin_package()
+catkin_package_export(
   LIBRARIES rosconsole
   INCLUDE_DIRS include
   CFG_EXTRAS rosconsole-extras.cmake
@@ -39,8 +40,8 @@ endif()
 target_link_libraries(rosconsole ${catkin_LIBRARIES} ${LOG4CXX_LIBRARIES} ${Boost_LIBRARIES})
 
 install(TARGETS rosconsole
-  ARCHIVE DESTINATION ${CATKIN_PROJECT_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PROJECT_LIB_DESTINATION})
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
 
 install(DIRECTORY include/
   DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}

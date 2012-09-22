@@ -1,3 +1,4 @@
+cmake_minimum_required(VERSION 2.8)
 project(roscpp)
 
 find_package(catkin REQUIRED COMPONENTS
@@ -6,7 +7,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp_traits std_msgs rosgraph_msgs xmlrpcpp rosunit
   )
 
-catkin_project(roscpp
+catkin_package()
+catkin_package_export(
   LIBRARIES roscpp
   INCLUDE_DIRS include
   DEPENDS cpp_common rostime rosconsole roscpp_serialization
@@ -101,21 +103,21 @@ generate_messages()
 
 #explicitly install library and includes
 install(TARGETS roscpp
-  ARCHIVE DESTINATION ${CATKIN_PROJECT_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PROJECT_LIB_DESTINATION})
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
 install(DIRECTORY include/
   DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h")
 # install legacy infrastructure needed by rosbuild
 install(FILES rosbuild/roscpp.cmake
-  DESTINATION ${CATKIN_PROJECT_SHARE_DESTINATION}/rosbuild)
-install(PROGRAMS 
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/rosbuild)
+install(PROGRAMS
   rosbuild/scripts/genmsg_cpp.py
   rosbuild/scripts/gensrv_cpp.py
-  DESTINATION ${CATKIN_PROJECT_SHARE_DESTINATION}/rosbuild/scripts)
-install(FILES 
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/rosbuild/scripts)
+install(FILES
   rosbuild/scripts/msg_gen.py
-  DESTINATION ${CATKIN_PROJECT_SHARE_DESTINATION}/rosbuild/scripts)
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/rosbuild/scripts)
 
 catkin_add_gtest(${PROJECT_NAME}-test_version test/test_version.cpp)
 if(TARGET ${PROJECT_NAME}-test_version)

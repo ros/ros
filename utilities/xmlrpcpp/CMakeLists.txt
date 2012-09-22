@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 project(xmlrpcpp)
 find_package(catkin REQUIRED COMPONENTS cpp_common)
-catkin_project(xmlrpcpp
+catkin_package()
+catkin_package_export(
   INCLUDE_DIRS include
   LIBRARIES xmlrpcpp
   )
@@ -35,5 +36,5 @@ install(DIRECTORY include/
   FILES_MATCHING PATTERN "*.h")
 
 install(TARGETS xmlrpcpp
-  ARCHIVE DESTINATION ${CATKIN_PROJECT_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PROJECT_LIB_DESTINATION})
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})

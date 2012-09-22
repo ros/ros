@@ -18,7 +18,7 @@
   <author>Morgan Quigley</author>
   <author>Rob Wheeler</author>
 
-  <depend>catkin</depend>
+  <build_depend>catkin</build_depend>
 
   <run_depend>mk</run_depend>
   <run_depend>rosbuild</run_depend>

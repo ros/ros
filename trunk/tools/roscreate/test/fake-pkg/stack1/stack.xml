@@ -1,6 +1,0 @@
-<stack>
-  <description brief="stack1">stack1</description>
-  <author>Maintained by Kenneth Conley</author>
-  <license>BSD</license>  
-  <depend stack="ros" /> <!-- roslib -->
-</stack>

@@ -1,6 +1,6 @@
 <package>
   <name>roslang</name>
-  <version>1.9.11</version>
+  <version>1.9.12</version>
   <description brief="ROS client library base">
 
     roslang is a common package that all

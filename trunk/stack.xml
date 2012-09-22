@@ -1,0 +1,37 @@
+<stack>
+  <name>ros</name>
+  <version>1.9.9</version>
+  <description brief="ROS core">ROS packaging system</description>
+  <author>Eric Berger</author>
+  <author>Ken Conley</author>
+  <author>Josh Faust</author>
+  <author>Tully Foote</author>
+  <author>Brian Gerkey</author>
+  <author>Jeremy Leibs</author>
+  <author>Morgan Quigley</author>
+  <author>Rob Wheeler</author>
+  <maintainer email="tfoote@willowgarage.com">Tully Foote</maintainer>
+  <license>BSD</license>
+  <copyright>Willow Garage</copyright>
+  <url>http://www.ros.org/wiki/ROS</url>
+  <review status="doc reviewed" notes=""/>
+
+  <build_depends>boost</build_depends>
+  <build_depends>bzip2</build_depends>
+  <build_depends>catkin</build_depends>
+  <build_depends>gtest</build_depends>
+  <build_depends>pkg-config</build_depends>
+  <build_depends>python</build_depends>
+  <build_depends>python-nose</build_depends>
+  <build_depends>python-rospkg</build_depends>
+  <build_depends>rospack</build_depends>
+
+  <depends>boost</depends>
+  <depends>bzip2</depends>
+  <depends>catkin</depends>
+  <depends>gtest</depends>
+  <depends>python</depends>
+  <depends>python-nose</depends>
+  <depends>python-rospkg</depends>
+  <depends>rospack</depends>
+</stack>

@@ -1,0 +1,830 @@
+# rosbash - functions to support ROS users
+# Useful things to know:
+# 'local' variables get unset after function, all others stay forever
+# COMPREPLY is the var used by bash complete builtin
+
+function _rossed {
+    if [[ `uname` == Darwin || `uname` == FreeBSD ]]; then
+        sed -E "$@"
+    else
+        sed -r "$@"
+    fi
+}
+
+function _rosfind {
+    if [[ `uname` == Darwin || `uname` == FreeBSD ]]; then
+        # BSD find needs -E for extended regexp
+        find -E "$@"
+    else
+        find "$@"
+    fi
+}
+
+# _ros_location_find
+# based on $ROS_LOCATIONS, which the user can set to any colon
+# separated of key=folder pairs also resolves keys 'log' and
+# 'test_results' to ROS defaults finally resolves to package, then
+# stack echoes its result
+function _ros_location_find {
+    local homedir ROS_LOCATION_KEYS_ARR ROS_LOCATIONS_ARR loc
+    homedir=`echo $HOME | sed -e "s/\//\t\//g" -e "s/\t/\\\\\/g"`
+    ROS_LOCATION_KEYS_ARR=(`echo $ROS_LOCATIONS | _rossed -e 's/([^:=]*)=([^:=]*)(:*[^=])*(:|$)/\1 /g'`)
+    ROS_LOCATIONS_ARR=(`echo $ROS_LOCATIONS | _rossed -e 's/([^:=]*)=([^:=]*)(:*[^=])*(:|$)/\2 /g' -e "s/~/${homedir}/g"`)
+
+    for (( i = 0 ; i < ${#ROS_LOCATION_KEYS_ARR[@]} ; i++ )); do
+        if [[ $1 == ${ROS_LOCATION_KEYS_ARR[$i]} ]]; then
+            echo ${ROS_LOCATIONS_ARR[i]}
+            return 0
+        fi
+    done
+
+    if [[ $1 == log ]]; then
+        echo `roslaunch-logs`
+        return 0
+    elif [[ $1 == test_results ]]; then
+        echo `rosrun rosunit test_results_dir.py`
+        return 0
+    fi
+
+    loc=`export ROS_CACHE_TIMEOUT=-1.0 && rospack find $1 2> /dev/null`
+    if [[ $? != 0 ]]; then
+        loc=`export ROS_CACHE_TIMEOUT=-1.0 && rosstack find $1 2> /dev/null`
+        if [[ $? != 0 ]]; then
+            return 1
+        fi
+        echo $loc
+        return 0
+    fi
+    echo $loc
+    return 0
+}
+
+function _ros_list_locations {
+    local ROS_LOCATION_KEYS packages stacks
+    ROS_LOCATION_KEYS=`echo $ROS_LOCATIONS | _rossed -e 's/([^:=]*)=([^:=]*)(:*[^=])*(:|$)/\1 /g'`
+    packages=`export ROS_CACHE_TIMEOUT=-1.0 && rospack list-names`
+    stacks=`export ROS_CACHE_TIMEOUT=-1.0 && rosstack list-names`
+    echo $packages $stacks log test_results $ROS_LOCATION_KEYS | tr ' ' '\n'
+    return 0
+}
+
+function _ros_package_find {
+    local loc
+    loc=`export ROS_CACHE_TIMEOUT=-1.0 && rospack find $1 2> /dev/null`
+    if [[ $? != 0 ]]; then
+        return 1
+    fi
+    echo $loc
+    return 0
+}
+
+function _ros_list_packages {
+    local packages
+    packages=`export ROS_CACHE_TIMEOUT=-1.0 && rospack list-names`
+    echo $packages | tr ' ' '\n'
+    return 0
+}
+
+function _ros_list_stacks {
+    local stacks
+    stacks=`export ROS_CACHE_TIMEOUT=-1.0 && rosstack list-names`
+    echo $stacks | tr ' ' '\n'
+    return 0
+}
+
+# takes as argument either just a package-path or just a pkgname
+# returns 0 for no argument or if package (+ path) exist, 1 else
+# on success with arguments returns [pkgname, abspath, relpath basename] 
+function _ros_decode_path {
+    local rosname rosdir reldir last
+    rosvals=()
+    if [[ -z $1 ]]; then
+        return 0
+    fi
+
+    if [[ $1 =~ .+/.* ]]; then
+        rosname=${1%%/*}
+        reldir=/${1#*/}
+        last=${reldir##*/}        
+        reldir=${reldir%/*}/
+    else
+        rosname=$1
+        if [[ -z $2 || $2 != "forceeval" ]]; then
+           rosvals=(${rosname})
+           return 1
+        fi
+    fi
+    
+    rosdir=`_ros_location_find $rosname`
+    if [[ $? != 0 ]]; then
+        rosvals=(${rosname})
+        return 1
+    fi
+
+    rosvals=(${rosname} ${rosdir} ${reldir} ${last})
+}
+
+function rospython {
+  local pkgname
+  if [[ $1 = "--help" ]]; then
+    echo -e "usage: rospython [package] \n\nRun python loading package manifest first."
+    return 0
+  fi
+  if [[ -z $1 ]]; then
+    if [[ -f ./manifest.xml ]]; then
+      pkgname=`basename \`pwd\``
+      python -i -c "import roslib; roslib.load_manifest('$pkgname')"
+    else
+      python
+    fi
+  else
+    python -i -c "import roslib; roslib.load_manifest('$1')"
+  fi
+}
+
+function roscd {
+    local rosvals
+    if [[ $1 = "--help" ]] | [[ $# -gt 1 ]]; then
+        echo -e "usage: roscd package\n\nJump to target package."
+        return 0
+    fi
+    if [ -z $1 ]; then
+      if [ -z $ROS_WORKSPACE ]; then
+        echo -e "No ROS_WORKSPACE set.  Please set ROS_WORKSPACE to use roscd with no arguments."
+        return 1
+      fi
+      cd ${ROS_WORKSPACE}
+      return 0
+    fi
+
+    _ros_decode_path $1 forceeval
+    if [ $? != 0 ]; then
+      echo "roscd: No such package/stack '$1'"
+      return 1
+    elif [ -z $rosvals ]; then
+      if [ -z $ROS_WORKSPACE ]; then
+        echo -e "No ROS_WORKSPACE set.  Please set ROS_WORKSPACE to use roscd with no arguments."
+        return 1
+      fi
+      cd ${ROS_WORKSPACE}
+      return 0
+    else
+      cd ${rosvals[1]}${rosvals[2]}${rosvals[3]}
+      return 0
+    fi
+}
+
+function _is_integer {
+    [ "$1" -eq "$1" ] > /dev/null 2>&1
+    return $?
+}
+
+function rosd {
+    if [[ $1 = "--help" ]]; then
+        echo -e "usage: rosd\n\nDisplays the list of currently remembered directories with indexes."
+        return 0
+    fi
+    let count=0;
+    for items in `dirs`;
+    do
+        echo $count $items;
+        let count=$((count+1));
+    done
+}
+
+function rospd {
+    if [[ $1 = "--help" ]]; then
+        echo -e "usage: rospd\n\nLike pushd, also accepts indexes from rosd."
+        return 0
+    fi
+    if _is_integer $1; then
+        pushd +$1 > /dev/null ;
+    else
+        local rosvals
+        _ros_decode_path $1 forceeval
+        pushd ${rosvals[1]}${rosvals[2]}${rosvals[3]} > /dev/null ;
+    fi
+    rosd
+}
+
+function rosls {
+    local rosvals
+    if [[ $1 = "--help" ]]; then
+        echo -e "usage: rosls [package]\n\nLists contents of a package directory."
+        return 0
+    fi
+    _ros_decode_path $1 forceeval
+    ls ${rosvals[1]}${rosvals[2]}${rosvals[3]} $2
+}
+
+# sets arg as return value
+function _roscmd {
+    local pkgdir exepath opt catkin_project_libexec_dir opts
+    if [[ -n $CMAKE_PREFIX_PATH ]]; then
+        catkin_project_libexec_dir=`catkin_find --first-only --libexec $1 2> /dev/null`
+    fi
+    pkgdir=`_ros_package_find $1`
+    if [[ -z $catkin_project_libexec_dir && -z $pkgdir ]]; then
+        echo "Couldn't find package [$1]"
+        return 1
+    fi
+    exepath=(`find -L $catkin_project_libexec_dir $pkgdir -name $2 -type f ! -regex .*/[.].* ! -regex .*$pkgdir\/build\/.* | uniq`)
+    if [[ ${#exepath[@]} == 0 ]] ; then
+        echo "That file does not exist in that package."
+        return 1
+    elif [[ ${#exepath[@]} -gt 1 ]] ; then
+        echo "You have chosen a non-unique filename, please pick one of the following:"
+        select opt in ${exepath[@]}; do
+            echo $opt
+            break
+        done
+    else
+        opt=${exepath[0]}
+    fi
+    arg=${opt}
+}
+
+function rosed {
+    local arg
+    if [[ $1 = "--help" ]]; then
+       echo -e "usage: rossed [package] [file]\n\nEdit a file within a package."
+       return 0
+    fi
+    _roscmd ${1} ${2}
+    if [[ -n ${arg} ]]; then
+        if [[ -z $EDITOR ]]; then
+            vim ${arg}
+        else
+            $EDITOR ${arg}
+        fi
+    fi
+}
+
+function roscp {
+    local arg
+    if [[ $1 = "--help" ]] | [[ $# -ne 3 ]]; then
+        echo -e "usage: roscp package filename target\n\nCopy a file from a package to target location."
+        return 0
+    fi
+    _roscmd ${1} ${2}
+    cp ${arg} ${3}
+}
+
+function rosawesome {
+   alias megamaid=rosrecord
+   alias suck2blow=rosplay
+   alias botherder=roscore
+}
+
+function _roscomplete {
+    local arg opts
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+    opts="`_ros_list_packages` `_ros_list_stacks`"
+    IFS=$'\n'
+    COMPREPLY=($(compgen -W "${opts}" -- ${arg}))
+    unset IFS
+}
+
+function _roscomplete_rosmake {
+    local arg
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+    _roscomplete
+    if [[ ${arg} =~ \-\-.* ]]; then
+        COMPREPLY=(${COMPREPLY[@]} $(compgen -W "--test-only --all --mark-installed --unmark-installed --robust --build-everything --specified-only --buildtest --buildtest1 --output --pre-clean --bootstrap --disable-logging --target --pjobs= --threads --profile --skip-blacklist --status-rate" -- ${arg}))
+    fi
+}
+
+function _roscomplete_sub_dir {
+    local arg opts rosvals
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+    _ros_decode_path ${arg}
+    if [[ -z ${rosvals[2]} ]]; then
+        opts=`_ros_list_locations`
+        IFS=$'\n'
+        COMPREPLY=($(compgen -W "${opts}" -S / -- ${rosvals[0]}))
+        unset IFS
+    else
+        if [ -e ${rosvals[1]}${rosvals[2]} ]; then
+          opts=`find -L ${rosvals[1]}${rosvals[2]} -maxdepth 1 -mindepth 1 -type d ! -regex ".*/[.].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1\//g"`
+        else
+          opts=''
+        fi
+        IFS=$'\n'
+        COMPREPLY=($(compgen -P ${rosvals[0]}${rosvals[2]} -W "${opts}" -- ${rosvals[3]}))
+        unset IFS
+    fi
+}
+
+function _msg_opts {
+    local arg pkgs pkgname msgname searchmsg path
+
+    if [[ $1 =~ .+/.* ]]; then
+        pkgname=${1%%/*}
+        msgname=${1#*/}
+        searchmsg=1
+    else
+        pkgname=${1}
+    fi
+
+    if [[ -z ${searchmsg} ]]; then
+        pkgs=(`rospack list`)
+        
+        for (( i = 0 ; i < ${#pkgs[@]} ; i=i+2 )); do
+            if [[ -d ${pkgs[i+1]}/msg ]]; then
+                echo ${pkgs[i]}/
+            fi
+        done
+    else
+        path=`rospack find ${pkgname}`
+        if [ -d ${path}/msg ]; then
+            echo `find -L ${path}/msg -maxdepth 1 -mindepth 1 -name *.msg ! -regex ".*/[.].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.msg/${pkgname}\/\1/g"`
+        fi
+    fi
+}
+
+function _srv_opts {
+    local arg pkgs pkgname srvname searchsrv path count opts
+
+    if [[ $1 =~ .+/.* ]]; then
+        pkgname=${1%%/*}
+        srvname=${1#*/}
+        searchsrv=1
+    else
+        pkgname=${1}
+    fi
+
+    if [[ -z ${searchsrv} ]]; then
+        pkgs=(`rospack list | grep "^${pkgname}"`)
+        count=0
+
+        opts=""
+
+        for (( i = 0 ; i < ${#pkgs[@]} ; i=i+2 )); do
+            if [[ -d ${pkgs[i+1]}/srv ]]; then
+                opts="$opts ${pkgs[i]}/"
+                pkgname=${pkgs[i]}
+                count=$((count+1))
+            fi
+        done
+
+        if [[ $count -gt 1 ]]; then
+            echo $opts
+            return 0
+        fi
+    fi
+
+    path=`rospack find ${pkgname} 2> /dev/null`
+
+    if [ $? -eq 0 ] && [ -d ${path}/srv ]; then
+        echo `find -L ${path}/srv -maxdepth 1 -mindepth 1 -name *.srv ! -regex ".*/[.].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.srv/${pkgname}\/\1/g"`
+    fi
+}
+
+function _roscomplete_rossrv {
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+
+    if [[ $COMP_CWORD == 1 ]]; then
+        opts="show list md5 package packages"
+        COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+    elif [[ $COMP_CWORD == 2 ]]; then
+        case ${COMP_WORDS[1]} in
+            show|users|md5)
+                opts=`_srv_opts ${COMP_WORDS[$COMP_CWORD]}`
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                ;;
+            package)
+                opts=`rospack list-names`
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                ;;
+            packages|list)
+                # This shouldn't really have a completion rule
+                ;;
+        esac
+    fi
+}
+
+function _roscomplete_search_dir {
+    local arg opts pkgdir catkin_project_libexec_dir
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+    if [[ $COMP_CWORD == 1 ]]; then
+        opts=`_ros_list_packages`
+        IFS=$'\n'
+        COMPREPLY=($(compgen -W "${opts}" -- ${arg}))
+        unset IFS
+    elif [[ $COMP_CWORD == 2 ]]; then
+        if [[ -n $CMAKE_PREFIX_PATH ]]; then
+            catkin_project_libexec_dir=`catkin_find --first-only --libexec ${COMP_WORDS[1]} 2> /dev/null`
+        fi
+        pkgdir=`_ros_package_find ${COMP_WORDS[1]}`
+        if [[ -n "$catkin_project_libexec_dir_dir" || -n "$pkgdir" ]]; then
+            opts=`_rosfind -L $catkin_project_libexec_dir $pkgdir ${1} ! -regex ".*/[.].*" ! -regex ".*$pkgdir\/build\/.*"  -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
+        else
+            opts=""
+        fi
+        IFS=$'\n'
+        COMPREPLY=($(compgen -W "${opts}" -- ${arg}))
+        unset IFS
+    else
+       homedir=`echo $HOME | sed -e "s/\//\t\//g" -e "s/\t/\\\\\/g"`
+       arg=`echo ${arg} | sed -e "s/~/${homedir}/g"`
+        if [[ $arg =~ ^/*.+/.* ]]; then
+           path=${arg%/*}
+        else
+           path=.
+        fi
+        if [[ -e ${path} ]]; then
+           opts=`find -L $path -maxdepth 1 -type d ! -regex ".*/[.].*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/$/\//g" -e "s/^[.]\///g" -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g"`$'\n'`find -L $path -maxdepth 1 -type f ! -regex ".*/[.][^.]*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/^[.]\///g"  -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g"`
+        else
+           opts=""
+        fi
+        IFS=$'\n'
+        COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+        unset IFS
+        if [[ ${#COMPREPLY[*]} = 1 ]]; then
+            newpath=${COMPREPLY[0]%/*}
+            if [[ -d ${newpath} ]]; then
+               opts=`find -L $newpath -maxdepth 1 -type d ! -regex ".*/[.].*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/$/\//g" -e "s/^[.]\///g" -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g"`$'\n'`find -L $newpath -maxdepth 1 -type f ! -regex ".*/[.][^.]*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/^[.]\///g"  -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g"`
+               IFS=$'\n'
+               COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+               unset IFS
+            fi
+        fi
+    fi
+
+}
+
+function _roscomplete_exe {
+    _roscomplete_search_dir "-type f -perm +111"
+}
+
+function _roscomplete_file {
+    _roscomplete_search_dir "-type f ! -regex .*[.][oa]$"
+}
+
+function _roscomplete_launch {
+    arg="${COMP_WORDS[COMP_CWORD]}"
+    COMPREPLY=()
+    if [[ ${arg} =~ \-\-.* ]]; then
+        COMPREPLY=(${COMPREPLY[@]} $(compgen -W "--files --args --nodes --find-node --child --local --screen --server_uri --run_id --wait --port --core --pid --dump-params" -- ${arg}))
+        
+    else
+        _roscomplete_search_dir "( -type f -regex .*\.launch$ -o -type f -regex .*\.test$ )"
+        if [[ $COMP_CWORD == 1 ]]; then
+           COMPREPLY=($(compgen -o plusdirs -f -X "!*.launch" -- ${arg}) ${COMPREPLY[@]} $(compgen -o plusdirs -f -X "!*.test" -- ${arg}) ${COMPREPLY[@]})
+        fi
+    fi
+}
+
+function _roscomplete_test {
+    arg="${COMP_WORDS[COMP_CWORD]}"
+    if [[ ${arg} =~ \-\-.* ]]; then
+        COMPREPLY=(${COMPREPLY[@]} $(compgen -W "--bare --bare-limit --bare-name --pkgdir --package" -- ${arg}))
+    else
+        _roscomplete_search_dir "( -type f -regex .*\.launch$ -o -type f -regex .*\.test$ )"
+        if [[ $COMP_CWORD == 1 ]]; then
+           COMPREPLY=($(compgen -o plusdirs -f -X "!*.launch" -- ${arg}) ${COMPREPLY[@]} $(compgen -o plusdirs -f -X "!*.test" -- ${arg}) ${COMPREPLY[@]})
+        fi
+    fi
+}
+
+function _roscomplete_rosbag {
+    local opts
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+
+    if [[ $COMP_CWORD == 1 ]]; then
+        opts="check compress decompress filter fix help info play record reindex"
+        COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+    else
+        if [[ ${arg} =~ \-\-.* ]]; then
+            case ${COMP_WORDS[1]} in
+                check)
+                    opts="--genrules --append --noplugins --help"
+                    ;;
+                compress|decompress)
+                    opts="--output-dir --force --quiet --help"
+                    ;;
+                filter)
+                    opts="--print --help"
+                    ;;
+                fix)
+                    opts="--force --noplugins --help"
+                    ;;
+                info)
+                    opts="--yaml --key --freq --help"
+                    ;;
+                play)
+                    opts="--help --quiet --immediate --pause --queue --clock --hz --delay --rate --start --skip-empty --loop --keep-alive --try-future-version --topics --bags"
+                    ;;
+                record)
+                    opts="--help --all --regex --exclude --quiet --output-prefix --output-name --split --size --duration --buffsize --limit --node --bz2"
+                    ;;
+                reindex)
+                    opts="--help --force --quiet --output-dir"
+                    ;;
+            esac
+            COMPREPLY=($(compgen -W "$opts" -- ${arg})) 
+        fi
+    fi
+
+}
+
+function _roscomplete_rospack {
+    local arg opts
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+
+    if [[ $COMP_CWORD == 1 ]]; then
+        opts="help find list list-names list-duplicates langs depends depends-manifests depends1 depends-indent depends-msgsrv depends-why rosdep rosdep0 vcs vcs0 depends-on depends-on1 export plugins cflags-only-I cflags-only-other libs-only-L libs-only-l libs-only-other profile"
+        COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+    else
+        opts=`rospack list-names`
+        COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+    fi
+
+}
+
+function _roscomplete_rosnode {
+    local arg opts
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+
+    if [[ $COMP_CWORD == 1 ]]; then
+        opts="ping list info machine kill"
+        COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+    elif [[ $COMP_CWORD == 2 ]]; then
+        case ${COMP_WORDS[1]} in
+            info)
+                opts=`rosnode list 2> /dev/null`
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                ;;
+            ping|list|kill)
+                if [[ ${arg} =~ \-\-.* ]]; then
+                    opts="--all --help"
+                else
+                    opts=`rosnode list 2> /dev/null`
+                fi
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                ;;
+            machine)
+                # This takes more logic to determine which machines are present.
+                ;;
+        esac
+    else
+        case ${COMP_WORDS[1]} in
+            kill)
+                # complete on node name
+                opts=`rosnode list 2> /dev/null`
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                ;;
+        esac
+    fi
+
+}
+function _roscomplete_rosparam {
+    local arg opts
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+
+    if [[ $COMP_CWORD == 1 ]]; then
+        opts="set get load dump delete list"
+        COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+    elif [[ $COMP_CWORD == 2 ]]; then
+        case ${COMP_WORDS[1]} in
+            set|get|delete|list)
+                opts=`rosparam list 2> /dev/null`
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                ;;
+            load|dump)
+                # complete on files
+                COMPREPLY=($(compgen -f -- ${arg}))
+                ;;
+        esac
+    elif [[ $COMP_CWORD == 3 ]]; then
+        case ${COMP_WORDS[1]} in
+            load|dump)
+                # complete on namespace
+                opts=`rosparam list 2> /dev/null`
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                ;;
+        esac
+    fi
+
+}
+function _roscomplete_rostopic {
+    local arg opts
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+
+    if [[ $COMP_CWORD == 1 ]]; then
+        opts="bw echo hz list pub type find info"
+        COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+    elif [[ $COMP_CWORD -ge 2 ]]; then
+        if [[ ${arg} =~ \-\-.* ]]; then
+            case ${COMP_WORDS[1]} in
+                pub)
+                    COMPREPLY=($(compgen -W "--rate --once --file --latch" -- ${arg}))
+                    ;;
+                bw)
+                    COMPREPLY=($(compgen -W "--window" -- ${arg}))
+                    ;;
+                echo)
+                    COMPREPLY=($(compgen -W "--bag --filter --nostr --noarr --clear --all offset" -- ${arg}))
+                    ;;
+                hz)
+                    COMPREPLY=($(compgen -W "--window --filter" -- ${arg}))
+                    ;;
+                list)
+                    COMPREPLY=($(compgen -W "--bag --verbose --host" -- ${arg})) 
+                    ;;
+            esac
+        else
+						case ${COMP_WORDS[1]} in
+								bw|echo|hz|list|type|info)
+										if [[ ${COMP_WORDS[$(( $COMP_CWORD - 1 ))]} == "-b" ]]; then
+												COMPREPLY=($(compgen -f -- ${arg}))
+										else
+												opts=`rostopic list 2> /dev/null`
+												COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+										fi
+										;;
+								find)
+										opts=`_msg_opts ${COMP_WORDS[$COMP_CWORD]}`
+										COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+										;;
+								pub)
+										if [[ $COMP_CWORD == 2 ]]; then
+												opts=`rostopic list 2> /dev/null`
+												COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+										elif [[ $COMP_CWORD == 3 ]]; then
+												opts=`_msg_opts ${COMP_WORDS[$COMP_CWORD]}`
+												COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+								    elif [[ $COMP_CWORD == 4 ]]; then
+								    		opts=`rosmsg-proto msg 2> /dev/null -s ${COMP_WORDS[3]}`
+												if [ 0 -eq $? ]; then
+													COMPREPLY="$opts"
+												fi
+										fi
+										;;
+		        esac
+        fi
+    fi
+}
+
+function _roscomplete_rosservice {
+    local arg opts
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+
+    if [[ $COMP_CWORD == 1 ]]; then
+        opts="list call type find uri"
+        COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+    elif [[ $COMP_CWORD == 2 ]]; then
+        case ${COMP_WORDS[1]} in
+            uri|list|type|call)
+                opts=`rosservice list 2> /dev/null`
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                ;;
+            find)
+                # Need a clever way to do message searching
+                opts=`_srv_opts ${COMP_WORDS[$COMP_CWORD]}`
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+                ;;
+        esac
+    elif [[ $COMP_CWORD == 3 ]]; then
+        case ${COMP_WORDS[1]} in
+            call)
+                type=`rosservice type ${COMP_WORDS[2]}`
+                opts=`rosmsg-proto srv 2> /dev/null -s ${type}`
+                if [ 0 -eq $? ]; then
+                  COMPREPLY="$opts"
+                fi
+            ;;
+        esac
+    fi
+
+}
+
+function _msg_opts {
+    local arg pkgs pkgname msgname searchmsg path count opts
+
+    if [[ $1 =~ .+/.* ]]; then
+        pkgname=${1%%/*}
+        msgname=${1#*/}
+        searchmsg=1
+    else
+        pkgname=${1}
+    fi
+
+    if [[ -z ${searchmsg} ]]; then
+        pkgs=(`rospack list | grep "^${pkgname}"`)
+        count=0
+
+        opts=""
+
+        for (( i = 0 ; i < ${#pkgs[@]} ; i=i+2 )); do
+            if [[ -d ${pkgs[i+1]}/msg ]]; then
+                opts="$opts ${pkgs[i]}/"
+                pkgname=${pkgs[i]}
+                count=$((count+1))
+            fi
+        done
+
+        if [[ $count -gt 1 ]]; then
+            echo $opts
+            return 0
+        fi
+    fi
+
+    path=`rospack find ${pkgname} 2> /dev/null`
+
+    if [ $? -eq 0 ] && [ -d ${path}/msg ]; then
+        echo `find -L ${path}/msg -maxdepth 1 -mindepth 1 -name *.msg ! -regex ".*/[.].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.msg/${pkgname}\/\1/g"`
+    fi
+}
+
+function _roscomplete_rosmsg {
+    local arg opts
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+
+    if [[ $COMP_CWORD == 1 ]]; then
+        opts="show list md5 package packages"
+        COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+    elif [[ $COMP_CWORD == 2 ]]; then
+        case ${COMP_WORDS[1]} in
+            show|users|md5)
+                opts=`_msg_opts ${COMP_WORDS[$COMP_CWORD]}`
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                ;;
+            package)
+                opts=`rospack list-names`
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                ;;
+            packages|list)
+                # This shouldn't really have a completion rule
+                ;;
+        esac
+    fi
+
+}
+
+function _roscomplete_roscreate_pkg {
+    local arg opts
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+
+    if [[ $COMP_CWORD != 1 ]]; then
+        opts=`rospack list-names`
+        COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+    fi
+}
+
+function _roscomplete_roswtf {
+    local arg
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+    if [[ ${arg} =~ \-\-.* ]]; then
+        COMPREPLY=($(compgen -W "--all --no-plugins --offline" -- ${arg}))
+    else
+        if [[ $COMP_CWORD == 1 ]]; then
+           COMPREPLY=($(compgen -o plusdirs -f -X "!*.launch" -- ${arg}))
+        fi
+    fi
+}
+
+function _roscomplete_rosclean {
+    local arg opts
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+    if [[ $COMP_CWORD == 1 ]]; then
+        opts="check purge"
+        COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+    fi
+}
+
+complete -F "_roscomplete_sub_dir" -o "nospace" "roscd"
+complete -F "_roscomplete_sub_dir" -o "nospace" "rospd"
+complete -F "_roscomplete_sub_dir" -o "nospace" "rosls"
+complete -F "_roscomplete_rosmake" "rosmake"
+complete -F "_roscomplete_rosclean" "rosclean"
+complete -F "_roscomplete_exe" "rosrun"
+complete -F "_roscomplete_file" "rosed"
+complete -F "_roscomplete_file" "roscp"
+complete -F "_roscomplete_launch" -o filenames "roslaunch"
+complete -F "_roscomplete_test" -o filenames "rostest"
+complete -F "_roscomplete_rospack" "rospack"
+complete -F "_roscomplete_rosbag" -o default "rosbag"
+complete -F "_roscomplete_rosnode" "rosnode"
+complete -F "_roscomplete_rosparam" "rosparam"
+complete -F "_roscomplete_rostopic" "rostopic"
+complete -F "_roscomplete_rosservice" "rosservice"
+complete -F "_roscomplete_rosmsg" "rosmsg"
+complete -F "_roscomplete_rossrv" "rossrv"
+complete -F "_roscomplete_roscreate_pkg" "roscreate-pkg"
+complete -F "_roscomplete_roswtf" -o filenames "roswtf"

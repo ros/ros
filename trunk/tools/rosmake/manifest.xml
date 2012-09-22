@@ -1,0 +1,19 @@
+<package>
+  <description brief="rosmake">
+
+     rosmake is a ros dependency aware build tool which can be used to
+     build all dependencies in the correct order.
+
+  </description>
+  <author>Tully Foote/tfoote@willowgarage.com</author>
+  <license>BSD</license>
+  <review status="Doc Reviewed" notes="2010-01-12"/>
+  <url>http://ros.org/wiki/rosmake</url>
+
+  <export>
+    <rosdoc config="rosdoc.yaml"/>    
+  </export>
+  
+</package>
+
+

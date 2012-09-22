@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+if [[ $1 = "--help" ]]; then
+  echo "Usage: rosrun PACKAGE EXECUTABLE [ARGS]"
+  echo "  rosrun will locate PACKAGE and try to find"
+  echo "  an executable named EXECUTABLE in the PACKAGE tree."
+  echo "  If it finds it, it will run it with ARGS."
+  exit 0
+fi
+if [ $# -lt 2 ]; then
+  echo "Usage: rosrun PACKAGE EXECUTABLE [ARGS]"
+  echo "  rosrun will locate PACKAGE and try to find"
+  echo "  an executable named EXECUTABLE in the PACKAGE tree."
+  echo "  If it finds it, it will run it with ARGS."
+  exit 1
+fi
+# early check that filename does not end with '/' 
+case $2 in 
+		*/) echo "Invalid filename: " $2	
+				exit 1 
+				;; 
+esac 
+# basename also makes .//foo into foo 
+basename=`basename $2`
+if [[ -n $CMAKE_PREFIX_PATH ]]; then
+    catkin_project_libexec_dir=`catkin_find --first-only --libexec $1 2> /dev/null`
+fi
+pkgdir=`rospack find $1`
+if [[ -z $catkin_project_libexec_dir && -z $pkgdir ]]; then
+    exit 2
+fi
+if [[ ! $2 == */* ]]; then 
+  # The -perm /mode usage is not available in find on the Mac
+  #exepathlist=(`find $pkgdir -name $2 -type f -perm /u+x,g+x,o+x`)
+  # -L: #3475
+  exepathlist=(`find -L $catkin_project_libexec_dir $pkgdir -name $2 -type f  -perm +111 ! -regex ".*$pkgdir\/build\/.*" | uniq`)
+  if [[ ${#exepathlist[@]} == 0 ]] ; then
+    echo "[rosrun] Couldn't find executable named $2 below $pkgdir"
+    nonexepathlist=(`find -H $pkgdir -name $2`)
+    if [[ ${#nonexepathlist[@]} != 0 ]] ; then
+      echo "[rosrun] Found the following, but they're either not files, "
+      echo "[rosrun] or not executable:"
+      for p in ${nonexepathlist[@]}; do
+        echo "[rosrun]   ${p}"
+      done
+    fi
+    exit 3
+
+  elif [[ ${#exepathlist[@]} -gt 1 ]] ; then
+    echo "[rosrun] You have chosen a non-unique executable, please pick one of the following:"
+    select opt in ${exepathlist[@]}; do
+        exepath=$opt
+        break
+    done
+  else 
+		exepath=${exepathlist[0]} 
+	fi 
+else
+	absname=$pkgdir/$2 
+	if [ ! -f $absname -o ! -x $absname ] ; then 
+		echo "[rosrun] Couldn't find executable named $absname" 
+		exit 3 
+	fi 
+	exepath=$absname 
+fi
+shift
+shift
+exec $exepath "$@"

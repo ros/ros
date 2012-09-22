@@ -1,0 +1,106 @@
+#! /usr/bin/env python
+# Software License Agreement (BSD License)
+#
+# Copyright (c) 2008, Willow Garage, Inc.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+#  * Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#  * Redistributions in binary form must reproduce the above
+#    copyright notice, this list of conditions and the following
+#    disclaimer in the documentation and/or other materials provided
+#    with the distribution.
+#  * Neither the name of Willow Garage, Inc. nor the names of its
+#    contributors may be used to endorse or promote products derived
+#    from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# Revision $Id: gendeps 3009 2008-12-05 00:47:44Z sfkwc $
+# $Author: sfkwc $
+
+## Script for determining the ROS messages a particular message
+## depends on.  This is important for determining messages file that
+## need to be rebuilt.
+
+import sys
+
+import roslib.msgs 
+import roslib.srvs 
+import roslib.gentools
+ 
+NAME='gendeps'
+
+def usage(progname, stdout=sys.stdout):
+    print >> stdout,  "%(progname)s msg-or-srv-file"%vars()
+
+## main method for gendeps command
+## @param argv [str]: sys args
+## @param stdout pipe: stdout pipe
+## @param stderr pipe: stderr pipe                
+def gendeps_main(argv, stdout, stderr):
+    from optparse import OptionParser
+    parser = OptionParser(usage="usage: %prog [options] [files...]", prog=NAME)
+    parser.add_option("-m", "--md5",
+                      dest="md5", default=False,
+                      action="store_true",
+                      help="Generate md5 hash of files")
+    parser.add_option("-s", "--sha1",
+                      dest="sha1", default=False,
+                      action="store_true",
+                      help="Generate SHA1 hash of files")
+    parser.add_option("-c", "--cat",
+                      dest="cat_files", default=False,
+                      action="store_true",
+                      help="Generate concatenated list of files")
+    (options, args) = parser.parse_args(argv)
+
+    # get the file name
+    if len(args) != 2:
+        parser.error("you must specify one input file")
+    f = args[1]
+
+    # validate that options are compatible
+    if options.md5 and (options.sha1 or options.cat_files):
+        parser.error("md5 option is not compatible with other options")
+    if options.sha1 and (options.md5 or options.cat_files):
+        parser.error("sha1 option is not compatible with other options")
+    if options.cat_files and (options.md5 or options.sha1):
+        parser.error("cat option is not compatible with other options")
+
+    retval = roslib.gentools.get_file_dependencies(f, stdout=stdout, stderr=stderr)
+
+    if options.md5:
+        print >> stdout, roslib.gentools.compute_md5(retval)
+    elif options.sha1:
+        print >> stdout, roslib.gentools.compute_sha1(retval)        
+    elif options.cat_files:
+        # this option is used for the message definition that is
+        # stored in exchanged in ROS handshakes and then stored in bag
+        # files
+        print >> stdout, roslib.gentools.compute_full_text(retval)
+    else:
+        print >> stdout, ' '.join(retval['files'].itervalues())
+
+if __name__ == "__main__":
+    try:
+        gendeps_main(sys.argv, sys.stdout, sys.stderr)
+    except Exception, e:
+        print >> sys.stderr, e
+        sys.exit(1)
+

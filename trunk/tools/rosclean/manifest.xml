@@ -1,0 +1,14 @@
+<package>
+  <description brief="rosclean">
+
+     rosclean: cleanup filesystem resources (e.g. log files).
+
+  </description>
+  <author>Ken Conley</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/rosclean</url>
+
+</package>
+
+

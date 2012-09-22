@@ -1,0 +1,24 @@
+<package>
+  <name>rosbash</name>
+  <version>1.9.12</version>
+  <description>
+
+  Assorted shell commands for using ros with bash.
+
+  </description>
+  <maintainer email="dthomas@willowgarage.com">Dirk Thomas</maintainer>
+  <license>BSD</license>
+
+  <url>http://www.ros.org/wiki/rosbash</url>
+  <author>Jeremy Leibs</author>
+  <author>Thibault Kruse</author>
+
+  <build_depend>catkin</build_depend>
+
+  <export>
+    <platform os="ubuntu" version="9.04"/>
+    <platform os="ubuntu" version="9.10"/>
+    <platform os="ubuntu" version="10.04"/>
+    <platform os="macports" version="macports"/>
+  </export>
+</package>

@@ -18,8 +18,8 @@
   <author>Morgan Quigley</author>
   <author>Rob Wheeler</author>
 
-  <!-- This is a metapackage, so it just run-depends on all its child
-       packages. -->
+  <depend>catkin</depend>
+
   <run_depend>mk</run_depend>
   <run_depend>rosbuild</run_depend>
   <run_depend>roslang</run_depend>

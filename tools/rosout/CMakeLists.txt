@@ -5,6 +5,8 @@ find_package(catkin REQUIRED COMPONENTS roscpp)
 catkin_package()
 catkin_package_export()
 
+include_directories(${catkin_INCLUDE_DIRS})
+
 add_executable(rosout rosout.cpp)
 target_link_libraries(rosout ${catkin_LIBRARIES})
 

@@ -1,0 +1,27 @@
+<package>
+  <name>rosmsg</name>
+  <version>1.9.7</version>
+  <description>
+    rosmsg contains two command-line tools: <tt>rosmsg</tt> and
+    <tt>rossrv</tt>. <tt>rosmsg</tt> is a command-line tool for
+    displaying information about <a
+    href="http://www.ros.org/wiki/msg">ROS Message
+    types</a>. <tt>rossrv</tt> is a command-line tool for displaying
+    information about <a href="http://www.ros.org/wiki/srv">ROS
+    Service types</a>.
+  </description>
+  <maintainer email="dthomas@willowgarage.com">Dirk Thomas</maintainer>
+  <license>BSD</license>
+
+  <url>http://ros.org/wiki/rosmsg</url>
+
+  <author>Ken Conley</author>
+  <author>Tully Foote</author>
+
+  <build_depend>catkin</build_depend>
+
+  <export>
+    <rosdoc config="rosdoc.yaml"/>    
+  </export>
+</package>
+

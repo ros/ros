@@ -1,10 +1,12 @@
 project(message_filters)
 find_package(catkin REQUIRED COMPONENTS roscpp xmlrpcpp rosconsole)
-catkin_project(${PROJECT_NAME}
+catkin_package(
   INCLUDE_DIRS include
   LIBRARIES message_filters
   DEPENDS roscpp xmlrpcpp rosconsole
 )
+catkin_python_setup()
+
 find_package(Boost REQUIRED COMPONENTS signals thread)
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
@@ -14,11 +16,11 @@ add_library(${PROJECT_NAME} src/connection.cpp)
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 install(TARGETS ${PROJECT_NAME}
-  ARCHIVE DESTINATION ${CATKIN_PROJECT_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PROJECT_LIB_DESTINATION})
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
 
 install(DIRECTORY include/${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PROJECT_INCLUDE_DESTINATION}
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h")
 
 # Ugly workaround for check_test_ran macro issue

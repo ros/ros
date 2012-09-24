@@ -1,0 +1,24 @@
+<package>
+  <name>rosnode</name>
+  <version>1.9.7</version>
+  <description>
+    rosnode is a command-line tool for displaying debug information
+    about ROS <a href="http://www.ros.org/wiki/Nodes">Nodes</a>,
+    including publications, subscriptions and connections. It also
+    contains an experimental library for retrieving node
+    information. This library is intended for internal use only.
+  </description>
+  <maintainer email="dthomas@willowgarage.com">Dirk Thomas</maintainer>
+  <license>BSD</license>
+
+  <url>http://ros.org/wiki/rosnode</url>
+
+  <author>Ken Conley</author>
+
+  <build_depend>catkin</build_depend>
+  <build_depend>rostest</build_depend>
+
+  <export>
+    <rosdoc config="rosdoc.yaml"/>    
+  </export>
+</package>

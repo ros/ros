@@ -14,6 +14,7 @@
   <url>http://ros.org/wiki/rosgraph</url>
 
   <build_depend>rostest</build_depend>
+  <test_depend>mock</test_depend>
 
   <export>
     <rosdoc config="rosdoc.yaml"/>

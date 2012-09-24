@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 project(roswtf)
 find_package(catkin REQUIRED COMPONENTS rostest)
-catkin_project(${PROJECT_NAME})
+catkin_package()
+catkin_python_setup()
 
 add_rostest(test/roswtf.test)
 

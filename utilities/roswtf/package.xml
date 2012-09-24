@@ -1,0 +1,21 @@
+<package>
+  <name>roswtf</name>
+  <version>1.9.7</version>
+  <description>
+     roswtf is a tool for diagnosing issues with a running ROS system. Think of it as a FAQ implemented in code.
+  </description>
+  <maintainer email="dthomas@willowgarage.com">Dirk Thomas</maintainer>
+  <license>BSD</license>
+
+  <url>http://ros.org/wiki/roswtf</url>
+
+  <author>Ken Conley</author>
+
+  <build_depend>catkin</build_depend>
+  <build_depend>rostest</build_depend>
+  <run_depend>python-paramiko</run_depend>
+
+  <export>
+    <rosdoc config="rosdoc.yaml" />
+  </export>
+</package>

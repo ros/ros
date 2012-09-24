@@ -2,8 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 project(roslisp)
 find_package(catkin REQUIRED)
 
-catkin_project(roslisp
-  CFG_EXTRAS roslisp-extras.cmake)
+catkin_package(CFG_EXTRAS roslisp-extras.cmake)
 add_subdirectory(env-hooks)
 
 # HACK(lorenz): how can wie already use roslisp-extras.cmake here?
@@ -38,7 +37,7 @@ install(DIRECTORY scripts
 
 # install legacy infrastructure needed by rosbuild
 install(FILES rosbuild/roslisp.cmake
-        DESTINATION ${CATKIN_PROJECT_SHARE_DESTINATION}/rosbuild)
+        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/rosbuild)
 install(PROGRAMS
         rosbuild/scripts/genmsg_lisp.py
-        DESTINATION ${CATKIN_PROJECT_SHARE_DESTINATION}/rosbuild/scripts)
+        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/rosbuild/scripts)

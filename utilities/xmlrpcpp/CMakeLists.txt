@@ -1,8 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(xmlrpcpp)
 find_package(catkin REQUIRED COMPONENTS cpp_common)
-catkin_package()
-catkin_package_export(
+catkin_package(
   INCLUDE_DIRS include
   LIBRARIES xmlrpcpp
   )

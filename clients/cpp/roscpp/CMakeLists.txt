@@ -7,8 +7,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp_traits std_msgs rosgraph_msgs xmlrpcpp rosunit
   )
 
-catkin_package()
-catkin_package_export(
+catkin_package(
   LIBRARIES roscpp
   INCLUDE_DIRS include
   DEPENDS cpp_common rostime rosconsole roscpp_serialization

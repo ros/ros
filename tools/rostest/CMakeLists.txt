@@ -6,8 +6,7 @@ find_package(Boost COMPONENTS thread)
 
 include_directories(include ${Boost_INCLUDE_DIRS})
 
-catkin_package()
-catkin_package_export(
+catkin_package(
   INCLUDE_DIRS include
   CFG_EXTRAS ${PROJECT_NAME}-extras.cmake
   )

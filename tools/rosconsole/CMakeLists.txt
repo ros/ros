@@ -1,7 +1,6 @@
 project(rosconsole)
 find_package(catkin REQUIRED COMPONENTS cpp_common rostime rosunit)
-catkin_package()
-catkin_package_export(
+catkin_package(
   LIBRARIES rosconsole
   INCLUDE_DIRS include
   CFG_EXTRAS rosconsole-extras.cmake

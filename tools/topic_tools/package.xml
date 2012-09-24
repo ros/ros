@@ -1,0 +1,25 @@
+<package>
+  <name>topic_tools</name>
+  <version>1.9.7</version>
+  <description>
+    Tools for directing, throttling, selecting, and otherwise messing with
+    ROS topics at a meta level. None of the programs in this package actually
+    know about the topics whose streams they are altering; instead, these
+    tools deal with messages as generic binary blobs. This means they can be
+    applied to any ROS topic.
+  </description>
+  <maintainer email="dthomas@willowgarage.com">Dirk Thomas</maintainer>
+  <license>BSD</license>
+
+  <author>Morgan Quigley</author>
+  <author>Brian Gerkey</author>
+
+  <build_depend>catkin</build_depend>
+  <build_depend>cpp_common</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>rosconsole</build_depend>
+  <build_depend>xmlrpcpp</build_depend>
+  <build_depend>rosunit</build_depend>
+  <build_depend>rostest</build_depend>
+  <build_depend>rostime</build_depend>
+</package>

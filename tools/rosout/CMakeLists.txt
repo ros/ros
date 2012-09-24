@@ -3,7 +3,6 @@ project(rosout)
 find_package(catkin REQUIRED COMPONENTS roscpp)
 
 catkin_package()
-catkin_package_export()
 
 include_directories(${catkin_INCLUDE_DIRS})
 

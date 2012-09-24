@@ -1,7 +1,6 @@
 project(roslib)
 find_package(catkin REQUIRED COMPONENTS rospack)
-catkin_package()
-catkin_package_export(
+catkin_package(
   INCLUDE_DIRS include
   LIBRARIES roslib
   CFG_EXTRAS roslib-extras.cmake)

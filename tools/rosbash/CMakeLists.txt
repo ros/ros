@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 2.8)
 project(rosbash)
 find_package(catkin)
 catkin_package()
-catkin_package_export()
 
 install(FILES rosbash rostcsh roszsh
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})

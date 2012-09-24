@@ -15,6 +15,6 @@
   <build_depend>catkin</build_depend>
 
   <export>
-    <rosdoc config="rosdoc.yaml"/>    
+    <rosdoc config="rosdoc.yaml"/>
   </export>
 </package>

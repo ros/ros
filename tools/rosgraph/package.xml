@@ -13,6 +13,7 @@
 
   <url>http://ros.org/wiki/rosgraph</url>
 
+  <build_depend>catkin</build_depend>
   <build_depend>rostest</build_depend>
   <test_depend>python-mock</test_depend>
 

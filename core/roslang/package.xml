@@ -1,13 +1,9 @@
 <package>
   <name>roslang</name>
   <version>1.9.12</version>
-  <description brief="ROS client library base">
-
-    roslang is a common package that all
-    <a href="http://www.ros.org/wiki/Client%20Libraries">ROS client
-    libraries</a> depend on.  This is mainly used to find client
-    libraries (via 'rospack depends-on1 roslang').
-
+  <description>
+    roslang is a common package that all <a href="http://www.ros.org/wiki/Client%20Libraries">ROS client libraries</a> depend on.
+    This is mainly used to find client libraries (via 'rospack depends-on1 roslang').
   </description>
   <maintainer email="dthomas@willowgarage.com">Dirk Thomas</maintainer>
   <license>BSD</license>

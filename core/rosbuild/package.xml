@@ -2,9 +2,7 @@
   <name>rosbuild</name>
   <version>1.9.12</version>
   <description>
-
-  rosbuild contains scripts for managing the CMake-based build system for ROS.
-
+    rosbuild contains scripts for managing the CMake-based build system for ROS.
   </description>
   <maintainer email="dthomas@willowgarage.com">Dirk Thomas</maintainer>
   <license>BSD</license>

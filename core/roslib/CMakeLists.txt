@@ -5,10 +5,6 @@ catkin_package(
   LIBRARIES roslib
   CFG_EXTRAS roslib-extras.cmake)
 
-catkin_python_setup()
-
-catkin_add_env_hooks(10.ros SHELLS bat sh DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks)
-
 find_package(Boost REQUIRED COMPONENTS thread)
 
 include_directories(include ${Boost_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS})
@@ -27,24 +23,24 @@ if(NOT (APPLE OR WIN32 OR MINGW))
 endif()
 
 
-#explicitly install library and includes
+catkin_add_env_hooks(10.ros SHELLS bat sh DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks)
+
+catkin_python_setup()
+
 install(TARGETS roslib
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   )
-
 install(DIRECTORY include/
   DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h")
+install(FILES config/rosconsole.config
+  DESTINATION ${CATKIN_GLOBAL_SHARE_DESTINATION}/ros/config)
 install(PROGRAMS scripts/gendeps
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
-#integration tests
 
 catkin_add_nosetests(test)
-
-include_directories(${GTEST_INCLUDE_DIRS})
-link_directories(${GTEST_LIBRARY_DIRS})
 
 catkin_add_gtest(${PROJECT_NAME}-utest test/utest.cpp WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 if(TARGET ${PROJECT_NAME}-utest)

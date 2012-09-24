@@ -1,10 +1,8 @@
 <package>
   <name>rosclean</name>
   <version>1.9.12</version>
-  <description brief="rosclean">
-
+  <description>
     rosclean: cleanup filesystem resources (e.g. log files).
-
   </description>
   <maintainer email="dthomas@willowgarage.com">Dirk Thomas</maintainer>
   <license>BSD</license>

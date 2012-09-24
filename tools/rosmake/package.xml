@@ -9,7 +9,6 @@
   <license>BSD</license>
 
   <url>http://ros.org/wiki/rosmake</url>
-
   <author email="tfoote@willowgarage.com">Tully Foote</author>
 
   <build_depend>catkin</build_depend>

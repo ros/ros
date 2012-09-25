@@ -174,16 +174,15 @@ class RoslibStacksTest(unittest.TestCase):
         self.assertEquals(([], []), expand_to_packages([]))
         self.assertEquals((['rosmake', 'roslib', 'roslib'], []), expand_to_packages(['rosmake', 'roslib', 'roslib']))
         self.assertEquals(([], ['bogus_one', 'bogus_two']), expand_to_packages(['bogus_one', 'bogus_two']))
-  
-        self.assertEquals(([], ['bogus_one', 'bogus_two']), expand_to_packages(['bogus_one', 'bogus_two']))      
-  
+
+        # this test case is no more valid in a package-only world
         # TODO: setup directory tree so that this can be more precisely calculated
-        valid, invalid = expand_to_packages(['ros', 'bogus_one'])
-        self.assertEquals(['bogus_one'], invalid)
-        check = ['rosbuild', 'rosunit', 'roslib']
-        print valid
-        for c in check:
-            self.assert_(c in valid, "expected [%s] to be in ros expansion"%c)
+        #valid, invalid = expand_to_packages(['ros', 'bogus_one'])
+        #self.assertEquals(['bogus_one'], invalid)
+        #check = ['rosbuild', 'rosunit', 'roslib']
+        #print valid
+        #for c in check:
+        #    self.assert_(c in valid, "expected [%s] to be in ros expansion"%c)
             
     def test_get_stack_version(self):
         from roslib.stacks import get_stack_version

@@ -1,8 +1,0 @@
-<package>
-  <description brief="ROS integration tests">
-    ROS high-level (language-neutral) integration test framework.
-  </description>
-  <author>Ken Conley/kwc@willowgarage.com</author>
-  <license>BSD</license>
-  <review status="test" notes=""/>
-</package>

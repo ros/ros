@@ -31,7 +31,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-PKG = 'test_ros'
+PKG = 'rosmaster'
 NAME = 'test_ps_private_names'
 
 import sys
@@ -39,7 +39,7 @@ import sys
 import rospy
 import rostest
 
-from test_ros.param_server import ParamServerTestCase
+from param_server_test_case import ParamServerTestCase
 
 class PsPrivateNamesTestCase(ParamServerTestCase):
     def testPrivateNames(self):

@@ -41,7 +41,7 @@ import xmlrpclib
 import rospy
 import rosgraph
 
-from test_ros.rosclient import *
+from rosclient import *
 
 NODE_INTEGRATION_NAME = "node_integration_test"
 

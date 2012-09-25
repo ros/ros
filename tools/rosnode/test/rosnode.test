@@ -1,24 +1,24 @@
 <launch>
-  <node name="talker" pkg="test_ros" type="talker.py" />
+  <node name="talker" pkg="rospy" type="talker.py" />
   <group ns="foo">
-    <node name="talker" pkg="test_ros" type="talker.py" />
+    <node name="talker" pkg="rospy" type="talker.py" />
   </group>
   <group ns="bar">
-    <node name="talker" pkg="test_ros" type="talker.py" />
+    <node name="talker" pkg="rospy" type="talker.py" />
   </group>
   <group ns="baz">
-    <node name="talker1" pkg="test_ros" type="talker.py" />
-    <node name="talker2" pkg="test_ros" type="talker.py" />
-    <node name="talker3" pkg="test_ros" type="talker.py" />    
+    <node name="talker1" pkg="rospy" type="talker.py" />
+    <node name="talker2" pkg="rospy" type="talker.py" />
+    <node name="talker3" pkg="rospy" type="talker.py" />    
   </group>
   <group ns="listeners">
-    <node name="listener" pkg="test_ros" type="listener.py" />      
+    <node name="listener" pkg="rospy" type="listener.py" />      
   </group>
   <group ns="to_kill">  
-    <node name="kill1" pkg="test_ros" type="talker.py" />
-    <node name="kill2" pkg="test_ros" type="talker.py" />
-    <node name="kill3" pkg="test_ros" type="talker.py" />
-    <node name="kill4" pkg="test_ros" type="talker.py" />
+    <node name="kill1" pkg="rospy" type="talker.py" />
+    <node name="kill2" pkg="rospy" type="talker.py" />
+    <node name="kill3" pkg="rospy" type="talker.py" />
+    <node name="kill4" pkg="rospy" type="talker.py" />
   </group>
   <test test-name="rosnode_command_line_online" pkg="rosnode" type="test_rosnode_command_online.py" />
 </launch>

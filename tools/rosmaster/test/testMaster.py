@@ -41,10 +41,10 @@ import os, sys, getopt, traceback, logging, socket
 import datetime, xmlrpclib, math, random
 import unittest
 import rospy
-from test_ros.rostest import *
-from test_ros.testSlave import msMain
+from rostest import *
+from testSlave import msMain
 
-MYPKG = 'test_ros'
+MYPKG = 'rosmaster'
 
 HAS_PARAM = True
 

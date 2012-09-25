@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Software License Agreement (BSD License)
 #
 # Copyright (c) 2008, Willow Garage, Inc.
@@ -29,5 +30,21 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# test_ros initialization file
+
+PKG = 'rosmaster'
+NAME = 'test_ps_values'
+
+import sys
+
+import rospy
+import rostest
+
+from param_server_test_case import ParamServerTestCase
+
+class PsValuesTestCase(ParamServerTestCase):
+    def testParamValues(self):
+        return self._testParamValues()
+
+if __name__ == '__main__':
+    rospy.init_node(NAME)
+    rostest.rosrun(PKG, NAME, PsValuesTestCase, sys.argv)

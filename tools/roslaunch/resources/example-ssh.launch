@@ -2,16 +2,16 @@
 <launch>
 
   <group ns="local">
-    <node name="talker" pkg="test_ros" type="talker.py" />
-    <node name="listener" pkg="test_ros" type="listener.py" />
+    <node name="talker" pkg="rospy" type="talker.py" />
+    <node name="listener" pkg="rospy" type="listener.py" />
   </group>
 
   <!-- default only affects nodes defined later -->
   <machine name="machine-1" default="true" address="foo.bar.com" env-loader="/opt/ros/fuerte/env.sh" user="whoami" ssh-port="22" />
 
   <group ns="remote">
-    <node name="talker" pkg="test_ros" type="talker.py" />
-    <node name="listener" pkg="test_ros" type="listener.py" />
+    <node name="talker" pkg="rospy" type="talker.py" />
+    <node name="listener" pkg="rospy" type="listener.py" />
   </group>
 
 </launch>

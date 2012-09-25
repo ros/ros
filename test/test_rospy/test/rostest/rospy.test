@@ -4,7 +4,7 @@
     <param name="param" value="group_value" />
   </group>
   
-  <node name="talker" pkg="test_ros" type="talker.py" />
+  <node name="talker" pkg="rospy" type="talker.py" />
   <node name="a2iserver" pkg="test_ros" type="add_two_ints_server" />
   <test test-name="rospy_client" pkg="test_rospy" type="test_rospy_client_online.py" />
   <test test-name="rospy_timer" pkg="test_rospy" type="test_rospy_timer_online.py" />

@@ -38,7 +38,7 @@ import string
 import xmlrpclib
 
 import rospy
-from test_ros.rostest import *
+from rostest import *
 
 singletest = None
 #singletest = 'testSourceKillFlow'

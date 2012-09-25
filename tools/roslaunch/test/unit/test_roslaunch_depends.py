@@ -39,13 +39,13 @@ class Foo: pass
 
 def test_RoslaunchDeps():
     from roslaunch.depends import RoslaunchDeps
-    min_deps = RoslaunchDeps(nodes=[('test_ros', 'talker.py')], pkgs=['test_ros'])
+    min_deps = RoslaunchDeps(nodes=[('rospy', 'talker.py')], pkgs=['rospy'])
     assert min_deps == min_deps
-    assert min_deps == RoslaunchDeps(nodes=[('test_ros', 'talker.py')], pkgs=['test_ros'])
+    assert min_deps == RoslaunchDeps(nodes=[('rospy', 'talker.py')], pkgs=['rospy'])
     assert not min_deps.__eq__(Foo())
     assert Foo() != min_deps
-    assert min_deps != RoslaunchDeps(nodes=[('test_ros', 'talker.py')])
-    assert min_deps != RoslaunchDeps(pkgs=['test_ros'])
+    assert min_deps != RoslaunchDeps(nodes=[('rospy', 'talker.py')])
+    assert min_deps != RoslaunchDeps(pkgs=['rospy'])
 
     assert 'talker.py' in repr(min_deps)
     assert 'talker.py' in str(min_deps)
@@ -72,16 +72,16 @@ def test_roslaunch_deps_main():
     with fakestdout() as b:
         roslaunch_deps_main(['roslaunch-deps', f])
         s = b.getvalue()
-        assert s.strip() == 'test_ros', "buffer value [%s]"%(s)
+        assert s.strip() == 'rospy', "buffer value [%s]"%(s)
     with fakestdout() as b:
         roslaunch_deps_main(['roslaunch-deps', f, '--warn'])
         s = b.getvalue()
         assert s.strip() == """Dependencies:
-test_ros
+rospy
 
 Missing declarations:
 roslaunch/manifest.xml:
-  <depend package="test_ros" />""", s
+  <depend package="rospy" />""", s
 
     # tripwire, don't really care about exact verbose output
     with fakestdout() as b:
@@ -129,9 +129,9 @@ def test_roslaunch_deps():
     from roslaunch.depends import roslaunch_deps, RoslaunchDeps
     example_d = os.path.join(rospkg.RosPack().get_path('roslaunch'), 'resources')
 
-    min_deps = RoslaunchDeps(nodes=[('test_ros', 'talker.py')], pkgs=['test_ros'])
-    include_deps = RoslaunchDeps(nodes=[('test_ros', 'talker.py'), ('test_ros', 'listener.py')], pkgs=['test_ros'])
-    example_deps = RoslaunchDeps(nodes=[('test_ros', 'talker.py'), ('test_ros', 'listener.py')], pkgs=['test_ros'],
+    min_deps = RoslaunchDeps(nodes=[('rospy', 'talker.py')], pkgs=['rospy'])
+    include_deps = RoslaunchDeps(nodes=[('rospy', 'talker.py'), ('rospy', 'listener.py')], pkgs=['rospy'])
+    example_deps = RoslaunchDeps(nodes=[('rospy', 'talker.py'), ('rospy', 'listener.py')], pkgs=['rospy'],
                                  includes=[os.path.join(example_d, 'example-include.launch')])
 
     example_file_deps = {
@@ -142,7 +142,7 @@ def test_roslaunch_deps():
     example_min_file_deps = {
         os.path.join(example_d, 'example-min.launch') : min_deps,
         }
-    r_missing = {'roslaunch': set(['test_ros'])}
+    r_missing = {'roslaunch': set(['rospy'])}
     tests = [
         ([os.path.join(example_d, 'example-min.launch')], ('roslaunch', example_min_file_deps, r_missing)),
 

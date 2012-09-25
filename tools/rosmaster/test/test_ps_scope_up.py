@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Software License Agreement (BSD License)
 #
 # Copyright (c) 2008, Willow Garage, Inc.
@@ -29,42 +30,21 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-"""
-testAllCommonFlows
 
-To run, invoke nodes/testAllCommonFlows
-"""
+PKG = 'rosmaster'
+NAME = 'test_ps_scope_up'
 
-import os, sys, traceback, time
-import unittest
+import sys
 
 import rospy
+import rostest
 
-NAME = 'testAllCommonFlows'
+from param_server import ParamServerTestCase
 
-def require(args):
-    """simple utility that exits on API call failure"""
-    code, msg, _ = args
-    assert code > 0, "called failed: %s"%msg
-
-def testAllCommonFlowsMain(argv, stdout, env):
-    pass
-    #TODO: start unittest
-
-TIMEOUT = 15 #seconds
-
-class AllCommonFlowsTestCase(unittest.TestCase):
-
-    def testAll(self):
-        rosRoot = os.environ[rospy.ROS_ROOT]
-        
-
-    def setUp(self):
-        super(AllCommonFlowsTestCase, self).setUp()
-    
-    def tearDown(self):
-        super(AllCommonFlowsTestCase, self).tearDown()        
+class PsScopeUpTestCase(ParamServerTestCase):
+    def testScopeUp(self):
+        return self._testScopeUp()
 
 if __name__ == '__main__':
-    testAllCommonFlowsMain(sys.argv, sys.stdout, os.environ)
+    rospy.init_node(NAME)
+    rostest.rosrun(PKG, NAME, PsScopeUpTestCase, sys.argv)

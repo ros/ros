@@ -41,7 +41,7 @@ import xmlrpclib
 import rospy
 import rosgraph
 
-from test_ros.rosclient import *
+from rosclient import *
 
 NODE_INTEGRATION_NAME = "node_integration_test"
 
@@ -50,10 +50,10 @@ _required_subscriptions = 'test_string_in', 'test_primitives_in', 'test_arrays_i
 
 # only publishers determine topic type, so we test against their declared spec
 _required_publications_map = {
-    'test_string_out': 'test_ros/TestString',
-    'test_primitives_out': 'test_ros/TestPrimitives',
-    'test_arrays_out': 'test_ros/TestArrays',
-    'test_header_out': 'test_ros/TestHeader',
+    'test_string_out': 'rosmaster/TestString',
+    'test_primitives_out': 'rosmaster/TestPrimitives',
+    'test_arrays_out': 'rosmaster/TestArrays',
+    'test_header_out': 'rosmaster/TestHeader',
     }
 _required_publications  = _required_publications_map.keys()
 

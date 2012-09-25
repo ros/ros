@@ -1,6 +1,6 @@
 <launch>
-  <node name="talker" pkg="test_ros" type="talker.py" />
-  <node name="listener" pkg="test_ros" type="listener.py" />
+  <node name="talker" pkg="rospy" type="talker.py" />
+  <node name="listener" pkg="rospy" type="listener.py" />
 
   <param name="param1" value="bar" />
   <param name="param2" value="2"/>
@@ -10,8 +10,8 @@
   
   <group ns="wg2">
       <param name="param4" value="4" />
-      <node name="talker" pkg="test_ros" type="talker.py" />
-      <node name="listener" pkg="test_ros" type="listener.py" />
+      <node name="talker" pkg="rospy" type="talker.py" />
+      <node name="listener" pkg="rospy" type="listener.py" />
   </group> 
   
 </launch>

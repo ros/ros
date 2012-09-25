@@ -499,4 +499,4 @@ class TestSlaveApi(unittest.TestCase):
             pass
 
 if __name__ == '__main__':
-    rosunit.unitrun('test_ros', sys.argv[0], TestSlaveApi)
+    rosunit.unitrun('rosmaster', sys.argv[0], TestSlaveApi)

@@ -25,6 +25,6 @@
   <remap from="from_unless_pass" to="to_unless_pass" unless="0" />
   <remap from="from_unless_fail" to="to_unless_fail" unless="1" />  
 
-  <node name="remap" pkg="test_ros" type="talker.py" />
+  <node name="remap" pkg="rospy" type="talker.py" />
 
 </launch>

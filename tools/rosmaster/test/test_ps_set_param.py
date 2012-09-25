@@ -31,20 +31,20 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-PKG = 'test_ros'
-NAME = 'test_ps_scope_up'
+PKG = 'rosmaster'
+NAME = 'test_ps_has_param'
 
 import sys
 
 import rospy
 import rostest
 
-from test_ros.param_server import ParamServerTestCase
+from param_server_test_case import ParamServerTestCase
 
-class PsScopeUpTestCase(ParamServerTestCase):
-    def testScopeUp(self):
-        return self._testScopeUp()
+class PsSetParamTestCase(ParamServerTestCase):
+    def testSetParam(self):
+        return self._testSetParam()
 
 if __name__ == '__main__':
     rospy.init_node(NAME)
-    rostest.rosrun(PKG, NAME, PsScopeUpTestCase, sys.argv)
+    rostest.rosrun(PKG, NAME, PsSetParamTestCase, sys.argv)

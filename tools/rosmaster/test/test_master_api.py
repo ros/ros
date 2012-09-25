@@ -34,7 +34,7 @@
 ## Integration test for empty services to test serializers
 ## and transport
 
-PKG='test_ros'
+PKG='rosmaster'
 NAME = 'test_master'
 
 import sys
@@ -42,7 +42,7 @@ import unittest
 
 import rospy
 
-from test_ros.master import MasterApiTestCase, set_node_name
+from master import MasterApiTestCase, set_node_name
 
 # Due to the need to have a fresh master for each of these test cases,
 # we have to go through the pain of exposing each of the test cases one-by-one

@@ -76,6 +76,7 @@ class MultipleNodesException(ROSPkgException):
 # TODO: go through the code and eliminate unused methods -- there's far too many combos here
 
 MANIFEST_FILE = 'manifest.xml'
+PACKAGE_FILE = 'package.xml'
 
 #
 # Map package/directory structure
@@ -96,10 +97,10 @@ def get_dir_pkg(d):
 
     parent = os.path.dirname(os.path.realpath(d))
     #walk up until we hit ros root or ros/pkg
-    while not os.path.exists(os.path.join(d, MANIFEST_FILE)) and parent != d:
+    while not os.path.exists(os.path.join(d, MANIFEST_FILE)) and not os.path.exists(os.path.join(d, PACKAGE_FILE)) and parent != d:
         d = parent
         parent = os.path.dirname(d)
-    if os.path.exists(os.path.join(d, MANIFEST_FILE)):
+    if os.path.exists(os.path.join(d, MANIFEST_FILE)) or os.path.exists(os.path.join(d, PACKAGE_FILE)):
         pkg = os.path.basename(os.path.abspath(d))
         return d, pkg
     return None, None

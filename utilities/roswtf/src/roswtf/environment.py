@@ -100,6 +100,7 @@ def ros_root_check(ctx, ros_root=None):
         path = ros_root
     else:
         path = ctx.ros_root
+    path = os.path.abspath(path)
     if not os.path.basename(path) == 'ros':
         return "ROS_ROOT [%s] must end in directory named 'ros'"%path      
     

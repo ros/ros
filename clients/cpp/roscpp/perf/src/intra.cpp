@@ -33,8 +33,8 @@
  */
 
 #include "perf_roscpp/intra.h"
-#include "perf_roscpp/ThroughputMessage.h"
-#include "perf_roscpp/LatencyMessage.h"
+#include "roscpp/ThroughputMessage.h"
+#include "roscpp/LatencyMessage.h"
 
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
@@ -59,7 +59,7 @@ private:
   void sendThread(boost::barrier* all_connected);
   void receiveThread(boost::barrier* all_started, boost::barrier* all_start, ros::WallTime* end_time);
 
-  void callback(const ThroughputMessageConstPtr& msg);
+  void callback(const roscpp::ThroughputMessageConstPtr& msg);
 
   boost::mutex mutex_;
 
@@ -105,11 +105,11 @@ ThroughputTest::ThroughputTest(double test_duration, uint32_t streams, uint32_t 
 {
 }
 
-void ThroughputTest::callback(const ThroughputMessageConstPtr& msg)
+void ThroughputTest::callback(const roscpp::ThroughputMessageConstPtr& msg)
 {
   ReceiveThreadResult& r = *receive_thread_result_;
 
-  r.bytes_received += ros::serialization::Serializer<ThroughputMessage>::serializedLength(*msg) + 4; // 4 byte message length field
+  r.bytes_received += ros::serialization::Serializer<roscpp::ThroughputMessage>::serializedLength(*msg) + 4; // 4 byte message length field
   ++r.messages_received;
 
   r.last_recv_time = ros::WallTime::now();
@@ -156,7 +156,7 @@ void ThroughputTest::sendThread(boost::barrier* all_connected)
   {
     std::stringstream ss;
     ss << "throughput_perf_test_" << i;
-    pubs.push_back(nh.advertise<ThroughputMessage>(ss.str(), 1));
+    pubs.push_back(nh.advertise<roscpp::ThroughputMessage>(ss.str(), 1));
   }
 
   // Need to keep around the publishers so the connections don't go away
@@ -179,7 +179,7 @@ void ThroughputTest::sendThread(boost::barrier* all_connected)
     }
   }
 
-  ThroughputMessagePtr msg(new ThroughputMessage);
+  roscpp::ThroughputMessagePtr msg(new roscpp::ThroughputMessage);
   msg->array.resize(message_size_);
 
   all_connected->wait();
@@ -200,7 +200,7 @@ void ThroughputTest::sendThread(boost::barrier* all_connected)
         pubs[j].publish(msg);
 
         ++r.messages_sent;
-        r.bytes_sent += ros::serialization::Serializer<ThroughputMessage>::serializedLength(*msg) + 4;
+        r.bytes_sent += ros::serialization::Serializer<roscpp::ThroughputMessage>::serializedLength(*msg) + 4;
       }
 
       boost::this_thread::yield();
@@ -341,8 +341,8 @@ private:
   void sendThread(boost::barrier* b, uint32_t i);
   void receiveThread();
 
-  void receiveCallback(const LatencyMessageConstPtr& msg, ros::Publisher& pub);
-  void sendCallback(const LatencyMessageConstPtr& msg, ros::Publisher& pub, uint32_t thread_index);
+  void receiveCallback(const roscpp::LatencyMessageConstPtr& msg, ros::Publisher& pub);
+  void sendCallback(const roscpp::LatencyMessageConstPtr& msg, ros::Publisher& pub, uint32_t thread_index);
 
   boost::mutex mutex_;
 
@@ -375,16 +375,16 @@ LatencyTest::LatencyTest(uint32_t count_per_stream, uint32_t streams, uint32_t m
 {
 }
 
-void LatencyTest::receiveCallback(const LatencyMessageConstPtr& msg, ros::Publisher& pub)
+void LatencyTest::receiveCallback(const roscpp::LatencyMessageConstPtr& msg, ros::Publisher& pub)
 {
   ros::WallTime receipt_time = ros::WallTime::now();
-  LatencyMessagePtr reply = boost::const_pointer_cast<LatencyMessage>(msg);
+  roscpp::LatencyMessagePtr reply = boost::const_pointer_cast<roscpp::LatencyMessage>(msg);
   reply->receipt_time = receipt_time.toSec();
   pub.publish(reply);
   //ROS_INFO("Receiver received message %d", msg->count);
 }
 
-void LatencyTest::sendCallback(const LatencyMessageConstPtr& msg, ros::Publisher& pub, uint32_t thread_index)
+void LatencyTest::sendCallback(const roscpp::LatencyMessageConstPtr& msg, ros::Publisher& pub, uint32_t thread_index)
 {
   if (msg->thread_index != thread_index)
   {
@@ -394,7 +394,7 @@ void LatencyTest::sendCallback(const LatencyMessageConstPtr& msg, ros::Publisher
   thread_result_->latencies.push_back(msg->receipt_time - msg->publish_time);
   ++thread_result_->message_count;
 
-  LatencyMessagePtr reply = boost::const_pointer_cast<LatencyMessage>(msg);
+  roscpp::LatencyMessagePtr reply = boost::const_pointer_cast<roscpp::LatencyMessage>(msg);
   reply->publish_time = ros::WallTime::now().toSec();
   ++reply->count;
 
@@ -421,10 +421,10 @@ void LatencyTest::sendThread(boost::barrier* all_connected, uint32_t thread_inde
   {
     std::stringstream ss;
     ss << "latency_perf_test_" << i;
-    pubs.push_back(nh.advertise<LatencyMessage>(ss.str(), 0));
+    pubs.push_back(nh.advertise<roscpp::LatencyMessage>(ss.str(), 0));
 
     ss << "_return";
-    subs.push_back(nh.subscribe<LatencyMessage>(ss.str(), 0, boost::bind(&LatencyTest::sendCallback, this, _1, boost::ref(pubs[i]), thread_index), ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay()));
+    subs.push_back(nh.subscribe<roscpp::LatencyMessage>(ss.str(), 0, boost::bind(&LatencyTest::sendCallback, this, _1, boost::ref(pubs[i]), thread_index), ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay()));
   }
 
   bool cont = true;
@@ -440,10 +440,10 @@ void LatencyTest::sendThread(boost::barrier* all_connected, uint32_t thread_inde
     }
   }
 
-  std::vector<LatencyMessagePtr> messages;
+  std::vector<roscpp::LatencyMessagePtr> messages;
   for (uint32_t i = 0; i < streams_; ++i)
   {
-    LatencyMessagePtr msg(new LatencyMessage);
+    roscpp::LatencyMessagePtr msg(new roscpp::LatencyMessage);
     msg->thread_index = thread_index;
     msg->array.resize(message_size_);
     messages.push_back(msg);
@@ -492,8 +492,8 @@ LatencyResult LatencyTest::run()
     std::string sub_topic = ss.str();
     ss << "_return";
     std::string pub_topic = ss.str();
-    pubs.push_back(nh.advertise<LatencyMessage>(pub_topic, 0));
-    subs.push_back(nh.subscribe<LatencyMessage>(sub_topic, 0, boost::bind(&LatencyTest::receiveCallback, this, _1, boost::ref(pubs.back())), ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay()));
+    pubs.push_back(nh.advertise<roscpp::LatencyMessage>(pub_topic, 0));
+    subs.push_back(nh.subscribe<roscpp::LatencyMessage>(sub_topic, 0, boost::bind(&LatencyTest::receiveCallback, this, _1, boost::ref(pubs.back())), ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay()));
   }
 
   boost::barrier all_connected(1 + sender_threads_);
@@ -601,8 +601,8 @@ public:
 
 private:
 
-  void receiveCallback(const LatencyMessageConstPtr& msg, ros::Publisher& pub);
-  void sendCallback(const LatencyMessageConstPtr& msg, ros::Publisher& pub);
+  void receiveCallback(const roscpp::LatencyMessageConstPtr& msg, ros::Publisher& pub);
+  void sendCallback(const roscpp::LatencyMessageConstPtr& msg, ros::Publisher& pub);
 
   struct Result
   {
@@ -620,20 +620,20 @@ STLatencyTest::STLatencyTest(uint32_t message_count)
 {
 }
 
-void STLatencyTest::receiveCallback(const LatencyMessageConstPtr& msg, ros::Publisher& pub)
+void STLatencyTest::receiveCallback(const roscpp::LatencyMessageConstPtr& msg, ros::Publisher& pub)
 {
   ros::WallTime receipt_time = ros::WallTime::now();
-  LatencyMessagePtr reply = boost::const_pointer_cast<LatencyMessage>(msg);
+  roscpp::LatencyMessagePtr reply = boost::const_pointer_cast<roscpp::LatencyMessage>(msg);
   reply->receipt_time = receipt_time.toSec();
   pub.publish(reply);
   //ROS_INFO("Receiver received message %d", msg->count);
 }
 
-void STLatencyTest::sendCallback(const LatencyMessageConstPtr& msg, ros::Publisher& pub)
+void STLatencyTest::sendCallback(const roscpp::LatencyMessageConstPtr& msg, ros::Publisher& pub)
 {
   result_.latencies.push_back(msg->receipt_time - msg->publish_time);
 
-  LatencyMessagePtr reply = boost::const_pointer_cast<LatencyMessage>(msg);
+  roscpp::LatencyMessagePtr reply = boost::const_pointer_cast<roscpp::LatencyMessage>(msg);
   reply->publish_time = ros::WallTime::now().toSec();
   ++reply->count;
 
@@ -654,10 +654,10 @@ STLatencyResult STLatencyTest::run()
   ros::NodeHandle nh;
   nh.setCallbackQueue(&receive_queue_);
 
-  ros::Publisher recv_pub = nh.advertise<LatencyMessage>("stlatency_perf_test_return", 0);
-  ros::Subscriber recv_sub = nh.subscribe<LatencyMessage>("stlatency_perf_test", 0, boost::bind(&STLatencyTest::receiveCallback, this, _1, boost::ref(recv_pub)), ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
-  ros::Publisher send_pub = nh.advertise<LatencyMessage>("stlatency_perf_test", 0);
-  ros::Subscriber send_sub = nh.subscribe<LatencyMessage>("stlatency_perf_test_return", 0, boost::bind(&STLatencyTest::sendCallback, this, _1, boost::ref(send_pub)), ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
+  ros::Publisher recv_pub = nh.advertise<roscpp::LatencyMessage>("stlatency_perf_test_return", 0);
+  ros::Subscriber recv_sub = nh.subscribe<roscpp::LatencyMessage>("stlatency_perf_test", 0, boost::bind(&STLatencyTest::receiveCallback, this, _1, boost::ref(recv_pub)), ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
+  ros::Publisher send_pub = nh.advertise<roscpp::LatencyMessage>("stlatency_perf_test", 0);
+  ros::Subscriber send_sub = nh.subscribe<roscpp::LatencyMessage>("stlatency_perf_test_return", 0, boost::bind(&STLatencyTest::sendCallback, this, _1, boost::ref(send_pub)), ros::VoidConstPtr(), ros::TransportHints().tcpNoDelay());
 
   ROS_INFO("Waiting for all connections to establish");
 
@@ -670,7 +670,7 @@ STLatencyResult STLatencyTest::run()
 
   ROS_INFO("All connections established");
 
-  LatencyMessagePtr msg(new LatencyMessage);
+  roscpp::LatencyMessagePtr msg(new roscpp::LatencyMessage);
   msg->publish_time = ros::WallTime::now().toSec();
   send_pub.publish(msg);
   while (msg->count < message_count_)

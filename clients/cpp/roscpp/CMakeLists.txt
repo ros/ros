@@ -93,6 +93,17 @@ add_message_files(
   FILES Logger.msg
 )
 
+# Performance testing message files.  add_message_files() does not
+# currently support being called from a subdirectory, so this is here
+# for now.
+add_message_files(
+  NOINSTALL
+  DIRECTORY perf/msg
+  FILES
+  LatencyMessage.msg
+  ThroughputMessage.msg
+)
+
 add_service_files(
   DIRECTORY srv
   FILES Empty.srv GetLoggers.srv SetLoggerLevel.srv
@@ -172,3 +183,5 @@ catkin_add_gtest(${PROJECT_NAME}-test_args test/test_args.cpp)
 if(TARGET ${PROJECT_NAME}-test_args)
   target_link_libraries(${PROJECT_NAME}-test_args roscpp)
 endif()
+
+add_subdirectory(perf)

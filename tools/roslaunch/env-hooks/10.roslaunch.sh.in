@@ -1,0 +1,5 @@
+# generated from roslaunch/env-hooks/10.roslaunch.sh.in
+
+if [ ! "$ROS_MASTER_URI" ]; then
+  export ROS_MASTER_URI=http://localhost:11311
+fi

@@ -3,6 +3,8 @@ project(roslaunch)
 find_package(catkin REQUIRED COMPONENTS rostest rosgraph_msgs)
 catkin_package()
 
+catkin_add_env_hooks(10.roslaunch SHELLS bat sh DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks)
+
 catkin_python_setup()
 
 install(FILES resources/roscore.xml

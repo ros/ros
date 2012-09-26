@@ -33,7 +33,7 @@
 #include <boost/shared_array.hpp>
 #include <ros/serialization.h>
 
-namespace test_roscpp_serialization
+namespace roscpp
 {
 namespace ser = ros::serialization;
 namespace mt = ros::message_traits;

@@ -36,7 +36,7 @@
 #include <gtest/gtest.h>
 #include <ros/static_assert.h>
 #include <std_msgs/Header.h>
-#include "test_roscpp_serialization/helpers.h"
+#include "helpers.h"
 
 using namespace ros;
 using namespace ros::serialization;

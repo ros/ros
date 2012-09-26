@@ -34,28 +34,28 @@
  */
 
 #include <gtest/gtest.h>
-#include "test_roscpp_serialization/helpers.h"
-#include "test_roscpp_serialization/ArrayOfFixedLength.h"
-#include "test_roscpp_serialization/ArrayOfVariableLength.h"
-#include "test_roscpp_serialization/EmbeddedFixedLength.h"
-#include "test_roscpp_serialization/EmbeddedVariableLength.h"
-#include "test_roscpp_serialization/FixedLength.h"
-#include "test_roscpp_serialization/VariableLength.h"
-#include "test_roscpp_serialization/WithHeader.h"
-#include "test_roscpp_serialization/EmbeddedExternal.h"
-#include "test_roscpp_serialization/WithTime.h"
-#include "test_roscpp_serialization/WithDuration.h"
-#include "test_roscpp_serialization/WithMemberNamedHeaderThatIsNotAHeader.h"
-#include "test_roscpp_serialization/FixedLengthArrayOfExternal.h"
-#include "test_roscpp_serialization/VariableLengthArrayOfExternal.h"
-#include "test_roscpp_serialization/Constants.h"
-#include "test_roscpp_serialization/VariableLengthStringArray.h"
-#include "test_roscpp_serialization/FixedLengthStringArray.h"
-#include "test_roscpp_serialization/HeaderNotFirstMember.h"
+#include "helpers.h"
+#include "roscpp/ArrayOfFixedLength.h"
+#include "roscpp/ArrayOfVariableLength.h"
+#include "roscpp/EmbeddedFixedLength.h"
+#include "roscpp/EmbeddedVariableLength.h"
+#include "roscpp/FixedLength.h"
+#include "roscpp/VariableLength.h"
+#include "roscpp/WithHeader.h"
+#include "roscpp/EmbeddedExternal.h"
+#include "roscpp/WithTime.h"
+#include "roscpp/WithDuration.h"
+#include "roscpp/WithMemberNamedHeaderThatIsNotAHeader.h"
+#include "roscpp/FixedLengthArrayOfExternal.h"
+#include "roscpp/VariableLengthArrayOfExternal.h"
+#include "roscpp/Constants.h"
+#include "roscpp/VariableLengthStringArray.h"
+#include "roscpp/FixedLengthStringArray.h"
+#include "roscpp/HeaderNotFirstMember.h"
 
-using namespace test_roscpp_serialization;
+using namespace roscpp;
 
-namespace test_roscpp_serialization
+namespace roscpp
 {
   ROS_DECLARE_MESSAGE_WITH_ALLOCATOR(ArrayOfFixedLength, MyArrayOfFixedLength, Allocator);
   ROS_DECLARE_MESSAGE_WITH_ALLOCATOR(ArrayOfVariableLength, MyArrayOfVariableLength, Allocator);

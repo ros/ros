@@ -117,6 +117,31 @@ add_service_files(
   TestStringString.srv
 )
 
+# Serialization testing message files.
+add_message_files(
+  NOINSTALL
+  DIRECTORY test_serialization/msg
+  FILES
+  ArrayOfFixedLength.msg
+  ArrayOfVariableLength.msg
+  Constants.msg
+  CustomHeader.msg
+  EmbeddedExternal.msg
+  EmbeddedFixedLength.msg
+  EmbeddedVariableLength.msg
+  FixedLengthArrayOfExternal.msg
+  FixedLength.msg
+  FixedLengthStringArray.msg
+  HeaderNotFirstMember.msg
+  VariableLengthArrayOfExternal.msg
+  VariableLength.msg
+  VariableLengthStringArray.msg
+  WithDuration.msg
+  WithHeader.msg
+  WithMemberNamedHeaderThatIsNotAHeader.msg
+  WithTime.msg
+)
+
 # Performance testing message files.  add_message_files() does not
 # currently support being called from a subdirectory, so this is here
 # for now.
@@ -152,3 +177,4 @@ install(FILES
 
 add_subdirectory(test)
 add_subdirectory(perf)
+add_subdirectory(test_serialization)

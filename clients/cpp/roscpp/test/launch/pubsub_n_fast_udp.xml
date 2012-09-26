@@ -1,0 +1,6 @@
+<launch>
+  <node pkg="roscpp" type="roscpp-publish_n_fast" name="publish_n_fast" args="10000 1 1"/>
+  <test test-name="pubsub_n_fast_udp" pkg="roscpp"
+  type="roscpp-subscribe_n_fast" args="udp 10000 5.0"/>
+</launch>
+

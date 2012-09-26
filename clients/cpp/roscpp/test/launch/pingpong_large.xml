@@ -1,0 +1,6 @@
+<launch>
+  <node pkg="roscpp" type="roscpp-pub_sub" name="pub_sub" args="1000"/>
+  <test test-name="pingpong_large" pkg="roscpp"
+  type="roscpp-sub_pub" args="100 5.0"/>
+</launch>
+

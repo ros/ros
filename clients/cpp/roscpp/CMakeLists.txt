@@ -5,6 +5,7 @@ find_package(catkin REQUIRED COMPONENTS
   genmsg
   cpp_common rostime rosconsole roscpp_serialization
   roscpp_traits std_msgs rosgraph_msgs xmlrpcpp rosunit
+  rostest
   )
 
 catkin_package(
@@ -93,6 +94,29 @@ add_message_files(
   FILES Logger.msg
 )
 
+add_service_files(
+  DIRECTORY srv
+  FILES Empty.srv GetLoggers.srv SetLoggerLevel.srv
+)
+
+# Testing message and service files.  See comment below about subdirectory support.
+add_message_files(
+  NOINSTALL
+  DIRECTORY test/msg
+  FILES
+  TestArray.msg
+  TestEmpty.msg
+  TestStringInt.msg
+  TestWithHeader.msg
+)
+add_service_files(
+  NOINSTALL
+  DIRECTORY test/srv
+  FILES
+  BadTestStringString.srv
+  TestStringString.srv
+)
+
 # Performance testing message files.  add_message_files() does not
 # currently support being called from a subdirectory, so this is here
 # for now.
@@ -104,12 +128,9 @@ add_message_files(
   ThroughputMessage.msg
 )
 
-add_service_files(
-  DIRECTORY srv
-  FILES Empty.srv GetLoggers.srv SetLoggerLevel.srv
-)
-
-generate_messages()
+# dependencies std_msgs and rosgraph_msgs are needed by tests, but not by roscpp otherwise.
+generate_messages(DEPENDENCIES std_msgs rosgraph_msgs)
+# generate_messages()
 
 #explicitly install library and includes
 install(TARGETS roscpp
@@ -129,59 +150,5 @@ install(FILES
   rosbuild/scripts/msg_gen.py
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/rosbuild/scripts)
 
-catkin_add_gtest(${PROJECT_NAME}-test_version test/test_version.cpp)
-if(TARGET ${PROJECT_NAME}-test_version)
-  target_link_libraries(${PROJECT_NAME}-test_version)
-endif()
-
-# WARNING test_spinners is not actually run.  This is because this
-# infrastructure won't let me pass arguments from here through to
-# these test units.  otherwise one would have to build ten executables.
-# also the output of test_spinners has to be visually inspected
-# because there is no automatic way to ensure that an error condition
-# provokes a particular message.
-if(GTEST_FOUND)
-  include_directories(${GTEST_INCLUDE_DIRS})
-  add_executable(${PROJECT_NAME}-test_spinners EXCLUDE_FROM_ALL test/test_spinners.cpp)
-  add_dependencies(tests ${PROJECT_NAME}-test_spinners) 
-endif()
-if(TARGET ${PROJECT_NAME}-test_spinners)
-  target_link_libraries(${PROJECT_NAME}-test_spinners roscpp ${GTEST_LIBRARIES})
-endif()
-
-catkin_add_gtest(${PROJECT_NAME}-test_header test/test_header.cpp)
-if(TARGET ${PROJECT_NAME}-test_header)
-  target_link_libraries(${PROJECT_NAME}-test_header roscpp)
-endif()
-
-catkin_add_gtest(${PROJECT_NAME}-test_poll_set test/test_poll_set.cpp)
-if(TARGET ${PROJECT_NAME}-test_poll_set)
-  target_link_libraries(${PROJECT_NAME}-test_poll_set roscpp)
-endif()
-
-catkin_add_gtest(${PROJECT_NAME}-test_transport_tcp test/test_transport_tcp.cpp)
-if(TARGET ${PROJECT_NAME}-test_transport_tcp)
-  target_link_libraries(${PROJECT_NAME}-test_transport_tcp roscpp)
-endif()
-
-catkin_add_gtest(${PROJECT_NAME}-test_subscription_queue test/test_subscription_queue.cpp)
-if(TARGET ${PROJECT_NAME}-test_subscription_queue)
-  target_link_libraries(${PROJECT_NAME}-test_subscription_queue roscpp)
-endif()
-
-catkin_add_gtest(${PROJECT_NAME}-test_callback_queue test/test_callback_queue.cpp)
-if(TARGET ${PROJECT_NAME}-test_callback_queue)
-  target_link_libraries(${PROJECT_NAME}-test_callback_queue roscpp)
-endif()
-
-catkin_add_gtest(${PROJECT_NAME}-test_names test/test_names.cpp)
-if(TARGET ${PROJECT_NAME}-test_names)
-  target_link_libraries(${PROJECT_NAME}-test_names roscpp)
-endif()
-
-catkin_add_gtest(${PROJECT_NAME}-test_args test/test_args.cpp)
-if(TARGET ${PROJECT_NAME}-test_args)
-  target_link_libraries(${PROJECT_NAME}-test_args roscpp)
-endif()
-
+add_subdirectory(test)
 add_subdirectory(perf)

@@ -1,0 +1,25 @@
+<!-- This file is not part of automated testing. -->
+<launch>
+  <node name="test_node" pkg="roscpp" type="roscpp-test_node" />
+  <test test-name="test_roscpp__global" pkg="test_ros" type="test_node_api.py" />
+
+  <group>
+    <!-- test within same namespace with test_node renamed to 'test_node2' -->
+    <node pkg="roscpp" type="roscpp-test_node" name="test_node2" />
+    <test test-name="test_roscpp__global_test_node2" pkg="test_ros" type="test_node_api.py" args="--node=test_node2"/>
+  </group>
+
+  <!-- test with nodes within namespaces -->
+
+  <group ns="child_namespace">
+    <node pkg="roscpp" type="roscpp-test_node" />
+    <test test-name="test_roscpp__child_namespace" pkg="test_ros" type="test_node_api.py" />
+
+    <group ns="grandchild_namespace">
+      <node pkg="roscpp" type="roscpp-test_node" />
+      <test test-name="test_roscpp__grandchild_namespace" pkg="test_ros" type="test_node_api.py" />
+    </group>
+
+  </group>
+
+</launch>

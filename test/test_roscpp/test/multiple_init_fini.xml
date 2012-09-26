@@ -1,3 +1,0 @@
-<launch>
-  <test test-name="multiple_init_fini" pkg="test_roscpp" type="test_roscpp-multiple_init_fini" args="15"/>
-</launch>

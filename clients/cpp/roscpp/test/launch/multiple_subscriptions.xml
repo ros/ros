@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="roscpp" type="roscpp-publish_constantly" name="publish_constantly" />
+  <test test-name="multiple_subscriptions" pkg="roscpp" type="roscpp-multiple_subscriptions" />
+</launch>

@@ -1,3 +1,0 @@
-<launch>
-  <test test-name="subscribe_self" pkg="test_roscpp" type="test_roscpp-subscribe_self" args="100 1.0"/>
-</launch>

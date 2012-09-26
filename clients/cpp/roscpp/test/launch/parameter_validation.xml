@@ -1,0 +1,4 @@
+<launch>
+  <test test-name="parameter_validation" pkg="roscpp" type="roscpp-parameter_validation"/>
+</launch>
+

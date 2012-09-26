@@ -1,6 +1,0 @@
-<launch>
-  <node name="service_adv" pkg="test_roscpp" type="test_roscpp-service_adv"/>
-  <test test-name="service_call" pkg="test_roscpp" type="test_roscpp-service_call"/>
-</launch>
-
-

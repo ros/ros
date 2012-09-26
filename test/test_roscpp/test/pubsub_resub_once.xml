@@ -1,7 +1,0 @@
-<launch>
-  <node pkg="test_roscpp" type="test_roscpp-publish_n_fast" name="publish_n_fast" args="1 1 1"/>
-  <node pkg="test_roscpp" type="test_roscpp-publish_n_fast" name="publish_n_fast2" args="1 1 1 test_roscpp/pubsub_test:=test_roscpp/pubsub_test2">
-    <remap from="test_roscpp/pubsub_test" to="test_roscpp/pubsub_test2"/>
-  </node>
-  <test test-name="pubsub_resub_once" pkg="test_roscpp" type="test_roscpp-subscribe_resubscribe" args="1 1.0"/>
-</launch>

@@ -1,5 +1,0 @@
-<launch>
-  <node name="publish_onsub" pkg="test_roscpp" type="test_roscpp-publish_onsub" args="10"/>
-  <test test-name="pub_onsub" pkg="test_roscpp" type="test_roscpp-subscribe_empty" args="10 1.5"/>
-</launch>
-

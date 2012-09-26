@@ -1,3 +1,0 @@
-<launch>
-  <test test-name="handles" pkg="test_roscpp" type="test_roscpp-handles"/>
-</launch>

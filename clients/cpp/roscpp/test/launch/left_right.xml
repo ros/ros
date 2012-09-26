@@ -1,0 +1,14 @@
+<!-- This file is not part of automated testing. -->
+<launch>
+  <node pkg="roscpp" type="roscpp-left_right" name="left_right_swapped">
+    <remap from="right" to="left"/>
+    <remap from="left" to="right"/>
+  </node>
+
+  <test test-name="left_right_swappy" pkg="roscpp" type="roscpp-string_msg_expect" 
+	args="left /right"/>
+
+  <test test-name="left_right_swappy_2" pkg="roscpp" type="roscpp-string_msg_expect" 
+	args="right /left"/>
+
+</launch>

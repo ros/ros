@@ -1,0 +1,11 @@
+<launch>
+  <param name="/ROS_NAMESPACE/parent" value=":ROS_NAMESPACE:parent"/>
+  <param name="/ROS_NAMESPACE/NODE_NAME/local" 
+         value=":ROS_NAMESPACE:NODE_NAME:local"/>
+  <param name="/global" value=":global"/>
+  <param name="/other_namespace/param" value=":other_namespace:param"/>
+  <test test-name="namespaces" pkg="roscpp" 
+        type="roscpp-namespaces" name="NODE_NAME">
+    <env name="ROS_NAMESPACE" value="ROS_NAMESPACE"/>
+  </test>
+</launch>

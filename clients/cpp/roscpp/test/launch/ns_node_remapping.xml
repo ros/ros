@@ -1,0 +1,3 @@
+<launch>
+  <test test-name="ns_node_remapping" pkg="roscpp" type="roscpp-test_ns_node_remapping"/>
+</launch>

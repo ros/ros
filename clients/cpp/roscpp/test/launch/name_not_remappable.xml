@@ -1,0 +1,8 @@
+<launch>
+  <param name="use_local_remap" type="bool" value="false" />
+
+  <remap from="NAME" to="something_else_entirely"/>
+
+  <test test-name="name_not_remappable" pkg="roscpp" type="roscpp-name_not_remappable"
+	name="NAME"/>
+</launch>

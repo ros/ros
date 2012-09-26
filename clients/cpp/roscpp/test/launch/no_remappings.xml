@@ -1,0 +1,6 @@
+<launch>
+
+  <param name="use_local_remap" type="bool" value="false" />
+  <test test-name="no_remappings" pkg="roscpp" type="roscpp-test_remapping"
+        args="/base_namespace /base_namespace/sub_namespace"/>
+</launch>

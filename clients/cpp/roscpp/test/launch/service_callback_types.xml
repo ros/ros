@@ -1,0 +1,4 @@
+<launch>
+  <test test-name="service_callback_types" pkg="roscpp" type="roscpp-service_callback_types"/>
+</launch>
+

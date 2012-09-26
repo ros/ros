@@ -1,3 +1,0 @@
-<launch>
-  <test test-name="wait_for_message" pkg="test_roscpp" type="test_roscpp-wait_for_message"/>
-</launch>

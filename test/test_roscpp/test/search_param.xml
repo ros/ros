@@ -1,3 +1,0 @@
-<launch>
-  <test test-name="test_search_param" pkg="test_roscpp" type="test_roscpp-test_search_param"/>
-</launch>

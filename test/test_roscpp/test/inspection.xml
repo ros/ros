@@ -1,3 +1,0 @@
-<launch>
-  <test test-name="inspection" pkg="test_roscpp" type="test_roscpp-inspection"/>
-</launch>

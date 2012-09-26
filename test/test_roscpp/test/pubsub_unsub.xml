@@ -1,4 +1,0 @@
-<launch>
-  <node pkg="test_roscpp" type="test_roscpp-publish_constantly" name="publish_constantly" />
-  <test test-name="pubsub_unsub" pkg="test_roscpp" type="test_roscpp-subscribe_unsubscribe" args="" />
-</launch>

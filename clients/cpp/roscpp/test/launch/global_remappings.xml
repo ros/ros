@@ -1,0 +1,8 @@
+<launch>
+
+  <param name="use_local_remap" type="bool" value="false" />
+  <remap from="base_namespace" to="remapped_base_namespace" />
+  <remap from="remapped_base_namespace/sub_namespace" to="remapped_base_namespace/remapped_sub_namespace" />
+  <test test-name="global_remappings" pkg="roscpp" type="roscpp-test_remapping"
+        args="/remapped_base_namespace /remapped_base_namespace/remapped_sub_namespace"/>
+</launch>

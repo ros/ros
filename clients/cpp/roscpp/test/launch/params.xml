@@ -1,0 +1,8 @@
+<launch>
+  <param name="string" value="test" type="str"/>
+  <param name="int" value="10" type="int"/>
+  <param name="double" value="10.5" type="double"/>
+  <param name="bool" value="0" type="bool"/>
+  <test test-name="params" pkg="roscpp" type="roscpp-params" time-limit="1000000">
+  </test>
+</launch>

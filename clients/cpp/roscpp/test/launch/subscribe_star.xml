@@ -1,0 +1,5 @@
+<launch>
+  <node pkg="roscpp" type="roscpp-publisher_for_star_subscriber" name="publisher_for_star_subscriber"/>
+  <test test-name="subscribe_star" pkg="roscpp" type="roscpp-subscribe_star" />
+</launch>
+

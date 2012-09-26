@@ -1,0 +1,5 @@
+<launch>
+  <node name="publish_empty" pkg="roscpp" type="roscpp-publish_empty" args="1000"/>
+  <test test-name="pubsub_empty" pkg="roscpp" type="roscpp-subscribe_empty" args="1000 1.5"/>
+</launch>
+

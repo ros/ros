@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="roscpp" type="roscpp-subscribe_unsubscribe_repeatedly" name="subscribe_unsubscribe_repeatedly" />
+  <test test-name="pubsub_unadv" pkg="roscpp" type="roscpp-publish_unadvertise" args=""/>
+</launch>

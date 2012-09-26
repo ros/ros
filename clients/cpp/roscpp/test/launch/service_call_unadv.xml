@@ -1,0 +1,5 @@
+<launch>
+  <node name="service_call_repeatedly" pkg="roscpp" type="roscpp-service_call_repeatedly"/>
+  <test test-name="service_call_unadv" pkg="roscpp" type="roscpp-service_adv_unadv" args=""/>
+</launch>
+

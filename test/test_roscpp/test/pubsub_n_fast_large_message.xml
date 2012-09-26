@@ -1,6 +1,0 @@
-<launch>
-  <node pkg="test_roscpp" type="test_roscpp-publish_n_fast" name="publish_n_fast" args="50 100000 1000000"/>
-  <test test-name="pubsub_n_fast_large_message" pkg="test_roscpp"
-  type="test_roscpp-subscribe_n_fast" args="tcp 50 10.0"/>
-</launch>
-

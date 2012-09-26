@@ -1,0 +1,4 @@
+<launch>
+  <test test-name="subscription_callback_types" pkg="roscpp" type="roscpp-subscription_callback_types"/>
+</launch>
+

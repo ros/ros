@@ -1,5 +1,0 @@
-<launch>
-  <param name="/use_sim_time" type="bool" value="true"/>
-  <test test-name="timetest_sim" pkg="test_roscpp" type="test_roscpp-sim_time_test" args=""/>
-</launch>
-

@@ -1,0 +1,5 @@
+<launch>
+  <test test-name="check_master_true" pkg="roscpp" type="roscpp-check_master" args="yes"/>
+  <test test-name="check_master_false" pkg="roscpp" type="roscpp-check_master" args="no"/>
+</launch>
+

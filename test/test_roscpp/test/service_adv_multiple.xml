@@ -1,5 +1,0 @@
-<launch>
-  <test test-name="service_adv_multiple" pkg="test_roscpp" type="test_roscpp-service_adv_multiple"/>
-</launch>
-
-

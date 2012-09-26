@@ -1,0 +1,4 @@
+<!-- This file is not part of automated testing. -->
+<launch>
+  <test test-name="wait_for_message" pkg="roscpp" type="roscpp-wait_for_message"/>
+</launch>

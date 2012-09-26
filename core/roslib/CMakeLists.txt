@@ -24,8 +24,6 @@ if(NOT (APPLE OR WIN32 OR MINGW))
 endif()
 
 
-catkin_add_env_hooks(10.ros SHELLS bat sh DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks)
-
 catkin_python_setup()
 
 install(TARGETS roslib
@@ -35,8 +33,6 @@ install(TARGETS roslib
 install(DIRECTORY include/
   DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h")
-install(FILES config/rosconsole.config
-  DESTINATION ${CATKIN_GLOBAL_SHARE_DESTINATION}/ros/config)
 install(PROGRAMS scripts/gendeps
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 

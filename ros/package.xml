@@ -18,6 +18,8 @@
   <author>Morgan Quigley</author>
   <author>Rob Wheeler</author>
 
+  <build_depend>catkin</build_depend>
+
   <run_depend>mk</run_depend>
   <run_depend>rosbuild</run_depend>
   <run_depend>roslang</run_depend>
@@ -28,8 +30,4 @@
   <run_depend>roscreate</run_depend>
   <run_depend>rosmake</run_depend>
   <run_depend>rosunit</run_depend>
-
-  <export>
-    <metapackage/>
-  </export>
 </package>

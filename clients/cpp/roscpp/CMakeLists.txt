@@ -19,7 +19,7 @@ include_directories(${catkin_INCLUDE_DIRS})
 
 find_package(Boost REQUIRED COMPONENTS signals filesystem system)
 
-include_directories(include)
+include_directories(include ${Boost_INCLUDE_DIR})
 
 include(CheckIncludeFiles)
 include(CheckFunctionExists)

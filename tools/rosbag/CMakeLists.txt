@@ -14,7 +14,7 @@ catkin_python_setup()
 # Support large bags (>2GB) on 32-bit systems
 add_definitions(-D_FILE_OFFSET_BITS=64)
 
-include_directories(include ${BZIP2_INCLUDE_DIR} ${catkin_INCLUDE_DIRS} ${roscpp_INCLUDE_DIRS})
+include_directories(include ${Boost_INCLUDE_DIR} ${BZIP2_INCLUDE_DIR} ${catkin_INCLUDE_DIRS} ${roscpp_INCLUDE_DIRS})
 add_definitions(${BZIP2_DEFINITIONS})
 
 add_library(rosbag 

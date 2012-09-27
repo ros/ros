@@ -23,7 +23,7 @@ include_directories(${catkin_INCLUDE_DIRS})
 
 find_package(Boost COMPONENTS regex thread)
 
-include_directories(include)
+include_directories(include ${Boost_INCLUDE_DIR})
 
 add_library(rosconsole src/rosconsole/rosconsole.cpp)
 

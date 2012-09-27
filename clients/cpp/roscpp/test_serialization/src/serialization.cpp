@@ -40,7 +40,7 @@
 
 using namespace ros;
 using namespace ros::serialization;
-using namespace test_roscpp_serialization;
+using namespace roscpp;
 
 ROS_STATIC_ASSERT(sizeof(ros::Time) == 8);
 ROS_STATIC_ASSERT(sizeof(ros::Duration) == 8);

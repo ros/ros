@@ -3,8 +3,10 @@ project(mk)
 find_package(catkin REQUIRED)
 catkin_package()
 
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
+# do not wildcard install files since the root folder of the package will contain a debian folder for releasing
+install(DIRECTORY ./
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-  PATTERN "CMakeLists.txt" EXCLUDE
-  PATTERN "package.xml" EXCLUDE
-  PATTERN ".svn" EXCLUDE)
+  PATTERN "*.awk"
+  PATTERN "*.mk"
+  PATTERN "*.py"
+  PATTERN "*.xml")

@@ -3,11 +3,12 @@ project(rosbuild)
 find_package(catkin REQUIRED)
 catkin_package()
 
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
+# do not wildcard install files since the root folder of the package will contain a debian folder for releasing
+install(DIRECTORY ./
   DESTINATION ${CATKIN_GLOBAL_SHARE_DESTINATION}/ros/core/rosbuild
-  PATTERN ".svn" EXCLUDE
-  PATTERN "bin" EXCLUDE
-  )
+  PATTERN "*.cmake"
+  PATTERN "*.xml"
+  PATTERN "tests/*.py")
 install(PROGRAMS
   bin/check_same_directories.py
   bin/download_checkmd5.py

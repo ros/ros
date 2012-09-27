@@ -153,6 +153,16 @@ add_message_files(
   ThroughputMessage.msg
 )
 
+# Message files for testing the performance of serialization.
+add_message_files(
+  NOINSTALL
+  DIRECTORY perf_serialization/msg
+  FILES
+  ChannelFloat32.msg
+  Point32.msg
+  PointCloud.msg
+)
+
 # dependencies std_msgs and rosgraph_msgs are needed by tests, but not by roscpp otherwise.
 generate_messages(DEPENDENCIES std_msgs rosgraph_msgs)
 # generate_messages()
@@ -178,3 +188,4 @@ install(FILES
 add_subdirectory(test)
 add_subdirectory(perf)
 add_subdirectory(test_serialization)
+add_subdirectory(perf_serialization)

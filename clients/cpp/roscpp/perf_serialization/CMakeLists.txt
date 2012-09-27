@@ -1,0 +1,8 @@
+add_executable(${PROJECT_NAME}-pointcloud_serdes EXCLUDE_FROM_ALL pointcloud_serdes.cpp)
+target_link_libraries(${PROJECT_NAME}-pointcloud_serdes ${catkin_LIBRARIES} roscpp)
+if(TARGET tests)
+  add_dependencies(tests ${PROJECT_NAME}-pointcloud_serdes) 
+endif()
+add_dependencies(${PROJECT_NAME}-pointcloud_serdes ${PROJECT_NAME}_gencpp) 
+#rosbuild_add_compile_flags(pointcloud_serdes "-O3 -funroll-loops")
+#rosbuild_add_compile_flags(pointcloud_serdes "-march=prescott")

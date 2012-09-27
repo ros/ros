@@ -1,8 +1,0 @@
-<package>
-  <description>
-  A simple performance test of the serialization/deserialization scheme, so we can get some decent numbers to target optimization efforts.
-  </description>
-  <author>Morgan Quigley</author>
-  <license>BSD</license>
-  <review status="na" notes="test"/>
-</package>

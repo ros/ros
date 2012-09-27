@@ -20,7 +20,6 @@ foreach(subdir
     utilities/xmlrpcpp
     tools/rosconsole
     clients/cpp/roscpp
-    clients/roslisp
     clients/rospy
     tools
     utilities/message_filters

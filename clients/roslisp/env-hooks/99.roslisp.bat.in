@@ -1,6 +1,0 @@
-if @BUILDSPACE@ (
-    export ROSLISP_PACKAGE_DIRECTORY=@CATKIN_BUILD_PREFIX@/share/common-lisp/ros
-)
-if @INSTALLSPACE@ (
-    export ROSLISP_PACKAGE_DIRECTORY=@CMAKE_INSTALL_PREFIX@/share/common-lisp/ros
-)

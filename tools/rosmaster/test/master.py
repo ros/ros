@@ -227,7 +227,7 @@ class MasterApiTestCase(_MasterTestCase):
         master = self.master
         
         topic = '/pub_topic'
-        topic_type = 'std_msgs/String'        
+        topic_type = 'rosmaster/String'        
         caller_api = 'http://localhost:4567/'                
 
         # test with bad arity
@@ -258,7 +258,7 @@ class MasterApiTestCase(_MasterTestCase):
         master = self.master
         
         topic = '/sub_topic'
-        topic_type = 'std_msgs/String'        
+        topic_type = 'rosmaster/String'        
         caller_api = 'http://localhost:4567/'                
 
         # test with bad arity
@@ -292,7 +292,7 @@ class MasterApiTestCase(_MasterTestCase):
         caller_id = '/pub_node'
         caller_api = 'http://localhost:4567/'                
         topic_base = '/pub_topic'
-        topic_type = 'std_msgs/String'  
+        topic_type = 'rosmaster/String'  
         
         # test success        
         for i in xrange(0, 10):
@@ -335,14 +335,14 @@ class MasterApiTestCase(_MasterTestCase):
         self.assert_([topic_name, '*'] in val, "master is not reporting * as type: %s"%val)
         
         # register a grounded type and make sure that '*' can't overwrite it
-        for t in ['std_msgs/String', '*']:
+        for t in ['rosmaster/String', '*']:
             val = self.apiSuccess(master.registerPublisher(caller_id, topic_name, t, caller_api))   
             self.assertEquals([], val) # should report no subscribers
             val = self.apiSuccess(master.getPublishedTopics(self.caller_id, '/'))
-            self.assert_([topic_name, 'std_msgs/String'] in val, "master is not reporting std_msgs/String as type: %s"%val)
+            self.assert_([topic_name, 'rosmaster/String'] in val, "master is not reporting rosmaster/String as type: %s"%val)
 
             val = self.apiSuccess(master.getTopicTypes(self.caller_id))
-            self.assert_([topic_name, 'std_msgs/String'] in val, "master is not reporting std_msgs/String as type: %s"%val)
+            self.assert_([topic_name, 'rosmaster/String'] in val, "master is not reporting rosmaster/String as type: %s"%val)
         
     ## validate master.registerPublisher(caller_id, topic, topic_api, caller_api) 
     def _testRegisterPublisherSuccess(self):
@@ -351,7 +351,7 @@ class MasterApiTestCase(_MasterTestCase):
         # a couple more test cases to verify that registerPublisher's return value is correct
         master = self.master
         topic = '/pub_topic-0'
-        type = 'std_msgs/String'
+        type = 'rosmaster/String'
         pub_caller_api = 'http://localhost:4567/'
         
         subs = []
@@ -404,7 +404,7 @@ class MasterApiTestCase(_MasterTestCase):
         caller_id = '/sub_node'
         caller_api = 'http://localhost:4567/'                
         topic_base = '/sub_topic'
-        topic_type = 'std_msgs/String'  
+        topic_type = 'rosmaster/String'  
         
         # test success        
         for i in xrange(0, 10):

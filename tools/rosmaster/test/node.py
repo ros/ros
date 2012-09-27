@@ -328,30 +328,30 @@ class NodeIntegrationTestCase(_NodeTestCase):
         rospy.init_node(NODE_INTEGRATION_NAME)
         
     def testString(self):
-        pub = rospy.Publisher('test_string_in', std_msgs.msg.String)
-        sub = rospy.Subscriber('test_string_in', std_msgs.msg.String)
+        pub = rospy.Publisher('test_string_in', rosmaster.msg.String)
+        sub = rospy.Subscriber('test_string_in', rosmaster.msg.String)
         #TODO: publish a bunch and check sequencing + caller_id
         pub.unregister()
         sub.unregister()
 
     def testPrimitives(self):
-        pub = rospy.Publisher('test_primitives_in', std_msgs.msg.String)
-        sub = rospy.Subscriber('test_primitives_out', std_msgs.msg.String) 
+        pub = rospy.Publisher('test_primitives_in', rosmaster.msg.String)
+        sub = rospy.Subscriber('test_primitives_out', rosmaster.msg.String) 
         #TODO: publish a bunch and check sequencing + caller_id
         pub.unregister()
         sub.unregister()
 
     def testArrays(self):
-        pub = rospy.Publisher('test_header_in', std_msgs.msg.String)
-        sub = rospy.Subscriber('test_header_out', std_msgs.msg.String)
+        pub = rospy.Publisher('test_header_in', rosmaster.msg.String)
+        sub = rospy.Subscriber('test_header_out', rosmaster.msg.String)
         #TODO: publish a bunch and check sequencing + caller_id        
         pub.unregister()
         sub.unregister()
 
     def testHeader(self):
         #msg.auto_header = True
-        pub = rospy.Publisher('test_header_in', std_msgs.msg.String)
-        sub = rospy.Subscriber('test_header_out', std_msgs.msg.String)
+        pub = rospy.Publisher('test_header_in', rosmaster.msg.String)
+        sub = rospy.Subscriber('test_header_out', rosmaster.msg.String)
         #TODO: publish a bunch and check sequencing + caller_id        
         pub.unregister()
         sub.unregister()

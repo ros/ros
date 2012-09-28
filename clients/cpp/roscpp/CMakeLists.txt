@@ -15,11 +15,9 @@ catkin_package(
           roscpp_traits std_msgs rosgraph_msgs xmlrpcpp
   )
 
-include_directories(${catkin_INCLUDE_DIRS})
-
 find_package(Boost REQUIRED COMPONENTS signals filesystem system)
 
-include_directories(include ${Boost_INCLUDE_DIR})
+include_directories(include ${Boost_INCLUDE_DIR} ${catkin_INCLUDE_DIRS})
 
 include(CheckIncludeFiles)
 include(CheckFunctionExists)
@@ -30,7 +28,7 @@ CHECK_INCLUDE_FILES(ifaddrs.h HAVE_IFADDRS_H)
 CHECK_FUNCTION_EXISTS(trunc HAVE_TRUNC)
 
 # Output test results to config.h
-CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/src/libros/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/libros/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 add_library(roscpp 

@@ -5,10 +5,12 @@
   <maintainer email="dthomas@willowgarage.com">Dirk Thomas</maintainer>
   <license>BSD</license>
 
-  <author>Morgan Quigley</author>
-
   <url>http://ros.org/wiki/std_srvs</url>
+  <author>Morgan Quigley</author>
 
   <build_depend>catkin</build_depend>
   <build_depend>genmsg</build_depend>
+  <build_depend>langs-dev</build_depend>
+
+  <run_depend>langs</run_depend>
 </package>

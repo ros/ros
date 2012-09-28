@@ -12,13 +12,13 @@
   <author>Josh Faust</author>
   <author>Vijay Pradeep</author>
 
-  <build_depend>catkin</build_depend>
-  <build_depend>roscpp</build_depend>
-  <build_depend>xmlrpcpp</build_depend>
-  <build_depend>rosconsole</build_depend>
   <build_depend>boost</build_depend>
-  <build_depend>rosunit</build_depend>
+  <build_depend>catkin</build_depend>
+  <build_depend>rosconsole</build_depend>
+  <build_depend>roscpp</build_depend>
   <build_depend>rostest</build_depend>
+  <build_depend>rosunit</build_depend>
+  <build_depend>xmlrpcpp</build_depend>
 
   <export>
     <rosdoc config="rosdoc.yaml" />

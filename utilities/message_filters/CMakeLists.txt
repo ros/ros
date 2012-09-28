@@ -25,7 +25,7 @@ install(DIRECTORY include/${PROJECT_NAME}/
 
 # Ugly workaround for check_test_ran macro issue
 #add_subdirectory(test)
-find_package(catkin COMPONENTS rosunit rostest)
+find_package(catkin COMPONENTS rostest rosunit)
 
 include_directories(${GTEST_INCLUDE_DIRS})
 

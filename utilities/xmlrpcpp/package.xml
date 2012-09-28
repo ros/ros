@@ -10,11 +10,10 @@
   <maintainer email="dthomas@willowgarage.com">Dirk Thomas</maintainer>
   <license>LGPL</license>
 
+  <url>http://xmlrpcpp.sourceforge.net</url>
   <author>Chris Morley</author>
   <author>Konstantin Pilipchuk</author>
   <author>Morgan Quigley</author>
-
-  <url>http://xmlrpcpp.sourceforge.net</url>
 
   <build_depend>catkin</build_depend>
   <build_depend>cpp_common</build_depend>

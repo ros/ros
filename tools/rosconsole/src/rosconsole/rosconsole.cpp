@@ -410,25 +410,29 @@ protected:
  */
 void do_initialize()
 {
-  // First load the default config file from ROS_ROOT/config/rosconsole.config
+  // First set up some sane defaults programmatically.
+  log4cxx::LoggerPtr ros_logger = log4cxx::Logger::getLogger(ROSCONSOLE_ROOT_LOGGER_NAME);
+  ros_logger->setLevel(log4cxx::Level::getInfo());
+
+  log4cxx::LoggerPtr roscpp_superdebug = log4cxx::Logger::getLogger("ros.roscpp.superdebug");
+  roscpp_superdebug->setLevel(log4cxx::Level::getWarn());
+
+  // Next try to load the default config file from ROS_ROOT/config/rosconsole.config
   char* ros_root_cstr = NULL;
 #ifdef _MSC_VER
   _dupenv_s(&ros_root_cstr, NULL, "ROS_ROOT");
 #else
   ros_root_cstr = getenv("ROS_ROOT");
 #endif
-  if (!ros_root_cstr)
-  {
-    log4cxx::LoggerPtr ros_logger = log4cxx::Logger::getLogger(ROSCONSOLE_ROOT_LOGGER_NAME);
-    ros_logger->setLevel(log4cxx::Level::getInfo());
-
-    log4cxx::LoggerPtr roscpp_superdebug = log4cxx::Logger::getLogger("ros.roscpp.superdebug");
-    roscpp_superdebug->setLevel(log4cxx::Level::getWarn());
-  }
-  else
+  if (ros_root_cstr)
   {
     std::string config_file = std::string(ros_root_cstr) + "/config/rosconsole.config";
-    log4cxx::PropertyConfigurator::configure(config_file);
+    FILE* config_file_ptr = fopen( config_file.c_str(), "r" );
+    if( config_file_ptr ) // only load it if the file exists, to avoid a warning message getting printed.
+    {
+      fclose( config_file_ptr );
+      log4cxx::PropertyConfigurator::configure(config_file);
+    }
   }
   char* config_file_cstr = NULL;
 #ifdef _MSC_VER
@@ -439,7 +443,6 @@ void do_initialize()
   if ( config_file_cstr )
   {
     std::string config_file = config_file_cstr;
-    
     log4cxx::PropertyConfigurator::configure(config_file);
   }
 

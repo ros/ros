@@ -1,0 +1,5 @@
+# generated from rosconsole/env-hooks/10.rosconsole.sh.in
+
+if @BUILDSPACE@; then
+  export ROSCONSOLE_CONFIG_FILE=@CMAKE_CURRENT_SOURCE_DIR@/config/rosconsole.config
+fi

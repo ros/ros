@@ -1,0 +1,5 @@
+REM generated from rosconsole/env-hooks/10.rosconsole.bat.in
+
+if [@BUILDSPACE@]==[true] (
+  set ROSCONSOLE_CONFIG_FILE=@CMAKE_CURRENT_SOURCE_DIR@/config/rosconsole.config
+)

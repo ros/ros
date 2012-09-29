@@ -8,8 +8,8 @@ d['packages'] = ['roslaunch']
 d['package_dir'] = {'': 'src'}
 d['scripts'] = ['scripts/roscore',
                 'scripts/roslaunch',
-                'scripts/roslaunch-deps'
-                'scripts/roslaunch-logs',]
+                'scripts/roslaunch-deps',
+                'scripts/roslaunch-logs']
 d['install_requires'] = ['genmsg', 'genpy', 'roslib', 'rospkg']
 
 setup(**d)

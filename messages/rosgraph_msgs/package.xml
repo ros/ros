@@ -1,6 +1,6 @@
 <package>
   <name>rosgraph_msgs</name>
-  <version>1.9.9</version>
+  <version>1.9.10</version>
   <description>
      Messages relating to the ROS Computation Graph. These are generally considered to be low-level messages that end users do not interact with.
   </description>

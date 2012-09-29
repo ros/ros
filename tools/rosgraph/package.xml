@@ -1,6 +1,6 @@
 <package>
   <name>rosgraph</name>
-  <version>1.9.9</version>
+  <version>1.9.10</version>
   <description>
     rosgraph contains the rosgraph command-line tool, which prints
     information about the ROS Computation Graph. It also provides an

@@ -1,6 +1,6 @@
 <package>
   <name>roslaunch</name>
-  <version>1.9.9</version>
+  <version>1.9.10</version>
   <description>
     roslaunch is a tool for easily launching multiple ROS <a
     href="http://ros.org/wiki/Nodes">nodes</a> locally and remotely

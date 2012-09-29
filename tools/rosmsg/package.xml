@@ -1,6 +1,6 @@
 <package>
   <name>rosmsg</name>
-  <version>1.9.9</version>
+  <version>1.9.10</version>
   <description>
     rosmsg contains two command-line tools: <tt>rosmsg</tt> and
     <tt>rossrv</tt>. <tt>rosmsg</tt> is a command-line tool for

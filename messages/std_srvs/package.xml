@@ -1,6 +1,6 @@
 <package>
   <name>std_srvs</name>
-  <version>1.9.7</version>
+  <version>1.9.8</version>
   <description>Common service definitions. Currently just the 'Empty' service.</description>
   <maintainer email="dthomas@willowgarage.com">Dirk Thomas</maintainer>
   <license>BSD</license>

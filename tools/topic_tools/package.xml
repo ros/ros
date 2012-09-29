@@ -1,6 +1,6 @@
 <package>
   <name>topic_tools</name>
-  <version>1.9.7</version>
+  <version>1.9.8</version>
   <description>
     Tools for directing, throttling, selecting, and otherwise messing with
     ROS topics at a meta level. None of the programs in this package actually

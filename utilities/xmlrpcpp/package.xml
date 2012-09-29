@@ -1,6 +1,6 @@
 <package>
   <name>xmlrpcpp</name>
-  <version>1.9.7</version>
+  <version>1.9.8</version>
   <description>
     XmlRpc++ is a C++ implementation of the XML-RPC protocol. This version is
     heavily modified from the package available on SourceForge in order to

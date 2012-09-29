@@ -1,6 +1,6 @@
 <package>
   <name>rosbag</name>
-  <version>1.9.7</version>
+  <version>1.9.8</version>
   <description>
     This is a set of tools for recording from and playing back to ROS
     topics.  It is intended to be high performance and avoids

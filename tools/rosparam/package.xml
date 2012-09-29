@@ -1,6 +1,6 @@
 <package>
   <name>rosparam</name>
-  <version>1.9.7</version>
+  <version>1.9.8</version>
   <description>
     rosparam contains the rosparam command-line tool for getting and
     setting ROS Parameters on the <a

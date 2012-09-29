@@ -88,3 +88,5 @@ target_link_libraries(double_pub ${GTEST_LIBRARIES} ${catkin_LIBRARIES})
 if(TARGET tests)
   add_dependencies(tests double_pub rosgraph_msgs_genpy)
 endif()
+
+add_subdirectory(bag_migration_tests)

@@ -1,7 +1,9 @@
-project(test_rosbag)
-
-find_package(catkin REQUIRED COMPONENTS genmsg rosunit rostest)
-catkin_project(${PROJECT_NAME})
+# This is going to need some work because the bag files on
+# pr.willowgarage.com all have messages with the test_rosbag package
+# name.  Of course the package name for this package now is rosbag.
+# If we can have a way to pass an override package name into
+# generate_messages() it might make it work, or we can migrate the bag
+# files themselves.
 
 add_message_files(
   DIRECTORY msg_current

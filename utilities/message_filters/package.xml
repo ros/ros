@@ -1,6 +1,6 @@
 <package>
   <name>message_filters</name>
-  <version>1.9.8</version>
+  <version>1.9.9</version>
   <description>
     A set of message filters which take in messages and may output those messages at a later time, based on the conditions that filter needs met.
   </description>

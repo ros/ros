@@ -1,6 +1,6 @@
 <package>
   <name>ros_comm</name>
-  <version>1.9.8</version>
+  <version>1.9.9</version>
   <description>
     ROS communications-related packages, including core client libraries (roscpp, rospy) and graph introspection tools (rostopic, rosnode, rosservice, rosparam).
   </description>

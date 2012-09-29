@@ -1,20 +1,21 @@
 <package>
   <name>rosmaster</name>
-  <version>1.9.7</version> <!-- also update version in clients/cpp/roscpp/include/ros/common.h -->
+  <version>1.9.7</version>
   <description>
      ROS <a href="http://ros.org/wiki/Master">Master</a> implementation.
   </description>
   <maintainer email="dthomas@willowgarage.com">Dirk Thomas</maintainer>
   <license>BSD</license>
 
+  <url>http://ros.org/wiki/rosmaster</url>
   <author>Ken Conley</author>
 
-  <url>http://ros.org/wiki/rosmaster</url>
-
+  <build_depend>catkin</build_depend>
+  <build_depend>genmsg</build_depend>
   <build_depend>rosgraph</build_depend>
   <build_depend>rostest</build_depend>
 
   <export>
-    <rosdoc config="rosdoc.yaml"/>    
+    <rosdoc config="rosdoc.yaml"/>
   </export>
 </package>

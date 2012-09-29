@@ -5,17 +5,17 @@
   <maintainer email="dthomas@willowgarage.com">Dirk Thomas</maintainer>
   <license>BSD</license>
 
+  <url>http://www.ros.org/wiki/rosconsole</url>
   <author>Josh Faust</author>
 
-  <url>http://www.ros.org/wiki/rosconsole</url>
-
   <build_depend>apr</build_depend>
-  <build_depend>log4cxx</build_depend>
-  <build_depend>cpp_common</build_depend>
+  <build_depend>boost</build_depend>
   <build_depend>catkin</build_depend>
+  <build_depend>cpp_common</build_depend>
+  <build_depend>log4cxx</build_depend>
   <build_depend>rostime</build_depend>
   <build_depend>rosunit</build_depend>
-  <build_depend>boost</build_depend>
+
   <run_depend>apr</run_depend>
   <run_depend>log4cxx</run_depend>
 </package>

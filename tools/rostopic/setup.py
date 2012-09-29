@@ -7,6 +7,6 @@ d = parse_package_for_distutils()
 d['packages'] = ['rostopic']
 d['package_dir'] = {'': 'src'}
 d['scripts'] = ['scripts/rostopic']
-d['install_requires'] = ['rospkg', 'genmsg', 'genpy', 'roslib']
+d['install_requires'] = ['genmsg', 'genpy', 'roslib', 'rospkg']
 
 setup(**d)

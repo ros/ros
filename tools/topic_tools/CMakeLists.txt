@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 2.8)
 project(topic_tools)
-find_package(catkin COMPONENTS cpp_common roscpp rosconsole xmlrpcpp rosunit rostest rostime)
+find_package(catkin COMPONENTS cpp_common rosconsole roscpp rostest rostime rosunit xmlrpcpp)
 
 catkin_package(
   LIBRARIES topic_tools
   INCLUDE_DIRS include
-  DEPENDS roscpp rosconsole xmlrpcpp rostime
+  DEPENDS rosconsole roscpp rostime xmlrpcpp
   )
 
 include_directories(include)
@@ -31,8 +31,11 @@ add_executable(throttle src/throttle.cpp)
 target_link_libraries(throttle topic_tools ${catkin_LIBRARIES})
 
 add_service_files(DIRECTORY srv
-  FILES MuxAdd.srv MuxDelete.srv MuxList.srv MuxSelect.srv
-  )
+  FILES
+  MuxAdd.srv
+  MuxDelete.srv
+  MuxList.srv
+  MuxSelect.srv)
 
 generate_messages(DEPENDENCIES std_msgs)
 

@@ -16,6 +16,6 @@
   <run_depend>python-paramiko</run_depend>
 
   <export>
-    <rosdoc config="rosdoc.yaml" />
+    <rosdoc config="rosdoc.yaml"/>
   </export>
 </package>

@@ -11,15 +11,16 @@
   <maintainer email="dthomas@willowgarage.com">Dirk Thomas</maintainer>
   <license>BSD</license>
 
+  <url>http://ros.org/wiki/topic_tools</url>
   <author>Morgan Quigley</author>
   <author>Brian Gerkey</author>
 
   <build_depend>catkin</build_depend>
   <build_depend>cpp_common</build_depend>
-  <build_depend>roscpp</build_depend>
   <build_depend>rosconsole</build_depend>
-  <build_depend>xmlrpcpp</build_depend>
-  <build_depend>rosunit</build_depend>
+  <build_depend>roscpp</build_depend>
   <build_depend>rostest</build_depend>
   <build_depend>rostime</build_depend>
+  <build_depend>rosunit</build_depend>
+  <build_depend>xmlrpcpp</build_depend>
 </package>

@@ -9,27 +9,26 @@
   <maintainer email="dthomas@willowgarage.com">Dirk Thomas</maintainer>
   <license>BSD</license>
 
+  <url>http://ros.org/wiki/rosbag</url>
   <author>Tim Field</author>
   <author>Jeremy Leibs</author>
   <author>James Bowman</author>
 
-  <url>http://ros.org/wiki/rosbag</url>
-
+  <build_depend>boost</build_depend>
+  <build_depend>bzip2</build_depend>
   <build_depend>catkin</build_depend>
   <build_depend>cpp_common</build_depend>
-  <build_depend>roscpp_serialization</build_depend>
-  <build_depend>roscpp</build_depend>
-  <build_depend>rosconsole</build_depend>
-  <build_depend>xmlrpcpp</build_depend>
-  <build_depend>topic_tools</build_depend>
-  <build_depend>rosunit</build_depend>
-  <build_depend>rostest</build_depend>
-  <build_depend>rosgraph_msgs</build_depend>
-  <build_depend>boost</build_depend>
   <build_depend>python-imaging</build_depend>
-  <build_depend>bzip2</build_depend>
+  <build_depend>rosconsole</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>roscpp_serialization</build_depend>
+  <build_depend>rosgraph_msgs</build_depend>
+  <build_depend>rostest</build_depend>
+  <build_depend>rosunit</build_depend>
+  <build_depend>topic_tools</build_depend>
+  <build_depend>xmlrpcpp</build_depend>
 
   <export>
-    <rosdoc config="${prefix}/rosdoc.yaml" />
+    <rosdoc config="${prefix}/rosdoc.yaml"/>
   </export>
 </package>

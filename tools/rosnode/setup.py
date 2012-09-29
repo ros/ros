@@ -7,6 +7,6 @@ d = parse_package_for_distutils()
 d['packages'] = ['rosnode']
 d['package_dir'] = {'': 'src'}
 d['scripts'] = ['scripts/rosnode']
-d['install_requires'] = ['rospkg', 'genmsg', 'genpy', 'roslib']
+d['install_requires'] = ['genmsg', 'genpy', 'roslib', 'rospkg']
 
 setup(**d)

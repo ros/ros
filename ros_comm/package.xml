@@ -1,0 +1,51 @@
+<package>
+  <name>ros_comm</name>
+  <version>1.9.7</version>
+  <description>
+    ROS communications-related packages, including core client libraries (roscpp, rospy) and graph introspection tools (rostopic, rosnode, rosservice, rosparam).
+  </description>
+  <maintainer email="dthomas@willowgarage.com">Dirk Thomas</maintainer>
+  <license>BSD</license>
+
+  <url>http://www.ros.org/wiki/ros_comm</url>
+  <author email="mquigley@cs.stanford.edu">Morgan Quigley</author>
+  <author email="berger@willowgarage.com">Eric Berger</author>
+  <author email="kwc@willowgarage.com">Ken Conley</author>
+  <author email="rdiankov@cs.cmu.edu">Rosen Diankov</author>
+  <author email="jfaust@willowgarage.com">Josh Faust</author>
+  <author email="tfield@willowgarage.com">Tim Field</author>
+  <author email="tfoote@willowgarage.com">Tully Foote</author>
+  <author email="gerkey@willowgarage.com">Brian Gerkey</author>
+  <author email="leibs@willowgarage.com">Jeremy Leibs</author>
+  <author email="bhaskara@willowgarage.com">Bhaskara Marthi</author>
+  <author email="straszheim@willowgarage.com">Troy Straszheim</author>
+  <author email="wheeler@willowgarage.com">Rob Wheeler</author>
+
+  <run_depend>roscpp</run_depend>
+  <run_depend>rospy</run_depend>
+
+  <run_depend>rosgraph_msgs</run_depend>
+  <run_depend>std_srvs</run_depend>
+
+  <run_depend>rosbag</run_depend>
+  <run_depend>rosconsole</run_depend>
+  <run_depend>rosgraph</run_depend>
+  <run_depend>roslaunch</run_depend>
+  <run_depend>rosmaster</run_depend>
+  <run_depend>rosmgs</run_depend>
+  <run_depend>rosnode</run_depend>
+  <run_depend>rosout</run_depend>
+  <run_depend>rosparam</run_depend>
+  <run_depend>rosservice</run_depend>
+  <run_depend>rostest</run_depend>
+  <run_depend>rostopic</run_depend>
+  <run_depend>topic_tools</run_depend>
+
+  <run_depend>message_filters</run_depend>
+  <run_depend>roswtf</run_depend>
+  <run_depend>xmlrpcpp</run_depend>
+
+  <export>
+    <metapackage/>
+  </export>
+</package>

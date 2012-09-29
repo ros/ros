@@ -8,7 +8,6 @@
   <license>BSD</license>
 
   <url>http://ros.org/wiki/rosout</url>
-
   <author>Josh Faust</author>
 
   <build_depend>catkin</build_depend>

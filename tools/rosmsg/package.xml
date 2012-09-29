@@ -14,14 +14,12 @@
   <license>BSD</license>
 
   <url>http://ros.org/wiki/rosmsg</url>
-
   <author>Ken Conley</author>
   <author>Tully Foote</author>
 
   <build_depend>catkin</build_depend>
 
   <export>
-    <rosdoc config="rosdoc.yaml"/>    
+    <rosdoc config="rosdoc.yaml"/>
   </export>
 </package>
-

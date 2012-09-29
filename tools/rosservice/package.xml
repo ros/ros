@@ -13,7 +13,6 @@
   <license>BSD</license>
 
   <url>http://ros.org/wiki/rosservice</url>
-
   <author>Ken Conley</author>
 
   <build_depend>catkin</build_depend>

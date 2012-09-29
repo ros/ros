@@ -32,7 +32,7 @@
   <run_depend>rosgraph</run_depend>
   <run_depend>roslaunch</run_depend>
   <run_depend>rosmaster</run_depend>
-  <run_depend>rosmgs</run_depend>
+  <run_depend>rosmsg</run_depend>
   <run_depend>rosnode</run_depend>
   <run_depend>rosout</run_depend>
   <run_depend>rosparam</run_depend>

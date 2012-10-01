@@ -18,6 +18,7 @@
   <build_depend>rospack</build_depend>
 
   <run_depend>python-rospkg</run_depend>
+  <run_depend>rospack</run_depend>
 
   <export>
      <rosdoc config="${prefix}/rosdoc.yaml" />

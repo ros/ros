@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.3)
 project(roslib)
 find_package(catkin REQUIRED COMPONENTS rospack)
 catkin_package(
@@ -48,3 +48,7 @@ catkin_add_gtest(${PROJECT_NAME}-test_package test/package.cpp)
 if(TARGET ${PROJECT_NAME}-test_package)
   target_link_libraries(${PROJECT_NAME}-test_package roslib ${catkin_LIBRARIES})
 endif()
+
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/export.cmake "")
+export(TARGETS roslib FILE ${CMAKE_CURRENT_BINARY_DIR}/export.cmake APPEND)
+#include(${CMAKE_CURRENT_BINARY_DIR}/export.cmake)

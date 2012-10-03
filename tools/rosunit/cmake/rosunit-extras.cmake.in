@@ -1,3 +1,5 @@
+include(CMakeParseArguments)
+
 macro(rosunit_initialize_tests)
   if (@BUILDSPACE@)
     find_program_required(ROSUNIT_EXE rosunit
@@ -17,7 +19,7 @@ function(add_pyunit file)
   message(WARNING "add_pyunit() is deprecated.  For Python tests, use add_nostests() instead.")
 
   # Look for optional TIMEOUT argument, #2645
-  parse_arguments(_pyunit "TIMEOUT;WORKING_DIRECTORY" "" ${ARGN})
+  cmake_parse_arguments(_pyunit "" "TIMEOUT;WORKING_DIRECTORY" "" ${ARGN})
   if(NOT _pyunit_TIMEOUT)
     set(_pyunit_TIMEOUT 60.0)
   endif()

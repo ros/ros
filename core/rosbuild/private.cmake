@@ -114,13 +114,13 @@ endmacro(_rosbuild_check_rostest_xml_result test_name)
 
 macro(_rosbuild_add_gtest exe)
   # Look for optional TIMEOUT argument, #2645
-  parse_arguments(_gtest "TIMEOUT" "" ${ARGN})
+  cmake_parse_arguments(_gtest "" "TIMEOUT" "" ${ARGN})
   if(NOT _gtest_TIMEOUT)
     set(_gtest_TIMEOUT 60.0)
   endif(NOT _gtest_TIMEOUT)
 
   # Create the program, with basic + gtest build flags
-  rosbuild_add_executable(${exe} EXCLUDE_FROM_ALL ${_gtest_DEFAULT_ARGS})
+  rosbuild_add_executable(${exe} EXCLUDE_FROM_ALL ${_gtest_UNPARSED_ARGUMENTS})
   rosbuild_add_gtest_build_flags(${exe})
 
   # Create a legal target name, in case the target name has slashes in it
@@ -212,7 +212,7 @@ endmacro(_rosbuild_add_rostest)
 
 macro(_rosbuild_add_pyunit file)
   # Look for optional TIMEOUT argument, #2645
-  parse_arguments(_pyunit "TIMEOUT" "" ${ARGN})
+  cmake_parse_arguments(_pyunit "" "TIMEOUT" "" ${ARGN})
   if(NOT _pyunit_TIMEOUT)
     set(_pyunit_TIMEOUT 60.0)
   endif(NOT _pyunit_TIMEOUT)

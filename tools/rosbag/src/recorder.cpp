@@ -436,7 +436,11 @@ void Recorder::doRecord() {
                 break;
             }
             boost::xtime xt;
+#if BOOST_VERSION >= 105000
+            boost::xtime_get(&xt, boost::TIME_UTC_);
+#else
             boost::xtime_get(&xt, boost::TIME_UTC);
+#endif
             xt.nsec += 250000000;
             queue_condition_.timed_wait(lock, xt);
             if (checkDuration(ros::Time::now()))

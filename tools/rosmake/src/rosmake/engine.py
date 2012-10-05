@@ -41,6 +41,7 @@ import threading
 import traceback
 
 import rospkg
+from rospkg import ResourceNotFound
 
 try: 
     from exceptions import SystemExit #Python 2.x
@@ -758,7 +759,10 @@ class RosMakeAll:
         # add them to required list but not the specified list. 
         for s in stacks_arguments:
             for d in rosstack.get_depends(s, implicit=False):
-                required_packages.extend(rosstack.packages_of(d))
+                try:
+                    required_packages.extend(rosstack.packages_of(d))
+                except ResourceNotFound:
+                    self.printer.print_all('WARNING: The stack "%s" was not found. We will assume it is using the new buildsystem and try to continue...' % d)
 
         # deduplicate required_packages
         required_packages = list(set(required_packages))

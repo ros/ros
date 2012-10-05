@@ -18,5 +18,8 @@ install(FILES
   DESTINATION ${CATKIN_GLOBAL_SHARE_DESTINATION}/ros/core/rosbuild/tests)
 install(PROGRAMS
   bin/check_same_directories.py
+  DESTINATION ${CATKIN_GLOBAL_SHARE_DESTINATION}/ros/core/rosbuild/bin)
+install(PROGRAMS
   bin/download_checkmd5.py
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/bin)
+  

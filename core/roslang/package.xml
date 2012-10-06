@@ -12,4 +12,6 @@
   <author email="gerkey@willowgarage.com">Brian Gerkey</author>
 
   <build_depend>catkin</build_depend>
+
+  <run_depend>genmsg</run_depend>
 </package>

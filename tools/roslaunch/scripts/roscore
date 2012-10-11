@@ -46,6 +46,9 @@ def _get_optparse():
     parser.add_option("-p", "--port",
                       dest="port", default=None,
                       help="master port. Only valid if master is launched", metavar="PORT")
+    parser.add_option("-v", action="store_true",
+                      dest="verbose", default=False,
+                      help="verbose printing")
     return parser
 
 

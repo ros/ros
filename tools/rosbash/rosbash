@@ -219,16 +219,16 @@ function rosls {
 
 # sets arg as return value
 function _roscmd {
-    local pkgdir exepath opt catkin_project_libexec_dir opts
+    local pkgdir exepath opt catkin_package_libexec_dir opts
     if [[ -n $CMAKE_PREFIX_PATH ]]; then
-        catkin_project_libexec_dir=`catkin_find --first-only --libexec $1 2> /dev/null`
+        catkin_package_libexec_dir=`catkin_find --first-only --libexec $1 2> /dev/null`
     fi
     pkgdir=`_ros_package_find $1`
-    if [[ -z $catkin_project_libexec_dir && -z $pkgdir ]]; then
+    if [[ -z $catkin_package_libexec_dir && -z $pkgdir ]]; then
         echo "Couldn't find package [$1]"
         return 1
     fi
-    exepath=(`find -L $catkin_project_libexec_dir $pkgdir -name $2 -type f ! -regex .*/[.].* ! -regex .*$pkgdir\/build\/.* | uniq`)
+    exepath=(`find -L $catkin_package_libexec_dir $pkgdir -name $2 -type f ! -regex .*/[.].* ! -regex .*$pkgdir\/build\/.* | uniq`)
     if [[ ${#exepath[@]} == 0 ]] ; then
         echo "That file does not exist in that package."
         return 1
@@ -408,7 +408,7 @@ function _roscomplete_rossrv {
 }
 
 function _roscomplete_search_dir {
-    local arg opts pkgdir catkin_project_libexec_dir
+    local arg opts pkgdir catkin_package_libexec_dir
     COMPREPLY=()
     arg="${COMP_WORDS[COMP_CWORD]}"
     if [[ $COMP_CWORD == 1 ]]; then
@@ -418,11 +418,11 @@ function _roscomplete_search_dir {
         unset IFS
     elif [[ $COMP_CWORD == 2 ]]; then
         if [[ -n $CMAKE_PREFIX_PATH ]]; then
-            catkin_project_libexec_dir=`catkin_find --first-only --libexec ${COMP_WORDS[1]} 2> /dev/null`
+            catkin_package_libexec_dir=`catkin_find --first-only --libexec ${COMP_WORDS[1]} 2> /dev/null`
         fi
         pkgdir=`_ros_package_find ${COMP_WORDS[1]}`
-        if [[ -n "$catkin_project_libexec_dir_dir" || -n "$pkgdir" ]]; then
-            opts=`_rosfind -L $catkin_project_libexec_dir $pkgdir ${1} ! -regex ".*/[.].*" ! -regex ".*$pkgdir\/build\/.*"  -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
+        if [[ -n "$catkin_package_libexec_dir" || -n "$pkgdir" ]]; then
+            opts=`_rosfind -L $catkin_package_libexec_dir $pkgdir ${1} ! -regex ".*/[.].*" ! -regex ".*$pkgdir\/build\/.*"  -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
         else
             opts=""
         fi

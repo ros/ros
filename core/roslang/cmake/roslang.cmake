@@ -21,7 +21,7 @@ foreach(_l ${_roslang_LANGS})
 endforeach(_l)
 
 # Hack to resolve languages from wet which rospack does not support yet
-find_package(catkin COMPONENTS genmsg)
+find_package(catkin QUIET COMPONENTS genmsg)
 if(genmsg_FOUND)
   foreach(_l ${CATKIN_MESSAGE_GENERATORS})
     string(REPLACE "gen" "ros" _l ${_l})

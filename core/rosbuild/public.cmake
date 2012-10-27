@@ -912,7 +912,7 @@ macro(rosbuild_download_test_data _url _filename)
   # Create a legal target name, in case the target name has slashes in it
   string(REPLACE "/" "_" _testname download_data_${_filename})
   add_custom_command(OUTPUT ${PROJECT_SOURCE_DIR}/${_filename}
-                     COMMAND $ENV{ROS_ROOT}/core/rosbuild/bin/download_checkmd5.py ${_url} ${PROJECT_SOURCE_DIR}/${_filename} ${ARGN}
+                     COMMAND $ENV{ROS_ROOT}/../rosbuild/bin/download_checkmd5.py ${_url} ${PROJECT_SOURCE_DIR}/${_filename} ${ARGN}
                      VERBATIM)
   add_custom_target(${_testname} DEPENDS ${PROJECT_SOURCE_DIR}/${_filename})
   # Redeclaration of target is to workaround bug in 2.4.6
@@ -963,7 +963,7 @@ macro(rosbuild_download_data _url _filename)
   # Create a legal target name, in case the target name has slashes in it
   string(REPLACE "/" "_" _testname download_data_${_filename})
   add_custom_command(OUTPUT ${PROJECT_SOURCE_DIR}/${_filename}
-                    COMMAND $ENV{ROS_ROOT}/core/rosbuild/bin/download_checkmd5.py ${_url} ${PROJECT_SOURCE_DIR}/${_filename} ${ARGN}
+                    COMMAND $ENV{ROS_ROOT}/../rosbuild/bin/download_checkmd5.py ${_url} ${PROJECT_SOURCE_DIR}/${_filename} ${ARGN}
                     VERBATIM)
   add_custom_target(${_testname} ALL DEPENDS ${PROJECT_SOURCE_DIR}/${_filename})
 endmacro(rosbuild_download_data)

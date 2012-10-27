@@ -88,7 +88,7 @@ macro(_rosbuild_check_package_location)
   rosbuild_find_ros_package(${PROJECT_NAME})
   # Compare to where we are
   execute_process(
-    COMMAND $ENV{ROS_ROOT}/core/rosbuild/bin/check_same_directories.py ${${PROJECT_NAME}_PACKAGE_PATH} ${PROJECT_SOURCE_DIR}
+    COMMAND $ENV{ROS_ROOT}/../rosbuild/bin/check_same_directories.py ${${PROJECT_NAME}_PACKAGE_PATH} ${PROJECT_SOURCE_DIR}
     OUTPUT_VARIABLE _rosbuild_check_package_location_error
     ERROR_VARIABLE _rosbuild_check_package_location_error
     RESULT_VARIABLE _rosbuild_check_package_location_failed

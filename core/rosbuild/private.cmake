@@ -88,7 +88,7 @@ macro(_rosbuild_check_package_location)
   rosbuild_find_ros_package(${PROJECT_NAME})
   # Compare to where we are
   execute_process(
-    COMMAND $ENV{ROS_ROOT}/../rosbuild/bin/check_same_directories.py ${${PROJECT_NAME}_PACKAGE_PATH} ${PROJECT_SOURCE_DIR}
+    COMMAND $ENV{ROS_ROOT}/core/rosbuild/bin/check_same_directories.py ${${PROJECT_NAME}_PACKAGE_PATH} ${PROJECT_SOURCE_DIR}
     OUTPUT_VARIABLE _rosbuild_check_package_location_error
     ERROR_VARIABLE _rosbuild_check_package_location_error
     RESULT_VARIABLE _rosbuild_check_package_location_failed
@@ -96,6 +96,8 @@ macro(_rosbuild_check_package_location)
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
   if(_rosbuild_check_package_location_failed)
+    message("[rosbuild] Error from directory check: $ENV{ROS_ROOT}/core/rosbuild/bin/check_same_directories.py ${${PROJECT_NAME}_PACKAGE_PATH} ${PROJECT_SOURCE_DIR}")
+    message("${_rosbuild_check_package_location_error}")
     message(FATAL_ERROR "[rosbuild] rospack found package \"${PROJECT_NAME}\" at \"${${PROJECT_NAME}_PACKAGE_PATH}\", but the current directory is \"${PROJECT_SOURCE_DIR}\".  You should double-check your ROS_PACKAGE_PATH to ensure that packages are found in the correct precedence order.")
   endif(_rosbuild_check_package_location_failed)
 endmacro(_rosbuild_check_package_location)

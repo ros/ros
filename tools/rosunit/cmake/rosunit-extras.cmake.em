@@ -1,22 +1,24 @@
 include(CMakeParseArguments)
 
 macro(rosunit_initialize_tests)
-  if (@BUILDSPACE@)
-    find_program_required(ROSUNIT_EXE rosunit
-      PATHS @PROJECT_SOURCE_DIR@/scripts
-      NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
-  else()
-    find_program_required(ROSUNIT_EXE rosunit
-      PATHS @CMAKE_INSTALL_PREFIX@/bin
-      NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
-  endif()
+@[if BUILDSPACE]@
+  # find program in buildspace
+  find_program_required(ROSUNIT_EXE rosunit
+    PATHS @(PROJECT_SOURCE_DIR)/scripts
+    NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
+@[else]@
+  # find program in installspace
+  find_program_required(ROSUNIT_EXE rosunit
+    PATHS @(CMAKE_INSTALL_PREFIX)/bin
+    NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
+@[end if]@
 endmacro()
 
 rosunit_initialize_tests()
 
 function(add_pyunit file)
 
-  message(WARNING "add_pyunit() is deprecated.  For Python tests, use add_nostests() instead.")
+  message(WARNING "add_pyunit() is deprecated.  For Python tests, use catkin_add_nosetests() instead.")
 
   # Look for optional TIMEOUT argument, #2645
   cmake_parse_arguments(_pyunit "" "TIMEOUT;WORKING_DIRECTORY" "" ${ARGN})

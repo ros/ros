@@ -174,6 +174,7 @@ def get_pkg_dir(package, required=True, ros_root=None, ros_package_path=None):
         if not pkg_dir:
             raise InvalidROSPkgException("Cannot locate installation of package %s: %s. ROS_ROOT[%s] ROS_PACKAGE_PATH[%s]"%(package, rperr.strip(), ros_root, ros_package_path))
 
+        pkg_dir = os.path.normpath(pkg_dir)
         if not os.path.exists(pkg_dir):
             raise InvalidROSPkgException("Cannot locate installation of package %s: [%s] is not a valid path. ROS_ROOT[%s] ROS_PACKAGE_PATH[%s]"%(package, pkg_dir, ros_root, ros_package_path))
         elif not os.path.isdir(pkg_dir):

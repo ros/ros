@@ -1,4 +1,4 @@
-REM generated from ros/env-hooks/10.ros.bat.in
+REM generated from ros/env-hooks/10.ros.bat.em
 
 REM scrub old ROS bin dirs, to avoid accidentally finding the wrong executables
 set PATH=`python -c "import os; print(os.pathsep.join([x for x in \"$PATH\".split(os.pathsep) if not any([d for d in ['cturtle', 'diamondback', 'electric', 'fuerte'] if d in x])]))"`
@@ -21,16 +21,17 @@ setlocal EnableDelayedExpansion
 set ROS_PACKAGE_PATH_PARENTS=
 for /f %%a in ('python _parent_package_path.py') do set ROS_PACKAGE_PATH_PARENTS=!ROS_PACKAGE_PATH_PARENTS!%%a
 
-if [@BUILDSPACE@]==[true] (
-    set ROS_PACKAGE_PATH=@CMAKE_SOURCE_DIR@$ROS_PACKAGE_PATH_PARENTS
-    set ROS_ROOT=@CMAKE_CURRENT_SOURCE_DIR@
-    set ROS_ETC_DIR=@CATKIN_BUILD_PREFIX@/@CATKIN_PACKAGE_ETC_DESTINATION@
-)
-if [@INSTALLSPACE@]==[true] (
-    set ROS_PACKAGE_PATH=@CMAKE_INSTALL_PREFIX@/share:@CMAKE_INSTALL_PREFIX@/stacks$ROS_PACKAGE_PATH_PARENTS
-    set ROS_ROOT=@CMAKE_INSTALL_PREFIX@/@CATKIN_PACKAGE_SHARE_DESTINATION@
-    set ROS_ETC_DIR=@CMAKE_INSTALL_PREFIX@/@CATKIN_PACKAGE_ETC_DESTINATION@
-)
+@[if BUILDSPACE]@
+REM env variables in buildspace
+set ROS_PACKAGE_PATH=@(CMAKE_SOURCE_DIR)$ROS_PACKAGE_PATH_PARENTS
+set ROS_ROOT=@(CMAKE_CURRENT_SOURCE_DIR)
+set ROS_ETC_DIR=@(CATKIN_BUILD_PREFIX)/@(CATKIN_PACKAGE_ETC_DESTINATION)
+@[else]@
+REM env variables in installspace
+set ROS_PACKAGE_PATH=@(CMAKE_INSTALL_PREFIX)/share:@(CMAKE_INSTALL_PREFIX)/stacks$ROS_PACKAGE_PATH_PARENTS
+set ROS_ROOT=@(CMAKE_INSTALL_PREFIX)/@(CATKIN_PACKAGE_SHARE_DESTINATION)
+set ROS_ETC_DIR=@(CMAKE_INSTALL_PREFIX)/@(CATKIN_PACKAGE_ETC_DESTINATION)
+@[end if]@
 
 del _parent_package_path.py
 

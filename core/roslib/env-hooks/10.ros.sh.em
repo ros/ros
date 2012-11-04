@@ -1,4 +1,4 @@
-# generated from ros/env-hooks/10.ros.sh.in
+# generated from ros/env-hooks/10.ros.sh.em
 
 # scrub old ROS bin dirs, to avoid accidentally finding the wrong executables
 export PATH=`python -c "import os; print(os.pathsep.join([x for x in \"$PATH\".split(os.pathsep) if not any([d for d in ['cturtle', 'diamondback', 'electric', 'fuerte'] if d in x])]))"`
@@ -29,11 +29,12 @@ EOF
 )
 export ROS_PACKAGE_PATH=`python -c "$PYTHON_CODE_BUILD_ROS_PACKAGE_PATH"`
 
-if @BUILDSPACE@; then
-    export ROS_ROOT=@CMAKE_CURRENT_SOURCE_DIR@/..
-    export ROS_ETC_DIR=@CATKIN_BUILD_PREFIX@/@CATKIN_PACKAGE_ETC_DESTINATION@
-fi
-if @INSTALLSPACE@; then
-    export ROS_ROOT=@CMAKE_INSTALL_PREFIX@/@CATKIN_PACKAGE_SHARE_DESTINATION@
-    export ROS_ETC_DIR=@CMAKE_INSTALL_PREFIX@/@CATKIN_PACKAGE_ETC_DESTINATION@
-fi
+@[if BUILDSPACE]@
+# env variables in buildspace
+export ROS_ROOT=@(CMAKE_CURRENT_SOURCE_DIR)/../..
+export ROS_ETC_DIR=@(CATKIN_BUILD_PREFIX)/@(CATKIN_GLOBAL_ETC_DESTINATION)/ros
+@[else]@
+# env variables in installspace
+export ROS_ROOT=@(CMAKE_INSTALL_PREFIX)/@(CATKIN_PACKAGE_SHARE_DESTINATION)
+export ROS_ETC_DIR=@(CMAKE_INSTALL_PREFIX)/@(CATKIN_PACKAGE_ETC_DESTINATION)
+@[end if]@

@@ -496,7 +496,7 @@ def find_resource(pkg, resource_name, filter_fn=None, rospack=None):
     matches = []
     for search_dirs in ['libexec', 'share']:
         try:
-            search_paths, _ = catkin_find(search_dirs=[search_dirs], project=pkg)
+            search_paths = catkin_find(search_dirs=[search_dirs], project=pkg)
             for search_path in search_paths:
                 matches.extend(_find_resource(search_path, resource_name, filter_fn=filter_fn))
         except RuntimeError:

@@ -221,7 +221,7 @@ function rosls {
 function _roscmd {
     local pkgdir exepath opt catkin_package_libexec_dir opts
     if [[ -n $CMAKE_PREFIX_PATH ]]; then
-        catkin_package_libexec_dir=`catkin_find --first-only --libexec $1 2> /dev/null`
+        catkin_package_libexec_dir=`catkin_find --without-underlays --libexec $1 2> /dev/null`
     fi
     pkgdir=`_ros_package_find $1`
     if [[ -z $catkin_package_libexec_dir && -z $pkgdir ]]; then
@@ -418,7 +418,7 @@ function _roscomplete_search_dir {
         unset IFS
     elif [[ $COMP_CWORD == 2 ]]; then
         if [[ -n $CMAKE_PREFIX_PATH ]]; then
-            catkin_package_libexec_dir=`catkin_find --first-only --libexec ${COMP_WORDS[1]} 2> /dev/null`
+            catkin_package_libexec_dir=`catkin_find --without-underlays --libexec ${COMP_WORDS[1]} 2> /dev/null`
         fi
         pkgdir=`_ros_package_find ${COMP_WORDS[1]}`
         if [[ -n "$catkin_package_libexec_dir" || -n "$pkgdir" ]]; then

@@ -1,8 +1,8 @@
 include(CMakeParseArguments)
 
 macro(rosunit_initialize_tests)
-@[if BUILDSPACE]@
-  # find program in buildspace
+@[if DEVELSPACE]@
+  # find program in develspace
   find_program_required(ROSUNIT_EXE rosunit
     PATHS @(PROJECT_SOURCE_DIR)/scripts
     NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)

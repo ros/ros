@@ -11,10 +11,10 @@ from __future__ import print_function
 import os
 env_name = 'CMAKE_PREFIX_PATH'
 paths = [path for path in os.environ[env_name].split(os.pathsep)] if env_name in os.environ and os.environ[env_name] != '' else []
-workspaces = [path for path in paths if os.path.exists(os.path.join(path, '.CATKIN_WORKSPACE'))]
+workspaces = [path for path in paths if os.path.exists(os.path.join(path, '.catkin'))]
 paths = []
 for workspace in workspaces:
-    filename = os.path.join(workspace, '.CATKIN_WORKSPACE')
+    filename = os.path.join(workspace, '.catkin')
     data = ''
     with open(filename) as f:
         data = f.read()
@@ -29,10 +29,10 @@ EOF
 )
 export ROS_PACKAGE_PATH=`python -c "$PYTHON_CODE_BUILD_ROS_PACKAGE_PATH"`
 
-@[if BUILDSPACE]@
-# env variables in buildspace
+@[if DEVELSPACE]@
+# env variables in develspace
 export ROS_ROOT=@(CMAKE_CURRENT_SOURCE_DIR)/../..
-export ROS_ETC_DIR=@(CATKIN_BUILD_PREFIX)/@(CATKIN_GLOBAL_ETC_DESTINATION)/ros
+export ROS_ETC_DIR=@(CATKIN_DEVEL_PREFIX)/@(CATKIN_GLOBAL_ETC_DESTINATION)/ros
 @[else]@
 # env variables in installspace
 export ROS_ROOT=@(CMAKE_INSTALL_PREFIX)/@(CATKIN_GLOBAL_SHARE_DESTINATION)/ros

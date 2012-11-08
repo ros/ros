@@ -105,13 +105,13 @@ endmacro(_rosbuild_check_package_location)
 # helper function to register check that results were generated (#580)
 macro(_rosbuild_check_rostest_xml_result test_name test_file)
   add_custom_target(${test_name}_result
-                    COMMAND ${rosunit_path}/bin/check_test_ran.py ${test_file}
+                    COMMAND ${rosunit_path}/scripts/check_test_ran.py ${test_file}
 		    VERBATIM)
   # Redeclaration of target is to workaround bug in 2.4.6
   if(CMAKE_MINOR_VERSION LESS 6)
     add_custom_target(test-results-run)
   endif(CMAKE_MINOR_VERSION LESS 6)
-  add_dependencies(test-results-run ${test_name}_result)	 
+  add_dependencies(test-results-run ${test_name}_result)
 endmacro(_rosbuild_check_rostest_xml_result test_name)
 
 macro(_rosbuild_add_gtest exe)
@@ -134,13 +134,13 @@ macro(_rosbuild_add_gtest exe)
   # But don't depend on the gtest executable if rosbuild_test_nobuild is set, #3008
   if(NOT rosbuild_test_nobuild)
     add_custom_target(test_${_testname}
-                      COMMAND ${rosunit_path}/bin/rosunit --name=${_testname} --time-limit=${_gtest_TIMEOUT} ${EXECUTABLE_OUTPUT_PATH}/${exe}
+                      COMMAND ${rosunit_path}/../..//bin/rosunit --name=${_testname} --time-limit=${_gtest_TIMEOUT} ${EXECUTABLE_OUTPUT_PATH}/${exe}
                       DEPENDS ${EXECUTABLE_OUTPUT_PATH}/${exe}
                       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                       VERBATIM)
   else(NOT rosbuild_test_nobuild)
     add_custom_target(test_${_testname}
-                      COMMAND ${rosunit_path}/bin/rosunit --name=${_testname} --time-limit=${_gtest_TIMEOUT} ${EXECUTABLE_OUTPUT_PATH}/${exe}
+                      COMMAND ${rosunit_path}/../..//bin/rosunit --name=${_testname} --time-limit=${_gtest_TIMEOUT} ${EXECUTABLE_OUTPUT_PATH}/${exe}
                       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                       VERBATIM)
   endif(NOT rosbuild_test_nobuild)
@@ -167,14 +167,14 @@ endmacro(_rosbuild_add_gtest)
 # arguments as cmake doesn't know the name of the output file
 macro(_rosbuild_check_rostest_result test_name test_pkg test_file)
   add_custom_target(${test_name}_result
-                    COMMAND ${rosunit_path}/bin/check_test_ran.py --rostest ${test_pkg} ${test_file}
+                    COMMAND ${rosunit_path}/scripts/check_test_ran.py --rostest ${test_pkg} ${test_file}
                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
 		    VERBATIM)
   # Redeclaration of target is to workaround bug in 2.4.6
   if(CMAKE_MINOR_VERSION LESS 6)
     add_custom_target(test-results-run)
   endif(CMAKE_MINOR_VERSION LESS 6)
-  add_dependencies(test-results-run ${test_name}_result)	 
+  add_dependencies(test-results-run ${test_name}_result)
 endmacro(_rosbuild_check_rostest_result test_name)
 
 macro(_rosbuild_add_rostest file)
@@ -207,7 +207,7 @@ macro(_rosbuild_add_rostest file)
   # here through registration of a future test.  Eventually, we should pass
   # in the overriding target (e.g., test-results vs. test-future-results).
   # For now, we call _rosbuild_check_rostest_xml_result() in
-  # rosbuild_add_rostest() 
+  # rosbuild_add_rostest()
   # and rosbuild_add_rostest_future() instead.
   #_rosbuild_check_rostest_result(rostest_${_testname} ${PROJECT_NAME} ${file})
 endmacro(_rosbuild_add_rostest)
@@ -240,7 +240,7 @@ macro(_rosbuild_add_pyunit file)
   # Create target for this test
   # We use rostest to call the executable to get process control, #1629
   add_custom_target(pyunit_${_testname}
-                    COMMAND ${rosunit_path}/bin/rosunit --name=${_testname} --time-limit=${_pyunit_TIMEOUT} -- ${file} ${_covarg}
+                    COMMAND ${rosunit_path}/../..//bin/rosunit --name=${_testname} --time-limit=${_pyunit_TIMEOUT} -- ${file} ${_covarg}
                     DEPENDS ${file}
                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                     VERBATIM)
@@ -272,13 +272,13 @@ macro(_rosbuild_add_roslaunch_check targetname file)
                     DEPENDS ${file}
                     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                     VERBATIM)
-  
+
   # Make sure all test programs are built before running this test
   # but not if rosbuild_test_nobuild is set, #3008
   if(NOT rosbuild_test_nobuild)
     add_dependencies(${targetname} tests)
   endif(NOT rosbuild_test_nobuild)
-  
+
 endmacro(_rosbuild_add_roslaunch_check)
 
 macro(_rosbuild_wget_and_build tarball tarball_url tarball_dir unpack_cmd configure_cmd make_cmd install_cmd)
@@ -292,13 +292,13 @@ macro(_rosbuild_wget_and_build tarball tarball_url tarball_dir unpack_cmd config
   add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/${tarball}
                      COMMAND ${WGET_EXECUTABLE} ${tarball_url} -O ${tarball}
 		     VERBATIM)
-  
+
   add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/${tarball_dir}
                      COMMAND ${_unpack_cmd} ${tarball}
                      COMMAND touch ${tarball_dir}
 		     DEPENDS ${PROJECT_BINARY_DIR}/${tarball}
 		     VERBATIM)
-  
+
   add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/installed
                      COMMAND cmake -E chdir ${PROJECT_BINARY_DIR}/${tarball_dir} ${_configure_cmd}
                      COMMAND cmake -E chdir ${PROJECT_BINARY_DIR}/${tarball_dir} ${_make_cmd}
@@ -306,7 +306,7 @@ macro(_rosbuild_wget_and_build tarball tarball_url tarball_dir unpack_cmd config
                      COMMAND touch ${PROJECT_BINARY_DIR}/installed
 		     DEPENDS ${PROJECT_BINARY_DIR}/${tarball_dir}
                      VERBATIM)
-  
+
   add_custom_target(fetch_and_build ALL
                     DEPENDS ${PROJECT_BINARY_DIR}/installed)
 endmacro(_rosbuild_wget_and_build)
@@ -327,7 +327,7 @@ macro(_rosbuild_add_library lib libname type)
         rosbuild_add_compile_flags(${lib} -fPIC)
     endif()
   endif(${type} STREQUAL STATIC)
-  
+
   # Add explicit dependency of each file on our manifest.xml and those of
   # our dependencies
   get_target_property(_srclist ${lib} SOURCES)
@@ -338,7 +338,7 @@ macro(_rosbuild_add_library lib libname type)
       message("[rosbuild] Couldn't find source file ${_src}; assuming that it is in ${CMAKE_CURRENT_SOURCE_DIR} and will be generated later")
       set(_file_name ${CMAKE_CURRENT_SOURCE_DIR}/${_src})
     endif(NOT _file_name)
-    add_file_dependencies(${_file_name} ${ROS_MANIFEST_LIST}) 
+    add_file_dependencies(${_file_name} ${ROS_MANIFEST_LIST})
   endforeach(_src)
 
   # Prevent deletion of existing lib of same name
@@ -413,7 +413,7 @@ endmacro(_rosbuild_compare_manifests var _t)
 # http://www.itk.org/Wiki/CMakeMacroParseArguments
 MACRO(PARSE_ARGUMENTS prefix arg_names option_names)
   SET(DEFAULT_ARGS)
-  FOREACH(arg_name ${arg_names})    
+  FOREACH(arg_name ${arg_names})
     SET(${prefix}_${arg_name})
   ENDFOREACH(arg_name)
   FOREACH(option ${option_names})
@@ -422,16 +422,16 @@ MACRO(PARSE_ARGUMENTS prefix arg_names option_names)
 
   SET(current_arg_name DEFAULT_ARGS)
   SET(current_arg_list)
-  FOREACH(arg ${ARGN})            
-    SET(larg_names ${arg_names})    
-    LIST(FIND larg_names "${arg}" is_arg_name)                   
+  FOREACH(arg ${ARGN})
+    SET(larg_names ${arg_names})
+    LIST(FIND larg_names "${arg}" is_arg_name)
     IF (is_arg_name GREATER -1)
       SET(${prefix}_${current_arg_name} ${current_arg_list})
       SET(current_arg_name ${arg})
       SET(current_arg_list)
     ELSE (is_arg_name GREATER -1)
-      SET(loption_names ${option_names})    
-      LIST(FIND loption_names "${arg}" is_option)            
+      SET(loption_names ${option_names})
+      LIST(FIND loption_names "${arg}" is_option)
       IF (is_option GREATER -1)
              SET(${prefix}_${arg} TRUE)
       ELSE (is_option GREATER -1)

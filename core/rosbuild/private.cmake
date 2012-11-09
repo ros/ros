@@ -105,7 +105,7 @@ endmacro(_rosbuild_check_package_location)
 # helper function to register check that results were generated (#580)
 macro(_rosbuild_check_rostest_xml_result test_name test_file)
   add_custom_target(${test_name}_result
-                    COMMAND ${rosunit_path}/scripts/check_test_ran.py ${test_file}
+                    COMMAND ${ROSUNIT_SCRIPTS_DIR}/check_test_ran.py ${test_file}
 		    VERBATIM)
   # Redeclaration of target is to workaround bug in 2.4.6
   if(CMAKE_MINOR_VERSION LESS 6)
@@ -134,13 +134,13 @@ macro(_rosbuild_add_gtest exe)
   # But don't depend on the gtest executable if rosbuild_test_nobuild is set, #3008
   if(NOT rosbuild_test_nobuild)
     add_custom_target(test_${_testname}
-                      COMMAND ${rosunit_path}/../..//bin/rosunit --name=${_testname} --time-limit=${_gtest_TIMEOUT} ${EXECUTABLE_OUTPUT_PATH}/${exe}
+                      COMMAND ${ROSUNIT_EXE} --name=${_testname} --time-limit=${_gtest_TIMEOUT} ${EXECUTABLE_OUTPUT_PATH}/${exe}
                       DEPENDS ${EXECUTABLE_OUTPUT_PATH}/${exe}
                       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                       VERBATIM)
   else(NOT rosbuild_test_nobuild)
     add_custom_target(test_${_testname}
-                      COMMAND ${rosunit_path}/../..//bin/rosunit --name=${_testname} --time-limit=${_gtest_TIMEOUT} ${EXECUTABLE_OUTPUT_PATH}/${exe}
+                      COMMAND ${ROSUNIT_EXE} --name=${_testname} --time-limit=${_gtest_TIMEOUT} ${EXECUTABLE_OUTPUT_PATH}/${exe}
                       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                       VERBATIM)
   endif(NOT rosbuild_test_nobuild)
@@ -167,7 +167,7 @@ endmacro(_rosbuild_add_gtest)
 # arguments as cmake doesn't know the name of the output file
 macro(_rosbuild_check_rostest_result test_name test_pkg test_file)
   add_custom_target(${test_name}_result
-                    COMMAND ${rosunit_path}/scripts/check_test_ran.py --rostest ${test_pkg} ${test_file}
+                    COMMAND ${ROSUNIT_SCRIPTS_DIR}/check_test_ran.py --rostest ${test_pkg} ${test_file}
                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
 		    VERBATIM)
   # Redeclaration of target is to workaround bug in 2.4.6
@@ -240,7 +240,7 @@ macro(_rosbuild_add_pyunit file)
   # Create target for this test
   # We use rostest to call the executable to get process control, #1629
   add_custom_target(pyunit_${_testname}
-                    COMMAND ${rosunit_path}/../..//bin/rosunit --name=${_testname} --time-limit=${_pyunit_TIMEOUT} -- ${file} ${_covarg}
+                    COMMAND ${ROSUNIT_EXE} --name=${_testname} --time-limit=${_pyunit_TIMEOUT} -- ${file} ${_covarg}
                     DEPENDS ${file}
                     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                     VERBATIM)

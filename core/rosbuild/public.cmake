@@ -291,11 +291,11 @@ macro(rosbuild_init)
   # friends add targets and dependencies from these targets.
   #
 
-  # Find rosunit; rosunit_path will be used later
-  rosbuild_invoke_rospack("" rosunit path find rosunit)
+  # find rosunit since ROSUNIT_SCRIPTS_DIR and ROSUNIT_EXE will be used later
+  find_package(rosunit REQUIRED)
 
   # Record where we're going to put test results (#2003)
-  execute_process(COMMAND ${rosunit_path}/scripts/test_results_dir.py
+  execute_process(COMMAND ${ROSUNIT_SCRIPTS_DIR}/test_results_dir.py
                   OUTPUT_VARIABLE rosbuild_test_results_dir
                   RESULT_VARIABLE _test_results_dir_failed
                   OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -331,13 +331,13 @@ macro(rosbuild_init)
 
   add_custom_target(test-results-run)
   add_custom_target(test-results
-                    COMMAND ${rosunit_path}/scripts/summarize_results.py --nodeps ${_project})
+                    COMMAND ${ROSUNIT_SCRIPTS_DIR}/summarize_results.py --nodeps ${_project})
   add_dependencies(test-results test-results-run)
   # Do we want coverage reporting (only matters for Python, because
   # Bullseye already collects everything into a single file).
   if("$ENV{ROS_TEST_COVERAGE}" STREQUAL "1")
     add_custom_target(test-results-coverage
-                      COMMAND ${rosunit_path}/scripts/pycoverage_to_html.py
+                      COMMAND ${ROSUNIT_SCRIPTS_DIR}/pycoverage_to_html.py
                       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
     # Make tests run before collecting coverage results
     add_dependencies(test-results-coverage test-results-run)

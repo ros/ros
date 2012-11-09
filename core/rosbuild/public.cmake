@@ -300,7 +300,7 @@ macro(rosbuild_init)
                   RESULT_VARIABLE _test_results_dir_failed
                   OUTPUT_STRIP_TRAILING_WHITESPACE)
   if(_test_results_dir_failed)
-    message(FATAL_ERROR "Failed to invoke rosunit/scripts/test_results_dir.py")
+    message(FATAL_ERROR "Failed to invoke '${ROSUNIT_SCRIPTS_DIR}/test_results_dir.py'")
   endif(_test_results_dir_failed)
 
   # The 'tests' target builds the test program

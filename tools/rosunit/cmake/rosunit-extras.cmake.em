@@ -18,7 +18,7 @@ macro(rosunit_initialize_tests)
   if(NOT ROSUNIT_EXE)
     message(FATAL_ERROR "'rosunit' not found")
   endif()
-  set(ROSUNIT_SCRIPTS_DIR @(CMAKE_INSTALL_PREFIX)/scripts)
+  set(ROSUNIT_SCRIPTS_DIR @(CMAKE_INSTALL_PREFIX)/@(CATKIN_PACKAGE_SHARE_DESTINATION)/scripts)
 @[end if]@
 endmacro()
 

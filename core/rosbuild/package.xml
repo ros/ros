@@ -13,4 +13,5 @@
   <author>Morgan Quigley</author>
 
   <build_depend>catkin</build_depend>
+  <build_depend>pkg-config</build_depend>
 </package>

@@ -64,6 +64,9 @@ TIMEOUT_READY = 15.0 #seconds
 
 # log level constants
 from rosgraph_msgs.msg import Log
+from roscpp.srv import GetLoggers, GetLoggersResponse, SetLoggerLevel, SetLoggerLevelResponse
+from roscpp.msg import Logger
+from rospy.impl.tcpros_service import Service
 DEBUG = Log.DEBUG
 INFO = Log.INFO
 WARN = Log.WARN
@@ -135,6 +138,46 @@ def spin():
         logdebug("keyboard interrupt, shutting down")
         rospy.core.signal_shutdown('keyboard interrupt')
 
+_logging_level_names = {
+      logging.DEBUG:    'DEBUG',
+      logging.INFO:     'INFO',
+      logging.WARNING:  'WARN',
+      logging.ERROR:    'ERROR',
+      logging.CRITICAL: 'FATAL',
+      }
+
+def _get_loggers(request):
+    """
+    ROS service handler to get the levels of all active loggers.
+    """
+    ret = GetLoggersResponse()
+    for n in logging.Logger.manager.loggerDict.keys():
+       level = logging.getLogger(n).getEffectiveLevel()
+       level = _logging_level_names[level]
+       ret.loggers.append(Logger(n, level))
+    return ret
+    
+_names_to_logging_levels = {
+      'DEBUG':    logging.DEBUG,
+      'INFO':     logging.INFO,
+      'WARN':     logging.WARNING,
+      'ERROR':    logging.ERROR,
+      'FATAL':    logging.CRITICAL,
+      }
+
+def _set_logger_level(request):
+    """
+    ROS service handler to set the logging level for a particular logger
+    """
+    level = request.level.upper()
+    if level in _names_to_logging_levels:
+        logger = logging.getLogger(request.logger)
+        logger.setLevel(_names_to_logging_levels[level])
+    else:
+       logging.getLogger('rospy').error("Bad logging level: %s"%level)
+    ret = SetLoggerLevelResponse()
+    return ret
+
 def _init_node_params(argv, node_name):
     """
     Uploads private params to the parameter server. Private params are specified
@@ -151,7 +194,7 @@ def _init_node_params(argv, node_name):
 
 _init_node_args = None
 
-def init_node(name, argv=None, anonymous=False, log_level=INFO, disable_rostime=False, disable_rosout=False, disable_signals=False):
+def init_node(name, argv=None, anonymous=False, log_level=None, disable_rostime=False, disable_rosout=False, disable_signals=False):
     """
     Register client node with the master under the specified name.
     This MUST be called from the main Python thread unless
@@ -257,7 +300,7 @@ def init_node(name, argv=None, anonymous=False, log_level=INFO, disable_rostime=
         name = "%s_%s_%s"%(name, os.getpid(), int(time.time()*1000))
 
     resolved_node_name = rospy.names.resolve_name(name)
-    rospy.core.configure_logging(resolved_node_name, level=_rospy_to_logging_levels[log_level])
+    rospy.core.configure_logging(resolved_node_name)
     # #1810
     rospy.names.initialize_mappings(resolved_node_name)
     
@@ -278,15 +321,21 @@ def init_node(name, argv=None, anonymous=False, log_level=INFO, disable_rostime=
 
     rospy.core.set_initialized(True)
 
-    rospy.impl.rosout.load_rosout_handlers(log_level)
     if not disable_rosout:
         rospy.impl.rosout.init_rosout()
-    logdebug("init_node, name[%s], pid[%s]", resolved_node_name, os.getpid())    
+        rospy.impl.rosout.load_rosout_handlers(log_level)
+
     if not disable_rostime:
         if not rospy.impl.simtime.init_simtime():
             raise rospy.exceptions.ROSInitException("Failed to initialize time. Please check logs for additional details")
     else:
         rospy.rostime.set_rostime_initialized(True)
+
+    logdebug("init_node, name[%s], pid[%s]", resolved_node_name, os.getpid())    
+    # advertise logging level services
+    Service('~get_loggers', GetLoggers, _get_loggers)
+    Service('~set_logger_level', SetLoggerLevel, _set_logger_level)
+
 
 #_master_proxy is a MasterProxy wrapper
 _master_proxy = None

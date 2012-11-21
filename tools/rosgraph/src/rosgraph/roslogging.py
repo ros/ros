@@ -84,7 +84,8 @@ def configure_logging(logname, level=logging.INFO, filename=None, env=None):
         # look for it package-relative.
         fname = 'python_logging.conf'
         rosgraph_d = rospkg.RosPack().get_path('rosgraph')
-        for f in ['/etc/ros/%s'%(fname),
+        for f in [os.path.join(rospkg.get_ros_home(), 'config', fname),
+                  '/etc/ros/%s'%(fname),
                   os.path.join(rosgraph_d, 'conf', fname)]:
             if os.path.isfile(f):
                 config_file = f

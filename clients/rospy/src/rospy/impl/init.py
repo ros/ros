@@ -48,7 +48,7 @@ import rosgraph
 import rosgraph.xmlrpc
 
 from ..names import _set_caller_id
-from ..core import is_shutdown, add_log_handler, signal_shutdown, rospyerr
+from ..core import is_shutdown, signal_shutdown, rospyerr
 from ..rostime import is_wallclock, get_time
 
 from .tcpros import init_tcpros
@@ -104,22 +104,28 @@ def start_node(environ, resolved_name, master_uri=None, port=None):
     logging.getLogger("rospy.init").info("registered with master")
     return node
 
-# #2879
-# resolve sys.stdout/stderr each time through in case testing program or otherwise wants to redirect stream
-def _stdout_log(level):
-    def fn(msg):
-        if is_wallclock():
-            sys.stdout.write("[%s] [WallTime: %f] %s\n"%(level,time.time(), str(msg)))
-        else:
-            sys.stdout.write("[%s] [WallTime: %f] [%f] %s\n"%(level,time.time(), get_time(), str(msg)))
-    return fn
-def _stderr_log(level):
-    def fn(msg):
-        if is_wallclock():
-            sys.stderr.write("[%s] [WallTime: %f] %s\n"%(level,time.time(), str(msg)))
-        else:
-            sys.stderr.write("[%s] [WallTime: %f] [%f] %s\n"%(level,time.time(), get_time(), str(msg)))
-    return fn
+_logging_to_rospy_names = {
+      'DEBUG':    'DEBUG',
+      'INFO':     'INFO',
+      'WARNING':  'WARN',
+      'ERROR':    'ERROR',
+      'CRITICAL': 'FATAL',
+      }
+
+class RosStreamHandler(logging.Handler):
+   def emit(self, record):
+      # TODO: (AJH) convert levelname CRITICAL to FATAL
+      level = _logging_to_rospy_names[record.levelname]
+      if is_wallclock():
+         msg = "[%s] [WallTime: %f] %s\n"%(level, time.time(),
+               record.getMessage())
+      else:
+         msg = "[%s] [WallTime: %f] [%f] %s\n"%(level, time.time(), get_time(),
+               record.getMessage())
+      if record.levelno < logging.WARNING:
+         sys.stdout.write(msg)
+      else:
+         sys.stderr.write(msg)
 
 _loggers_initialized = False
 def init_log_handlers():
@@ -127,21 +133,4 @@ def init_log_handlers():
     if _loggers_initialized:
         return
 
-    from rosgraph_msgs.msg import Log
-    
-    # client logger
-    clogger = logging.getLogger("rosout")
-    add_log_handler(Log.DEBUG, clogger.debug)
-    add_log_handler(Log.INFO, clogger.info)
-    add_log_handler(Log.ERROR, clogger.error)
-    add_log_handler(Log.WARN, clogger.warn)
-    add_log_handler(Log.FATAL, clogger.critical)
-
-    # TODO: make this configurable
-    # INFO -> stdout
-    # ERROR, FATAL -> stderr
-    add_log_handler(Log.INFO, _stdout_log('INFO'))
-    add_log_handler(Log.WARN, _stderr_log('WARN'))
-    add_log_handler(Log.ERROR, _stderr_log('ERROR'))
-    add_log_handler(Log.FATAL, _stderr_log('FATAL'))
-
+    logging.getLogger('').addHandler(RosStreamHandler())

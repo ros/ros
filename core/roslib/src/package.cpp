@@ -107,19 +107,7 @@ bool getAll(V_string& packages)
   return true;
 }
 
-void getPlugins(const std::string& package, const std::string& attribute, V_string& plugins)
-{
-  M_string plugins_map;
-  getPlugins(package, attribute, plugins_map);
-  M_string::iterator it = plugins_map.begin();
-  M_string::iterator end = plugins_map.end();
-  for (; it != end; ++it)
-  {
-    plugins.push_back(it->second);
-  }
-}
-
-void getPlugins(const std::string& package, const std::string& attribute, M_string& plugins)
+static void getPlugins(const std::string& package, const std::string& attribute, V_string& packages, V_string& plugins)
 {
   V_string lines;
   command("plugins --attrib=" + attribute + " " + package, lines);
@@ -135,9 +123,24 @@ void getPlugins(const std::string& package, const std::string& attribute, M_stri
     {
       std::string package = tokens[0];
       std::string rest = boost::join(V_string(tokens.begin() + 1, tokens.end()), " ");
-      plugins[package] = rest;
+      packages.push_back(package);
+      plugins.push_back(rest);
     }
   }
+}
+
+void getPlugins(const std::string& package, const std::string& attribute, V_string& plugins)
+{
+  V_string packages;
+  getPlugins(package, attribute, packages, plugins);
+}
+
+void getPlugins(const std::string& package, const std::string& attribute, M_string& plugins)
+{
+  V_string packages, plugins_v;
+  getPlugins(package, attribute, packages, plugins_v);
+  for (std::size_t i = 0 ; i < packages.size() ; ++i)
+    plugins[packages[i]] = plugins_v[i];
 }
 
 } // namespace package

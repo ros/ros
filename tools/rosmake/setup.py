@@ -7,6 +7,6 @@ d = parse_package_for_distutils()
 d['packages'] = ['rosmake']
 d['package_dir'] = {'': 'src'}
 d['scripts'] = ['scripts/rosmake']
-d['install_requires'] = ['rospkg']
+d['requires'] = ['rospkg']
 
 setup(**d)

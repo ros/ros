@@ -7,6 +7,6 @@ d = parse_package_for_distutils()
 d['packages'] = ['roscreate']
 d['package_dir'] = {'': 'src'}
 d['scripts'] = ['scripts/roscreate-pkg']
-d['install_requires'] = ['roslib', 'rospkg']
+d['requires'] = ['roslib', 'rospkg']
 
 setup(**d)

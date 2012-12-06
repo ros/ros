@@ -245,9 +245,14 @@ macro(rosbuild_init)
     # The following code removes duplicate libraries from the link line,
     # saving only the last one.
     #
-    list(REVERSE ${_prefix}_LIBRARIES)
-    list(REMOVE_DUPLICATES ${_prefix}_LIBRARIES)
-    list(REVERSE ${_prefix}_LIBRARIES)
+    if(${_prefix}_LIBRARIES)
+      find_package(catkin REQUIRED)
+      set(_${_prefix}_LIBRARIES ${${_prefix}_LIBRARIES})
+      set(${_prefix}_LIBRARIES "")
+      list(REVERSE _${_prefix}_LIBRARIES)
+      list_append_unique(${_prefix}_LIBRARIES ${_${_prefix}_LIBRARIES})
+      list(REVERSE ${_prefix}_LIBRARIES)
+    endif()
 
     # Also throw in the libs that we want to link everything against (only
     # use case for this so far is -lgcov when building with code coverage

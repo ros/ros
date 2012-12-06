@@ -309,7 +309,9 @@ macro(rosbuild_init)
   endif(_test_results_dir_failed)
 
   # The 'tests' target builds the test program
-  add_custom_target(tests)
+  if(NOT TARGET tests)
+    add_custom_target(tests)
+  endif()
   # The 'test' target runs all but the future tests
   add_custom_target(test)
   # We need to build tests before running them.  Addition of this

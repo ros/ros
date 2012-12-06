@@ -3,6 +3,9 @@
 # scrub old ROS bin dirs, to avoid accidentally finding the wrong executables
 export PATH=`python -c "import os; print(os.pathsep.join([x for x in \"$PATH\".split(os.pathsep) if not any([d for d in ['cturtle', 'diamondback', 'electric', 'fuerte'] if d in x])]))"`
 
+if [ -n "$ROS_DISTRO" -a "$ROS_DISTRO" != "groovy" ]; then
+  echo "ROS_DISTRO was set to '$ROS_DISTRO' before. Please make sure that the environment does not mix paths from different distributions."
+fi
 export ROS_DISTRO=groovy
 
 # python function to generate ROS package path based on all workspaces

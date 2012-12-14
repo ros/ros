@@ -11,7 +11,7 @@
   <url>http://ros.org/wiki/roslang</url>
   <author email="gerkey@willowgarage.com">Brian Gerkey</author>
 
-  <build_depend>catkin</build_depend>
+  <buildtool_depend>catkin</buildtool_depend>
 
   <run_depend>genmsg</run_depend>
 </package>

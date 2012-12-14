@@ -13,5 +13,5 @@
   <author>Morgan Quigley</author>
   <author>Brian Gerkey</author>
 
-  <build_depend>catkin</build_depend>
+  <buildtool_depend>catkin</buildtool_depend>
 </package>

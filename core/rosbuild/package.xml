@@ -12,6 +12,7 @@
   <author>Troy Straszheim</author>
   <author>Morgan Quigley</author>
 
-  <build_depend>catkin</build_depend>
+  <buildtool_depend>catkin</buildtool_depend>
+
   <build_depend>pkg-config</build_depend>
 </package>

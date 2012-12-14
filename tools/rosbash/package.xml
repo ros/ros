@@ -11,5 +11,5 @@
   <author>Jeremy Leibs</author>
   <author>Thibault Kruse</author>
 
-  <build_depend>catkin</build_depend>
+  <buildtool_depend>catkin</buildtool_depend>
 </package>

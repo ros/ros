@@ -10,5 +10,5 @@
   <url>http://ros.org/wiki/rosboost_cfg</url>
   <author>Josh Faust</author>
 
-  <build_depend>catkin</build_depend>
+  <buildtool_depend>catkin</buildtool_depend>
 </package>

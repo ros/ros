@@ -15,4 +15,8 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <build_depend>pkg-config</build_depend>
+
+  <!-- workaround to provide the generators to dry downstream packages -->
+  <run_depend>message_generation</run_depend>
+  <run_depend>message_runtime</run_depend>
 </package>

@@ -2,6 +2,8 @@ project(rosbag)
 catkin_project(rosbag
   LIBRARIES rosbag
   INCLUDE_DIRS include
+  DEPENDS cpp_common roscpp_serialization roscpp rosconsole
+          xmlrpcpp topic_tools
   )
 
 find_package(ROS REQUIRED COMPONENTS cpp_common roscpp_serialization roscpp rosconsole xmlrpcpp topic_tools rosunit rostest)

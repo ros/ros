@@ -36,3 +36,6 @@ set ROS_ETC_DIR=@(CMAKE_INSTALL_PREFIX)/@(CATKIN_PACKAGE_ETC_DESTINATION)
 del _parent_package_path.py
 
 endlocal
+
+REM unset ROS workspace
+set ROS_WORKSPACE=

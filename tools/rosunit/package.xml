@@ -15,6 +15,7 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <run_depend>python-rospkg</run_depend>
+  <run_depend>roslib</run_depend>
 
   <export>
     <rosdoc config="rosdoc.yaml" />

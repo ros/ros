@@ -439,61 +439,10 @@ macro(rosbuild_init)
   endforeach(_f)
 
 
-  #
-  # Gather the gtest build flags, for use when building unit tests.  We
-  # don't require the user to declare a dependency on gtest.
-  #
-  find_program(GTEST_EXE NAMES gtest-config DOC "gtest-config executable" ONLY_CMAKE_FIND_ROOT_PATH)
-  if (NOT GTEST_EXE)
-    if (GTEST_LIBRARIES)
-      set(_gtest_LIBRARIES -l${GTEST_LIBRARIES})
-    else(GTEST_LIBRARIES)
-      set(_gtest_LIBRARIES -lgtest)
-    endif(GTEST_LIBRARIES)
-    # Couldn't find gtest-config. Hoping that gtest is in our path either in the system install or where ROS_BINDEPS points to
-  else (NOT GTEST_EXE)
-
-  execute_process(COMMAND ${GTEST_EXE} --includedir
-                  OUTPUT_VARIABLE gtest_include_dir
-                  RESULT_VARIABLE _gtest_include_dir
-                  OUTPUT_STRIP_TRAILING_WHITESPACE)
-  if(_gtest_include_dir)
-    message(FATAL_ERROR "Failed to invoke gtest-config")
-  endif(_gtest_include_dir)
-
-  include_directories(${gtest_include_dir})
-
-  execute_process(COMMAND ${GTEST_EXE} --libdir
-                  OUTPUT_VARIABLE gtest_lib_dir
-                  RESULT_VARIABLE _gtest_lib_dir
-                  OUTPUT_STRIP_TRAILING_WHITESPACE)
-  if(_gtest_lib_dir)
-    message(FATAL_ERROR "Failed to invoke gtest-config")
-  endif(_gtest_lib_dir)
-  link_directories(${gtest_lib_dir})
-
-
-  execute_process(COMMAND ${GTEST_EXE} --libs
-                  OUTPUT_VARIABLE gtest_libs
-                  RESULT_VARIABLE _gtest_libs
-                  OUTPUT_STRIP_TRAILING_WHITESPACE)
-  if(_gtest_libs)
-    message(FATAL_ERROR "Failed to invoke gtest-config")
-  endif(_gtest_libs)
-
-
-  set(_gtest_LIBRARIES ${gtest_libs})
-  set(_gtest_CFLAGS_OTHER "")
-  set(_gtest_LDFLAGS_OTHER "-Wl,-rpath,${gtest_lib_dir}")
-  endif (NOT GTEST_EXE)
-
-  #
-  # The following code removes duplicate libraries from the link line,
-  # saving only the last one.
-  #
-  list(REVERSE _gtest_LIBRARIES)
-  list(REMOVE_DUPLICATES _gtest_LIBRARIES)
-  list(REVERSE _gtest_LIBRARIES)
+  # gtest has been found by catkin
+  if(GTEST_FOUND)
+    include_directories(${GTEST_INCLUDE_DIRS})
+  endif()
 
   # Delete the files that let rospack know messages/services have been generated
   file(REMOVE ${PROJECT_SOURCE_DIR}/msg_gen/generated)
@@ -596,23 +545,14 @@ endmacro(rosbuild_add_library_module)
 # assume that's already built.
 macro(rosbuild_add_gtest_build_flags exe)
   if (NOT GTEST_FOUND)
-    # gtest is installed but there might not be any library (e.g. Ubuntu Precise), so build it
-    if (EXISTS "/usr/src/gtest")
-      if (NOT EXISTS "${CMAKE_BINARY_DIR}/_gtest_from_src")
-        # for now, this would only work on Ubuntu
-        add_subdirectory("/usr/src/gtest/" ${CMAKE_BINARY_DIR}/_gtest_from_src)
-      endif()
-    else()
-      message(WARNING "GTest not found; C++ tests will fail to build.")
-    endif()
+    message(WARNING "GTest not found; C++ tests will fail to build.")
   endif()
-  rosbuild_add_compile_flags(${exe} ${_gtest_CFLAGS_OTHER})
   if (LIBRARY_OUTPUT_PATH)
     # add this as GTest builds there
     set_target_properties(${exe} PROPERTIES LINK_FLAGS "-L${LIBRARY_OUTPUT_PATH}")
   endif()
-  target_link_libraries(${exe} ${_gtest_LIBRARIES})
-  rosbuild_add_link_flags(${exe} ${_gtest_LDFLAGS_OTHER})
+  target_link_libraries(${exe} ${GTEST_LIBRARIES})
+  link_directories(${GTEST_LIBRARY_DIRS})
   rosbuild_declare_test(${exe})
   add_dependencies(${exe} gtest gtest_main)
 endmacro(rosbuild_add_gtest_build_flags)

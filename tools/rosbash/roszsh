@@ -393,7 +393,7 @@ function _roscomplete_rosnode {
     reply=()
 
     if [[ ${CURRENT} == 2 ]]; then
-        opts="ping list info machine kill"
+        opts="ping list info machine kill cleanup"
         reply=(${=opts})
     elif [[ ${CURRENT} == 3 ]]; then
         case ${=${(s: :)words}[2]} in

@@ -12,4 +12,6 @@
   <author>Thibault Kruse</author>
 
   <buildtool_depend>catkin</buildtool_depend>
+
+  <run_depend>catkin</run_depend>
 </package>

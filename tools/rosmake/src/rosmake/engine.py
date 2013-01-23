@@ -761,14 +761,15 @@ class RosMakeAll:
             
         required_packages = self.specified_packages[:]
 
-        # catch dependent packages which are inside of zero sized stacks #3528 
+        # catch packages of dependent stacks when specified stack is zero-sized #3528
         # add them to required list but not the specified list. 
         for s in stacks_arguments:
-            for d in rosstack.get_depends(s, implicit=False):
-                try:
-                    required_packages.extend(rosstack.packages_of(d))
-                except ResourceNotFound:
-                    self.printer.print_all('WARNING: The stack "%s" was not found. We will assume it is using the new buildsystem and try to continue...' % d)
+            if not rosstack.packages_of(s):
+                for d in rosstack.get_depends(s, implicit=False):
+                    try:
+                        required_packages.extend(rosstack.packages_of(d))
+                    except ResourceNotFound:
+                        self.printer.print_all('WARNING: The stack "%s" was not found. We will assume it is using the new buildsystem and try to continue...' % d)
 
         # deduplicate required_packages
         required_packages = list(set(required_packages))

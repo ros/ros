@@ -8,7 +8,7 @@
 #    content before the invocation of rosbuild_init()), 
 #    which is how we get here
 #  - read this file
-#  - if present, read $(ROS_ROOT)/rosconfig.cmake
+#  - if present, read $(ROS_ROOT)/core/rosbuild/rosconfig.cmake
 #  - if present, read rosconfig.cmake from the current packages's top-level
 #      directory.
 
@@ -20,7 +20,7 @@ set(USERCONFIG USERCONFIG-NOTFOUND)
 set(PROJECTCONFIG PROJECTCONFIG-NOTFOUND)
 
 #############################################################
-# look for user's override in $ROS_ROOT/rosconfig.cmake
+# look for user's override in $ROS_ROOT/core/rosbuild/rosconfig.cmake
 find_file(USERCONFIG
           rosconfig.cmake
           PATHS ENV ROS_ROOT

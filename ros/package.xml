@@ -1,6 +1,6 @@
 <package>
   <name>ros</name>
-  <version>1.9.41</version>
+  <version>1.9.42</version>
   <description>ROS packaging system</description>
   <maintainer email="dthomas@willowgarage.com">Dirk Thomas</maintainer>
   <license>BSD</license>

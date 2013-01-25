@@ -18,7 +18,7 @@ install(FILES
   core/rosbuild/rosbuild.cmake
   core/rosbuild/rosconfig.cmake
   core/rosbuild/rostoolchain.cmake
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+  DESTINATION ${CATKIN_GLOBAL_SHARE_DESTINATION}/ros/core/rosbuild)
 install(FILES
   tests/count_cores.py
   DESTINATION ${CATKIN_GLOBAL_SHARE_DESTINATION}/ros/core/rosbuild/tests)

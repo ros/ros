@@ -1,0 +1,9 @@
+# generated from rosbuild/env-hooks/10.rosbuild.sh.em
+
+@[if DEVELSPACE]@
+# env variables in develspace
+export ROS_ROOT=@(CMAKE_CURRENT_SOURCE_DIR)
+@[else]@
+# env variables in installspace
+export ROS_ROOT=@(CMAKE_INSTALL_PREFIX)/@(CATKIN_GLOBAL_SHARE_DESTINATION)/ros
+@[end if]@

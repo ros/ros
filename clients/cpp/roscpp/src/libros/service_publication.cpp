@@ -110,7 +110,7 @@ public:
 
       if (!tracker)
       {
-        SerializedMessage res = serialization::serializeServiceResponse(false, 0);
+        SerializedMessage res = serialization::serializeServiceResponse<uint32_t>(false, 0);
         link_->processResponse(false, res);
         return Invalid;
       }
@@ -123,7 +123,15 @@ public:
     {
 
       bool ok = helper_->call(params);
-      link_->processResponse(ok, params.response);
+      if (ok != 0)
+      {
+        link_->processResponse(true, params.response);
+      }
+      else
+      {
+        SerializedMessage res = serialization::serializeServiceResponse<uint32_t>(false, 0);
+        link_->processResponse(false, res);
+      }
     }
     catch (std::exception& e)
     {

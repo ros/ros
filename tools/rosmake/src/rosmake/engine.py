@@ -372,7 +372,7 @@ class RosMakeAll:
         """
         local_env = os.environ.copy()
         if self.ros_parallel_jobs > 0:
-            local_env['ROS_PARALLEL_JOBS'] = "-j%s -l%d" % (self.ros_parallel_jobs, self.ros_parallel_jobs)
+            local_env['ROS_PARALLEL_JOBS'] = "-j%d -l%d" % (self.ros_parallel_jobs, self.ros_parallel_jobs)
         elif "ROS_PARALLEL_JOBS" not in os.environ: #if no environment setup and no args fall back to # cpus
             # num_cpus check can (on OS X) trigger a Popen(), which has
             #the multithreading bug we wish to avoid on Py2.7.

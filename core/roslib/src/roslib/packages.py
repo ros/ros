@@ -413,7 +413,7 @@ def _find_resource(d, resource_name, filter_fn=None):
         # Windows logic requires more file patterns to resolve and is
         # not case-sensitive, so leave it separate
 
-        # in the near-term, just hack in support for .exe/.bat. In the long
+        # in the near-term, just hack in support for .exe/.bat/.py. In the long
         # term this needs to:
         #
         #  * parse PATHEXT to generate matches
@@ -423,7 +423,7 @@ def _find_resource(d, resource_name, filter_fn=None):
         # - We still have to look for bare node_type as user may have
         #   specified extension manually
         resource_name = resource_name.lower()
-        patterns = [resource_name, resource_name+'.exe', resource_name+'.bat']
+        patterns = [resource_name, resource_name+'.exe', resource_name+'.bat', resource_name+'.py']
         for p, dirs, files in os.walk(d):
             # case insensitive
             files = [f.lower() for f in files]

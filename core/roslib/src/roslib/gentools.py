@@ -108,7 +108,7 @@ def _add_msgs_depends(rospack, spec, deps, package_context):
                 raise KeyError(t)
             _add_msgs_depends(rospack, depspec, deps, package_context)
 
-def compute_md5_text(get_deps_dict, spec):
+def compute_md5_text(get_deps_dict, spec, rospack=None):
     """
     Compute the text used for md5 calculation. MD5 spec states that we
     removes comments and non-meaningful whitespace. We also strip
@@ -145,13 +145,13 @@ def compute_md5_text(get_deps_dict, spec):
             sub_pkg, _ = roslib.names.package_resource_name(base_msg_type)
             sub_pkg = sub_pkg or package
             sub_spec = roslib.msgs.get_registered(base_msg_type, package)
-            sub_deps = get_dependencies(sub_spec, sub_pkg, compute_files=compute_files)
-            sub_md5 = compute_md5(sub_deps)
+            sub_deps = get_dependencies(sub_spec, sub_pkg, compute_files=compute_files, rospack=rospack)
+            sub_md5 = compute_md5(sub_deps, rospack)
             buff.write("%s %s\n"%(sub_md5, name))
     
     return buff.getvalue().strip() # remove trailing new line
 
-def _compute_hash(get_deps_dict, hash):
+def _compute_hash(get_deps_dict, hash, rospack=None):
     """
     subroutine of compute_md5()
     @param get_deps_dict: dictionary returned by get_dependencies call
@@ -165,10 +165,10 @@ def _compute_hash(get_deps_dict, hash):
     from roslib.srvs import SrvSpec
     spec = get_deps_dict['spec']
     if isinstance(spec, MsgSpec):
-        hash.update(compute_md5_text(get_deps_dict, spec))
+        hash.update(compute_md5_text(get_deps_dict, spec, rospack=rospack))
     elif isinstance(spec, SrvSpec):
-        hash.update(compute_md5_text(get_deps_dict, spec.request))
-        hash.update(compute_md5_text(get_deps_dict, spec.response))        
+        hash.update(compute_md5_text(get_deps_dict, spec.request, rospack=rospack))
+        hash.update(compute_md5_text(get_deps_dict, spec.response, rospack=rospack))
     else:
         raise Exception("[%s] is not a message or service"%spec)   
     return hash.hexdigest()
@@ -202,7 +202,7 @@ def compute_md5_v1(get_deps_dict):
     import hashlib
     return _compute_hash_v1(get_deps_dict, hashlib.md5())
 
-def compute_md5(get_deps_dict):
+def compute_md5(get_deps_dict, rospack=None):
     """
     Compute md5 hash for message/service
     @param get_deps_dict dict: dictionary returned by get_dependencies call
@@ -214,10 +214,10 @@ def compute_md5(get_deps_dict):
         # md5 is deprecated in Python 2.6 in favor of hashlib, but hashlib is
         # unavailable in Python 2.4
         import hashlib
-        return _compute_hash(get_deps_dict, hashlib.md5())
+        return _compute_hash(get_deps_dict, hashlib.md5(), rospack=rospack)
     except ImportError:
         import md5
-        return _compute_hash(get_deps_dict, md5.new())
+        return _compute_hash(get_deps_dict, md5.new(), rospack=rospack)
 
 ## alias
 compute_md5_v2 = compute_md5
@@ -274,7 +274,7 @@ def get_file_dependencies(f, stdout=sys.stdout, stderr=sys.stderr):
         raise Exception("[%s] does not appear to be a message or service"%spec)
     return get_dependencies(spec, package, stdout, stderr)
 
-def get_dependencies(spec, package, compute_files=True, stdout=sys.stdout, stderr=sys.stderr):
+def get_dependencies(spec, package, compute_files=True, stdout=sys.stdout, stderr=sys.stderr, rospack=None):
     """
     Compute dependencies of the specified Msgs/Srvs
     @param spec: message or service instance
@@ -306,7 +306,8 @@ def get_dependencies(spec, package, compute_files=True, stdout=sys.stdout, stder
 
     deps = []
     try:
-        rospack = rospkg.RosPack()
+        if not rospack:
+            rospack = rospkg.RosPack()
         if isinstance(spec, roslib.msgs.MsgSpec):
             _add_msgs_depends(rospack, spec, deps, package)
         elif isinstance(spec, roslib.srvs.SrvSpec):

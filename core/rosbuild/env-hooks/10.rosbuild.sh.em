@@ -2,8 +2,8 @@
 
 @[if DEVELSPACE]@
 # env variables in develspace
-export ROS_ROOT=@(CMAKE_CURRENT_SOURCE_DIR)
+export ROS_ROOT="@(CMAKE_CURRENT_SOURCE_DIR)"
 @[else]@
 # env variables in installspace
-export ROS_ROOT=@(CMAKE_INSTALL_PREFIX)/@(CATKIN_GLOBAL_SHARE_DESTINATION)/ros
+export ROS_ROOT="@(CMAKE_INSTALL_PREFIX)/@(CATKIN_GLOBAL_SHARE_DESTINATION)/ros"
 @[end if]@

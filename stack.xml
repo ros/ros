@@ -1,6 +1,6 @@
 <stack>
   <name>ros_comm</name>
-  <version>1.8.15</version> <!-- also update version in clients/cpp/roscpp/include/ros/common.h -->
+  <version>1.8.16</version> <!-- also update version in clients/cpp/roscpp/include/ros/common.h -->
   <description brief="ROS communications-related libraries and tools">
     ROS communications-related packages, including core client libraries (roscpp, rospy, roslisp) and graph introspection tools (rostopic, rosnode, rosservice, rosparam).
   </description>

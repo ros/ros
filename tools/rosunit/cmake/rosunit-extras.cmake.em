@@ -4,7 +4,7 @@ macro(rosunit_initialize_tests)
 @[if DEVELSPACE]@
   # find binary and scripts in develspace
   find_program(ROSUNIT_EXE rosunit
-    PATHS @(PROJECT_SOURCE_DIR)/scripts
+    PATHS "@(PROJECT_SOURCE_DIR)/scripts"
     NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
   if(NOT ROSUNIT_EXE)
     message(FATAL_ERROR "'rosunit' not found")
@@ -13,7 +13,7 @@ macro(rosunit_initialize_tests)
 @[else]@
   # find binary and scripts in installspace
   find_program(ROSUNIT_EXE rosunit
-    PATHS @(CMAKE_INSTALL_PREFIX)/bin
+    PATHS "@(CMAKE_INSTALL_PREFIX)/bin"
     NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
   if(NOT ROSUNIT_EXE)
     message(FATAL_ERROR "'rosunit' not found")

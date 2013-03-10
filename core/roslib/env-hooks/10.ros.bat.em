@@ -1,7 +1,9 @@
 REM generated from ros/env-hooks/10.ros.bat.em
 
 REM scrub old ROS bin dirs, to avoid accidentally finding the wrong executables
-set PATH=`python -c "import os; print(os.pathsep.join([x for x in \"$PATH\".split(os.pathsep) if not any([d for d in ['cturtle', 'diamondback', 'electric', 'fuerte'] if d in x])]))"`
+set COMMAND=python -c "import os; print(os.pathsep.join([x for x in r'%PATH%'.split(os.pathsep) if not any([d for d in ['cturtle', 'diamondback', 'electric', 'fuerte'] if d in x])]))"
+rem Need the delims= line here to ensure that it reads with eol delimiters, not space.
+for /f "delims=" %%i in ('%COMMAND%') do set PATH=%%i
 
 set ROS_DISTRO=groovy
 

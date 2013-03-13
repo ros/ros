@@ -18,6 +18,8 @@
   <author>Morgan Quigley</author>
   <author>Rob Wheeler</author>
 
+  <buildtool_depend>catkin</buildtool_depend>
+
   <run_depend>catkin</run_depend> <!-- only for backward compatibility with rosbuild -->
   <run_depend>mk</run_depend>
   <run_depend>rosbuild</run_depend>

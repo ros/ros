@@ -39,3 +39,4 @@ endlocal
 
 REM unset ROS workspace
 set ROS_WORKSPACE=
+set COMMAND=

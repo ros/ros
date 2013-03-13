@@ -6,7 +6,7 @@
     Most package authors should use cmake .mk, which calls CMake for the build of the package.
     The other files in this package are intended for use in exotic situations that mostly arise when importing 3rdparty code.
   </description>
-  <maintainer email="dthomas@willowgarage.com">Dirk Thomas</maintainer>
+  <maintainer email="dthomas@osrfoundation.org">Dirk Thomas</maintainer>
   <license>BSD</license>
   
   <url>http://www.ros.org/wiki/ROS</url>

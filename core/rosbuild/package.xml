@@ -4,7 +4,7 @@
   <description>
     rosbuild contains scripts for managing the CMake-based build system for ROS.
   </description>
-  <maintainer email="dthomas@willowgarage.com">Dirk Thomas</maintainer>
+  <maintainer email="dthomas@osrfoundation.org">Dirk Thomas</maintainer>
   <license>BSD</license>
 
   <url>http://ros.org/wiki/rosbuild</url>

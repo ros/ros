@@ -6,7 +6,7 @@
      It provides: <tt>roscreate-pkg</tt>, which creates a new package directory,
      including the appropriate build and manifest files.
   </description>
-  <maintainer email="dthomas@willowgarage.com">Dirk Thomas</maintainer>
+  <maintainer email="dthomas@osrfoundation.org">Dirk Thomas</maintainer>
   <license>BSD</license>
 
   <url type="website">http://ros.org/wiki/roscreate</url>

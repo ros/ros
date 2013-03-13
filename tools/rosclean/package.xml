@@ -4,7 +4,7 @@
   <description>
     rosclean: cleanup filesystem resources (e.g. log files).
   </description>
-  <maintainer email="dthomas@willowgarage.com">Dirk Thomas</maintainer>
+  <maintainer email="dthomas@osrfoundation.org">Dirk Thomas</maintainer>
   <license>BSD</license>
 
   <url>http://ros.org/wiki/rosclean</url>

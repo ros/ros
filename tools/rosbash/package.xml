@@ -4,7 +4,7 @@
   <description>
     Assorted shell commands for using ros with bash.
   </description>
-  <maintainer email="dthomas@willowgarage.com">Dirk Thomas</maintainer>
+  <maintainer email="dthomas@osrfoundation.org">Dirk Thomas</maintainer>
   <license>BSD</license>
 
   <url>http://www.ros.org/wiki/rosbash</url>

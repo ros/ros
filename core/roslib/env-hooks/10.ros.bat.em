@@ -25,7 +25,7 @@ for /f %%a in ('python _parent_package_path.py') do set ROS_PACKAGE_PATH_PARENTS
 
 @[if DEVELSPACE]@
 REM env variables in develspace
-set ROS_PACKAGE_PATH=@(CMAKE_SOURCE_DIR)$ROS_PACKAGE_PATH_PARENTS
+set ROS_PACKAGE_PATH=@(CMAKE_SOURCE_DIR)!ROS_PACKAGE_PATH_PARENTS!
 set ROS_ETC_DIR=@(CATKIN_DEVEL_PREFIX)/@(CATKIN_GLOBAL_ETC_DESTINATION)/ros
 @[else]@
 REM env variables in installspace
@@ -35,7 +35,8 @@ set ROS_ETC_DIR=@(CMAKE_INSTALL_PREFIX)/@(CATKIN_GLOBAL_ETC_DESTINATION)/ros
 
 del _parent_package_path.py
 
-endlocal
+REM Make sure these two variables survive local scope
+endlocal && set ROS_PACKAGE_PATH=%ROS_PACKAGE_PATH% && set ROS_ETC_DIR=%ROS_ETC_DIR%
 
 REM unset ROS workspace
 set ROS_WORKSPACE=

@@ -34,6 +34,7 @@ from __future__ import print_function
 
 __version__ = '1.7.0'
 
+import argparse
 import os
 import sys
 import platform
@@ -46,8 +47,9 @@ class CleanupException(Exception): pass
 def _ask_and_call(cmds, cwd=None):
     """
     Pretty print cmds, ask if they should be run, and if so, runs
-    them using subprocess.check_call.
+    them using _call().
 
+    :param cmds: a list of commands executed one after another, ``list``
     :param cwd: (optional) set cwd of command that is executed, ``str``
     :returns: ``True`` if cmds were run.
     """
@@ -61,12 +63,21 @@ def _ask_and_call(cmds, cwd=None):
             break
     accepted = input == 'y'
     if accepted:
-        for c in cmds:
-            if cwd:
-                subprocess.check_call(c, cwd=cwd)
-            else:
-                subprocess.check_call(c)                
+        _call(cmds, cwd)
     return accepted
+
+def _call(cmds, cwd=None):
+    """
+    Runs cmds using subprocess.check_call.
+
+    :param cmds: a list of commands executed one after another, ``list``
+    :param cwd: (optional) set cwd of command that is executed, ``str``
+    """
+    for c in cmds:
+        if cwd:
+            subprocess.check_call(c, cwd=cwd)
+        else:
+            subprocess.check_call(c)
 
 def _usage():
     print("""Usage: rosclean <command>
@@ -84,7 +95,7 @@ def _get_check_dirs():
              (os.path.join(home_dir, 'rosmake'), 'rosmake logs')]
     return [x for x in dirs if os.path.isdir(x[0])]
     
-def _rosclean_cmd_check(argv):
+def _rosclean_cmd_check(args):
     dirs = _get_check_dirs()
     for d, label in dirs:
         desc = get_human_readable_disk_usage(d)
@@ -127,29 +138,31 @@ def get_disk_usage(d):
     else:
         raise CleanupException("rosclean is not supported on this platform")
 
-def _rosclean_cmd_purge(argv):
+def _rosclean_cmd_purge(args):
     dirs = _get_check_dirs()
 
     for d, label in dirs:
-        print("Purging %s.\nPLEASE BE CAREFUL TO VERIFY THE COMMAND BELOW!"%label)
+        print("Purging %s."%label)
         cmds = [['rm', '-rf', d]]
         try:
-            _ask_and_call(cmds)
+            if args.y:
+                _call(cmds)
+            else:
+                print("PLEASE BE CAREFUL TO VERIFY THE COMMAND BELOW!")
+                _ask_and_call(cmds)
         except:
             print("FAILED to execute command", file=sys.stderr)
 
 def rosclean_main(argv=None):
-    if argv == None:
-        argv = sys.argv
-    if len(argv) < 2:
-        _usage()
-    command = argv[1]
-    if command == 'check':
-        _rosclean_cmd_check(argv)
-    elif command == 'purge':
-        _rosclean_cmd_purge(argv)
-    else:
-        _usage()
+    parser = argparse.ArgumentParser(prog='rosclean')
+    subparsers = parser.add_subparsers()#help='sub-command help')
+    parser_check = subparsers.add_parser('check', help='Check usage of log files')
+    parser_check.set_defaults(func=_rosclean_cmd_check)
+    parser_purge = subparsers.add_parser('purge', help='Remove log files')
+    parser_purge.set_defaults(func=_rosclean_cmd_purge)
+    parser_purge.add_argument('-y', action='store_true', default=False, help='CAUTION: automatically confirms all questions to delete files')
+    args = parser.parse_args(argv)
+    args.func(args)
 
 if __name__ == '__main__':
     rosclean_main()

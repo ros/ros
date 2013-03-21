@@ -154,6 +154,8 @@ def _rosclean_cmd_purge(args):
             print("FAILED to execute command", file=sys.stderr)
 
 def rosclean_main(argv=None):
+    if argv is None:
+        argv = sys.argv
     parser = argparse.ArgumentParser(prog='rosclean')
     subparsers = parser.add_subparsers()#help='sub-command help')
     parser_check = subparsers.add_parser('check', help='Check usage of log files')
@@ -161,7 +163,7 @@ def rosclean_main(argv=None):
     parser_purge = subparsers.add_parser('purge', help='Remove log files')
     parser_purge.set_defaults(func=_rosclean_cmd_purge)
     parser_purge.add_argument('-y', action='store_true', default=False, help='CAUTION: automatically confirms all questions to delete files')
-    args = parser.parse_args(argv)
+    args = parser.parse_args(argv[1:])
     args.func(args)
 
 if __name__ == '__main__':

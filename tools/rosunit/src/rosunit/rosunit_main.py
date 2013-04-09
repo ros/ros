@@ -117,7 +117,7 @@ def rosunitmain():
     if not options.text_mode:
         print_runner_summary(runner_result, results)
     else:
-        print "WARNING: overall test result is not accurate when --text is enabled"
+        print("WARNING: overall test result is not accurate when --text is enabled")
 
     if runner_result is not None and not runner_result.wasSuccessful():
         sys.exit(1)

@@ -38,6 +38,8 @@ Prints summary of aggregated test results to stdout. This is useful
 when running several tests across a package.
 """
 
+from __future__ import print_function
+
 import os
 import sys
 import cStringIO
@@ -100,7 +102,7 @@ def main():
         packages = [p for p in packages if p]
 
     result = junitxml.read_all(packages)
-    print create_summary(result, packages)
+    print(create_summary(result, packages))
     if result.num_errors or result.num_failures:
         sys.exit(1)
   

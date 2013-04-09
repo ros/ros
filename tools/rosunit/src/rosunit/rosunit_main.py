@@ -32,7 +32,7 @@
 #
 # Revision $Id$
 
-from __future__ import with_statement
+from __future__ import with_statement, print_function
 
 import os
 import sys
@@ -87,7 +87,7 @@ def rosunitmain():
     if not pkg:
         pkg = rospkg.get_package_name(test_file)
     if not pkg:
-        print "Error: failed to determine package name for file '%s'; maybe you should supply the --package argument to rosunit?"%(test_file)
+        print("Error: failed to determine package name for file '%s'; maybe you should supply the --package argument to rosunit?"%(test_file))
         sys.exit(1)
 
     try:

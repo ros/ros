@@ -35,7 +35,7 @@
 """
 Wrapper for running Python unittest within rosunit/rostest framework.
 """
-from __future__ import with_statement
+from __future__ import with_statement, print_function
 
 import sys
 
@@ -112,10 +112,10 @@ def start_coverage(packages):
             _cov.load()
             _cov.start()
         except coverage.CoverageException:
-            print >> sys.stderr, "WARNING: you have an older version of python-coverage that is not support. Please update to the version provided by 'easy_install coverage'"
+            print("WARNING: you have an older version of python-coverage that is not support. Please update to the version provided by 'easy_install coverage'", file=sys.stderr)
     except ImportError, e:
-        print >> sys.stderr, """WARNING: cannot import python-coverage, coverage tests will not run.
-To install coverage, run 'easy_install coverage'"""
+        print("""WARNING: cannot import python-coverage, coverage tests will not run.
+To install coverage, run 'easy_install coverage'""", file=sys.stderr)
 
 def stop_coverage(packages, html=None):
     """
@@ -158,16 +158,16 @@ def stop_coverage(packages, html=None):
                 _cov.report(m, show_missing=0)
                 for mod in m:
                     res = _cov.analysis(mod)
-                    print "\n%s:\nMissing lines: %s"%(res[0], res[3])
+                    print("\n%s:\nMissing lines: %s"%(res[0], res[3]))
                     
             if html:
                 
-                print "="*80+"\ngenerating html coverage report to %s\n"%html+"="*80
+                print("="*80+"\ngenerating html coverage report to %s\n"%html+"="*80)
                 _cov.html_report(all_mods, directory=html)
         except ImportError, e:
-            print >> sys.stderr, "WARNING: cannot import '%s', will not generate coverage report"%package
+            print("WARNING: cannot import '%s', will not generate coverage report"%package, file=sys.stderr)
     except ImportError, e:
-        print >> sys.stderr, """WARNING: cannot import python-coverage, coverage tests will not run.
-To install coverage, run 'easy_install coverage'"""
+        print("""WARNING: cannot import python-coverage, coverage tests will not run.
+To install coverage, run 'easy_install coverage'""", file=sys.stderr)
     
     

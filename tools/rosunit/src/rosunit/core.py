@@ -29,8 +29,8 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#
-# Revision $Id$
+
+from __future__ import print_function
 
 import os
 import sys
@@ -45,17 +45,17 @@ XML_OUTPUT_FLAG = '--gtest_output=xml:' #use gtest-compatible flag
 def printlog(msg, *args):
     if args:
         msg = msg%args
-    print "[ROSUNIT]"+msg
+    print("[ROSUNIT]"+msg)
     
 def printlog_bold(msg, *args):
     if args:
         msg = msg%args
-    print '\033[1m[ROSUNIT]%s\033[0m'%msg
+    print('\033[1m[ROSUNIT]' + msg + '\033[0m')
     
 def printerrlog(msg, *args):
     if args:
         msg = msg%args
-    print >> sys.stderr, "[ROSUNIT]"+msg
+    print("[ROSUNIT]"+msg, file=sys.stderr)
 
 # this is a copy of the roslogging utility. it's been moved here as it is a common
 # routine for programs using accessing ROS directories
@@ -154,7 +154,7 @@ def create_xml_runner(test_pkg, test_name, results_file=None, is_rostest=False):
     elif os.path.isfile(test_dir):
         raise Exception("ERROR: cannot run test suite, file is preventing creation of test dir: %s"%test_dir)
     
-    print "[ROSUNIT] Outputting test results to %s"%results_file
+    print("[ROSUNIT] Outputting test results to " + results_file)
     outstream = open(results_file, 'w')
     outstream.write('<?xml version="1.0" encoding="utf-8"?>\n')
     return XMLTestRunner(stream=outstream)

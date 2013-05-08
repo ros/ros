@@ -46,6 +46,6 @@ eclipse-project:
 	awk -f $(shell rospack find mk)/eclipse.awk .project-cmake > .project
 	rm .project-cmake
 	python $(shell rospack find mk)/make_pydev_project.py
-
+	rm -r catkin catkin_generated CATKIN_IGNORE cmake_install.cmake devel gtest test_results
 
 include $(shell rospack find mk)/buildtest.mk

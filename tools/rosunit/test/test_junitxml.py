@@ -77,9 +77,9 @@ class MockErrorType(Exception):
 def _writeMockResultFile(result):
     "writes a test result as a gtest compatible test runner would do"
     with open(result.filename, 'w') as f:
-        f.write(u"""<?xml version="1.0" encoding="UTF-8"?>""")
+        f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
         if len(result.suites) > 1 or result.noSuitesRoot == False:
-            f.write(u"""<testsuites>\n""")
+            f.write('<testsuites>\n')
         for suite in result.suites:
             f.write('<testsuite tests="'+str(suite.tests)+'" failures="'+str(suite.fail)+'" time="'+str(suite.time)+'" errors="'+str(suite.errors)+'" name="'+suite.name+'">\n')
             for case in suite.cases:
@@ -89,7 +89,7 @@ def _writeMockResultFile(result):
                 f.write('</testcase>\n')
             f.write('</testsuite>\n')
         if len(result.suites) > 1 or result.noSuitesRoot == False:
-            f.write(u"""</testsuites>\n""")
+            f.write('</testsuites>\n')
 
 
 class XmlResultTestRead(unittest.TestCase):

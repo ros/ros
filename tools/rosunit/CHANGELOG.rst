@@ -2,8 +2,8 @@
 Changelog for package rosunit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.10.1 (2013-06-06)
+-------------------
 * make rosunit use print function for Python 2 and 3 compatibility (`#11 <https://github.com/ros/ros/issues/11>`_)
 * remove unnecessary usage of unicode strings (`#12 <https://github.com/ros/ros/issues/12>`_)
 

@@ -2,8 +2,8 @@
 Changelog for package mk
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.9.46 (2013-06-06)
+-------------------
 * add missing environment exports to make eclipse-projects of dry packages build
 * cleanup catkin generated files/directories after make eclips-project
 

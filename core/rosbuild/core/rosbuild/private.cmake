@@ -264,12 +264,12 @@ macro(_rosbuild_add_roslaunch_check targetname file)
     message(FATAL_ERROR "Can't find roslaunch file or directory \"${file}\"")
   endif(NOT _file_name)
 
-  # Find rostest
-  rosbuild_invoke_rospack("" rostest path find rostest)
+  # Find roslaunch
+  rosbuild_invoke_rospack("" roslaunch path find roslaunch)
 
   # Create target for this test.
   add_custom_target(${targetname}
-                    COMMAND ${rostest_path}/scripts/roslaunch-check.py -o ${rosbuild_test_results_dir}/${PROJECT_NAME}/TEST-${targetname}.xml ${file} ${ARGN}
+                    COMMAND ${roslaunch_path}/scripts/roslaunch-check -o ${rosbuild_test_results_dir}/${PROJECT_NAME}/TEST-${targetname}.xml ${file} ${ARGN}
                     DEPENDS ${file}
                     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                     VERBATIM)

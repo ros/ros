@@ -2,6 +2,10 @@
 Changelog for package rosbuild
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.10.2 (2013-06-18)
+-------------------
+* update rosbuild to use moved roslaunch-check script (`ros/ros_comm#241 <https://github.com/ros/ros_comm/issues/241>`_)
+
 1.10.1 (2013-06-06)
 -------------------
 

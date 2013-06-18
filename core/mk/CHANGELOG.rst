@@ -2,6 +2,9 @@
 Changelog for package mk
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.10.2 (2013-06-18)
+-------------------
+
 1.10.1 (2013-06-06)
 -------------------
 * add missing environment exports to make eclipse-projects of dry packages build

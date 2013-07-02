@@ -569,7 +569,7 @@ function _roscomplete_launch {
             ROSLAUNCH_COMPLETE=$(which roslaunch-complete)
             if [[ -x ${ROSLAUNCH_COMPLETE} ]]; then
                 # Call roslaunch-complete instead of roslaunch to get arg completion
-                _roslaunch_args=$(${ROSLAUNCH_COMPLETE} ${COMP_WORDS[@]:1:2})
+                _roslaunch_args=$(${ROSLAUNCH_COMPLETE} ${COMP_WORDS[@]:1:2} 2> /dev/null)
                 # roslaunch-complete should be very silent about
                 # errors and return 0 if it produced usable completion.
                 if [[ $? == 0 ]]; then

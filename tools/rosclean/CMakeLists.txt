@@ -5,4 +5,6 @@ catkin_package()
 
 catkin_python_setup()
 
-catkin_add_nosetests(test)
+if(CATKIN_ENABLE_TESTING)
+  catkin_add_nosetests(test)
+endif()

@@ -11,7 +11,7 @@
   <url>http://ros.org/wiki/rosmake</url>
   <author email="tfoote@osrfoundation.org">Tully Foote</author>
 
-  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend version_gte="0.5.68">catkin</buildtool_depend>
 
   <run_depend>catkin</run_depend>
   <run_depend>python-rospkg</run_depend>

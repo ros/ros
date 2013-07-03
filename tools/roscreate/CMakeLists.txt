@@ -9,4 +9,6 @@ install(DIRECTORY templates/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/templates
   PATTERN ".svn" EXCLUDE)
 
-catkin_add_nosetests(test)
+if(CATKIN_ENABLE_TESTING)
+  catkin_add_nosetests(test)
+endif()

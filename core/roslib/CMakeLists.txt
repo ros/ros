@@ -44,17 +44,18 @@ install(DIRECTORY include/
 install(PROGRAMS scripts/gendeps
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
+if(CATKIN_ENABLE_TESTING)
+  catkin_add_nosetests(test)
 
-catkin_add_nosetests(test)
+  catkin_add_gtest(${PROJECT_NAME}-utest test/utest.cpp WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+  if(TARGET ${PROJECT_NAME}-utest)
+    target_link_libraries(${PROJECT_NAME}-utest roslib ${Boost_LIBRARIES} ${catkin_LIBRARIES})
+  endif()
 
-catkin_add_gtest(${PROJECT_NAME}-utest test/utest.cpp WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-if(TARGET ${PROJECT_NAME}-utest)
-  target_link_libraries(${PROJECT_NAME}-utest roslib ${Boost_LIBRARIES} ${catkin_LIBRARIES})
-endif()
-
-catkin_add_gtest(${PROJECT_NAME}-test_package test/package.cpp)
-if(TARGET ${PROJECT_NAME}-test_package)
-  target_link_libraries(${PROJECT_NAME}-test_package roslib ${catkin_LIBRARIES})
+  catkin_add_gtest(${PROJECT_NAME}-test_package test/package.cpp)
+  if(TARGET ${PROJECT_NAME}-test_package)
+    target_link_libraries(${PROJECT_NAME}-test_package roslib ${catkin_LIBRARIES})
+  endif()
 endif()
 
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/export.cmake "")

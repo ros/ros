@@ -2,6 +2,9 @@
 Changelog for package rosunit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.10.4 (2013-07-05)
+-------------------
+
 1.10.3 (2013-07-03)
 -------------------
 * check for CATKIN_ENABLE_TESTING to enable configure without tests

@@ -38,6 +38,9 @@ test-future: all
 gcoverage: all
 	cd build && make $@
 
+# generate eclipse projects in the root of the package
+# remove all generated files and folders since after replacing the Makefile
+# they will all be regenerated in the subfolder build
 eclipse-project: 
 	mv Makefile Makefile.ros
 	if ! (cmake -G"Eclipse CDT4 - Unix Makefiles" -Wno-dev . && rm Makefile && rm CMakeCache.txt && rm -rf CMakeFiles); then mv Makefile.ros Makefile && echo "**ERROR building Eclipse project!**" && false; fi
@@ -46,6 +49,9 @@ eclipse-project:
 	awk -f $(shell rospack find mk)/eclipse.awk .project-cmake > .project
 	rm .project-cmake
 	python $(shell rospack find mk)/make_pydev_project.py
-	rm -r catkin catkin_generated CATKIN_IGNORE cmake_install.cmake devel gtest test_results
+	rm -r catkin catkin_generated cmake_install.cmake devel
+	if test -e CTestTestfile.cmake; then rm CTestTestfile.cmake; fi
+	if test -d gtest; then rm -r gtest; fi
+	if test -d test_results; then rm -r test_results; fi
 
 include $(shell rospack find mk)/buildtest.mk

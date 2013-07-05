@@ -2,6 +2,9 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.9.49 (2013-07-05)
+-------------------
+
 1.9.48 (2013-07-03)
 -------------------
 * enable roslaunch args completion in rosbash (`#19 <https://github.com/ros/ros/issues/19>`_)

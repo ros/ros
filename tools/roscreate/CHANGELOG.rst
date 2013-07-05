@@ -2,6 +2,9 @@
 Changelog for package roscreate
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.9.49 (2013-07-05)
+-------------------
+
 1.9.48 (2013-07-03)
 -------------------
 * check for CATKIN_ENABLE_TESTING to enable configure without tests

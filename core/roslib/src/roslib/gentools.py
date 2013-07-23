@@ -250,7 +250,7 @@ def compute_full_text(get_deps_dict):
     # #1168: remove the trailing \n separator that is added by the concatenation logic
     return buff.getvalue()[:-1]
 
-def get_file_dependencies(f, stdout=sys.stdout, stderr=sys.stderr):
+def get_file_dependencies(f, stdout=sys.stdout, stderr=sys.stderr, rospack=None):
     """
     Compute dependencies of the specified message/service file
     @param f: message or service file to get dependencies for
@@ -272,7 +272,7 @@ def get_file_dependencies(f, stdout=sys.stdout, stderr=sys.stderr):
         _, spec = roslib.srvs.load_from_file(f)
     else:
         raise Exception("[%s] does not appear to be a message or service"%spec)
-    return get_dependencies(spec, package, stdout, stderr)
+    return get_dependencies(spec, package, stdout, stderr, rospack=rospack)
 
 def get_dependencies(spec, package, compute_files=True, stdout=sys.stdout, stderr=sys.stderr, rospack=None):
     """

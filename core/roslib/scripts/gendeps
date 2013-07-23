@@ -40,10 +40,12 @@
 
 import sys
 
-import roslib.msgs 
-import roslib.srvs 
+import roslib.msgs
+import roslib.srvs
 import roslib.gentools
- 
+
+import rospkg
+
 NAME='gendeps'
 
 def usage(progname, stdout=sys.stdout):
@@ -52,7 +54,7 @@ def usage(progname, stdout=sys.stdout):
 ## main method for gendeps command
 ## @param argv [str]: sys args
 ## @param stdout pipe: stdout pipe
-## @param stderr pipe: stderr pipe                
+## @param stderr pipe: stderr pipe
 def gendeps_main(argv, stdout, stderr):
     from optparse import OptionParser
     parser = OptionParser(usage="usage: %prog [options] [files...]", prog=NAME)
@@ -83,12 +85,14 @@ def gendeps_main(argv, stdout, stderr):
     if options.cat_files and (options.md5 or options.sha1):
         parser.error("cat option is not compatible with other options")
 
-    retval = roslib.gentools.get_file_dependencies(f, stdout=stdout, stderr=stderr)
+    # rospack instance for caching of deps
+    rospack = rospkg.RosPack()
+    retval = roslib.gentools.get_file_dependencies(f, stdout=stdout, stderr=stderr, rospack=rospack)
 
     if options.md5:
-        print >> stdout, roslib.gentools.compute_md5(retval)
+        print >> stdout, roslib.gentools.compute_md5(retval, rospack=rospack)
     elif options.sha1:
-        print >> stdout, roslib.gentools.compute_sha1(retval)        
+        print >> stdout, roslib.gentools.compute_sha1(retval, rospack=rospack)
     elif options.cat_files:
         # this option is used for the message definition that is
         # stored in exchanged in ROS handshakes and then stored in bag

@@ -87,7 +87,7 @@ def gendeps_main(argv, stdout, stderr):
 
     # rospack instance for caching of deps
     rospack = rospkg.RosPack()
-    retval = roslib.gentools.get_file_dependencies(f, stdout=stdout, stderr=stderr)
+    retval = roslib.gentools.get_file_dependencies(f, stdout=stdout, stderr=stderr, rospack=rospack)
 
     if options.md5:
         print >> stdout, roslib.gentools.compute_md5(retval, rospack=rospack)

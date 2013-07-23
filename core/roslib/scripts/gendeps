@@ -40,10 +40,10 @@
 
 import sys
 
-import roslib.msgs 
-import roslib.srvs 
+import roslib.msgs
+import roslib.srvs
 import roslib.gentools
- 
+
 NAME='gendeps'
 
 def usage(progname, stdout=sys.stdout):
@@ -52,7 +52,7 @@ def usage(progname, stdout=sys.stdout):
 ## main method for gendeps command
 ## @param argv [str]: sys args
 ## @param stdout pipe: stdout pipe
-## @param stderr pipe: stderr pipe                
+## @param stderr pipe: stderr pipe
 def gendeps_main(argv, stdout, stderr):
     from optparse import OptionParser
     parser = OptionParser(usage="usage: %prog [options] [files...]", prog=NAME)
@@ -88,7 +88,7 @@ def gendeps_main(argv, stdout, stderr):
     if options.md5:
         print >> stdout, roslib.gentools.compute_md5(retval)
     elif options.sha1:
-        print >> stdout, roslib.gentools.compute_sha1(retval)        
+        print >> stdout, roslib.gentools.compute_sha1(retval)
     elif options.cat_files:
         # this option is used for the message definition that is
         # stored in exchanged in ROS handshakes and then stored in bag

@@ -52,10 +52,10 @@ except ImportError:
 
 import rospkg
 
-import roslib.msgs 
+import roslib.msgs
 from roslib.msgs import MsgSpecException
-import roslib.names 
-import roslib.srvs 
+import roslib.names
+import roslib.srvs
 
 # name of the Header type as gentools knows it
 _header_type_name = 'std_msgs/Header'
@@ -78,12 +78,12 @@ def _add_msgs_depends(rospack, spec, deps, package_context):
         # package is not present.  we soft fail here because we assume
         # missing messages will be caught later during lookup.
         pass
-    
+
     for t in spec.types:
         t = roslib.msgs.base_msg_type(t)
         if not roslib.msgs.is_builtin(t):
             t_package, t_base = roslib.names.package_resource_name(t)
-            
+
             # special mapping for header
             if t == roslib.msgs.HEADER:
                 # have to re-names Header
@@ -124,7 +124,7 @@ def compute_md5_text(get_deps_dict, spec, rospack=None):
     # #1554: need to suppress computation of files in dynamic generation case
     compute_files = 'files' in get_deps_dict
 
-    buff = StringIO()    
+    buff = StringIO()
 
     for c in spec.constants:
         buff.write("%s %s=%s\n"%(c.type, c.name, c.val_text))
@@ -141,14 +141,14 @@ def compute_md5_text(get_deps_dict, spec, rospack=None):
             # - ugly special-case handling of Header
             if base_msg_type == roslib.msgs.HEADER:
                 base_msg_type = _header_type_name
-                
+
             sub_pkg, _ = roslib.names.package_resource_name(base_msg_type)
             sub_pkg = sub_pkg or package
             sub_spec = roslib.msgs.get_registered(base_msg_type, package)
             sub_deps = get_dependencies(sub_spec, sub_pkg, compute_files=compute_files, rospack=rospack)
             sub_md5 = compute_md5(sub_deps, rospack)
             buff.write("%s %s\n"%(sub_md5, name))
-    
+
     return buff.getvalue().strip() # remove trailing new line
 
 def _compute_hash(get_deps_dict, hash, rospack=None):
@@ -156,8 +156,8 @@ def _compute_hash(get_deps_dict, hash, rospack=None):
     subroutine of compute_md5()
     @param get_deps_dict: dictionary returned by get_dependencies call
     @type  get_deps_dict: dict
-    @param hash: hash instance            
-    @type  hash: hash instance            
+    @param hash: hash instance
+    @type  hash: hash instance
     """
     # accumulate the hash
     # - root file
@@ -170,7 +170,7 @@ def _compute_hash(get_deps_dict, hash, rospack=None):
         hash.update(compute_md5_text(get_deps_dict, spec.request, rospack=rospack))
         hash.update(compute_md5_text(get_deps_dict, spec.response, rospack=rospack))
     else:
-        raise Exception("[%s] is not a message or service"%spec)   
+        raise Exception("[%s] is not a message or service"%spec)
     return hash.hexdigest()
 
 def _compute_hash_v1(get_deps_dict, hash):
@@ -179,10 +179,10 @@ def _compute_hash_v1(get_deps_dict, hash):
     @param get_deps_dict: dictionary returned by get_dependencies call
     @type  get_deps_dict: dict
     @param hash: hash instance
-    @type  hash: hash instance    
+    @type  hash: hash instance
     """
     uniquedeps = get_deps_dict['uniquedeps']
-    spec = get_deps_dict['spec']    
+    spec = get_deps_dict['spec']
     # accumulate the hash
     # - root file
     hash.update(spec.text)
@@ -240,7 +240,7 @@ def compute_full_text(get_deps_dict):
 
     # write the text of the top-level type
     buff.write(get_deps_dict['spec'].text)
-    buff.write('\n')    
+    buff.write('\n')
     # append the text of the dependencies (embedded types)
     for d in get_deps_dict['uniquedeps']:
         buff.write(sep)
@@ -288,18 +288,18 @@ def get_dependencies(spec, package, compute_files=True, stdout=sys.stdout, stder
     @param compute_files: (optional, default=True) compute file
     dependencies of message ('files' key in return value)
     @type  compute_files: bool
-    @return: dict: 
+    @return: dict:
       * 'files': list of files that \a file depends on
       * 'deps': list of dependencies by type
-      * 'spec': Msgs/Srvs instance. 
+      * 'spec': Msgs/Srvs instance.
       * 'uniquedeps': list of dependencies with duplicates removed,
       * 'package': package that dependencies were generated relative to.
-    @rtype: dict    
+    @rtype: dict
     """
 
     # #518: as a performance optimization, we're going to manually control the loading
     # of msgs instead of doing package-wide loads.
-    
+
     #we're going to manipulate internal apis of msgs, so have to
     #manually init
     roslib.msgs._init()
@@ -312,19 +312,19 @@ def get_dependencies(spec, package, compute_files=True, stdout=sys.stdout, stder
             _add_msgs_depends(rospack, spec, deps, package)
         elif isinstance(spec, roslib.srvs.SrvSpec):
             _add_msgs_depends(rospack, spec.request, deps, package)
-            _add_msgs_depends(rospack, spec.response, deps, package)                
+            _add_msgs_depends(rospack, spec.response, deps, package)
         else:
             raise MsgSpecException("spec does not appear to be a message or service")
     except KeyError, e:
         raise MsgSpecException("Cannot load type %s.  Perhaps the package is missing a dependency."%(str(e)))
 
     # convert from type names to file names
-    
+
     if compute_files:
         files = {}
         for d in set(deps):
             d_pkg, t = roslib.names.package_resource_name(d)
-            d_pkg = d_pkg or package # convert '' -> local package 
+            d_pkg = d_pkg or package # convert '' -> local package
             files[d] = roslib.msgs.msg_file(d_pkg, t)
     else:
         files = None
@@ -338,7 +338,7 @@ def get_dependencies(spec, package, compute_files=True, stdout=sys.stdout, stder
     if compute_files:
         return { 'files': files, 'deps': deps, 'spec': spec, 'package': package, 'uniquedeps': uniquedeps }
     else:
-        return { 'deps': deps, 'spec': spec, 'package': package, 'uniquedeps': uniquedeps }        
+        return { 'deps': deps, 'spec': spec, 'package': package, 'uniquedeps': uniquedeps }
 
 
 

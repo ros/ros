@@ -70,14 +70,18 @@ def _add_msgs_depends(rospack, spec, deps, package_context):
     @type  deps: [str]
     @raise KeyError for invalid dependent types due to missing package dependencies.
     """
-    valid_packages = ['', package_context]
-    try:
-        valid_packages = valid_packages + rospack.get_depends(package_context, implicit=True)
-    except rospkg.ResourceNotFound:
-        # this happens in dynamic generation situations where the
-        # package is not present.  we soft fail here because we assume
-        # missing messages will be caught later during lookup.
-        pass
+    def _get_valid_packages(package_context, rospack):
+        valid_packages = ['', package_context]
+        try:
+            valid_packages = valid_packages + rospack.get_depends(package_context, implicit=True)
+        except rospkg.ResourceNotFound:
+            # this happens in dynamic generation situations where the
+            # package is not present.  we soft fail here because we assume
+            # missing messages will be caught later during lookup.
+            pass
+        return valid_packages
+
+    valid_packages = None
 
     for t in spec.types:
         t = roslib.msgs.base_msg_type(t)
@@ -96,16 +100,18 @@ def _add_msgs_depends(rospack, spec, deps, package_context):
                         deps.append(t)
                     else:
                         deps.append(package_context+'/'+t)
-
-            elif t_package in valid_packages:
-                # if we are allowed to load the message, load it.
-                key, depspec = roslib.msgs.load_by_type(t, package_context)
-                if t != roslib.msgs.HEADER:
-                  deps.append(key)
-                roslib.msgs.register(key, depspec)
             else:
-                # not allowed to load the message, so error.
-                raise KeyError(t)
+                if valid_packages is None:
+                    valid_packages = _get_valid_packages(package_context, rospack)
+                if t_package in valid_packages:
+                    # if we are allowed to load the message, load it.
+                    key, depspec = roslib.msgs.load_by_type(t, package_context)
+                    if t != roslib.msgs.HEADER:
+                      deps.append(key)
+                    roslib.msgs.register(key, depspec)
+                else:
+                    # not allowed to load the message, so error.
+                    raise KeyError(t)
             _add_msgs_depends(rospack, depspec, deps, package_context)
 
 def compute_md5_text(get_deps_dict, spec):

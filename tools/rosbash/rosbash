@@ -27,7 +27,8 @@ function _rosfind {
 # stack echoes its result
 function _ros_location_find {
     local homedir ROS_LOCATION_KEYS_ARR ROS_LOCATIONS_ARR loc
-    homedir=`echo $HOME | sed -e "s/\//\t\//g" -e "s/\t/\\\\\/g"`
+    TAB=$'\t' 
+    homedir=`echo $HOME | sed -e "s/\//${TAB}\//g" -e "s/${TAB}/\\\\\/g"`
     ROS_LOCATION_KEYS_ARR=(`echo $ROS_LOCATIONS | _rossed -e 's/([^:=]*)=([^:=]*)(:*[^=])*(:|$)/\1 /g'`)
     ROS_LOCATIONS_ARR=(`echo $ROS_LOCATIONS | _rossed -e 's/([^:=]*)=([^:=]*)(:*[^=])*(:|$)/\2 /g' -e "s/~/${homedir}/g"`)
 

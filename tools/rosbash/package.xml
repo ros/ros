@@ -11,7 +11,7 @@
   <author>Jeremy Leibs</author>
   <author>Thibault Kruse</author>
 
-  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend version_gte="0.5.72">catkin</buildtool_depend>
 
   <run_depend>catkin</run_depend>
 </package>

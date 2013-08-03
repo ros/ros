@@ -2,23 +2,13 @@ include(CMakeParseArguments)
 
 macro(rosunit_initialize_tests)
 @[if DEVELSPACE]@
-  # find binary and scripts in develspace
-  find_program(ROSUNIT_EXE rosunit
-    PATHS "@(PROJECT_SOURCE_DIR)/scripts"
-    NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
-  if(NOT ROSUNIT_EXE)
-    message(FATAL_ERROR "'rosunit' not found")
-  endif()
-  set(ROSUNIT_SCRIPTS_DIR @(PROJECT_SOURCE_DIR)/scripts)
+  # binary and script in develspace
+  set(ROSUNIT_SCRIPTS_DIR "@(CMAKE_CURRENT_SOURCE_DIR)/scripts")
+  set(ROSUNIT_EXE "${ROSUNIT_SCRIPTS_DIR}/rosunit")
 @[else]@
-  # find binary and scripts in installspace
-  find_program(ROSUNIT_EXE rosunit
-    PATHS "@(CMAKE_INSTALL_PREFIX)/bin"
-    NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
-  if(NOT ROSUNIT_EXE)
-    message(FATAL_ERROR "'rosunit' not found")
-  endif()
-  set(ROSUNIT_SCRIPTS_DIR @(CMAKE_INSTALL_PREFIX)/@(CATKIN_PACKAGE_SHARE_DESTINATION)/scripts)
+  # binary and script in installspace
+  set(ROSUNIT_SCRIPTS_DIR "${rosunit_DIR}/../scripts")
+  set(ROSUNIT_EXE "${rosunit_DIR}/../../../@(CATKIN_GLOBAL_BIN_DESTINATION)/rosunit")
 @[end if]@
 endmacro()
 

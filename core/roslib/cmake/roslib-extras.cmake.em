@@ -5,5 +5,5 @@
 set(gendeps_exe @(CMAKE_CURRENT_SOURCE_DIR)/scripts/gendeps)
 @[else]@
 # set path to gendeps executable in installspace
-set(gendeps_exe @(CMAKE_INSTALL_PREFIX)/lib/roslib/gendeps)
+set(gendeps_exe ${genlib_DIR}/../../../@(CATKIN_PACKAGE_BIN_DESTINATION)/gendeps)
 @[end if]@

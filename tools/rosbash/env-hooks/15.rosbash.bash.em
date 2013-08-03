@@ -3,5 +3,5 @@
 @[if DEVELSPACE]@
 . "@(CMAKE_CURRENT_SOURCE_DIR)/rosbash"
 @[else]@
-. "@(CMAKE_INSTALL_PREFIX)/share/rosbash/rosbash"
+. "$CATKIN_ENV_HOOK_WORKSPACE/share/rosbash/rosbash"
 @[end if]@

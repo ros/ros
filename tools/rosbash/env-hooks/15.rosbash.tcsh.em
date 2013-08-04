@@ -3,5 +3,5 @@
 @[if DEVELSPACE]@
 . "@(CMAKE_CURRENT_SOURCE_DIR)/rostcsh"
 @[else]@
-. "@(CMAKE_INSTALL_PREFIX)/share/rosbash/rostcsh"
+. "$CATKIN_ENV_HOOK_WORKSPACE/share/rosbash/rostcsh"
 @[end if]@

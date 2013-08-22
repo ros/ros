@@ -2,6 +2,11 @@
 Changelog for package roslib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.10.5 (2013-08-21)
+-------------------
+* make roslib relocatable (`ros/catkin#490 <https://github.com/ros/catkin/issues/490>`_)
+* improve performance of dry message generation
+
 1.10.4 (2013-07-05)
 -------------------
 

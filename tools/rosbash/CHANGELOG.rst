@@ -2,6 +2,11 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.10.5 (2013-08-21)
+-------------------
+* make rosunit relocatable (`ros/catkin#490 <https://github.com/ros/catkin/issues/490>`_)
+* fix home expansion in completion on OS X (`#27 <https://github.com/ros/ros/issues/27>`_)
+
 1.10.4 (2013-07-05)
 -------------------
 

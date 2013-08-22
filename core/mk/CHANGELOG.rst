@@ -2,6 +2,9 @@
 Changelog for package mk
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.9.50 (2013-08-21)
+-------------------
+
 1.9.49 (2013-07-05)
 -------------------
 * update eclipse-project target to not try to delete CATKIN_IGNORE marker files and check before trying to delete other files/folders (`#20 <https://github.com/ros/ros/issues/20>`_)

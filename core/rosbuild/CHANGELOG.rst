@@ -2,6 +2,9 @@
 Changelog for package rosbuild
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.10.6 (2013-08-22)
+-------------------
+
 1.10.5 (2013-08-21)
 -------------------
 * make rosbuild relocatable (`ros/catkin#490 <https://github.com/ros/catkin/issues/490>`_)

@@ -2,6 +2,10 @@
 Changelog for package roslib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+1.10.6 (2013-08-22)
+-------------------
+* fix regression of `#29 <https://github.com/ros/ros/issues/29>`_ introduced in 1.10.5
+
 1.10.5 (2013-08-21)
 -------------------
 * make roslib relocatable (`ros/catkin#490 <https://github.com/ros/catkin/issues/490>`_)

@@ -210,9 +210,14 @@ function rospd {
     else
         local rosvals
         _ros_decode_path $1 forceeval
+        if [ $? != 0 ]; then
+            echo "rospd: No such package/stack '$1'"
+            return 1
+        fi
         pushd ${rosvals[1]}${rosvals[2]}${rosvals[3]} > /dev/null ;
     fi
     rosd
+    return 0
 }
 
 function rosls {

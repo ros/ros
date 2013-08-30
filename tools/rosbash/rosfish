@@ -304,13 +304,7 @@ function _roscomplete_rosmake
 end
 
 function _roscomplete_search_dir
-    # (comandline -c) for whole line
-    # (commandline -ct) for last token
     set -l command (commandline -o)
-    echo "command:" >> ~/output.txt
-    echo $command >> ~/output.txt
-    echo $command[1] >> ~/output.txt
-    echo $command[2] >> ~/output.txt
     if test (count $command) = 1
       echo "1" >> ~/output.txt
       _ros_list_packages
@@ -323,10 +317,6 @@ function _roscomplete_search_dir
       echo "3" >> ~/output.txt
       find (_ros_location_find $command[1]) $arg -printf "%f\n"
     end
-    #_ros_list_packages
-    # If the commandline is on the 1st word, just use _ros_list_packages then filter
-    # If the commandline is on the 2nd word, find the package of the first word w/ _ros_package_find then
-      # find within that directory using args and filter to filename from path
 end
 
 function _roscomplete_rosrun

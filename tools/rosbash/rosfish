@@ -16,10 +16,7 @@ function _rosfind
 end
 
 # _ros_location_find
-# based on $ROS_LOCATIONS, which the user can set to any colon
-# separated of key=folder pairs also resolves keys 'log' and
-# 'test_results' to ROS defaults finally resolves to package, then
-# stack echoes its result
+# Takes a name of a ros location and returns it's path
 function _ros_location_find
     set -l homedir (echo $HOME | sed -e "s/\//\t\//g" -e "s/\t/\\\/g")
     set -l ROS_LOCATION_KEYS_ARR (echo $ROS_LOCATIONS | _rossed -e 's/([^:=]*)=([^:=]*)(:*[^=])*(:|$)/\1 /g')
@@ -41,7 +38,7 @@ function _ros_location_find
 
     set -l loc (set -x ROS_CACHE_TIMEOUT -1.0; rospack find $argv[1] 2> /dev/null)
     if test $status != 0
-        set loc (set -x ROS_CACHE_TIMEOUT=-1.0; rosstack find $argv[1] 2> /dev/null)
+        set loc (set -x ROS_CACHE_TIMEOUT -1.0; rosstack find $argv[1] 2> /dev/null)
         if test $status != 0
             return 1
         end
@@ -83,7 +80,7 @@ end
 
 # takes as argument either just a package-path or just a pkgname
 # returns 0 for no argument or if package (+ path) exist, 1 else
-# on success with arguments returns [pkgname, abspath, relpath basename] 
+# on success with arguments returns [abspath, name, basepath, remainder]
 function _ros_decode_path
     set -l rosname remainder
     if test -z $argv[1]
@@ -93,7 +90,7 @@ function _ros_decode_path
     set -l rosname (echo $argv[1] | sed -n 's/\([^/]\+\).*/\1/p')
 
     if not test -z $rosname
-        set remainder (echo $argv[1] | sed -n "s/$rosname\(.*\)/\1/p")
+        set remainder (echo $argv[1] | sed -n "s/$rosname"'\(.*\)/\1/p')
     else
         set rosname $argv[1]
         if test (count $argv) != "2" -o $argv[2] != "forceeval"
@@ -107,7 +104,10 @@ function _ros_decode_path
         echo $rosname
         return 1
     end
+    set -l reldir (echo $remainder | sed -n 's/\(.*\/\)[^/]*/\1/p')
+    set -l last (echo $remainder | sed -n 's/.*\/\([^/]*\)/\1/p')
 
+    set rosvals {$rosname} {$rosdir} {$reldir} {$last}
     echo {$rosdir}{$remainder}
     return 0
 end
@@ -149,7 +149,6 @@ function roscd
     echo -e "Neither ROS_WORKSPACE is set nor a catkin workspace is listed in CMAKE_PREFIX_PATH.  Please set ROS_WORKSPACE or source a catkin workspace to use roscd with no arguments."
     return 1
   end
-
 
   if test $argv[1] = "--help"
     echo -e "usage: roscd package\n\nJump to target package."
@@ -268,7 +267,6 @@ end
 
 function roscp
     set -l arg
-    echo count is (count $argv)
     if test  (count $argv) != "3"
         echo -e "usage: roscp package filename target\n\nCopy a file from a package to target location."
         return 0
@@ -276,3 +274,86 @@ function roscp
     _roscmd $argv[1] $argv[2]
     cp $arg $argv[3]
 end
+
+function _roscomplete
+  _ros_list_locations
+  _ros_list_stacks
+end
+
+function _roscomplete_sub_dir
+    set -l wd $PWD
+    set -l roslocs (_ros_list_locations)
+    set -l arg (commandline -ct)
+    set -g rosvals
+    set -l path (_ros_decode_path $arg)
+    if test -z $rosvals[1]
+        # Not a full ROS location
+        _ros_list_locations
+    else
+        # The first section is a full ROS location, so we complete from it's subdirs
+        find -L {$rosvals[2]}{$rosvals[3]} -maxdepth 1 -mindepth 1 -type d ! -regex ".*/[.].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/$rosvals[1]\/\1/g"
+    end
+end
+
+function _roscomplete_rosmake
+    _roscomplete
+    set options --test-only --all --mark-installed --unmark-installed --robust --build-everything --specified-only --buildtest --buildtest1 --output --pre-clean --bootstrap --disable-logging --target --pjobs= --threads --profile --skip-blacklist --status-rate
+    for i in $options
+         echo $i
+    end
+end
+
+function _roscomplete_search_dir
+    # (comandline -c) for whole line
+    # (commandline -ct) for last token
+    set -l command (commandline -o)
+    echo "command:" >> ~/output.txt
+    echo $command >> ~/output.txt
+    echo $command[1] >> ~/output.txt
+    echo $command[2] >> ~/output.txt
+    if test (count $command) = 1
+      echo "1" >> ~/output.txt
+      _ros_list_packages
+    end
+    if test (count $command) = 2
+      echo "2" >> ~/output.txt
+      _ros_list_packages
+    end
+    if test (count $command) = 3
+      echo "3" >> ~/output.txt
+      find (_ros_location_find $command[1]) $arg -printf "%f\n"
+    end
+    #_ros_list_packages
+    # If the commandline is on the 1st word, just use _ros_list_packages then filter
+    # If the commandline is on the 2nd word, find the package of the first word w/ _ros_package_find then
+      # find within that directory using args and filter to filename from path
+end
+
+function _roscomplete_rosrun
+    _roscomplete_search_dir '-type f -perm +111'
+end
+
+function _roscomplete_file
+    _roscomplete_search_dir '-type f ! -regex .*[.][oa]$'
+end
+
+function _roscomplete_launch
+  if test -z (comandline -ct | grep i-)
+    set options --files --args --nodes --find-node --child --local --screen --server_uri --run_id --wait --port --core --pid --dump-params 
+    for i in $options
+         echo $i
+    end
+  else
+    _roscomplete_search_dir '-type f -regex \'.*\.launch$\' -o -type f -regex \'.*\.test$\''
+  end
+end
+
+complete -x -c roscd -a '(_roscomplete_sub_dir)'
+complete -c rospd -a '(_roscomplete_sub_dir)'
+complete -c rosls -a '(_roscomplete_sub_dir)'
+complete -x -c rosmake -a '(_roscomplete_rosmake)'
+complete -x -c rosclean -a 'check purge'
+complete -x -c rosrun -a '(_roscomplete_rosrun)'
+complete -x -c roslaunch -a '(_roscomplete_launch)'
+complete -x -c rosed -a '(_roscomplete_file)'
+complete -x -c roscp -a '(_roscomplete_file)'

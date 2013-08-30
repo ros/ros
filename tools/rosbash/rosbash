@@ -279,8 +279,8 @@ function roscp {
 }
 
 function rosawesome {
-   alias megamaid=rosrecord
-   alias suck2blow=rosplay
+   alias megamaid='rosbag record'
+   alias suck2blow='rosbag play'
    alias botherder=roscore
 }
 

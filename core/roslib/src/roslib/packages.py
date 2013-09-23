@@ -401,7 +401,10 @@ def find_node(pkg, node_type, rospack=None):
 
 def _executable_filter(test_path):
     s = os.stat(test_path)
-    return (s.st_mode & (stat.S_IRUSR | stat.S_IXUSR) == (stat.S_IRUSR | stat.S_IXUSR))
+    flags = stat.S_IRUSR | stat.S_IXUSR
+    if os.name == 'nt' and os.path.splitext(test_path)[1] == '.py':
+        flags = stat.S_IRUSR
+    return (s.st_mode & flags) == flags
 
 def _find_resource(d, resource_name, filter_fn=None):
     """

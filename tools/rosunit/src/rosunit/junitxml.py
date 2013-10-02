@@ -274,7 +274,7 @@ RE_XML_ILLEGAL = u'([\u0000-\u0008\u000b-\u000c\u000e-\u001f\ufffe-\uffff])' + \
                   unichr(0xd800),unichr(0xdbff),unichr(0xdc00),unichr(0xdfff))
 _safe_xml_regex = re.compile(RE_XML_ILLEGAL)
 
-def _read_file_safe_xml(test_file):
+def _read_file_safe_xml(test_file, write_back_sanitized=True):
     """
     read in file, screen out unsafe unicode characters
     """
@@ -295,7 +295,11 @@ def _read_file_safe_xml(test_file):
 
         for match in _safe_xml_regex.finditer(x):
             x = x[:match.start()] + "?" + x[match.end():]
-        return x.encode("utf-8")
+        x = x.encode("utf-8")
+        if write_back_sanitized:
+            with open(test_file, 'w') as h:
+                h.write(x)
+        return x
     finally:
         if f is not None:
             f.close()

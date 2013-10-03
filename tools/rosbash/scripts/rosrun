@@ -32,7 +32,13 @@ if [[ ! $2 == */* ]]; then
   # The -perm /mode usage is not available in find on the Mac
   #exepathlist=(`find $pkgdir -name $2 -type f -perm /u+x,g+x,o+x`)
   # -L: #3475
-  exepathlist=(`find -L $catkin_package_libexec_dir $pkgdir -name $2 -type f  -perm +111 ! -regex ".*$pkgdir\/build\/.*" | uniq`)
+  if [[ `uname` == Darwin ]]; then
+    _perm="+111"
+  else
+    _perm="-111"
+  fi
+  exepathlist=(`find -L $catkin_package_libexec_dir $pkgdir -name $2 -type f  -perm $_perm ! -regex ".*$pkgdir\/build\/.*" | uniq`)
+  unset _perm
   if [[ ${#exepathlist[@]} == 0 ]]; then
     echo "[rosrun] Couldn't find executable named $2 below $pkgdir"
     nonexepathlist=(`find -H $pkgdir -name $2`)

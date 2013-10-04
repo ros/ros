@@ -2,8 +2,8 @@
 Changelog for package rosbuild
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.10.7 (2013-10-04)
+-------------------
 * compatibility of env hooks with old workspace setup files (`#36 <https://github.com/ros/ros/issues/36>`_)
 
 1.10.6 (2013-08-22)

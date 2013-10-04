@@ -2,8 +2,8 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.9.52 (2013-10-04)
+-------------------
 * use platform dependent argument for 'find -perm' (`#33 <https://github.com/ros/ros/issues/33>`_)
 * compatibility of env hooks with old workspace setup files (`#36 <https://github.com/ros/ros/issues/36>`_)
 * make rosawesome more awesome

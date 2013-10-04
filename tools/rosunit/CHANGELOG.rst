@@ -2,6 +2,10 @@
 Changelog for package rosunit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix sanitizing rosunit xml files on the lowest level possible
+
 1.9.51 (2013-08-22)
 -------------------
 

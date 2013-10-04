@@ -2,6 +2,11 @@
 Changelog for package roslib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* compatibility of env hooks with old workspace setup files (`#36 <https://github.com/ros/ros/issues/36>`_)
+* allow python files to pass executable filter in Windows
+
 1.10.6 (2013-08-22)
 -------------------
 * fix regression of `#29 <https://github.com/ros/ros/issues/29>`_ introduced in 1.10.5

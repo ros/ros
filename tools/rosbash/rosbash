@@ -474,7 +474,7 @@ function _roscomplete_exe {
     if [[ `uname` == Darwin ]]; then
         perm="+111"
     else
-        perm="-111"
+        perm="/111"
     fi
     _roscomplete_search_dir "-type f -perm $perm"
 }

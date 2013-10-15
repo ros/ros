@@ -35,7 +35,7 @@ if [[ ! $2 == */* ]]; then
   if [[ `uname` == Darwin ]]; then
     _perm="+111"
   else
-    _perm="-111"
+    _perm="/111"
   fi
   exepathlist=(`find -L $catkin_package_libexec_dir $pkgdir -name $2 -type f  -perm $_perm ! -regex ".*$pkgdir\/build\/.*" | uniq`)
   unset _perm

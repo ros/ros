@@ -8,8 +8,8 @@
   <license>BSD</license>
 
   <url type="website">http://ros.org/wiki/rosunit</url>
-  <url type="bugtracker">https://code.ros.org/trac/ros/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=ros&amp;order=priority</url>
-  <url type="repository">https://code.ros.org/svn/ros/stacks/ros/trunk/tools/rosunit</url>
+  <url type="bugtracker">https://github.com/ros/ros_comm/issues</url>
+  <url type="repository">https://github.com/ros/ros_comm</url>
   <author>Ken Conley</author>
 
   <buildtool_depend version_gte="0.5.68">catkin</buildtool_depend>

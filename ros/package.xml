@@ -6,8 +6,8 @@
   <license>BSD</license>
 
   <url type="website">http://www.ros.org/wiki/ROS</url>
-  <url type="bugtracker">https://code.ros.org/trac/ros/query?status=assigned&amp;status=new&amp;status=reopened&amp;component=ros&amp;order=priority</url>
-  <url type="repository">https://code.ros.org/svn/ros/stacks/ros/trunk/</url>
+  <url type="bugtracker">https://github.com/ros/ros/issues</url>
+  <url type="repository">https://github.com/ros/ros</url>
 
   <author>Eric Berger</author>
   <author>Ken Conley</author>

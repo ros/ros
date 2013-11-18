@@ -8,7 +8,7 @@ catkin_package(
 
 find_package(Boost REQUIRED COMPONENTS thread)
 
-include_directories(include ${Boost_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS})
+include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 link_directories(${catkin_LIBRARY_DIRS})
 
 # Avoid a boost warning that pops up when using msvc compiler

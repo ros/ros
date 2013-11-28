@@ -16,9 +16,9 @@ import time
 import traceback
 import unittest
 try:
-    from io import StringIO
-except ImportError:
     from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
 from xml.sax.saxutils import escape
 
 

@@ -321,7 +321,7 @@ def get_dependencies(spec, package, compute_files=True, stdout=sys.stdout, stder
             _add_msgs_depends(rospack, spec.response, deps, package)
         else:
             raise MsgSpecException("spec does not appear to be a message or service")
-    except KeyError, e:
+    except KeyError as e:
         raise MsgSpecException("Cannot load type %s.  Perhaps the package is missing a dependency."%(str(e)))
 
     # convert from type names to file names

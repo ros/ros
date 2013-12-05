@@ -40,7 +40,10 @@ executables. These do not run in a ROS environment.
 from __future__ import print_function
 
 import os
-import cStringIO
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
 import unittest
 import time
 import signal
@@ -149,7 +152,7 @@ class BareTestCase(unittest.TestCase):
                         raise TestTimeoutException("test max time allotted")
                     time.sleep(0.1)
                 
-            except TestTimeoutException, e:
+            except TestTimeoutException as e:
                 if self.retry:
                     timeout_failure = True
                 else:
@@ -252,11 +255,11 @@ class LocalProcess(pmon.Process):
         if not os.path.exists(log_dir):
             try:
                 os.makedirs(log_dir)
-            except OSError, (errno, msg):
-                if errno == 13:
+            except OSError as e:
+                if e.errno == 13:
                     raise RLException("unable to create directory for log file [%s].\nPlease check permissions."%log_dir)
                 else:
-                    raise RLException("unable to create directory for log file [%s]: %s"%(log_dir, msg))
+                    raise RLException("unable to create directory for log file [%s]: %s"%(log_dir, e.msg))
         # #973: save log dir for error messages
         self.log_dir = log_dir
 
@@ -320,11 +323,11 @@ class LocalProcess(pmon.Process):
 
             try:
                 self.popen = subprocess.Popen(self.args, cwd=cwd, stdout=logfileout, stderr=logfileerr, env=full_env, close_fds=True, preexec_fn=os.setsid)
-            except OSError, (errno, msg):
+            except OSError as e:
                 self.started = True # must set so is_alive state is correct
-                if errno == 8: #Exec format error
+                if e.errno == 8: #Exec format error
                     raise pmon.FatalProcessLaunch("Unable to launch [%s]. \nIf it is a script, you may be missing a '#!' declaration at the top."%self.name)
-                elif errno == 2: #no such file or directory
+                elif e.errno == 2: #no such file or directory
                     raise pmon.FatalProcessLaunch("""Roslaunch got a '%s' error while attempting to run:
 
 %s
@@ -470,7 +473,7 @@ def print_runner_summary(runner_results, junit_results, runner_name='ROSUNIT'):
     # (i.e. doesn't check for actual test success). The 'r' result
     # object contains results of the actual tests.
 
-    buff = cStringIO.StringIO()
+    buff = StringIO()
 
     buff.write("[%s]"%(runner_name)+'-'*71+'\n\n')
     for tc_result in junit_results.test_case_results:
@@ -523,7 +526,7 @@ def print_unittest_summary(result):
     Print summary of python unittest result to stdout
     @param result: test results
     """
-    buff = cStringIO.StringIO()
+    buff = StringIO()
     buff.write("-------------------------------------------------------------\nSUMMARY:\n")
     if result.wasSuccessful():
         buff.write("\033[32m * RESULT: SUCCESS\033[0m\n")

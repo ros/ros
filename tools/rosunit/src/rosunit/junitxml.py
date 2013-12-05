@@ -41,7 +41,10 @@ from __future__ import print_function
 
 import os
 import sys
-import cStringIO
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
 import string
 import codecs
 import re
@@ -266,12 +269,17 @@ def _load_suite_results(test_suite_name, test_suite, result):
 ## #603: unit test suites are not good about screening out illegal
 ## unicode characters. This little recipe I from http://boodebr.org/main/python/all-about-python-and-unicode#UNI_XML
 ## screens these out
+def char(value):
+    try:
+        return unichr(value)
+    except NameError:
+        return chr(value)
 RE_XML_ILLEGAL = u'([\u0000-\u0008\u000b-\u000c\u000e-\u001f\ufffe-\uffff])' + \
                  u'|' + \
                  u'([%s-%s][^%s-%s])|([^%s-%s][%s-%s])|([%s-%s]$)|(^[%s-%s])' % \
-                 (unichr(0xd800),unichr(0xdbff),unichr(0xdc00),unichr(0xdfff),
-                  unichr(0xd800),unichr(0xdbff),unichr(0xdc00),unichr(0xdfff),
-                  unichr(0xd800),unichr(0xdbff),unichr(0xdc00),unichr(0xdfff))
+                 (char(0xd800),char(0xdbff),char(0xdc00),char(0xdfff),
+                  char(0xd800),char(0xdbff),char(0xdc00),char(0xdfff),
+                  char(0xd800),char(0xdbff),char(0xdc00),char(0xdfff))
 _safe_xml_regex = re.compile(RE_XML_ILLEGAL)
 
 def _read_file_safe_xml(test_file, write_back_sanitized=True):
@@ -431,7 +439,7 @@ def print_summary(junit_results, runner_name='ROSUNIT'):
     # (i.e. doesn't check for actual test success). The 'r' result
     # object contains results of the actual tests.
     
-    buff = cStringIO.StringIO()
+    buff = StringIO()
     buff.write("[%s]"%runner_name+'-'*71+'\n\n')
     for tc_result in junit_results.test_case_results:
         buff.write(tc_result.description)

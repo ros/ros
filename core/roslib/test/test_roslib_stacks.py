@@ -116,11 +116,11 @@ class RoslibStacksTest(unittest.TestCase):
             d = os.path.join(d, 'test', 'stack_tests')
 
             # - s1/s2/s3
-            print "s1/s2/s3"            
+            print("s1/s2/s3")
             paths = [os.path.join(d, p) for p in ['s1', 's2', 's3']]
             os.environ[rospkg.environment.ROS_PACKAGE_PATH] = os.pathsep.join(paths)
             # - run multiple times to test caching
-            for i in xrange(2):
+            for i in range(2):
                 stacks = roslib.stacks.list_stacks()
                 self.assert_('foo' in stacks)
                 self.assert_('bar' in stacks)
@@ -131,7 +131,7 @@ class RoslibStacksTest(unittest.TestCase):
                 self.assertEquals(bar_p, roslib.stacks.get_stack_dir('bar'))
 
             # - s2/s3/s1
-            print "s2/s3/s1"
+            print("s2/s3/s1")
             
             paths = [os.path.join(d, p) for p in ['s2', 's3', 's1']]
             os.environ[rospkg.environment.ROS_PACKAGE_PATH] = os.pathsep.join(paths)

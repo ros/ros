@@ -42,7 +42,10 @@ import os
 import sys
 import time
 import traceback
-import Queue
+try:
+    from queue import Empty, Queue
+except ImportError:
+    from Queue import Empty, Queue
 import atexit
 from threading import Thread, RLock, Lock
 
@@ -98,7 +101,7 @@ def shutdown_process_monitor(process_monitor):
             return False
         else:
             return True
-    except Exception, e:
+    except Exception as e:
         return False
 
 _shutdown_lock = Lock()
@@ -409,7 +412,7 @@ class ProcessMonitor(Thread):
                         for l in self.listeners:
                             l.process_died(p.name, p.exit_code)
 
-                except Exception, e:
+                except Exception as e:
                     traceback.print_exc()
                     #don't respawn as this is an internal error
                     dead.append(p)
@@ -453,7 +456,7 @@ class ProcessMonitor(Thread):
         self.is_shutdown = True
         # killall processes on run exit
 
-        q = Queue.Queue()
+        q = Queue()
         q.join()
         
         with self.plock:
@@ -526,7 +529,7 @@ class _ProcessKiller(Thread):
                 p = q.get(False)
                 _kill_process(p, self.errors)
                 q.task_done()
-            except Queue.Empty:
+            except Empty:
                 pass
 
         

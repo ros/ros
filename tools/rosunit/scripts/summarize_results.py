@@ -42,13 +42,16 @@ from __future__ import print_function
 
 import os
 import sys
-import cStringIO
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 import rospkg
 import rosunit.junitxml as junitxml
 
 def create_summary(result, packages):
-    buff = cStringIO.StringIO()
+    buff = StringIO()
 
     buff.write('-'*80+'\n')
     buff.write('\033[1m[AGGREGATED TEST RESULTS SUMMARY]\033[0m\n\n')

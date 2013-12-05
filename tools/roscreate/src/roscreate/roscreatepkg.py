@@ -87,7 +87,7 @@ def create_package(package, author, depends, uses_roscpp=False, uses_rospy=False
             pass
         
     templates = get_templates()
-    for filename, template in templates.iteritems():
+    for filename, template in templates.items():
         contents = instantiate_template(template, package, package, package, author, depends)
         p = os.path.abspath(os.path.join(package, filename))
         with open(p, 'w') as f:

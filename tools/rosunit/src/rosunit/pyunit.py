@@ -113,7 +113,7 @@ def start_coverage(packages):
             _cov.start()
         except coverage.CoverageException:
             print("WARNING: you have an older version of python-coverage that is not support. Please update to the version provided by 'easy_install coverage'", file=sys.stderr)
-    except ImportError, e:
+    except ImportError as e:
         print("""WARNING: cannot import python-coverage, coverage tests will not run.
 To install coverage, run 'easy_install coverage'""", file=sys.stderr)
 
@@ -164,9 +164,9 @@ def stop_coverage(packages, html=None):
                 
                 print("="*80+"\ngenerating html coverage report to %s\n"%html+"="*80)
                 _cov.html_report(all_mods, directory=html)
-        except ImportError, e:
+        except ImportError as e:
             print("WARNING: cannot import '%s', will not generate coverage report"%package, file=sys.stderr)
-    except ImportError, e:
+    except ImportError as e:
         print("""WARNING: cannot import python-coverage, coverage tests will not run.
 To install coverage, run 'easy_install coverage'""", file=sys.stderr)
     

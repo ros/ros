@@ -37,4 +37,4 @@ class Warnings:
         @return A dictionary of lists of warning messages indexed by the warning type
         @rtype {str:[str]}
         """
-        return dict( [ (t,self.byType(t)) for t,p in self._warning_pattern_map.iteritems() ] )
+        return dict( [ (t,self.byType(t)) for t,p in self._warning_pattern_map.items() ] )

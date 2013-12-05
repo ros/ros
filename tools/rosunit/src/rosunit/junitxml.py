@@ -41,7 +41,10 @@ from __future__ import print_function
 
 import os
 import sys
-import cStringIO
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
 import string
 import codecs
 import re
@@ -49,6 +52,7 @@ import re
 from xml.dom.minidom import parse, parseString
 from xml.dom import Node as DomNode
 
+from functools import reduce
 import rospkg
 
 class TestInfo(object):
@@ -71,14 +75,24 @@ class TestError(TestInfo):
     'error' result container        
     """
     def xml(self):
-        return u'<error type="%s"><![CDATA[%s]]></error>'%(self.type, self.text)            
+        data = '<error type="%s"><![CDATA[%s]]></error>' % (self.type, self.text)
+        try:
+            data = unicode(data)
+        except NameError:
+            pass
+        return data
 
 class TestFailure(TestInfo):
     """
     'failure' result container        
     """
     def xml(self):
-        return u'<failure type="%s"><![CDATA[%s]]></failure>'%(self.type, self.text)            
+        data = '<failure type="%s"><![CDATA[%s]]></failure>' % (self.type, self.text)
+        try:
+            data = unicode(data)
+        except NameError:
+            pass
+        return data
 
 
 class TestCaseResult(object):
@@ -155,10 +169,15 @@ class TestCaseResult(object):
         self.errors.append(error)
 
     def xml(self):
-        return u'  <testcase classname="%s" name="%s" time="%s">\n'%(self.classname, self.name, self.time)+\
-               '\n    '.join([f.xml() for f in self.failures])+\
-               '\n    '.join([e.xml() for e in self.errors])+\
+        data = '  <testcase classname="%s" name="%s" time="%s">\n' % (self.classname, self.name, self.time) + \
+               '\n    '.join([f.xml() for f in self.failures]) + \
+               '\n    '.join([e.xml() for e in self.errors]) + \
                '  </testcase>'
+        try:
+            data = unicode(data)
+        except NameError:
+            pass
+        return data
         
 class Result(object):
     __slots__ = ['name', 'num_errors', 'num_failures', 'num_tests', \
@@ -201,13 +220,18 @@ class Result(object):
         """
         @return: document as unicode (UTF-8 declared) XML according to Ant JUnit spec
         """
-        return u'<?xml version="1.0" encoding="utf-8"?>'+\
-               '<testsuite name="%s" tests="%s" errors="%s" failures="%s" time="%s">'%\
-               (self.name, self.num_tests, self.num_errors, self.num_failures, self.time)+\
-               '\n'.join([tc.xml() for tc in self.test_case_results])+\
-               '  <system-out><![CDATA[%s]]></system-out>'%self.system_out+\
-               '  <system-err><![CDATA[%s]]></system-err>'%self.system_err+\
+        data = '<?xml version="1.0" encoding="utf-8"?>' + \
+               '<testsuite name="%s" tests="%s" errors="%s" failures="%s" time="%s">' % \
+               (self.name, self.num_tests, self.num_errors, self.num_failures, self.time) + \
+               '\n'.join([tc.xml() for tc in self.test_case_results]) + \
+               '  <system-out><![CDATA[%s]]></system-out>' % self.system_out + \
+               '  <system-err><![CDATA[%s]]></system-err>' % self.system_err + \
                '</testsuite>'
+        try:
+            data = unicode(data)
+        except NameError:
+            pass
+        return data
 
 def _text(tag):
     return reduce(lambda x, y: x + y, [c.data for c in tag.childNodes if c.nodeType in [DomNode.TEXT_NODE, DomNode.CDATA_SECTION_NODE]], "").strip()
@@ -266,12 +290,23 @@ def _load_suite_results(test_suite_name, test_suite, result):
 ## #603: unit test suites are not good about screening out illegal
 ## unicode characters. This little recipe I from http://boodebr.org/main/python/all-about-python-and-unicode#UNI_XML
 ## screens these out
-RE_XML_ILLEGAL = u'([\u0000-\u0008\u000b-\u000c\u000e-\u001f\ufffe-\uffff])' + \
-                 u'|' + \
-                 u'([%s-%s][^%s-%s])|([^%s-%s][%s-%s])|([%s-%s]$)|(^[%s-%s])' % \
-                 (unichr(0xd800),unichr(0xdbff),unichr(0xdc00),unichr(0xdfff),
-                  unichr(0xd800),unichr(0xdbff),unichr(0xdc00),unichr(0xdfff),
-                  unichr(0xd800),unichr(0xdbff),unichr(0xdc00),unichr(0xdfff))
+try:
+    char = unichr
+except NameError:
+    char = chr
+RE_XML_ILLEGAL = '([%s-%s%s-%s%s-%s%s-%s])' + \
+                 '|' + \
+                 '([%s-%s][^%s-%s])|([^%s-%s][%s-%s])|([%s-%s]$)|(^[%s-%s])'
+try:
+    RE_XML_ILLEGAL = unicode(RE_XML_ILLEGAL)
+except NameError:
+    pass
+RE_XML_ILLEGAL = RE_XML_ILLEGAL % \
+                 (char(0x0000),char(0x0008),char(0x000b),char(0x000c),
+                  char(0x000e),char(0x001f),char(0xfffe),char(0xffff),
+                  char(0xd800),char(0xdbff),char(0xdc00),char(0xdfff),
+                  char(0xd800),char(0xdbff),char(0xdc00),char(0xdfff),
+                  char(0xd800),char(0xdbff),char(0xdc00),char(0xdfff))
 _safe_xml_regex = re.compile(RE_XML_ILLEGAL)
 
 def _read_file_safe_xml(test_file, write_back_sanitized=True):
@@ -297,7 +332,7 @@ def _read_file_safe_xml(test_file, write_back_sanitized=True):
             x = x[:match.start()] + "?" + x[match.end():]
         x = x.encode("utf-8")
         if write_back_sanitized:
-            with open(test_file, 'w') as h:
+            with open(test_file, 'wb') as h:
                 h.write(x)
         return x
     finally:
@@ -336,7 +371,7 @@ def read(test_file, test_name):
         #test_suite = test_suite[0]
         vals = [test_suite.getAttribute(attr) for attr in ['errors', 'failures', 'tests']]
         vals = [v or 0 for v in vals]
-        err, fail, tests = [string.atoi(val) for val in vals]
+        err, fail, tests = [int(val) for val in vals]
 
         result = Result(test_name, err, fail, tests)
         result.time = 0.0 if not len(test_suite.getAttribute('time')) else float(test_suite.getAttribute('time'))
@@ -431,7 +466,7 @@ def print_summary(junit_results, runner_name='ROSUNIT'):
     # (i.e. doesn't check for actual test success). The 'r' result
     # object contains results of the actual tests.
     
-    buff = cStringIO.StringIO()
+    buff = StringIO()
     buff.write("[%s]"%runner_name+'-'*71+'\n\n')
     for tc_result in junit_results.test_case_results:
         buff.write(tc_result.description)

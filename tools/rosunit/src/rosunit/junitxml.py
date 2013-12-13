@@ -52,6 +52,8 @@ import re
 from xml.dom.minidom import parse, parseString
 from xml.dom import Node as DomNode
 
+from functools import reduce
+
 import rospkg
 
 class TestInfo(object):

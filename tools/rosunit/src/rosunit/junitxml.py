@@ -290,6 +290,7 @@ def _read_file_safe_xml(test_file, write_back_sanitized=True):
     try:
         # this is ugly, but the files in question that are problematic
         # do not declare unicode type.
+
         if not os.path.isfile(test_file):
             raise Exception("test file does not exist")
         try:
@@ -303,9 +304,10 @@ def _read_file_safe_xml(test_file, write_back_sanitized=True):
 
         for match in _safe_xml_regex.finditer(x):
             x = x[:match.start()] + "?" + x[match.end():]
+
         x = x.encode("utf-8")
         if write_back_sanitized:
-            with open(test_file, 'w') as h:
+            with open(test_file, 'wb') as h:
                 h.write(x)
         return x
     finally:
@@ -344,7 +346,7 @@ def read(test_file, test_name):
         #test_suite = test_suite[0]
         vals = [test_suite.getAttribute(attr) for attr in ['errors', 'failures', 'tests']]
         vals = [v or 0 for v in vals]
-        err, fail, tests = [string.atoi(val) for val in vals]
+        err, fail, tests = [int(val) for val in vals]
 
         result = Result(test_name, err, fail, tests)
         result.time = 0.0 if not len(test_suite.getAttribute('time')) else float(test_suite.getAttribute('time'))

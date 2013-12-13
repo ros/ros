@@ -155,7 +155,8 @@ def compute_md5_text(get_deps_dict, spec, rospack=None):
             sub_md5 = compute_md5(sub_deps, rospack)
             buff.write("%s %s\n"%(sub_md5, name))
 
-    return buff.getvalue().strip() # remove trailing new line
+    value = buff.getvalue().strip() # remove trailing new line
+    return value.encode()
 
 def _compute_hash(get_deps_dict, hash, rospack=None):
     """

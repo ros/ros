@@ -153,20 +153,15 @@ def is_valid_msg_type(x):
     @return: True if the name is a syntatically legal message type name
     @rtype: bool
     """
-
-    
     if not x or len(x) != len(x.strip()):
         return False
-
     base = base_msg_type(x)
     if not roslib.names.is_legal_resource_name(base):
         return False
-
     #parse array indicies
     x = x[len(base):]
     state = 0
     i = 0
-
     for c in x:
         if state == 0:
             if c != '[':

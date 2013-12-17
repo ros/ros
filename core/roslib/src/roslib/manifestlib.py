@@ -370,8 +370,6 @@ class ROSDep(object):
         """        
         return '<rosdep name="%s" />'%self.name
 
-
-
 class VersionControl(object):
     """
     Manifest 'versioncontrol' tag

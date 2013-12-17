@@ -292,7 +292,6 @@ def _read_file_safe_xml(test_file, write_back_sanitized=True):
     try:
         # this is ugly, but the files in question that are problematic
         # do not declare unicode type.
-
         if not os.path.isfile(test_file):
             raise Exception("test file does not exist")
         try:
@@ -306,7 +305,6 @@ def _read_file_safe_xml(test_file, write_back_sanitized=True):
 
         for match in _safe_xml_regex.finditer(x):
             x = x[:match.start()] + "?" + x[match.end():]
-
         x = x.encode("utf-8")
         if write_back_sanitized:
             with open(test_file, 'wb') as h:

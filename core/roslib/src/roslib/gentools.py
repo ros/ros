@@ -155,8 +155,7 @@ def compute_md5_text(get_deps_dict, spec, rospack=None):
             sub_md5 = compute_md5(sub_deps, rospack)
             buff.write("%s %s\n"%(sub_md5, name))
 
-    value = buff.getvalue().strip() # remove trailing new line
-    return value.encode()
+    return buff.getvalue().strip() # remove trailing new line
 
 def _compute_hash(get_deps_dict, hash, rospack=None):
     """
@@ -172,10 +171,10 @@ def _compute_hash(get_deps_dict, hash, rospack=None):
     from roslib.srvs import SrvSpec
     spec = get_deps_dict['spec']
     if isinstance(spec, MsgSpec):
-        hash.update(compute_md5_text(get_deps_dict, spec, rospack=rospack))
+        hash.update(compute_md5_text(get_deps_dict, spec, rospack=rospack).encode())
     elif isinstance(spec, SrvSpec):
-        hash.update(compute_md5_text(get_deps_dict, spec.request, rospack=rospack))
-        hash.update(compute_md5_text(get_deps_dict, spec.response, rospack=rospack))
+        hash.update(compute_md5_text(get_deps_dict, spec.request, rospack=rospack).encode())
+        hash.update(compute_md5_text(get_deps_dict, spec.response, rospack=rospack).encode())
     else:
         raise Exception("[%s] is not a message or service"%spec)
     return hash.hexdigest()

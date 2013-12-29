@@ -53,7 +53,6 @@ from xml.dom.minidom import parse, parseString
 from xml.dom import Node as DomNode
 
 from functools import reduce
-
 import rospkg
 
 class TestInfo(object):
@@ -271,11 +270,10 @@ def _load_suite_results(test_suite_name, test_suite, result):
 ## #603: unit test suites are not good about screening out illegal
 ## unicode characters. This little recipe I from http://boodebr.org/main/python/all-about-python-and-unicode#UNI_XML
 ## screens these out
-def char(value):
-    try:
-        return unichr(value)
-    except NameError:
-        return chr(value)
+try:
+    char = unichr
+except NameError:
+    char = chr
 RE_XML_ILLEGAL = u'([\u0000-\u0008\u000b-\u000c\u000e-\u001f\ufffe-\uffff])' + \
                  u'|' + \
                  u'([%s-%s][^%s-%s])|([^%s-%s][%s-%s])|([%s-%s]$)|(^[%s-%s])' % \

@@ -75,14 +75,24 @@ class TestError(TestInfo):
     'error' result container        
     """
     def xml(self):
-        return u'<error type="%s"><![CDATA[%s]]></error>'%(self.type, self.text)            
+        data = '<error type="%s"><![CDATA[%s]]></error>' % (self.type, self.text)
+        try:
+            data = unicode(data)
+        except NameError:
+            pass
+        return data
 
 class TestFailure(TestInfo):
     """
     'failure' result container        
     """
     def xml(self):
-        return u'<failure type="%s"><![CDATA[%s]]></failure>'%(self.type, self.text)            
+        data = '<failure type="%s"><![CDATA[%s]]></failure>' % (self.type, self.text)
+        try:
+            data = unicode(data)
+        except NameError:
+            pass
+        return data
 
 
 class TestCaseResult(object):
@@ -159,10 +169,15 @@ class TestCaseResult(object):
         self.errors.append(error)
 
     def xml(self):
-        return u'  <testcase classname="%s" name="%s" time="%s">\n'%(self.classname, self.name, self.time)+\
-               '\n    '.join([f.xml() for f in self.failures])+\
-               '\n    '.join([e.xml() for e in self.errors])+\
+        data = '  <testcase classname="%s" name="%s" time="%s">\n' % (self.classname, self.name, self.time) + \
+               '\n    '.join([f.xml() for f in self.failures]) + \
+               '\n    '.join([e.xml() for e in self.errors]) + \
                '  </testcase>'
+        try:
+            data = unicode(data)
+        except NameError:
+            pass
+        return data
         
 class Result(object):
     __slots__ = ['name', 'num_errors', 'num_failures', 'num_tests', \
@@ -205,13 +220,18 @@ class Result(object):
         """
         @return: document as unicode (UTF-8 declared) XML according to Ant JUnit spec
         """
-        return u'<?xml version="1.0" encoding="utf-8"?>'+\
-               '<testsuite name="%s" tests="%s" errors="%s" failures="%s" time="%s">'%\
-               (self.name, self.num_tests, self.num_errors, self.num_failures, self.time)+\
-               '\n'.join([tc.xml() for tc in self.test_case_results])+\
-               '  <system-out><![CDATA[%s]]></system-out>'%self.system_out+\
-               '  <system-err><![CDATA[%s]]></system-err>'%self.system_err+\
+        data = '<?xml version="1.0" encoding="utf-8"?>' + \
+               '<testsuite name="%s" tests="%s" errors="%s" failures="%s" time="%s">' % \
+               (self.name, self.num_tests, self.num_errors, self.num_failures, self.time) + \
+               '\n'.join([tc.xml() for tc in self.test_case_results]) + \
+               '  <system-out><![CDATA[%s]]></system-out>' % self.system_out + \
+               '  <system-err><![CDATA[%s]]></system-err>' % self.system_err + \
                '</testsuite>'
+        try:
+            data = unicode(data)
+        except NameError:
+            pass
+        return data
 
 def _text(tag):
     return reduce(lambda x, y: x + y, [c.data for c in tag.childNodes if c.nodeType in [DomNode.TEXT_NODE, DomNode.CDATA_SECTION_NODE]], "").strip()
@@ -274,9 +294,14 @@ try:
     char = unichr
 except NameError:
     char = chr
-RE_XML_ILLEGAL = u'([\u0000-\u0008\u000b-\u000c\u000e-\u001f\ufffe-\uffff])' + \
-                 u'|' + \
-                 u'([%s-%s][^%s-%s])|([^%s-%s][%s-%s])|([%s-%s]$)|(^[%s-%s])' % \
+RE_XML_ILLEGAL = '([\u0000-\u0008\u000b-\u000c\u000e-\u001f\ufffe-\uffff])' + \
+                 '|' + \
+                 '([%s-%s][^%s-%s])|([^%s-%s][%s-%s])|([%s-%s]$)|(^[%s-%s])'
+try:
+    RE_XML_ILLEGAL = unicode(RE_XML_ILLEGAL)
+except NameError:
+    pass
+RE_XML_ILLEGAL = RE_XML_ILLEGAL % \
                  (char(0xd800),char(0xdbff),char(0xdc00),char(0xdfff),
                   char(0xd800),char(0xdbff),char(0xdc00),char(0xdfff),
                   char(0xd800),char(0xdbff),char(0xdc00),char(0xdfff))

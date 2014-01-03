@@ -62,8 +62,10 @@ def author_name():
     except:
         #pwd failed
         pass
-    if type(name) == str:
+    try:
         name = name.decode('utf-8')
+    except AttributeError:
+        pass
     return name
 
 def read_template(tmplf):
@@ -80,8 +82,10 @@ def read_template(tmplf):
         r = rospkg.RosPack()
         with open(os.path.join(r.get_path('roscreate'), 'templates', tmplf)) as f:
             t = f.read()
-    if type(t) == str:
+    try:
         t = t.decode('utf-8')
+    except AttributeError:
+        pass
     return t
 
     

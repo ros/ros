@@ -2,6 +2,9 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.10.8 (2013-10-15)
 -------------------
 * fix check for permissions of executables (regression from `#37 <https://github.com/ros/ros/issues/37>`_ in 1.10.7)

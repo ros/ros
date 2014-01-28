@@ -12,7 +12,7 @@
   <author>Troy Straszheim</author>
   <author>Morgan Quigley</author>
 
-  <buildtool_depend version_gte="0.5.72">catkin</buildtool_depend>
+  <buildtool_depend version_gte="0.5.78">catkin</buildtool_depend>
 
   <build_depend>pkg-config</build_depend>
 

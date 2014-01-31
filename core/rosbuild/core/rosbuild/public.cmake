@@ -176,8 +176,12 @@ macro(rosbuild_init)
   # Check that the package directory is correct
   _rosbuild_check_package_location()
 
+  # force automatic escaping of preprocessor definitions
+  cmake_policy(PUSH)
+  cmake_policy(SET CMP0005 NEW)
   # Add ROS_PACKAGE_NAME define
-  add_definitions(-DROS_PACKAGE_NAME='\"${PROJECT_NAME}\"')
+  add_definitions(-DROS_PACKAGE_NAME=\"${PROJECT_NAME}\")
+  cmake_policy(POP)
 
   # ROS_BUILD_TYPE is set by rosconfig
   # RelWithAsserts is our own type, not supported by CMake

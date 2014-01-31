@@ -2,6 +2,10 @@
 Changelog for package rosbuild
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* ensure escaping of preprocessor definition (`#43 <https://github.com/ros/ros/issues/43>`_)
+
 1.10.9 (2014-01-07)
 -------------------
 

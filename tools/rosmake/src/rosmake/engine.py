@@ -54,7 +54,7 @@ from . import parallel_build
 from . import package_stats
 
 from optparse import OptionParser
-from gcc_output_parse import Warnings
+from .gcc_output_parse import Warnings
 
 # #3883
 _popen_lock = threading.Lock()
@@ -428,7 +428,7 @@ class RosMakeAll:
                     if num_warnings > 0:
                         return_string =  "[PASS] [ %.2f seconds ] [ %d warnings "%(self.profile[argument][p], num_warnings)
                         warning_dict = warnings.analyze();
-                        for warntype,warnlines in warning_dict.iteritems():
+                        for warntype,warnlines in warning_dict.items():
                             if len( warnlines ) > 0:
                                 return_string = return_string + '[ {0:d} {1} ] '.format(len(warnlines),warntype)
                         return_string = return_string + ' ]'

@@ -43,7 +43,7 @@ import roslib
 
 try:
     import coverage
-except ImportError, e:
+except ImportError as e:
     sys.stderr.write("ERROR: cannot import python-coverage, coverage report will not run.\nTo install coverage, run 'easy_install coverage'\n")
     sys.exit(1)
 

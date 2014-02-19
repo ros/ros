@@ -13,7 +13,7 @@
   <author email="mquigley@cs.stanford.edu">Morgan Quigley</author>
   <author email="jfaust@willowgarage.com">Josh Faust</author>
 
-  <buildtool_depend version_gte="0.5.72">catkin</buildtool_depend>
+  <buildtool_depend version_gte="0.5.78">catkin</buildtool_depend>
 
   <build_depend>boost</build_depend>
   <build_depend>rospack</build_depend>

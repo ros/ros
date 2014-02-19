@@ -5,7 +5,7 @@ catkin_package(CFG_EXTRAS ${PROJECT_NAME}-extras.cmake)
 
 catkin_python_setup()
 
-install(PROGRAMS
+catkin_install_python(PROGRAMS
   scripts/check_test_ran.py
   scripts/clean_junit_xml.py
   scripts/pycoverage_to_html.py

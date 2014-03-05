@@ -8,10 +8,12 @@
   </description>
   <maintainer email="dthomas@osrfoundation.org">Dirk Thomas</maintainer>
   <license>BSD</license>
-  
+
   <url>http://www.ros.org/wiki/ROS</url>
   <author>Morgan Quigley</author>
   <author>Brian Gerkey</author>
 
   <buildtool_depend version_gte="0.5.69">catkin</buildtool_depend>
+
+  <run_depend>rosbuild</run_depend>
 </package>

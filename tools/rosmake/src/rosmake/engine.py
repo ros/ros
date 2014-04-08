@@ -54,7 +54,7 @@ from . import parallel_build
 from . import package_stats
 
 from optparse import OptionParser
-from gcc_output_parse import Warnings
+from .gcc_output_parse import Warnings
 
 # #3883
 _popen_lock = threading.Lock()
@@ -391,7 +391,7 @@ class RosMakeAll:
         with _popen_lock:
             command_line = subprocess.Popen(cmd, stdout=subprocess.PIPE,  stderr=subprocess.STDOUT, env=local_env, preexec_fn=self._subprocess_setup)
         (pstd_out, pstd_err) = command_line.communicate() # pstd_err should be None due to pipe above
-        return (command_line.returncode, pstd_out)
+        return (command_line.returncode, pstd_out.decode())
 
     def build(self, p, argument = None, robust_build=False):
         """

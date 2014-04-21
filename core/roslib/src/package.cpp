@@ -107,8 +107,13 @@ bool getAll(V_string& packages)
   return true;
 }
 
-static void getPlugins(const std::string& package, const std::string& attribute, V_string& packages, V_string& plugins)
+static void getPlugins(const std::string& package, const std::string& attribute, V_string& packages, V_string& plugins, bool force_recrawl)
 {
+  if (force_recrawl)
+  {
+    command("profile");
+  }
+
   V_string lines;
   command("plugins --attrib=" + attribute + " " + package, lines);
 
@@ -129,16 +134,16 @@ static void getPlugins(const std::string& package, const std::string& attribute,
   }
 }
 
-void getPlugins(const std::string& package, const std::string& attribute, V_string& plugins)
+void getPlugins(const std::string& package, const std::string& attribute, V_string& plugins, bool force_recrawl)
 {
   V_string packages;
-  getPlugins(package, attribute, packages, plugins);
+  getPlugins(package, attribute, packages, plugins, force_recrawl);
 }
 
-void getPlugins(const std::string& package, const std::string& attribute, M_string& plugins)
+void getPlugins(const std::string& package, const std::string& attribute, M_string& plugins, bool force_recrawl)
 {
   V_string packages, plugins_v;
-  getPlugins(package, attribute, packages, plugins_v);
+  getPlugins(package, attribute, packages, plugins_v, force_recrawl);
   for (std::size_t i = 0 ; i < packages.size() ; ++i)
     plugins[packages[i]] = plugins_v[i];
 }

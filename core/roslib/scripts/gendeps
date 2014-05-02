@@ -38,6 +38,8 @@
 ## depends on.  This is important for determining messages file that
 ## need to be rebuilt.
 
+from __future__ import print_function
+
 import sys
 
 import roslib.msgs
@@ -49,7 +51,7 @@ import rospkg
 NAME='gendeps'
 
 def usage(progname, stdout=sys.stdout):
-    print >> stdout,  "%(progname)s msg-or-srv-file"%vars()
+    print("%(progname)s msg-or-srv-file" % vars(), file=stdout)
 
 ## main method for gendeps command
 ## @param argv [str]: sys args
@@ -90,21 +92,21 @@ def gendeps_main(argv, stdout, stderr):
     retval = roslib.gentools.get_file_dependencies(f, stdout=stdout, stderr=stderr, rospack=rospack)
 
     if options.md5:
-        print >> stdout, roslib.gentools.compute_md5(retval, rospack=rospack)
+        print(roslib.gentools.compute_md5(retval, rospack=rospack), file=stdout)
     elif options.sha1:
-        print >> stdout, roslib.gentools.compute_sha1(retval, rospack=rospack)
+        print(roslib.gentools.compute_sha1(retval, rospack=rospack), file=stdout)
     elif options.cat_files:
         # this option is used for the message definition that is
         # stored in exchanged in ROS handshakes and then stored in bag
         # files
-        print >> stdout, roslib.gentools.compute_full_text(retval)
+        print(roslib.gentools.compute_full_text(retval), file=stdout)
     else:
-        print >> stdout, ' '.join(retval['files'].itervalues())
+        print(' '.join(retval['files'].values()), file=stdout)
 
 if __name__ == "__main__":
     try:
         gendeps_main(sys.argv, sys.stdout, sys.stderr)
-    except Exception, e:
-        print >> sys.stderr, e
+    except Exception as e:
+        print(e, file=sys.stderr)
         sys.exit(1)
 

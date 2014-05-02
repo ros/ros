@@ -8,14 +8,14 @@ import os.path
 USAGE = "USAGE: rosgcov_summarize <package_dir> <rosgcov_file>"
 
 if len(sys.argv) != 3:
-  print USAGE
+  print(USAGE)
   sys.exit(-1)
 
 pkg = sys.argv[1]
 fname = sys.argv[2]
 
 if not os.path.exists(fname):
-  print '[rosgcov] %s : %.2f%% (no coverage results)' % (os.path.split(pkg)[1],0.0)
+  print('[rosgcov] %s : %.2f%% (no coverage results)' % (os.path.split(pkg)[1],0.0))
   sys.exit(0)
 
 re_hit = re.compile('^ *[0-9]*:.*')
@@ -38,18 +38,18 @@ misses = 0
 branch_total = 0
 branch_hits = 0
 branch_misses = 0
-print '-------------------------------------------------------'
-print 'Coverage summary: '
-print '-------------------------------------------------------'
+print('-------------------------------------------------------')
+print('Coverage summary: ')
+print('-------------------------------------------------------')
 for f in files:
   prefix = os.path.commonprefix([pkg, f])
   display_name = f[len(prefix):]
   if display_name[0] == '/':
    display_name = display_name[1:]
-  print '  ' + display_name + ': '
+  print('  ' + display_name + ': ')
   gcov_fname = f + '.gcov'
   if not os.path.exists(gcov_fname):
-    print 'WARNING: no coverage results for %s' % (display_name)
+    print('WARNING: no coverage results for %s' % (display_name))
     continue
   gcovf = fileinput.input(gcov_fname)
   local_total = 0
@@ -72,17 +72,17 @@ for f in files:
       local_branch_misses += 1
       local_branch_total += 1
 
-  print '    line:   %.2f%% (%d / %d)' % ((100.0 * local_hits / max(local_total,1)), local_hits, local_total)
+  print('    line:   %.2f%% (%d / %d)' % ((100.0 * local_hits / max(local_total,1)), local_hits, local_total))
   hits += local_hits
   misses += local_misses
   total += local_total
 
-  print '    branch: %.2f%% (%d / %d)' % ((100.0 * local_branch_hits / max(local_branch_total,1)), local_branch_hits, local_branch_total)
+  print('    branch: %.2f%% (%d / %d)' % ((100.0 * local_branch_hits / max(local_branch_total,1)), local_branch_hits, local_branch_total))
   branch_hits += local_branch_hits
   branch_misses += local_branch_misses
   branch_total += local_branch_total
 
-print '-------------------------------------------------------'
-print '[rosgcov] %s : %.2f%% (%d / %d)' % (os.path.split(pkg)[1],(100.0 * hits / max(total,1)), hits, total)
-print '[rosgcov] %s : branch %.2f%% (%d / %d)' % (os.path.split(pkg)[1],(100.0 * branch_hits / max(branch_total,1)), branch_hits, branch_total)
-print '-------------------------------------------------------'
+print('-------------------------------------------------------')
+print('[rosgcov] %s : %.2f%% (%d / %d)' % (os.path.split(pkg)[1],(100.0 * hits / max(total,1)), hits, total))
+print('[rosgcov] %s : branch %.2f%% (%d / %d)' % (os.path.split(pkg)[1],(100.0 * branch_hits / max(branch_total,1)), branch_hits, branch_total))
+print('-------------------------------------------------------')

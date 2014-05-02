@@ -171,10 +171,10 @@ def _compute_hash(get_deps_dict, hash, rospack=None):
     from roslib.srvs import SrvSpec
     spec = get_deps_dict['spec']
     if isinstance(spec, MsgSpec):
-        hash.update(compute_md5_text(get_deps_dict, spec, rospack=rospack))
+        hash.update(compute_md5_text(get_deps_dict, spec, rospack=rospack).encode())
     elif isinstance(spec, SrvSpec):
-        hash.update(compute_md5_text(get_deps_dict, spec.request, rospack=rospack))
-        hash.update(compute_md5_text(get_deps_dict, spec.response, rospack=rospack))
+        hash.update(compute_md5_text(get_deps_dict, spec.request, rospack=rospack).encode())
+        hash.update(compute_md5_text(get_deps_dict, spec.response, rospack=rospack).encode())
     else:
         raise Exception("[%s] is not a message or service"%spec)
     return hash.hexdigest()
@@ -321,7 +321,7 @@ def get_dependencies(spec, package, compute_files=True, stdout=sys.stdout, stder
             _add_msgs_depends(rospack, spec.response, deps, package)
         else:
             raise MsgSpecException("spec does not appear to be a message or service")
-    except KeyError, e:
+    except KeyError as e:
         raise MsgSpecException("Cannot load type %s.  Perhaps the package is missing a dependency."%(str(e)))
 
     # convert from type names to file names

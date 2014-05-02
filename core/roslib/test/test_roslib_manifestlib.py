@@ -239,8 +239,8 @@ class RoslibManifestlibTest(unittest.TestCase):
       try:
         parse_file(m, p)
         self.fail("parse should have failed on bad manifest")
-      except ManifestException, e:
-        print str(e)
+      except ManifestException as e:
+        print(str(e))
         self.assert_(b in str(e), "file name should be in error message [%s]"%(str(e)))
     
 EXAMPLE1 = """<package>

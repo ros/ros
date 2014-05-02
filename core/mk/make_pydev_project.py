@@ -35,7 +35,7 @@
 import sys
 import os
 PKG = os.path.split(os.getcwd())[1]
-print "Creating pydev project for package '%s'"%PKG
+print("Creating pydev project for package '%s'" % PKG)
 import roslib; roslib.load_manifest(PKG)
 
 pathlist = "\n".join(["<path>%s</path>"%path for path in sys.path if os.path.exists(path)])
@@ -52,7 +52,7 @@ pydev_project= '''<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 </pydev_project>
 '''%pathlist
 
-print "Writing .pydevproject, adding %d modules"%len(sys.path)
+print("Writing .pydevproject, adding %d modules" % len(sys.path))
 f = open(".pydevproject","w")
 f.write(pydev_project)
 f.close()

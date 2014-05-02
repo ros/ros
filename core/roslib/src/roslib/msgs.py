@@ -172,7 +172,7 @@ def is_valid_msg_type(x):
                 state = 0 #closed
             else:
                 try:
-                    string.atoi(c)
+                    int(c)
                 except:
                     return False
     return state == 0

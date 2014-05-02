@@ -105,13 +105,13 @@ ROSLIB_DECL bool getAll(V_string& packages);
  * \brief Call the "rospack plugins" command, eg. "rospack plugins --attrib=<attribute> <package>".  Returns a vector of strings which
  * are export values
  */
-ROSLIB_DECL void getPlugins(const std::string& package, const std::string& attribute, V_string& plugins);
+ROSLIB_DECL void getPlugins(const std::string& package, const std::string& attribute, V_string& plugins, bool force_recrawl=false);
 
 /**
  * \brief Call the "rospack plugins" command, eg. "rospack plugins --attrib=<attribute> <package>".  Returns a map of package name to
  * export value.
  */
-ROSLIB_DECL void getPlugins(const std::string& package, const std::string& attribute, M_string& plugins);
+ROSLIB_DECL void getPlugins(const std::string& package, const std::string& attribute, M_string& plugins, bool force_recrawl=false);
 
 } // namespace package
 } // namespace ros

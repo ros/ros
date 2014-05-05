@@ -302,15 +302,26 @@ function _roscomplete_sub_dir {
 }
 
 function _roscomplete_search_dir {
-    local words arg opts pkgdir pkgdir_result stack_result
+    local words arg opts pkg pkgdir pkgdir_result stack_result catkin_package_libexec_dir
     reply=()
 		words=(${=BUFFER})
-    pkgdir=`export ROS_CACHE_TIMEOUT=-1.0 && rospack find ${words[2]} 2> /dev/null`
+    if [[ $BUFFER[-1] == ' ' ]]
+    then
+        pkg=${words[-1]}
+    else
+        pkg=${words[-2]}
+    fi
+    pkgdir=`export ROS_CACHE_TIMEOUT=-1.0 && rospack find ${pkg} 2> /dev/null`
     pkgdir_result=$?
-    stackdir=`export ROS_CACHE_TIMEOUT=-1.0 && rosstack find ${words[2]} 2> /dev/null`
+    catkin_package_libexec_dir=`catkin_find --without-underlays --libexec ${pkg} 2> /dev/null`
+    if [[ $? != 0 ]]
+    then
+        catkin_package_libexec_dir=""
+    fi
+    stackdir=`export ROS_CACHE_TIMEOUT=-1.0 && rosstack find ${pkg} 2> /dev/null`
     stack_result=$?
     if [[ $pkgdir_result == 0 ]]; then
-        opts=`find $pkgdir ${=1} -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
+        opts=`find $pkgdir $catkin_package_libexec_dir ${=1} -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
     elif [[ $stack_result == 0 ]] ; then
         opts=`find $stackdir ${=1} -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
     else
@@ -701,7 +712,7 @@ compctl -K "_roscomplete_rosmake" "rosmake"
 
 compctl -x 'p[1]' -k "(check purge)" -- "rosclean"
 compctl -f -x 'p[1]' -K "_roscomplete" - 'p[2]' -K _roscomplete_file -- "rosed" "roscp"
-compctl -f -x 'p[1]' -K "_roscomplete" - 'p[2]' -K _roscomplete_exe -- "rosrun"
+compctl -f -x 'S[-]' -k '(--debug --prefix)' - 'c[-1,--prefix][-1,-p]' -h '' - 'p[1],c[-1,-d],c[-1,--debug],c[-2,-p],c[-2,--prefix]' -K "_roscomplete" - 'p[2],c[-2,-d],c[-2,--debug],c[-3,-p],c[-3,--prefix]' -K _roscomplete_exe -- "rosrun"
 compctl -/g '*.(launch|test)' -x 'p[1]' -K "_roscomplete" -tx - 'p[2]' -K _roscomplete_launchfile -- + -x 'S[--]' -k "(--files --args --nodes --find-node --child --local --screen --server_uri --run_id --wait --port --core --pid --dump-params)" -- "roslaunch"
 compctl -/g '*.(launch|test)' -x 'p[1]' -K "_roscomplete" -tx - 'p[2]' -K _roscomplete_launchfile -- + -x 'S[--]' -k "(--bare --bare-limit --bare-name --pkgdir --package)" -- "rostest"
 compctl -K "_roscomplete_rospack" "rospack"

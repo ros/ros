@@ -419,29 +419,47 @@ function _roscomplete_rossrv {
     fi
 }
 
+function _roscomplete_pkg {
+    # complete package names that start with $1
+    local arg=${1}
+    local opts=`_ros_list_packages`
+    IFS=$'\n'
+    COMPREPLY=($(compgen -W "${opts}" -- ${arg}))
+    unset IFS
+}
+
+function _roscomplete_find {
+    # complete files that match $2 within $1, that start with $3
+    local opts pkgdir catkin_package_libexec_dir
+    local perm=${1}
+    local pkg=${2}
+    local arg=${3}
+    if [[ -n $CMAKE_PREFIX_PATH ]]; then
+        catkin_package_libexec_dir=`catkin_find --without-underlays --libexec ${pkg} 2> /dev/null`
+    fi
+    pkgdir=`_ros_package_find ${pkg}`
+    if [[ -n "$catkin_package_libexec_dir" || -n "$pkgdir" ]]; then
+        opts=`_rosfind -L $catkin_package_libexec_dir $pkgdir ${1} ! -regex ".*/[.].*" ! -regex ".*$pkgdir\/build\/.*"  -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
+    else
+        opts=""
+    fi
+    IFS=$'\n'
+    COMPREPLY=($(compgen -W "${opts}" -- ${arg}))
+    unset IFS
+}
+
 function _roscomplete_search_dir {
-    local arg opts pkgdir catkin_package_libexec_dir
+    local arg opts
     COMPREPLY=()
     arg="${COMP_WORDS[COMP_CWORD]}"
     if [[ $COMP_CWORD == 1 ]]; then
-        opts=`_ros_list_packages`
-        IFS=$'\n'
-        COMPREPLY=($(compgen -W "${opts}" -- ${arg}))
-        unset IFS
+        # complete packages
+        _roscomplete_pkg "${arg}"
     elif [[ $COMP_CWORD == 2 ]]; then
-        if [[ -n $CMAKE_PREFIX_PATH ]]; then
-            catkin_package_libexec_dir=`catkin_find --without-underlays --libexec ${COMP_WORDS[1]} 2> /dev/null`
-        fi
-        pkgdir=`_ros_package_find ${COMP_WORDS[1]}`
-        if [[ -n "$catkin_package_libexec_dir" || -n "$pkgdir" ]]; then
-            opts=`_rosfind -L $catkin_package_libexec_dir $pkgdir ${1} ! -regex ".*/[.].*" ! -regex ".*$pkgdir\/build\/.*"  -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
-        else
-            opts=""
-        fi
-        IFS=$'\n'
-        COMPREPLY=($(compgen -W "${opts}" -- ${arg}))
-        unset IFS
+        # complete files within package according to $1
+        _roscomplete_find "${1}" "${COMP_WORDS[1]}" "${arg}"
     else
+       # complete filenames
        arg=`echo ${arg} | sed -e "s|~|$HOME|g"`
         if [[ $arg =~ ^/*.+/.* ]]; then
            path=${arg%/*}
@@ -470,13 +488,65 @@ function _roscomplete_search_dir {
 }
 
 function _roscomplete_exe {
-    local perm
+    local perm i prev_arg
     if [[ `uname` == Darwin ]]; then
         perm="+111"
     else
         perm="/111"
     fi
-    _roscomplete_search_dir "-type f -perm $perm"
+    rosrun_args=("--prefix" "--debug")
+
+    # rosrun ONLY accepts arguments before the package names; we need to honor this
+    local start_arg=1
+    # loop through args and skip --prefix, arg to prefix and --debug
+    for (( i=1; i < ${#COMP_WORDS[*]}; i++ ))
+    do
+        arg="${COMP_WORDS[i]}"
+        case ${arg} in
+            "--prefix" | "-p")
+              start_arg=$((start_arg+1))
+              ;;
+            "--debug" | "-d")
+              start_arg=$((start_arg+1))
+              ;;
+            *)
+              if [[ $prev_arg == "--prefix" || $prev_arg == "-p" ]]
+              then
+                  start_arg=$((start_arg+1))
+              else
+                  break
+              fi
+              ;;
+        esac
+        prev_arg="${arg}"
+    done
+
+    local end_arg=$((${#COMP_WORDS[*]} - 1))
+    arg="${COMP_WORDS[COMP_CWORD]}"
+
+    if [[ $start_arg > $end_arg ]]
+    then
+        # complete command names for --prefix
+        COMPREPLY=($(compgen -c -- ${arg}))
+    else
+        if [[ $start_arg == $end_arg ]]
+        then
+            # completing first argument; can be --arg or package name
+            if [[ ${arg} =~ \-.* ]]; then
+                COMPREPLY=($(compgen -W "${rosrun_args[*]}" -- ${arg}))
+            else
+                _roscomplete_pkg "${arg}"
+            fi
+        elif [[ $((start_arg+1)) == ${end_arg} ]]
+        then
+            # completing second argument; node within package
+            local pkg="${COMP_WORDS[start_arg]}"
+            _roscomplete_find "-type f -perm $perm" "${pkg}" "${arg}"
+        else
+            # completing remaining arguments; per "normal"
+            _roscomplete_search_dir "-type f -perm $perm"
+        fi
+    fi
 }
 
 function _roscomplete_file {

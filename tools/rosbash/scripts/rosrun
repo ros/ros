@@ -1,30 +1,58 @@
 #!/usr/bin/env bash
-if [[ $1 = "--help" ]]; then
-  echo "Usage: rosrun PACKAGE EXECUTABLE [ARGS]"
+
+function usage() {
+  echo "Usage: rosrun [--prefix cmd] [--debug] PACKAGE EXECUTABLE [ARGS]"
   echo "  rosrun will locate PACKAGE and try to find"
   echo "  an executable named EXECUTABLE in the PACKAGE tree."
   echo "  If it finds it, it will run it with ARGS."
+}
+
+args=1
+rosrun_prefix=""
+
+function debug() {
+  return
+}
+
+while [ $args == 1 ]
+do
+  case $1 in
+    "--help" | "-h")
+      usage
+      exit 0
+      ;;
+    "--prefix" | "-p")
+      rosrun_prefix=$2
+      shift
+      shift
+      ;;
+    "--debug" | "-d")
+      shift
+      function debug() { echo "[rosrun]" "$@" ; }
+      ;;
+    *) # default
+      args=0
+  esac
+done
+
+if [ $# -lt 2 ]; then
+  usage
   exit 0
 fi
-if [ $# -lt 2 ]; then
-  echo "Usage: rosrun PACKAGE EXECUTABLE [ARGS]"
-  echo "  rosrun will locate PACKAGE and try to find"
-  echo "  an executable named EXECUTABLE in the PACKAGE tree."
-  echo "  If it finds it, it will run it with ARGS."
-  exit 1
-fi
+
 # early check that filename does not end with '/'
 case $2 in
   */) echo "Invalid filename: " $2
     exit 1
     ;;
 esac
-# basename also makes .//foo into foo
-basename=`basename $2`
+
 if [[ -n $CMAKE_PREFIX_PATH ]]; then
   catkin_package_libexec_dir=`catkin_find --without-underlays --libexec --share $1 2> /dev/null`
+  debug "Looking in catkin libexec dir: $catkin_package_libexec_dir"
 fi
 pkgdir=`rospack find $1`
+debug "Looking in rospack dir: $pkgdir"
 if [[ -z $catkin_package_libexec_dir && -z $pkgdir ]]; then
   exit 2
 fi
@@ -37,6 +65,7 @@ if [[ ! $2 == */* ]]; then
   else
     _perm="/111"
   fi
+  debug "Searching for $2 with permissions $_perm"
   exepathlist=(`find -L $catkin_package_libexec_dir $pkgdir -name $2 -type f  -perm $_perm ! -regex ".*$pkgdir\/build\/.*" | uniq`)
   unset _perm
   if [[ ${#exepathlist[@]} == 0 ]]; then
@@ -62,6 +91,7 @@ if [[ ! $2 == */* ]]; then
   fi
 else
   absname=$pkgdir/$2
+  debug "Path given. Looing for $absname"
   if [ ! -f $absname -o ! -x $absname ]; then
     echo "[rosrun] Couldn't find executable named $absname"
     exit 3
@@ -70,4 +100,5 @@ else
 fi
 shift
 shift
-exec $exepath "$@"
+debug "Running $rosrun_prefix $exepath" "$@"
+exec $rosrun_prefix $exepath "$@"

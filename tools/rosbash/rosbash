@@ -419,29 +419,45 @@ function _roscomplete_rossrv {
     fi
 }
 
+function _roscomplete_pkg {
+    local arg=${1}
+    local opts=`_ros_list_packages`
+    IFS=$'\n'
+    COMPREPLY=($(compgen -W "${opts}" -- ${arg}))
+    unset IFS
+}
+
+function _roscomplete_find {
+    local opts pkgdir catkin_package_libexec_dir
+    local perm=${1}
+    local pkg=${2}
+    local arg=${3}
+    if [[ -n $CMAKE_PREFIX_PATH ]]; then
+        catkin_package_libexec_dir=`catkin_find --without-underlays --libexec ${pkg} 2> /dev/null`
+    fi
+    pkgdir=`_ros_package_find ${pkg}`
+    if [[ -n "$catkin_package_libexec_dir" || -n "$pkgdir" ]]; then
+        opts=`_rosfind -L $catkin_package_libexec_dir $pkgdir ${1} ! -regex ".*/[.].*" ! -regex ".*$pkgdir\/build\/.*"  -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
+    else
+        opts=""
+    fi
+    IFS=$'\n'
+    COMPREPLY=($(compgen -W "${opts}" -- ${arg}))
+    unset IFS
+}
+
 function _roscomplete_search_dir {
-    local arg opts pkgdir catkin_package_libexec_dir
+    local arg opts
     COMPREPLY=()
     arg="${COMP_WORDS[COMP_CWORD]}"
     if [[ $COMP_CWORD == 1 ]]; then
-        opts=`_ros_list_packages`
-        IFS=$'\n'
-        COMPREPLY=($(compgen -W "${opts}" -- ${arg}))
-        unset IFS
+        # complete packages
+        _roscomplete_pkg "${arg}"
     elif [[ $COMP_CWORD == 2 ]]; then
-        if [[ -n $CMAKE_PREFIX_PATH ]]; then
-            catkin_package_libexec_dir=`catkin_find --without-underlays --libexec ${COMP_WORDS[1]} 2> /dev/null`
-        fi
-        pkgdir=`_ros_package_find ${COMP_WORDS[1]}`
-        if [[ -n "$catkin_package_libexec_dir" || -n "$pkgdir" ]]; then
-            opts=`_rosfind -L $catkin_package_libexec_dir $pkgdir ${1} ! -regex ".*/[.].*" ! -regex ".*$pkgdir\/build\/.*"  -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
-        else
-            opts=""
-        fi
-        IFS=$'\n'
-        COMPREPLY=($(compgen -W "${opts}" -- ${arg}))
-        unset IFS
+        # complete files within package according to $1
+        _roscomplete_find "${1}" "${COMP_WORDS[1]}" "${arg}"
     else
+       # complete filenames
        arg=`echo ${arg} | sed -e "s|~|$HOME|g"`
         if [[ $arg =~ ^/*.+/.* ]]; then
            path=${arg%/*}

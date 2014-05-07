@@ -2,6 +2,12 @@
 Changelog for package roslib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* add optional argument force_recrawl to getPlugins() function
+* use catkin_install_python() to install Python scripts (`#46 <https://github.com/ros/ros/issues/46>`_)
+* python 3 compatibility
+
 1.11.0 (2014-01-31)
 -------------------
 

@@ -2,8 +2,8 @@
 Changelog for package mk
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.1 (2014-05-07)
+-------------------
 * add missing run dependency on rosbuild (`#47 <https://github.com/ros/ros/issues/47>`_)
 * python 3 compatibility
 

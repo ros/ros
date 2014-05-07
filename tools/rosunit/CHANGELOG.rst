@@ -2,8 +2,8 @@
 Changelog for package rosunit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.1 (2014-05-07)
+-------------------
 * use catkin_install_python() to install Python scripts (`#46 <https://github.com/ros/ros/issues/46>`_)
 * python 3 compatibility
 

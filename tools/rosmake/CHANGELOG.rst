@@ -2,8 +2,8 @@
 Changelog for package rosmake
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.1 (2014-05-07)
+-------------------
 * python 3 compatibility
 
 1.11.0 (2014-01-31)

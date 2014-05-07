@@ -2,8 +2,8 @@
 Changelog for package rosbuild
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.1 (2014-05-07)
+-------------------
 * fix CMake warning with 2.8.12 and newer (`#44 <https://github.com/ros/ros/issues/44>`_)
 * use catkin_install_python() to install Python scripts (`#46 <https://github.com/ros/ros/issues/46>`_)
 * python 3 compatibility

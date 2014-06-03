@@ -1,6 +1,6 @@
 <package>
   <name>rosmake</name>
-  <version>1.10.9</version>
+  <version>1.10.10</version>
   <description>
      rosmake is a ros dependency aware build tool which can be used to
      build all dependencies in the correct order.

@@ -1,6 +1,6 @@
 <package>
   <name>roslib</name>
-  <version>1.10.9</version>
+  <version>1.10.10</version>
   <description>
     Base dependencies and support libraries for ROS.
     roslib contains many of the common data structures and tools that are shared across ROS client library implementations.

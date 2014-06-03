@@ -1,7 +1,7 @@
 # generated from ros/env-hooks/10.ros.sh.em
 
 # scrub old ROS bin dirs, to avoid accidentally finding the wrong executables
-export PATH="`python -c \"import os; print(os.pathsep.join([x for x in \\\"$PATH\\\".split(os.pathsep) if not any([d for d in ['cturtle', 'diamondback', 'electric', 'fuerte'] if d in x])]))\"`"
+export PATH="`@(PYTHON_EXECUTABLE) -c \"import os; print(os.pathsep.join([x for x in \\\"$PATH\\\".split(os.pathsep) if not any([d for d in ['cturtle', 'diamondback', 'electric', 'fuerte'] if d in x])]))\"`"
 
 if [ -n "$ROS_DISTRO" -a "$ROS_DISTRO" != "indigo" ]; then
   echo "ROS_DISTRO was set to '$ROS_DISTRO' before. Please make sure that the environment does not mix paths from different distributions."
@@ -30,7 +30,7 @@ for workspace in workspaces:
 print(os.pathsep.join(paths))
 EOF
 )
-export ROS_PACKAGE_PATH="`python -c \"$PYTHON_CODE_BUILD_ROS_PACKAGE_PATH\"`"
+export ROS_PACKAGE_PATH="`@(PYTHON_EXECUTABLE) -c \"$PYTHON_CODE_BUILD_ROS_PACKAGE_PATH\"`"
 
 @[if DEVELSPACE]@
 # env variables in develspace

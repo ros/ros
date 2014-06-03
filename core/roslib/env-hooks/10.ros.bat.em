@@ -1,7 +1,7 @@
 REM generated from ros/env-hooks/10.ros.bat.em
 
 REM scrub old ROS bin dirs, to avoid accidentally finding the wrong executables
-set _COMMAND=python -c "import os; print(os.pathsep.join([x for x in r'%PATH%'.split(os.pathsep) if not any([d for d in ['cturtle', 'diamondback', 'electric', 'fuerte'] if d in x])]))"
+set _COMMAND=@(PYTHON_EXECUTABLE) -c "import os; print(os.pathsep.join([x for x in r'%PATH%'.split(os.pathsep) if not any([d for d in ['cturtle', 'diamondback', 'electric', 'fuerte'] if d in x])]))"
 rem Need the delims= line here to ensure that it reads with eol delimiters, not space.
 for /f "delims=" %%i in ('%COMMAND%') do set PATH=%%i
 
@@ -21,7 +21,7 @@ echo print(path) >> _parent_package_path.py
 setlocal EnableDelayedExpansion
 
 set ROS_PACKAGE_PATH_PARENTS=
-for /f %%a in ('python _parent_package_path.py') do set ROS_PACKAGE_PATH_PARENTS=!ROS_PACKAGE_PATH_PARENTS!%%a
+for /f %%a in ('@(PYTHON_EXECUTABLE) _parent_package_path.py') do set ROS_PACKAGE_PATH_PARENTS=!ROS_PACKAGE_PATH_PARENTS!%%a
 
 @[if DEVELSPACE]@
 REM env variables in develspace

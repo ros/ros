@@ -4,6 +4,7 @@ Changelog for package rosbuild
 
 Forthcoming
 -----------
+* fix CMake warning with 2.8.12 and newer (`#44 <https://github.com/ros/ros/issues/44>`_)
 * ensure escaping of preprocessor definition (`#43 <https://github.com/ros/ros/issues/43>`_)
 
 1.10.9 (2014-01-07)

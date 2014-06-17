@@ -19,7 +19,7 @@ endif()
 add_library(roslib src/package.cpp)
 target_link_libraries(roslib ${Boost_LIBRARIES} ${catkin_LIBRARIES})
 
-if(NOT (APPLE OR WIN32 OR MINGW))
+if(NOT (APPLE OR WIN32 OR MINGW OR ANDROID))
   target_link_libraries(roslib rt)
 endif()
 

@@ -9,6 +9,7 @@ set ROS_DISTRO=indigo
 
 REM python function to generate ROS package path based on all parent workspaces (prepends the separator if necessary)
 REM do not use EnableDelayedExpansion here, it messes with the != symbols
+setlocal disabledelayedexpansion
 echo from __future__ import print_function > _parent_package_path.py
 echo import os >> _parent_package_path.py
 echo env_name = 'CATKIN_WORKSPACES' >> _parent_package_path.py
@@ -17,6 +18,7 @@ echo path = '' >> _parent_package_path.py
 echo for item in items: >> _parent_package_path.py
 echo     path += ':' + (os.path.join(item, 'share') if item.find(':') == -1 else item.split(':')[1]) >> _parent_package_path.py
 echo print(path) >> _parent_package_path.py
+endlocal
 
 setlocal EnableDelayedExpansion
 

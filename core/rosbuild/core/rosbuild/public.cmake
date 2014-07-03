@@ -317,7 +317,12 @@ macro(rosbuild_init)
     add_custom_target(tests)
   endif()
   # The 'test' target runs all but the future tests
+  cmake_policy(PUSH)
+  if(POLICY CMP0037)
+    cmake_policy(SET CMP0037 OLD)
+  endif()
   add_custom_target(test)
+  cmake_policy(POP)
   # We need to build tests before running them.  Addition of this
   # dependency also ensures that old test results get cleaned prior to a
   # new test run.

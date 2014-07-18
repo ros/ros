@@ -2,6 +2,11 @@
 Changelog for package roslib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* remove linking against "rt" library on Android (`#57 <https://github.com/ros/ros/issues/57>`_)
+* disable delayed expansion in Windows environment hook (`#60 <https://github.com/ros/ros/issues/60>`_)
+
 1.11.2 (2014-06-16)
 -------------------
 * use PYTHON_EXECUTABLE in environment hooks (`#55 <https://github.com/ros/ros/issues/55>`_)

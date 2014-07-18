@@ -2,6 +2,10 @@
 Changelog for package rosmake
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix Python 3 regression in rosmake (`#54 <https://github.com/ros/ros/issues/54>`_)
+
 1.11.2 (2014-06-16)
 -------------------
 

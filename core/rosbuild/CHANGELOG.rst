@@ -2,6 +2,10 @@
 Changelog for package rosbuild
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* suppress warning for rosbuild target "test" with CMake 3.0 (`#61 <https://github.com/ros/ros/issues/61>`_)
+
 1.11.2 (2014-06-16)
 -------------------
 

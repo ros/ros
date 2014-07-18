@@ -1,6 +1,6 @@
 <package>
   <name>ros</name>
-  <version>1.11.2</version>
+  <version>1.11.3</version>
   <description>ROS packaging system</description>
   <maintainer email="dthomas@osrfoundation.org">Dirk Thomas</maintainer>
   <license>BSD</license>

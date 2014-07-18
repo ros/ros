@@ -2,8 +2,8 @@
 Changelog for package roslib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.3 (2014-07-18)
+-------------------
 * remove linking against "rt" library on Android (`#57 <https://github.com/ros/ros/issues/57>`_)
 * disable delayed expansion in Windows environment hook (`#60 <https://github.com/ros/ros/issues/60>`_)
 

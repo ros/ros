@@ -391,7 +391,9 @@ class RosMakeAll:
         with _popen_lock:
             command_line = subprocess.Popen(cmd, stdout=subprocess.PIPE,  stderr=subprocess.STDOUT, env=local_env, preexec_fn=self._subprocess_setup)
         (pstd_out, pstd_err) = command_line.communicate() # pstd_err should be None due to pipe above
-        return (command_line.returncode, pstd_out.decode())
+        if not isinstance(pstd_out, str):
+            pstd_out = pstd_out.decode()
+        return (command_line.returncode, pstd_out)
 
     def build(self, p, argument = None, robust_build=False):
         """

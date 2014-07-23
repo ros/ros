@@ -2,6 +2,10 @@
 Changelog for package rosboost_cfg
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix dry rosboost_cfg to support finding boost in multiarch lib folder (`#62 <https://github.com/ros/ros/issues/62>`_)
+
 1.11.3 (2014-07-18)
 -------------------
 

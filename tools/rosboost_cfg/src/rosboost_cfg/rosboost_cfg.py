@@ -107,12 +107,14 @@ class Version(object):
     def __repr__(self):
         return repr((self.major, self.minor, self.patch, self.root, self.include_dir, self.is_default_search_location, self.is_system_install))
 
-def find_lib_dir(root_dir):
+def find_lib_dir(root_dir, multiarch=''):
   # prefer lib64 unless explicitly specified in the environment
   if ('ROS_BOOST_LIB_DIR_NAME' in os.environ):
     possible_dirs = [os.path.join(root_dir, os.environ['ROS_BOOST_LIB_DIR_NAME'])]
   else:
     possible_dirs = [os.path.join(root_dir, "lib64"), os.path.join(root_dir, "lib")]
+    if multiarch:
+        possible_dirs = [os.path.join(root_dir, "lib/%s" % multiarch)] + possible_dirs
 
   for p in possible_dirs:
     glob_files = glob("%s*"%(os.path.join(p, "libboost*")))
@@ -121,7 +123,7 @@ def find_lib_dir(root_dir):
 
   return None
 
-def extract_versions(dir, is_default_search_location):
+def extract_versions(dir, is_default_search_location, multiarch=''):
     version_paths = [os.path.join(dir, "version.hpp"),
                     os.path.join(dir, "boost", "version.hpp")]
     glob_dirs = glob("%s*"%(os.path.join(dir, "boost-")))
@@ -145,17 +147,17 @@ def extract_versions(dir, is_default_search_location):
                     major = ver_int / 100000
                     include_dir = os.path.split(os.path.split(p)[0])[0]
                     root_dir = os.path.split(dir)[0]
-                    lib_dir = find_lib_dir(root_dir)
+                    lib_dir = find_lib_dir(root_dir, multiarch)
                     versions.append(Version(major, minor, patch, root_dir, include_dir, lib_dir, is_default_search_location))
     
     return versions
   
-def find_versions(search_paths):
+def find_versions(search_paths, multiarch=''):
     vers = []
     
     for path, system in search_paths:
         path = os.path.join(path, "include")
-        pvers = extract_versions(path, system)
+        pvers = extract_versions(path, system, multiarch)
         [vers.append(ver) for ver in pvers]
         
     if (len(vers) == 0):
@@ -171,8 +173,8 @@ def find_versions(search_paths):
     vers.sort()
     return vers
   
-def find_boost(search_paths):
-    result = find_versions(search_paths)
+def find_boost(search_paths, multiarch=''):
+    result = find_versions(search_paths, multiarch)
     if result is None:
       return None
     if len(result) > 1:
@@ -313,16 +315,17 @@ def main():
     parser.add_option("-p", "--print_versions", dest="print_versions", action="store_true", default=False, help="")
     parser.add_option("-v", "--version", dest="version", action="store_true", default=False, help="")
     parser.add_option("-s", "--sysroot", dest="sysroot", type="string", default='', help="Location of the system root (usually toolchain root).")
+    parser.add_option("-m", "--multiarch", dest="multiarch", type="string", default='', help="Name of multiarch to search below 'lib' folder for libraries.")
     
     (options, args) = parser.parse_args()
     
     if (options.print_versions):
         check_one_option(options, 'print_versions')
-        for ver in find_versions(search_paths(options.sysroot)):
+        for ver in find_versions(search_paths(options.sysroot), options.multiarch):
             print('%s.%s.%s root=%s include_dir=%s'%(ver.major, ver.minor, ver.patch, ver.root, ver.include_dir))
         return
        
-    ver = find_boost(search_paths(options.sysroot))
+    ver = find_boost(search_paths(options.sysroot), options.multiarch)
     
     if ver is None:
         raise BoostError("Cannot find boost in any of %s"%search_paths(options.sysroot))

@@ -296,6 +296,31 @@ macro(rosbuild_init)
     endforeach(_lib)
   endif(NOT APPLE)
 
+  # determine multiarch name since Boost might be installed there
+  set(_rosbuild_multiarch "")
+  if(UNIX AND NOT APPLE)
+    # Two step looking for multiarch support: check for gcc -print-multiarch
+    # and, if failed, try to run dpkg-architecture
+    execute_process(COMMAND gcc -print-multiarch
+                    OUTPUT_VARIABLE _rosbuild_multiarch
+                    OUTPUT_STRIP_TRAILING_WHITESPACE
+                    ERROR_QUIET
+    )
+    if ("${_rosbuild_multiarch}" STREQUAL "")
+      execute_process(COMMAND dpkg-architecture -qDEB_HOST_MULTIARCH
+                      OUTPUT_VARIABLE _rosbuild_multiarch
+                      OUTPUT_STRIP_TRAILING_WHITESPACE
+                      ERROR_QUIET
+      )
+    endif()
+    if ("${_rosbuild_multiarch}" STREQUAL "")
+      message("[rosbuild] not using multiarch for finding Boost")
+    else()
+      message("[rosbuild] using multiarch '${_rosbuild_multiarch}' for finding Boost")
+      set(_rosbuild_multiarch "--multiarch=${_rosbuild_multiarch}")
+    endif()
+  endif()
+
   # Set up the test targets.  Subsequent calls to rosbuild_add_gtest and
   # friends add targets and dependencies from these targets.
   #
@@ -803,23 +828,23 @@ endmacro(rosbuild_genmsg)
 
 macro(rosbuild_add_boost_directories)
   set(_sysroot "--sysroot=${CMAKE_FIND_ROOT_PATH}")
-  execute_process(COMMAND "rosboost-cfg" ${_sysroot} "--include_dirs"
+  execute_process(COMMAND "rosboost-cfg" ${_sysroot} ${_rosbuild_multiarch} "--include_dirs"
                   OUTPUT_VARIABLE BOOST_INCLUDE_DIRS
                   RESULT_VARIABLE _boostcfg_failed
                   OUTPUT_STRIP_TRAILING_WHITESPACE)
 
   if (_boostcfg_failed)
-    message(FATAL_ERROR "rosboost-cfg --include_dirs failed")
+    message(FATAL_ERROR "rosboost-cfg ${_rosbuild_multiarch} --include_dirs failed")
   endif(_boostcfg_failed)
 
   set(_sysroot "--sysroot=${CMAKE_FIND_ROOT_PATH}")
-  execute_process(COMMAND "rosboost-cfg" ${_sysroot} "--lib_dirs"
+  execute_process(COMMAND "rosboost-cfg" ${_sysroot} ${_rosbuild_multiarch} "--lib_dirs"
                   OUTPUT_VARIABLE BOOST_LIB_DIRS
                   RESULT_VARIABLE _boostcfg_failed
                   OUTPUT_STRIP_TRAILING_WHITESPACE)
 
   if (_boostcfg_failed)
-    message(FATAL_ERROR "rosboost-cfg --lib_dirs failed")
+    message(FATAL_ERROR "rosboost-cfg ${_rosbuild_multiarch} --lib_dirs failed")
   endif(_boostcfg_failed)
 
   add_definitions(-DBOOST_CB_DISABLE_DEBUG)
@@ -842,14 +867,14 @@ macro(rosbuild_link_boost target)
   # We ask for --lflags, as recommended in #3773.  This means that we might
   # pass non-library arguments to target_link_libraries() below, but CMake
   # doesn't seem to mind.
-  execute_process(COMMAND "rosboost-cfg" ${_sysroot} "--lflags" ${_libs}
+  execute_process(COMMAND "rosboost-cfg" ${_sysroot} ${_rosbuild_multiarch} "--lflags" ${_libs}
                   OUTPUT_VARIABLE BOOST_LIBS
 		  ERROR_VARIABLE _boostcfg_error
                   RESULT_VARIABLE _boostcfg_failed
                   OUTPUT_STRIP_TRAILING_WHITESPACE)
 
   if (_boostcfg_failed)
-    message(FATAL_ERROR "[rosboost-cfg --libs ${_libs}] failed with error: ${_boostcfg_error}")
+    message(FATAL_ERROR "[rosboost-cfg ${_rosbuild_multiarch} --libs ${_libs}] failed with error: ${_boostcfg_error}")
   endif(_boostcfg_failed)
 
   separate_arguments(BOOST_LIBS)

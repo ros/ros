@@ -470,7 +470,7 @@ function _roscomplete_rosparam {
 
 }
 function _roscomplete_rostopic {
-    local opts
+    local opts word
     reply=()
 
     if [[ ${CURRENT} == 2 ]]; then
@@ -520,14 +520,19 @@ function _roscomplete_rostopic {
 												reply=(${=opts})
 										elif [[ ${CURRENT} == 4 ]]; then
 												if [[ ${=${(s: :)words}[$(( ${CURRENT} ))]} =~ / ]]; then
-														opts=`_msg_opts ${=${(s: :)words[-1]}} | sed -s 's/.*\///'`
+                                                    word=(${=words})
+                                                    type=`rostopic info ${word[3]} 2> /dev/null`
+                                                    opts=${=${type[(w)2]}}
 												else
-										    		opts=`_msg_opts ${=${(s: :)words[-1]}}`
-                    		fi
+                                                    word=(${=words})
+                                                    type=`rostopic info ${word[3]} 2> /dev/null`
+                                                    opts=${=${type[(w)2]}}
+                    		                    fi
 												reply=(${=opts})
 										elif [[ ${CURRENT} == 5 ]]; then
-												opts=`rosmsg-proto msg 2> /dev/null -s ${=${(s: :)words[-1]}}`
-												reply=(${=opts})
+                                                w=(${=words})
+												opts=`rosmsg-proto msg 2> /dev/null -s ${=${w[-1]}}`
+												reply=(${opts})
 										fi
 										;;
 		        esac
@@ -719,7 +724,7 @@ compctl -K "_roscomplete_rospack" "rospack"
 compctl -K "_roscomplete_rosbag" "rosbag"
 compctl -K "_roscomplete_rosnode" "rosnode"
 compctl -K "_roscomplete_rosparam" "rosparam"
-compctl -x 'p[0,2]' -K "_roscomplete_rostopic" - 'n[1,/] p[3]' -K "_roscomplete_rostopic" - 'p[3]' -S '' -K "_roscomplete_rostopic" - 'p[4]' -K "_roscomplete_rostopic" -- "rostopic"
+compctl -x 'p[0,2]' -K "_roscomplete_rostopic" - 'n[1,/] p[3]' -K "_roscomplete_rostopic" - 'p[3]' -S ' ' -K "_roscomplete_rostopic" - 'p[4]' -Q -K "_roscomplete_rostopic" -- "rostopic"
 compctl -K "_roscomplete_rosservice" "rosservice"
 compctl -x 'p[1]' -k "(md5 package packages show users)" - 'p[2]' -S '' -K "_roscomplete_rosmsg" -- "rosmsg"
 compctl -x 'p[1]' -k "(md5 package packages show users)" - 'p[2]' -S '' -K "_roscomplete_rossrv" -- "rossrv"

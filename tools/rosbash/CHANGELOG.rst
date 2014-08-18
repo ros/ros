@@ -2,8 +2,8 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.5 (2014-08-18)
+-------------------
 * fix zsh autocompletion for published topics, msg-type and YAML (`#64 <https://github.com/ros/ros/issues/64>`_)
 
 1.11.4 (2014-07-23)

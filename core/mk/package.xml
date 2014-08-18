@@ -1,6 +1,6 @@
 <package>
   <name>mk</name>
-  <version>1.11.4</version>
+  <version>1.11.5</version>
   <description>
     A collection of .mk include files for building ROS architectural elements.
     Most package authors should use cmake .mk, which calls CMake for the build of the package.

@@ -1,6 +1,6 @@
 <package>
   <name>rosunit</name>
-  <version>1.11.4</version>
+  <version>1.11.5</version>
   <description>
      Unit-testing package for ROS. This is a lower-level library for rostest and handles unit tests, whereas rostest handles integration tests.
   </description>

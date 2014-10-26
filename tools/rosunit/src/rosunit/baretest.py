@@ -259,7 +259,7 @@ class LocalProcess(pmon.Process):
                 if e.errno == 13:
                     raise RLException("unable to create directory for log file [%s].\nPlease check permissions."%log_dir)
                 else:
-                    raise RLException("unable to create directory for log file [%s]: %s"%(log_dir, e.msg))
+                    raise RLException("unable to create directory for log file [%s]: %s"%(log_dir, e.strerror))
         # #973: save log dir for error messages
         self.log_dir = log_dir
 

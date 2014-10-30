@@ -285,15 +285,11 @@ function _roscomplete_sub_dir {
         reply=(${=opts} ${=stack_opts})
         unset IFS
     else
-				if [ -e ${rosvals[2]}${rosvals[3]} ]; then
-				  sedcmd="s:^${rosvals[2]}:${rosvals[1]}:"g
-				  #echo
-					#echo $sedcmd
-					#echo
-          opts=`find ${rosvals[2]}${rosvals[3]} -maxdepth 1 -mindepth 1 -type d ! -regex ".*/[.].*" -print0 | tr '\000' '\n' | sed -e "$sedcmd"`
-					#echo $opts
+	if [ -e ${rosvals[2]}${rosvals[3]} ]; then
+	    sedcmd="s:^${rosvals[2]}:${rosvals[1]}:"g
+            opts=`find ${rosvals[2]}${rosvals[3]} -maxdepth 1 -mindepth 1 -type d ! -regex ".*/[.].*" -print0 | tr '\000' '\n' | sed -e "$sedcmd"`
         else
-          opts=''
+            opts=''
         fi
         IFS=$'\n'
         reply=(${=opts})
@@ -500,42 +496,42 @@ function _roscomplete_rostopic {
             esac
             reply=(${=opts})
         else
-						case ${=${(s: :)words}[2]} in
-								bw|echo|hz|list|type|info)
-										if [[ ${=${(s: :)words}[$(( ${CURRENT} -1 ))]} == "-b" ]]; then
-												opts=`find . -maxdepth 1 -type f -not -name ".*" -not -name "*[~#]" | sed 's!.*/!!'`
-												reply=(${=opts})
-										else
-												opts=`rostopic list 2> /dev/null`
-												reply=(${=opts})
-										fi
-										;;
-								find)
-										opts=`_msg_opts ${=${(s: :)words[-1]}}`
-										reply=(${=opts})
-										;;
-								pub)
-										if [[ ${CURRENT} == 3 ]]; then
-												opts=`rostopic list 2> /dev/null`
-												reply=(${=opts})
-										elif [[ ${CURRENT} == 4 ]]; then
-												if [[ ${=${(s: :)words}[$(( ${CURRENT} ))]} =~ / ]]; then
-                                                    word=(${=words})
-                                                    type=`rostopic info ${word[3]} 2> /dev/null`
-                                                    opts=${=${type[(w)2]}}
-												else
-                                                    word=(${=words})
-                                                    type=`rostopic info ${word[3]} 2> /dev/null`
-                                                    opts=${=${type[(w)2]}}
-                    		                    fi
-												reply=(${=opts})
-										elif [[ ${CURRENT} == 5 ]]; then
-                                                w=(${=words})
-												opts=`rosmsg-proto msg 2> /dev/null -s ${=${w[-1]}}`
-												reply=(${opts})
-										fi
-										;;
-		        esac
+	    case ${=${(s: :)words}[2]} in
+		bw|echo|hz|list|type|info)
+		    if [[ ${=${(s: :)words}[$(( ${CURRENT} -1 ))]} == "-b" ]]; then
+			opts=`find . -maxdepth 1 -type f -not -name ".*" -not -name "*[~#]" | sed 's!.*/!!'`
+			reply=(${=opts})
+		    else
+			opts=`rostopic list 2> /dev/null`
+			reply=(${=opts})
+		    fi
+		    ;;
+		find)
+		    opts=`_msg_opts ${=${(s: :)words[-1]}}`
+		    reply=(${=opts})
+		    ;;
+		pub)
+		    if [[ ${CURRENT} == 3 ]]; then
+			opts=`rostopic list 2> /dev/null`
+			reply=(${=opts})
+		    elif [[ ${CURRENT} == 4 ]]; then
+			if [[ ${=${(s: :)words}[$(( ${CURRENT} ))]} =~ / ]]; then
+                            word=(${=words})
+                            type=`rostopic info ${word[3]} 2> /dev/null`
+                            opts=${=${type[(w)2]}}
+			else
+                            word=(${=words})
+                            type=`rostopic info ${word[3]} 2> /dev/null`
+                            opts=${=${type[(w)2]}}
+                    	fi
+			reply=(${=opts})
+		    elif [[ ${CURRENT} == 5 ]]; then
+                        w=(${=words})
+			opts=`rosmsg-proto msg 2> /dev/null -s ${=${w[-1]}}`
+			reply=(${opts})
+		    fi
+		    ;;
+	    esac
         fi
     fi
 }

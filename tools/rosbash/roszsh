@@ -383,6 +383,17 @@ function _roscomplete_rosbag {
                     ;;
             esac
             reply=(${=opts})
+	else
+	    case ${=${(s: :)words}[2]} in
+		record)
+		    opts=$(rostopic list 2>/dev/null)
+		    if [ -z "$opts" ]; then
+			reply="" #Prevent execution of next rule
+			return
+		    fi
+		    reply=(${=opts})
+		    ;;
+	    esac
         fi
     fi
 
@@ -717,7 +728,7 @@ compctl -f -x 'S[-]' -k '(--debug --prefix)' - 'c[-1,--prefix][-1,-p]' -h '' - '
 compctl -/g '*.(launch|test)' -x 'p[1]' -K "_roscomplete" -tx - 'p[2]' -K _roscomplete_launchfile -- + -x 'S[--]' -k "(--files --args --nodes --find-node --child --local --screen --server_uri --run_id --wait --port --core --pid --dump-params)" -- "roslaunch"
 compctl -/g '*.(launch|test)' -x 'p[1]' -K "_roscomplete" -tx - 'p[2]' -K _roscomplete_launchfile -- + -x 'S[--]' -k "(--bare --bare-limit --bare-name --pkgdir --package)" -- "rostest"
 compctl -K "_roscomplete_rospack" "rospack"
-compctl -K "_roscomplete_rosbag" "rosbag"
+compctl -K "_roscomplete_rosbag" + -g "*.bag *(/)" "rosbag"
 compctl -K "_roscomplete_rosnode" "rosnode"
 compctl -K "_roscomplete_rosparam" "rosparam"
 compctl -x 'p[0,2]' -K "_roscomplete_rostopic" - 'n[1,/] p[3]' -K "_roscomplete_rostopic" - 'p[3]' -S ' ' -K "_roscomplete_rostopic" - 'p[4]' -Q -K "_roscomplete_rostopic" -- "rostopic"

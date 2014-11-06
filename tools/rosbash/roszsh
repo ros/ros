@@ -83,8 +83,8 @@ function _ros_decode_path {
     else
         rosname=$1
         if [[ -z $2 || $2 != "forceeval" ]]; then
-           rosvals=(${rosname})
-           return 1
+            rosvals=(${rosname})
+            return 1
         fi
     fi
 
@@ -102,9 +102,9 @@ function _ros_decode_path {
         rosstackdir=`export ROS_CACHE_TIMEOUT=-1.0 && rosstack find $rosname 2> /dev/null`
         rosstack_result=$?
         if [[ $rospack_result == 0 ]]; then
-           rosdir=$rospackdir
+            rosdir=$rospackdir
         elif [[ $rosstack_result == 0 ]]; then
-           rosdir=$rosstackdir
+            rosdir=$rosstackdir
         else
             rosvals=(${rosname})
             return 1
@@ -115,20 +115,20 @@ function _ros_decode_path {
 }
 
 function rospython {
-  if [[ $1 = "--help" ]]; then
-    echo -e "usage: rospython [package] \n\nRun python loading package manifest first."
-    return 0
-  fi
-  if [[ -z $1 ]]; then
-    if [[ -f ./manifest.xml ]]; then
-      pkgname=`basename \`pwd\``
-      python -i -c "import roslib; roslib.load_manifest('$pkgname')"
-    else
-      python
+    if [[ $1 = "--help" ]]; then
+        echo -e "usage: rospython [package] \n\nRun python loading package manifest first."
+        return 0
     fi
-  else
-    python -i -c "import roslib; roslib.load_manifest('$1')"
-  fi
+    if [[ -z $1 ]]; then
+        if [[ -f ./manifest.xml ]]; then
+            pkgname=`basename \`pwd\``
+            python -i -c "import roslib; roslib.load_manifest('$pkgname')"
+        else
+            python
+        fi
+    else
+        python -i -c "import roslib; roslib.load_manifest('$1')"
+    fi
 }
 
 function roscd {
@@ -138,28 +138,28 @@ function roscd {
         return 0
     fi
     if [ -z $1 ]; then
-      if [ -z $ROS_WORKSPACE ]; then
-        echo -e "No ROS_WORKSPACE set.  Please set ROS_WORKSPACE to use roscd with no arguments."
-        return 1
-      fi
-      cd ${ROS_WORKSPACE}
-      return 0
+        if [ -z $ROS_WORKSPACE ]; then
+            echo -e "No ROS_WORKSPACE set.  Please set ROS_WORKSPACE to use roscd with no arguments."
+            return 1
+        fi
+        cd ${ROS_WORKSPACE}
+        return 0
     fi
 
     _ros_decode_path $1 forceeval
     if [ $? != 0 ]; then
-      echo "roscd: No such package '$1'"
-      return 1
-    elif [ -z ${rosvals[1]} ]; then
-      if [ -z $ROS_WORKSPACE ]; then
-        echo -e "No ROS_WORKSPACE set.  Please set ROS_WORKSPACE to use roscd with no arguments."
+        echo "roscd: No such package '$1'"
         return 1
-      fi
-      cd ${ROS_WORKSPACE}
-      return 0
+    elif [ -z ${rosvals[1]} ]; then
+        if [ -z $ROS_WORKSPACE ]; then
+            echo -e "No ROS_WORKSPACE set.  Please set ROS_WORKSPACE to use roscd with no arguments."
+            return 1
+        fi
+        cd ${ROS_WORKSPACE}
+        return 0
     else
         cd ${rosvals[2]}${rosvals[3]}${rosvals[4]}
-      return 0
+        return 0
     fi
 }
 

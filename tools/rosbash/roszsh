@@ -75,16 +75,16 @@ function _ros_decode_path {
     fi
 
     echo $1 | grep -G '.\+/.*' > /dev/null
-		if [[ $? == 0 ]]; then
-				rosname=${1%%/*}
+    if [[ $? == 0 ]]; then
+        rosname=${1%%/*}
         reldir=/${1#*/}
-        last=${reldir##*/}        
+        last=${reldir##*/}
         reldir=${reldir%/*}/
     else
         rosname=$1
         if [[ -z $2 || $2 != "forceeval" ]]; then
-           rosvals=(${rosname})
-           return 1
+            rosvals=(${rosname})
+            return 1
         fi
     fi
 
@@ -102,9 +102,9 @@ function _ros_decode_path {
         rosstackdir=`export ROS_CACHE_TIMEOUT=-1.0 && rosstack find $rosname 2> /dev/null`
         rosstack_result=$?
         if [[ $rospack_result == 0 ]]; then
-           rosdir=$rospackdir
+            rosdir=$rospackdir
         elif [[ $rosstack_result == 0 ]]; then
-           rosdir=$rosstackdir
+            rosdir=$rosstackdir
         else
             rosvals=(${rosname})
             return 1
@@ -115,56 +115,56 @@ function _ros_decode_path {
 }
 
 function rospython {
-  if [[ $1 = "--help" ]]; then
-    echo -e "usage: rospython [package] \n\nRun python loading package manifest first."
-    return 0
-  fi
-	if [[ -z $1 ]]; then
-    if [[ -f ./manifest.xml ]]; then
-      pkgname=`basename \`pwd\``
-      python -i -c "import roslib; roslib.load_manifest('$pkgname')"
-    else
-      python
+    if [[ $1 = "--help" ]]; then
+        echo -e "usage: rospython [package] \n\nRun python loading package manifest first."
+        return 0
     fi
-  else
-    python -i -c "import roslib; roslib.load_manifest('$1')"
-  fi
+    if [[ -z $1 ]]; then
+        if [[ -f ./manifest.xml ]]; then
+            pkgname=`basename \`pwd\``
+            python -i -c "import roslib; roslib.load_manifest('$pkgname')"
+        else
+            python
+        fi
+    else
+        python -i -c "import roslib; roslib.load_manifest('$1')"
+    fi
 }
 
 function roscd {
-		local rosvals
+    local rosvals
     if [[ $1 = "--help" ]] | [[ $# -gt 1 ]]; then
         echo -e "usage: roscd package\n\nJump to target package."
         return 0
     fi
     if [ -z $1 ]; then
-      if [ -z $ROS_WORKSPACE ]; then
-        echo -e "No ROS_WORKSPACE set.  Please set ROS_WORKSPACE to use roscd with no arguments."
-        return 1
-      fi
-      cd ${ROS_WORKSPACE}
-      return 0
+        if [ -z $ROS_WORKSPACE ]; then
+            echo -e "No ROS_WORKSPACE set.  Please set ROS_WORKSPACE to use roscd with no arguments."
+            return 1
+        fi
+        cd ${ROS_WORKSPACE}
+        return 0
     fi
 
     _ros_decode_path $1 forceeval
     if [ $? != 0 ]; then
-      echo "roscd: No such package '$1'"
-      return 1
-    elif [ -z ${rosvals[1]} ]; then
-      if [ -z $ROS_WORKSPACE ]; then
-        echo -e "No ROS_WORKSPACE set.  Please set ROS_WORKSPACE to use roscd with no arguments."
+        echo "roscd: No such package '$1'"
         return 1
-      fi
-      cd ${ROS_WORKSPACE}
-      return 0
+    elif [ -z ${rosvals[1]} ]; then
+        if [ -z $ROS_WORKSPACE ]; then
+            echo -e "No ROS_WORKSPACE set.  Please set ROS_WORKSPACE to use roscd with no arguments."
+            return 1
+        fi
+        cd ${ROS_WORKSPACE}
+        return 0
     else
-			cd ${rosvals[2]}${rosvals[3]}${rosvals[4]}
-      return 0
+        cd ${rosvals[2]}${rosvals[3]}${rosvals[4]}
+        return 0
     fi
 }
 
 function _is_integer {
-		[ "$1" -eq "$1" ] > /dev/null 2>&1
+    [ "$1" -eq "$1" ] > /dev/null 2>&1
     return $?
 }
 
@@ -173,7 +173,7 @@ function rosd {
         echo -e "usage: rosd\n\nDisplays the list of currently remembered directories with indexes."
         return 0
     fi
-		let count=0;
+    let count=0;
     for items in `dirs`;
     do
         echo $count $items;
@@ -261,7 +261,7 @@ function _roscomplete {
     stack_opts=`export ROS_CACHE_TIMEOUT=-1.0 && rosstack list-names`
     IFS=$'\n'
     reply=(${=opts} ${=stack_opts})
-		unset IFS
+    unset IFS
 }
 
 function _roscomplete_rosmake {
@@ -285,15 +285,11 @@ function _roscomplete_sub_dir {
         reply=(${=opts} ${=stack_opts})
         unset IFS
     else
-				if [ -e ${rosvals[2]}${rosvals[3]} ]; then
-				  sedcmd="s:^${rosvals[2]}:${rosvals[1]}:"g
-				  #echo
-					#echo $sedcmd
-					#echo
-          opts=`find ${rosvals[2]}${rosvals[3]} -maxdepth 1 -mindepth 1 -type d ! -regex ".*/[.].*" -print0 | tr '\000' '\n' | sed -e "$sedcmd"`
-					#echo $opts
+        if [ -e ${rosvals[2]}${rosvals[3]} ]; then
+            sedcmd="s:^${rosvals[2]}:${rosvals[1]}:"g
+            opts=`find ${rosvals[2]}${rosvals[3]} -maxdepth 1 -mindepth 1 -type d ! -regex ".*/[.].*" -print0 | tr '\000' '\n' | sed -e "$sedcmd"`
         else
-          opts=''
+            opts=''
         fi
         IFS=$'\n'
         reply=(${=opts})
@@ -304,7 +300,7 @@ function _roscomplete_sub_dir {
 function _roscomplete_search_dir {
     local words arg opts pkg pkgdir pkgdir_result stack_result catkin_package_libexec_dir
     reply=()
-		words=(${=BUFFER})
+    words=(${=BUFFER})
     if [[ $BUFFER[-1] == ' ' ]]
     then
         pkg=${words[-1]}
@@ -500,42 +496,42 @@ function _roscomplete_rostopic {
             esac
             reply=(${=opts})
         else
-						case ${=${(s: :)words}[2]} in
-								bw|echo|hz|list|type|info)
-										if [[ ${=${(s: :)words}[$(( ${CURRENT} -1 ))]} == "-b" ]]; then
-												opts=`find . -maxdepth 1 -type f -not -name ".*" -not -name "*[~#]" | sed 's!.*/!!'`
-												reply=(${=opts})
-										else
-												opts=`rostopic list 2> /dev/null`
-												reply=(${=opts})
-										fi
-										;;
-								find)
-										opts=`_msg_opts ${=${(s: :)words[-1]}}`
-										reply=(${=opts})
-										;;
-								pub)
-										if [[ ${CURRENT} == 3 ]]; then
-												opts=`rostopic list 2> /dev/null`
-												reply=(${=opts})
-										elif [[ ${CURRENT} == 4 ]]; then
-												if [[ ${=${(s: :)words}[$(( ${CURRENT} ))]} =~ / ]]; then
-                                                    word=(${=words})
-                                                    type=`rostopic info ${word[3]} 2> /dev/null`
-                                                    opts=${=${type[(w)2]}}
-												else
-                                                    word=(${=words})
-                                                    type=`rostopic info ${word[3]} 2> /dev/null`
-                                                    opts=${=${type[(w)2]}}
-                    		                    fi
-												reply=(${=opts})
-										elif [[ ${CURRENT} == 5 ]]; then
-                                                w=(${=words})
-												opts=`rosmsg-proto msg 2> /dev/null -s ${=${w[-1]}}`
-												reply=(${opts})
-										fi
-										;;
-		        esac
+            case ${=${(s: :)words}[2]} in
+                bw|echo|hz|list|type|info)
+                    if [[ ${=${(s: :)words}[$(( ${CURRENT} -1 ))]} == "-b" ]]; then
+                        opts=`find . -maxdepth 1 -type f -not -name ".*" -not -name "*[~#]" | sed 's!.*/!!'`
+                        reply=(${=opts})
+                    else
+                        opts=`rostopic list 2> /dev/null`
+                        reply=(${=opts})
+                    fi
+                    ;;
+                find)
+                    opts=`_msg_opts ${=${(s: :)words[-1]}}`
+                    reply=(${=opts})
+                    ;;
+                pub)
+                    if [[ ${CURRENT} == 3 ]]; then
+                        opts=`rostopic list 2> /dev/null`
+                        reply=(${=opts})
+                    elif [[ ${CURRENT} == 4 ]]; then
+                        if [[ ${=${(s: :)words}[$(( ${CURRENT} ))]} =~ / ]]; then
+                            word=(${=words})
+                            type=`rostopic info ${word[3]} 2> /dev/null`
+                            opts=${=${type[(w)2]}}
+                        else
+                            word=(${=words})
+                            type=`rostopic info ${word[3]} 2> /dev/null`
+                            opts=${=${type[(w)2]}}
+                        fi
+                        reply=(${=opts})
+                    elif [[ ${CURRENT} == 5 ]]; then
+                        w=(${=words})
+                        opts=`rosmsg-proto msg 2> /dev/null -s ${=${w[-1]}}`
+                        reply=(${opts})
+                    fi
+                    ;;
+            esac
         fi
     fi
 }
@@ -616,7 +612,6 @@ function _msg_opts {
 function _roscomplete_rosmsg {
     local opts
     reply=()
-
 
     if [[ ${CURRENT} == 2 ]]; then
         opts="show list md5 package packages"

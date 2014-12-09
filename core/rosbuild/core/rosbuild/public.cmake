@@ -331,7 +331,7 @@ macro(rosbuild_init)
   # handle lingers in the test results directory), because CMake doesn't
   # seem to be able to do it.
   add_custom_target(rosbuild_clean-test-results
-                    if ! rm -rf ${rosbuild_test_results_dir}/${PROJECT_NAME}\; then echo "\"WARNING: failed to remove test-results directory\"\;" fi)
+                    if ! rm -rf ${rosbuild_test_results_dir}/${PROJECT_NAME}\; then echo "\"WARNING: failed to remove test-results directory\";" fi)
   # Make the tests target depend on rosbuild_clean-test-results, which will ensure
   # that test results are deleted before we try to build tests, and thus
   # before we try to run tests.

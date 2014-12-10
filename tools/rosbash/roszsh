@@ -138,15 +138,25 @@ function roscd {
         return 0
     fi
     if [ -z $1 ]; then
-        if [ -z $ROS_WORKSPACE ]; then
-            echo -e "No ROS_WORKSPACE set.  Please set ROS_WORKSPACE to use roscd with no arguments."
-            return 1
-        fi
+      if [ ! -z $ROS_WORKSPACE ]; then
         cd ${ROS_WORKSPACE}
         return 0
+      fi
+      if [ ! -z $CMAKE_PREFIX_PATH ]; then
+		workspaces=("${(s/:/)CMAKE_PREFIX_PATH}")
+        for ws in "${workspaces[@]}"; do
+          if [ -f $ws/.catkin ]; then
+            cd ${ws}
+            return 0
+          fi
+        done
+      fi
+      echo -e "Neither ROS_WORKSPACE is set nor a catkin workspace is listed in CMAKE_PREFIX_PATH.  Please set ROS_WORKSPACE or source a catkin workspace to use roscd with no arguments."
+      return 1
     fi
 
-    _ros_decode_path $1 forceeval
+
+   _ros_decode_path $1 forceeval
     if [ $? != 0 ]; then
         echo "roscd: No such package '$1'"
         return 1

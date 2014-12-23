@@ -2,6 +2,11 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* match behaviour of 'roscd' in zsh with bash (`#73 <https://github.com/ros/ros/pull/73>`_)
+* improve rosbag zsh tab completion for bag files (`#70 <https://github.com/ros/ros/issues/70>`_)
+
 1.11.5 (2014-08-18)
 -------------------
 * fix zsh autocompletion for published topics, msg-type and YAML (`#64 <https://github.com/ros/ros/issues/64>`_)

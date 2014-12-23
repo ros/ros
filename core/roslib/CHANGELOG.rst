@@ -2,6 +2,10 @@
 Changelog for package roslib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* consider std_msgs/Header to be a valid header in rosbuild-based messages (`#67 <https://github.com/ros/ros/pull/67>`_)
+
 1.11.5 (2014-08-18)
 -------------------
 

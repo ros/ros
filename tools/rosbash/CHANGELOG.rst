@@ -2,8 +2,8 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.6 (2014-12-22)
+-------------------
 * match behaviour of 'roscd' in zsh with bash (`#73 <https://github.com/ros/ros/pull/73>`_)
 * improve rosbag zsh tab completion for bag files (`#70 <https://github.com/ros/ros/issues/70>`_)
 

@@ -2,8 +2,8 @@
 Changelog for package roslib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.12.0 (2014-12-26)
+-------------------
 * update ROS_DISTRO to jade
 
 1.11.6 (2014-12-22)

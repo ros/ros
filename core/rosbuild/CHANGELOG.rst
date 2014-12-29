@@ -2,6 +2,10 @@
 Changelog for package rosbuild
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix dry clean-test-results target (`#71 <https://github.com/ros/ros/issues/71>`_)
+
 1.10.10 (2014-06-02)
 --------------------
 * fix CMake warning with 2.8.12 and newer (`#44 <https://github.com/ros/ros/issues/44>`_)

@@ -2,6 +2,10 @@
 Changelog for package roslib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* consider std_msgs/Header to be a valid header in rosbuild-based messages (`#67 <https://github.com/ros/ros/pull/67>`_)
+
 1.10.10 (2014-06-02)
 --------------------
 * add optional argument force_recrawl to getPlugins function

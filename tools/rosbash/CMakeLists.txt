@@ -3,7 +3,7 @@ project(rosbash)
 find_package(catkin)
 catkin_package()
 
-install(FILES rosbash rostcsh roszsh rosfish
+install(FILES rosbash rosfish rostcsh roszsh
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 install(PROGRAMS scripts/rosrun
   DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION})

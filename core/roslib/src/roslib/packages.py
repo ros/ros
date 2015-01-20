@@ -47,6 +47,10 @@ import string
 from subprocess import Popen, PIPE
 
 from catkin.find_in_workspaces import find_in_workspaces as catkin_find
+from catkin.find_in_workspaces import get_workspaces as catkin_get_workspaces
+from catkin.find_in_workspaces import get_source_paths as catkin_get_source_paths
+from catkin.find_in_workspaces import find_packages as catkin_find_packages
+
 import rospkg
 
 import roslib.manifest
@@ -499,7 +503,7 @@ def find_resource(pkg, resource_name, filter_fn=None, rospack=None, cache_find_p
     # if found in binary dir, start with that.  in any case, use matches
     # from ros_package_path
     matches = []
-    search_paths = catkin_find(search_dirs=['libexec', 'share'], project=pkg, first_matching_workspace_only=True, cache_find_packages=cache_find_packages)
+    search_paths = catkin_find(search_dirs=['libexec', 'share'], project=pkg, first_matching_workspace_only=True, source_path_to_packages=cache_find_packages)
     for search_path in search_paths:
         matches.extend(_find_resource(search_path, resource_name, filter_fn=filter_fn))
 
@@ -511,3 +515,16 @@ def find_resource(pkg, resource_name, filter_fn=None, rospack=None, cache_find_p
         if match not in unique_matches:
             unique_matches.append(match)
     return unique_matches
+
+def catkin_packages_cache():
+    """
+    Return packages which can be used in source_path_to_packages keyword
+    of catkin.find_in_workspaces.find_in_workspaces
+    """
+    source_path_to_packages = {}
+    workspaces = catkin_get_workspaces()
+    for workspace in workspaces:
+        source_spaces = catkin_get_source_paths(workspace)
+        for source_path in source_spaces:
+            source_path_to_packages[source_path] = catkin_find_packages(source_path)
+    return source_path_to_packages

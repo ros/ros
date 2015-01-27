@@ -14,4 +14,4 @@ configure_file(${catkin_EXTRAS_DIR}/templates/script.bash.in
   ${CATKIN_DEVEL_PREFIX}/bin/rosrun
   @ONLY)
 
-catkin_add_env_hooks(15.rosbash SHELLS bash tcsh zsh fish DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks)
+catkin_add_env_hooks(15.rosbash SHELLS bash fish tcsh zsh DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks)

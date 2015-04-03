@@ -59,8 +59,7 @@ ROS_HOSTNAME     ="ROS_HOSTNAME"
 ROS_NAMESPACE    ="ROS_NAMESPACE"
 ## directory in which log files are written
 ROS_LOG_DIR      ="ROS_LOG_DIR"
-## directory in which test result files are written
-CATKIN_TEST_RESULTS_DIR = "CATKIN_TEST_RESULTS_DIR"
+
 
 class ROSEnvException(Exception):
     """Base class of roslib.rosenv errors."""
@@ -189,23 +188,15 @@ def get_log_dir(env=None):
 def get_test_results_dir(env=None):
     """
     Get directory to use for writing test result files. There are multiple
-    possible locations for this. The CATKIN_TEST_RESULTS_DIR environment variable
-    has priority. If that is set, CATKIN_TEST_RESULTS_DIR is returned.
-    If CATKIN_TEST_RESULTS_DIR is not set, then ROS_HOME/test_results is used. If
-    ROS_HOME is not set, $HOME/.ros/test_results is used.
+    possible locations for this. If ROS_HOME is set ROS_HOME/test_results
+    is used. Otherwise $HOME/.ros/test_results is used.
 
     @param env: environment dictionary (defaults to os.environ)
     @type  env: dict
     @return: path to use use for log file directory
     @rtype: str
     """
-    if env is None:
-        env = os.environ
-        
-    if CATKIN_TEST_RESULTS_DIR in env:
-        return env[CATKIN_TEST_RESULTS_DIR]
-    else:
-        return os.path.join(get_ros_home(env), 'test_results')
+    return os.path.join(get_ros_home(env), 'test_results')
 
 # this is a copy of the roslogging utility. it's been moved here as it is a common
 # routine for programs using accessing ROS directories

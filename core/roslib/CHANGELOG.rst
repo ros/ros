@@ -2,6 +2,10 @@
 Changelog for package roslib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* remove usage of CATKIN_TEST_RESULTS_DIR environment variable (`#80 <https://github.com/ros/ros/pull/80>`_)
+
 1.12.0 (2014-12-26)
 -------------------
 * update ROS_DISTRO to jade

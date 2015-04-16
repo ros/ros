@@ -2,6 +2,11 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* add support for fish shell (`#77 <https://github.com/ros/ros/pull/77>`_)
+* enable roslaunch args completion in rosbash
+
 1.11.6 (2014-12-22)
 -------------------
 * match behaviour of 'roscd' in zsh with bash (`#73 <https://github.com/ros/ros/pull/73>`_)

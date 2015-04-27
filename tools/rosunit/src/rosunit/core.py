@@ -83,7 +83,7 @@ def makedirs_with_parent_perms(p):
         if s.st_mode != s2.st_mode:
             os.chmod(p, s.st_mode)    
 
-def xml_results_file(test_pkg, test_name, is_rostest=False):
+def xml_results_file(test_pkg, test_name, is_rostest=False, env=None):
     """
     @param test_pkg: name of test's package 
     @type  test_pkg: str
@@ -94,7 +94,7 @@ def xml_results_file(test_pkg, test_name, is_rostest=False):
     @return: name of xml results file for specified test
     @rtype:  str
     """
-    test_dir = os.path.join(rospkg.get_test_results_dir(), test_pkg)
+    test_dir = os.path.join(rospkg.get_test_results_dir(env=env), test_pkg)
     if not os.path.exists(test_dir):
         try:
             makedirs_with_parent_perms(test_dir)

@@ -2,6 +2,9 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.11.7 (2015-04-16)
 -------------------
 * add support for fish shell (`#77 <https://github.com/ros/ros/pull/77>`_)

@@ -318,7 +318,7 @@ function _roscomplete_search_dir {
     fi
     pkgdir=`export ROS_CACHE_TIMEOUT=-1.0 && rospack find ${pkg} 2> /dev/null`
     pkgdir_result=$?
-    catkin_package_libexec_dir=`catkin_find --without-underlays --libexec ${pkg} 2> /dev/null`
+    catkin_package_libexec_dir=`catkin_find --first-only --without-underlays --libexec ${pkg} 2> /dev/null`
     if [[ $? != 0 ]]
     then
         catkin_package_libexec_dir=""

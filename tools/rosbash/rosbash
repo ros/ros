@@ -909,6 +909,38 @@ function _roscomplete_rosclean {
     fi
 }
 
+function _roscomplete_rosconsole {
+    local arg opts
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+
+    if [[ $COMP_CWORD == 1 ]]; then
+        opts="get list set"
+        COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+    elif [[ $COMP_CWORD == 2 ]]; then
+        case ${COMP_WORDS[1]} in
+            get|set|list)
+                opts=`rosnode list 2> /dev/null`
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+                ;;
+        esac
+    elif [[ $COMP_CWORD == 3 ]]; then
+        case ${COMP_WORDS[1]} in
+            get|set)
+                opts=`rosconsole list ${COMP_WORDS[2]} 2> /dev/null`
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+                ;;
+        esac
+    elif [[ $COMP_CWORD == 4 ]]; then
+        case ${COMP_WORDS[1]} in
+            set)
+                opts="debug info warn error fatal"
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+                ;;
+        esac
+    fi
+}
+
 complete -F "_roscomplete_sub_dir" -o "nospace" "roscd"
 complete -F "_roscomplete_sub_dir" -o "nospace" "rospd"
 complete -F "_roscomplete_sub_dir" -o "nospace" "rosls"
@@ -929,3 +961,4 @@ complete -F "_roscomplete_rosmsg" "rosmsg"
 complete -F "_roscomplete_rossrv" "rossrv"
 complete -F "_roscomplete_roscreate_pkg" "roscreate-pkg"
 complete -F "_roscomplete_roswtf" -o filenames "roswtf"
+complete -F "_roscomplete_rosconsole" "rosconsole"

@@ -258,6 +258,25 @@ macro(rosbuild_init)
       list(REVERSE ${_prefix}_LIBRARIES)
     endif()
 
+    # Strip the leading ':' from any library that was given to us as
+    # ':/path/to/lib'.  Those kinds of libraries generally come from
+    # catkin-generated .pc files that are parsed by rospack via pkg-config.
+    # Newer versions of ld (and gold) don't accept the '-l:/path/to/lib'
+    # syntax.  They've long accepted the '/path/to/lib' syntax, so it
+    # should be safe to just strip the ':' here.  We could remove it at
+    # the source, from the .pc file, but the lib argument needs to start
+    # with '-l' to ensure proper ordering of libs in the return from
+    # pkg-config.
+    # https://github.com/ros/catkin/issues/694
+    if(${_prefix}_LIBRARIES)
+      set(_${_prefix}_LIBRARIES ${${_prefix}_LIBRARIES})
+      set(${_prefix}_LIBRARIES "")
+      foreach(_lib ${_${_prefix}_LIBRARIES})
+        string(REGEX REPLACE "^:/" "/" _lib_nocolon ${_lib})
+        list(APPEND ${_prefix}_LIBRARIES ${_lib_nocolon})
+      endforeach(_lib)
+    endif()
+
     # Also throw in the libs that we want to link everything against (only
     # use case for this so far is -lgcov when building with code coverage
     # support).

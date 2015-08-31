@@ -439,7 +439,7 @@ function _roscomplete_find {
     fi
     pkgdir=`_ros_package_find ${pkg}`
     if [[ -n "$catkin_package_libexec_dir" || -n "$pkgdir" ]]; then
-        opts=`_rosfind -L $catkin_package_libexec_dir $pkgdir ${1} ! -regex ".*/[.].*" ! -regex ".*$pkgdir\/build\/.*"  -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
+        opts=`_rosfind -L $catkin_package_libexec_dir "$pkgdir" ${1} ! -regex ".*/[.].*" ! -regex ".*$pkgdir\/build\/.*"  -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
     else
         opts=""
     fi

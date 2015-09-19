@@ -2,8 +2,8 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.12.3 (2015-09-19)
+-------------------
 * fix roslaunch completion if path contains white spaces (`ros/ros_comm#658 <https://github.com/ros/ros_comm/issues/658>`_)
 * add rosconsole tab completion for bash (`#86 <https://github.com/ros/ros/pull/86>`_)
 * use --first-only option when calling catkin_find (`#83 <https://github.com/ros/ros/issues/83>`_)

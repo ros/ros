@@ -2,6 +2,9 @@
 Changelog for package rosunit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.12.2 (2015-04-27)
 -------------------
 * allow custom environment when determining test results location (`#82 <https://github.com/ros/ros/pull/82>`_)

@@ -2,6 +2,10 @@
 Changelog for package rosbuild
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix rosbuild with newer ld versions (`#87 <https://github.com/ros/ros/pull/87>`_)
+
 1.11.8 (2015-04-27)
 -------------------
 

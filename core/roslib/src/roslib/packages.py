@@ -384,25 +384,20 @@ def list_pkgs_by_path(path, packages=None, cache=None, env=None):
             
     return packages
 
-def find_node(pkg, node_type, rospack=None, source_path_to_packages=None):
+def find_node(pkg, node_type, rospack=None):
     """
     Warning: unstable API due to catkin.
 
     Locate the executable that implements the node
     
     :param node_type: type of node, ``str``
-    :param source_path_to_packages: the dictionary is populated with mappings
-        from source paths to packages,
-        pass in the same dictionary to avoid repeated crawling
     :returns: path to node or None if node is not in the package ``str``
     :raises: :exc:rospkg.ResourceNotFound` If package does not exist 
     """
 
     if rospack is None:
         rospack = rospkg.RosPack()
-    return find_resource(pkg, node_type, filter_fn=_executable_filter,
-                         rospack=rospack,
-                         source_path_to_packages=source_path_to_packages)
+    return find_resource(pkg, node_type, filter_fn=_executable_filter, rospack=rospack)
 
 def _executable_filter(test_path):
     s = os.stat(test_path)
@@ -465,8 +460,7 @@ def _find_resource(d, resource_name, filter_fn=None):
 # TODO: this routine really belongs in rospkg, but the catkin-isms really, really don't
 # belong in rospkg.  With more thought, they can probably be abstracted out so as
 # to no longer be catkin-specific. 
-def find_resource(pkg, resource_name, filter_fn=None, rospack=None,
-                  source_path_to_packages=None):
+def find_resource(pkg, resource_name, filter_fn=None, rospack=None):
     """
     Warning: unstable API due to catkin.
 
@@ -479,9 +473,6 @@ def find_resource(pkg, resource_name, filter_fn=None, rospack=None,
     
     :param filter: function that takes in a path argument and
         returns True if the it matches the desired resource, ``fn(str)``
-    :param source_path_to_packages: the dictionary is populated with mappings
-        from source paths to packages,
-        pass in the same dictionary to avoid repeated crawling
     :param rospack: `rospkg.RosPack` instance to use
     :returns: lists of matching paths for resource within a given scope, ``[str]``
     :raises: :exc:`rospkg.ResourceNotFound` If package does not exist 
@@ -503,12 +494,19 @@ def find_resource(pkg, resource_name, filter_fn=None, rospack=None,
     # lookup package as it *must* exist
     pkg_path = rospack.get_path(pkg)
 
+    source_path_to_packages = rospack.get_custom_cache('source_path_to_packages', {})
+
     # if found in binary dir, start with that.  in any case, use matches
     # from ros_package_path
     matches = []
-    search_paths = catkin_find(search_dirs=['libexec', 'share'], project=pkg,
-                               first_matching_workspace_only=True,
-                               source_path_to_packages=source_path_to_packages)
+    search_paths = catkin_find(
+        search_dirs=['libexec', 'share'], project=pkg, first_matching_workspace_only=True,
+        source_path_to_packages=source_path_to_packages)
+
+    # persist mapping of packages in rospack instance
+    if source_path_to_packages:
+        rospack.set_custom_cache('source_path_to_packages', source_path_to_packages)
+
     for search_path in search_paths:
         matches.extend(_find_resource(search_path, resource_name, filter_fn=filter_fn))
 

@@ -494,10 +494,19 @@ def find_resource(pkg, resource_name, filter_fn=None, rospack=None):
     # lookup package as it *must* exist
     pkg_path = rospack.get_path(pkg)
 
+    source_path_to_packages = rospack.get_custom_cache('source_path_to_packages', {})
+
     # if found in binary dir, start with that.  in any case, use matches
     # from ros_package_path
     matches = []
-    search_paths = catkin_find(search_dirs=['libexec', 'share'], project=pkg, first_matching_workspace_only=True)
+    search_paths = catkin_find(
+        search_dirs=['libexec', 'share'], project=pkg, first_matching_workspace_only=True,
+        source_path_to_packages=source_path_to_packages)
+
+    # persist mapping of packages in rospack instance
+    if source_path_to_packages:
+        rospack.set_custom_cache('source_path_to_packages', source_path_to_packages)
+
     for search_path in search_paths:
         matches.extend(_find_resource(search_path, resource_name, filter_fn=filter_fn))
 

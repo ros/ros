@@ -2,8 +2,8 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.10 (2015-10-12)
+--------------------
 * fix zsh rosservice completion (`#92 <https://github.com/ros/ros/pull/92>`_)
 
 1.11.9 (2015-09-19)

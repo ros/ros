@@ -2,6 +2,10 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix zsh rosservice completion (`#92 <https://github.com/ros/ros/pull/92>`_)
+
 1.11.9 (2015-09-19)
 -------------------
 * fix roslaunch completion if path contains white spaces (`ros/ros_comm#658 <https://github.com/ros/ros_comm/issues/658>`_)

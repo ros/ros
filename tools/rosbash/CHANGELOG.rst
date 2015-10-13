@@ -2,8 +2,8 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.12.5 (2015-10-13)
+-------------------
 * rosrun: allow spaces in command names and search paths (`#94 <https://github.com/ros/ros/pull/94>`_)
 
 1.12.4 (2015-10-12)

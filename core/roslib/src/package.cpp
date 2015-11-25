@@ -47,8 +47,8 @@ static boost::mutex librospack_mutex;
 std::string command(const std::string& _cmd)
 {
   boost::mutex::scoped_lock lock(librospack_mutex);
-
-  rospack::ROSPack rp;
+  // static allows caching of results in between calls (in same process)
+  static rospack::ROSPack rp;
   int ret;
   try
   {

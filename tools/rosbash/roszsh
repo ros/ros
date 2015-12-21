@@ -263,6 +263,20 @@ function roscp {
     cp ${arg} ${3}
 }
 
+function roscat {
+    local arg
+    if [[ $1 = "--help" ]]; then
+        echo -e "usage: roscat [package] [file]\n\nDisplay a file content within a package."
+        return 0
+    fi
+    _roscmd ${1} ${2}
+    if [[ -z $CATTER ]]; then
+        cat ${arg}
+    else
+        $CATTER ${arg}
+    fi
+}
+
 function _roscomplete {
     local arg opts stack_opts
     reply=()
@@ -730,7 +744,7 @@ compctl -K "_roscomplete_sub_dir" -S / "roscd" "rospd" "rosls"
 compctl -K "_roscomplete_rosmake" "rosmake"
 
 compctl -x 'p[1]' -k "(check purge)" -- "rosclean"
-compctl -f -x 'p[1]' -K "_roscomplete" - 'p[2]' -K _roscomplete_file -- "rosed" "roscp"
+compctl -f -x 'p[1]' -K "_roscomplete" - 'p[2]' -K _roscomplete_file -- "rosed" "roscp" "roscat"
 compctl -f -x 'S[-]' -k '(--debug --prefix)' - 'c[-1,--prefix][-1,-p]' -h '' - 'p[1],c[-1,-d],c[-1,--debug],c[-2,-p],c[-2,--prefix]' -K "_roscomplete" - 'p[2],c[-2,-d],c[-2,--debug],c[-3,-p],c[-3,--prefix]' -K _roscomplete_exe -- "rosrun"
 compctl -/g '*.(launch|test)' -x 'p[1]' -K "_roscomplete" -tx - 'p[2]' -K _roscomplete_launchfile -- + -x 'S[--]' -k "(--files --args --nodes --find-node --child --local --screen --server_uri --run_id --wait --port --core --pid --dump-params)" -- "roslaunch"
 compctl -/g '*.(launch|test)' -x 'p[1]' -K "_roscomplete" -tx - 'p[2]' -K _roscomplete_launchfile -- + -x 'S[--]' -k "(--bare --bare-limit --bare-name --pkgdir --package)" -- "rostest"

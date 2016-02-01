@@ -107,7 +107,7 @@ bool getAll(V_string& packages)
   return true;
 }
 
-static void getPlugins(const std::string& package, const std::string& attribute, V_string& packages, V_string& plugins, bool force_recrawl)
+void getPlugins(const std::string& package, const std::string& attribute, V_string& packages, V_string& plugins, bool force_recrawl)
 {
   if (force_recrawl)
   {

@@ -57,6 +57,8 @@ def unitrun(package, test_name, test, sysargs=None, coverage_packages=None):
     
     @param package: name of ROS package that is running the test
     @type  package: str
+    @param test: a test case instance or a name resolving to a test case or suite
+    @type  test: unittest.TestCase, or string
     @param coverage_packages: list of Python package to compute coverage results for. Defaults to package
     @type  coverage_packages: [str]
     @param sysargs: (optional) alternate sys.argv
@@ -84,7 +86,12 @@ def unitrun(package, test_name, test, sysargs=None, coverage_packages=None):
         start_coverage(coverage_packages)
 
     # create and run unittest suite with our xmllrunner wrapper
-    suite = unittest.TestLoader().loadTestsFromTestCase(test)
+    suite = None
+    if issubclass(test, unittest.TestCase):
+        suite = unittest.TestLoader().loadTestsFromTestCase(test)
+    else:
+        suite = unittest.TestLoader().loadTestsFromName(test)
+
     if text_mode:
         result = unittest.TextTestRunner(verbosity=2).run(suite)
     else:

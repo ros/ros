@@ -134,6 +134,20 @@ void getPlugins(const std::string& package, const std::string& attribute, V_stri
   }
 }
 
+void getPlugins(const std::string& name,
+                const std::string& attribute,
+                std::vector< std::pair<std::string, std::string> >& exports,
+                bool force_recrawl
+                )
+{
+  V_string packages, plugins;
+  getPlugins(name, attribute, packages, plugins, force_recrawl);
+  // works on the assumption the previous call always return equal length package/plugin lists
+  for ( unsigned int i = 0; i < packages.size(); ++i ) {
+    exports.push_back(std::pair<std::string, std::string>(packages[i], plugins[i]));
+  }
+}
+
 void getPlugins(const std::string& package, const std::string& attribute, V_string& plugins, bool force_recrawl)
 {
   V_string packages;

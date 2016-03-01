@@ -144,7 +144,7 @@ ROSLIB_DECL void getPlugins(
  *
  * \deprecated Prefer the ::getPlugins(const std::string&, const std::string&, std::vector<std::pair<std::string, std::string>>&, bool) api instead.
  */
-ROSLIB_DECL void getPlugins(const std::string& package, const std::string& attribute, M_string& plugins, bool force_recrawl=false);
+ROS_DEPRECATED ROSLIB_DECL void getPlugins(const std::string& package, const std::string& attribute, M_string& plugins, bool force_recrawl=false);
 
 } // namespace package
 } // namespace ros

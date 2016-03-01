@@ -29,6 +29,7 @@
 #define ROSLIB_PACKAGE_H
 
 #include <string>
+#include <utility>
 #include <vector>
 #include <map>
 
@@ -108,10 +109,42 @@ ROSLIB_DECL bool getAll(V_string& packages);
 ROSLIB_DECL void getPlugins(const std::string& package, const std::string& attribute, V_string& plugins, bool force_recrawl=false);
 
 /**
- * \brief Call the "rospack plugins" command, eg. "rospack plugins --attrib=<attribute> <package>".  Returns a map of package name to
- * export value.
+ * \brief Call the "rospack plugins" command, eg. "rospack plugins --attrib=<attribute> <name>".
+ * Return a vector of string pairs which are package names and exported values respectively.
+ * Note that there can be multiple values for any single package.
+ *
+ * Note that while this uses the original rospack 'plugin' terminology,
+ * this effectively works for any exported tag with attributes in the
+ * catkin package.xml export list. Typical examples include:
+ *
+\code{.xml}
+<export>
+  <nav_core plugin="${prefix}/blp_plugin.xml" />  <!-- name="nav_core", attribute="plugin" -->
+  <rosdoc config="rosdoc.yaml" />                 <!-- name="rosdoc",   attribute="config" -->
+</export>
+\endcode
+ *
+ * \param name : name of the package export tag (has to be a package name) [in]
+ * \param attribute : name of the attribute inside the export tag with which to filter results [in]
+ * \param exports : package/value export pairs resulting from the search [out]
+ * \param force_recrawl : force rospack to rediscover everything on the system before running the search [in]
  */
-ROSLIB_DECL void getPlugins(const std::string& package, const std::string& attribute, M_string& plugins, bool force_recrawl=false);
+ROSLIB_DECL void getPlugins(
+  const std::string& name,
+  const std::string& attribute,
+  std::vector<std::pair<std::string, std::string> >& exports,
+  bool force_recrawl=false
+);
+
+/**
+ * \brief Call the "rospack plugins" command, eg. "rospack plugins --attrib=<attribute> <package>".
+ * Return a map of package name to export value.
+ *
+ * \warning If there are multiple export values, only the last one is saved in the map.
+ *
+ * \deprecated Prefer the ::getPlugins(const std::string&, const std::string&, std::vector<std::pair<std::string, std::string>>&, bool) api instead.
+ */
+ROS_DEPRECATED ROSLIB_DECL void getPlugins(const std::string& package, const std::string& attribute, M_string& plugins, bool force_recrawl=false);
 
 } // namespace package
 } // namespace ros

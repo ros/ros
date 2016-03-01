@@ -108,10 +108,18 @@ ROSLIB_DECL bool getAll(V_string& packages);
 ROSLIB_DECL void getPlugins(const std::string& package, const std::string& attribute, V_string& plugins, bool force_recrawl=false);
 
 /**
+ * \brief Call the "rospack plugins" command, eg. "rospack plugins --attrib=<attribute> <package>".  Returns a pair of vector of strings which
+ * are package names and export values respectively. This allows for multiple values in the one package name.
+ */
+ROSLIB_DECL void getPlugins(const std::string& package, const std::string& attribute, V_string& packages, V_string& plugins, bool force_recrawl=false);
+
+/**
  * \brief Call the "rospack plugins" command, eg. "rospack plugins --attrib=<attribute> <package>".  Returns a map of package name to
  * export value.
+ *
+ * @WARNING if there are multiple export values, only the last one is saved in the map.
  */
-ROSLIB_DECL void getPlugins(const std::string& package, const std::string& attribute, M_string& plugins, bool force_recrawl=false);
+ROS_DEPRECATED ROSLIB_DECL void getPlugins(const std::string& package, const std::string& attribute, M_string& plugins, bool force_recrawl=false);
 
 } // namespace package
 } // namespace ros

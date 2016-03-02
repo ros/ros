@@ -284,7 +284,7 @@ function roscp {
 
 function roscat {
     local arg
-    if [[ $1 = "--help" ]]; then
+    if [[ $1 = "--help" ]] || [[ $# -ne 2 ]]; then
        echo -e "usage: roscat [package] [file]\n\nDisplay a file content within a package."
        return 0
     fi

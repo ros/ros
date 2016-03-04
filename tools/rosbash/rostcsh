@@ -4,6 +4,7 @@ alias rosls 'ls `rospack find \!*`'
 #alias rosd 'echo "unimplemented"'
 #alias rospd 'echo "unimplemented"'
 #alias rosed 'echo "unimplemented"'
+#alias roscat 'echo "unimplemented"'
 #alias roscmd 'echo "unimplemented"'
 #alias roscp 'echo "unimplemented"'
 

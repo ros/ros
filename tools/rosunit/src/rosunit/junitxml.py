@@ -89,7 +89,7 @@ class TestError(TestInfo):
         @return XML tag representing the object, with non-XML text filtered out
         @rtype: str
         """
-        return ET.tostring(self.xml_element, encoding='utf-8', method='xml')
+        return ET.tostring(self.xml_element(), encoding='utf-8', method='xml')
 
     def xml_element(self):
         """
@@ -110,7 +110,7 @@ class TestFailure(TestInfo):
         @return XML tag representing the object, with non-XML text filtered out
         @rtype: str
         """
-        return ET.tostring(self.xml_element, encoding='utf-8', method='xml')
+        return ET.tostring(self.xml_element(), encoding='utf-8', method='xml')
 
     def xml_element(self):
         """
@@ -200,7 +200,7 @@ class TestCaseResult(object):
         @return XML tag representing the object, with non-XML text filtered out
         @rtype: str
         """
-        return ET.tostring(self.xml_element, encoding='utf-8', method='xml')
+        return ET.tostring(self.xml_element(), encoding='utf-8', method='xml')
 
     def xml_element(self):
         """
@@ -214,7 +214,7 @@ class TestCaseResult(object):
         for f in self.failures:
             testcase.append(f.xml_element())
         for e in self.errors:
-            testcase.append(e.xml())
+            testcase.append(e.xml_element())
         return testcase
         
 class Result(object):

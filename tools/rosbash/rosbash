@@ -282,6 +282,23 @@ function roscp {
     cp ${arg} ${3}
 }
 
+function roscat {
+    local arg
+    if [[ $1 = "--help" ]] || [[ $# -ne 2 ]]; then
+       echo -e "usage: roscat [package] [file]\n\nDisplay a file content within a package."
+       [[ $1 = "--help" ]] && return 0 || return 1
+    fi
+    _roscmd ${1} ${2}
+    [ $? -eq 1 ] && return 1
+    if [[ -n ${arg} ]]; then
+        if [[ -z $CATTER ]]; then
+            cat ${arg}
+        else
+            $CATTER ${arg}
+        fi
+    fi
+}
+
 function rosawesome {
    alias megamaid='rosbag record'
    alias suck2blow='rosbag play'
@@ -949,6 +966,7 @@ complete -F "_roscomplete_rosclean" "rosclean"
 complete -F "_roscomplete_exe" "rosrun"
 complete -F "_roscomplete_file" "rosed"
 complete -F "_roscomplete_file" "roscp"
+complete -F "_roscomplete_file" "roscat"
 complete -F "_roscomplete_launch" -o filenames "roslaunch"
 complete -F "_roscomplete_test" -o filenames "rostest"
 complete -F "_roscomplete_rospack" "rospack"

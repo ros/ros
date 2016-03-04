@@ -91,6 +91,44 @@ def _writeMockResultFile(result):
         if len(result.suites) > 1 or result.noSuitesRoot == False:
             f.write('</testsuites>\n')
 
+class XmlResultTestGeneration(unittest.TestCase):
+    def setUp(self):
+        global junitxml
+        if junitxml is None:
+            import rosunit.junitxml
+            junitxml = rosunit.junitxml
+
+    def tearDown(self):
+        pass
+
+    def testGenerateError(self):
+        error = junitxml.TestError('error_type', 'error_text')
+        error_str = error.xml()
+        self.assertEquals('''<error type="error_type">&lt;![CDATA[
+error_text
+]]&gt;</error>''', error_str)
+
+    def testGenerateFailure(self):
+        failure = junitxml.TestFailure('failure_type', 'failure_text')
+        failure_str = failure.xml()
+        self.assertEquals('''<failure type="failure_type">&lt;![CDATA[
+failure_text
+]]&gt;</failure>''', failure_str)
+
+    def testGenerateTestCaseResult(self):
+        testcase = junitxml.TestCaseResult('test_case')
+        error = junitxml.TestError('error_type', 'error_text')
+        error_str = error.xml()
+        failure = junitxml.TestFailure('failure_type', 'failure_text')
+        failure_str = failure.xml()
+        testcase.add_error(error)
+        testcase.add_failure(failure)
+        testcase_str = testcase.xml()
+        self.assertEquals('''<testcase classname="" name="test_case" time="0.0"><failure type="failure_type">&lt;![CDATA[
+failure_text
+]]&gt;</failure><error type="error_type">&lt;![CDATA[
+error_text
+]]&gt;</error></testcase>''', testcase_str)
 
 class XmlResultTestRead(unittest.TestCase):
 

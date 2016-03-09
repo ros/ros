@@ -1,3 +1,4 @@
+#alias roscat 'echo "unimplemented"'
 
 function _rossed
     if test (uname) = "Darwin" -o (uname) = "FreeBSD"

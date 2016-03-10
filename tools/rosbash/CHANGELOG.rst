@@ -2,6 +2,9 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.12.6 (2016-03-10)
 -------------------
 * add roscat to display file contents (`#99 <https://github.com/ros/ros/pull/99>`_)

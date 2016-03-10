@@ -2,8 +2,8 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.12 (2016-03-10)
+--------------------
 * add roscat to display file contents (`#99 <https://github.com/ros/ros/pull/99>`_)
 * roszsh: Ignore hidden files and directory in completion (`#100 <https://github.com/ros/ros/pull/100>`_)
 

@@ -5,7 +5,7 @@ set _COMMAND=@(PYTHON_EXECUTABLE) -c "import os; print(os.pathsep.join([x for x 
 rem Need the delims= line here to ensure that it reads with eol delimiters, not space.
 for /f "delims=" %%i in ('%COMMAND%') do set PATH=%%i
 
-set ROS_DISTRO=jade
+set ROS_DISTRO=kinetic
 
 REM python function to generate ROS package path based on all parent workspaces (prepends the separator if necessary)
 REM do not use EnableDelayedExpansion here, it messes with the != symbols

@@ -2,6 +2,11 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* add roscat to display file contents (`#99 <https://github.com/ros/ros/pull/99>`_)
+* roszsh: Ignore hidden files and directory in completion (`#100 <https://github.com/ros/ros/pull/100>`_)
+
 1.11.11 (2015-10-13)
 --------------------
 * rosrun: allow spaces in command names and search paths (`#94 <https://github.com/ros/ros/pull/94>`_)

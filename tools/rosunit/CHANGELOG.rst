@@ -2,8 +2,8 @@
 Changelog for package rosunit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.12.6 (2016-03-10)
+-------------------
 * remove invalid characters from XML unit test results (`#89 <https://github.com/ros/ros/pull/89>`_, `#108 <https://github.com/ros/ros/pull/108>`_)
 * add ability to load tests using dotnames in rosunit (`#101 <https://github.com/ros/ros/issues/101>`_)
 

@@ -97,12 +97,15 @@ class _TestInfo(object):
             stream.write(' ... ok\n')
 
     def _print_error(self, testcase, tagname, error):
-        """Print information from a failure or error to the supplied stream."""
-        error = ET.SubElement(testcase, tagname)
-        error.set('type', str(error[0].__name__))
+        """
+        Append an XML tag with information from a failure or error to the
+        supplied testcase.
+        """
+        tag = ET.SubElement(testcase, tagname)
+        tag.set('type', str(error[0].__name__))
         tb_stream = StringIO()
         traceback.print_tb(error[2], None, tb_stream)
-        error.text('%s\n%s' % (str(error[1]), tb_stream.getvalue()) )
+        tag.text ='%s\n%s' % (str(error[1]), tb_stream.getvalue())
 
     def _print_error_text(self, stream, tagname, error):
         """Print information from a failure or error to the supplied stream."""

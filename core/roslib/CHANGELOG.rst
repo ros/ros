@@ -2,6 +2,9 @@
 Changelog for package roslib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.13.0 (2016-03-10)
 -------------------
 * update ROS_DISTRO to kinetic

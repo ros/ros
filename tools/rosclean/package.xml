@@ -1,6 +1,6 @@
 <package>
   <name>rosclean</name>
-  <version>1.13.0</version>
+  <version>1.13.1</version>
   <description>
     rosclean: cleanup filesystem resources (e.g. log files).
   </description>

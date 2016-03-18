@@ -15,5 +15,4 @@ catkin_install_python(PROGRAMS
 
 if(CATKIN_ENABLE_TESTING)
   catkin_add_nosetests(test)
-  catkin_add_nosetests(src/rosunit/xmlrunner.py)
 endif()

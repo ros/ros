@@ -54,11 +54,7 @@ class XMLTestRunnerTest(unittest.TestCase):
         """
         class TestTest(unittest.TestCase):
             pass
-        self._try_test_run(TestTest, """<testsuite errors="0" failures="0" name="unittest.TestSuite" tests="0" time="0.000">
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>
-""")
+        self._try_test_run(TestTest, """<testsuite errors="0" failures="0" name="unittest.suite.TestSuite" tests="0" time="0.000"><system-out>&lt;![CDATA[\n\n]]&gt;</system-out><system-err>&lt;![CDATA[\n\n]]&gt;</system-err></testsuite>""")
 
     def test_success(self):
         """Regression test: Check whether a test run with a successful test
@@ -68,12 +64,7 @@ class XMLTestRunnerTest(unittest.TestCase):
         class TestTest(unittest.TestCase):
             def test_foo(self):
                 pass
-        self._try_test_run(TestTest, """<testsuite errors="0" failures="0" name="unittest.TestSuite" tests="1" time="0.000">
-  <testcase classname="__main__.TestTest" name="test_foo" time="0.000"></testcase>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>
-""")
+        self._try_test_run(TestTest, """<testsuite errors="0" failures="0" name="unittest.suite.TestSuite" tests="1" time="0.000"><testcase classname="test.test_xmlrunner.TestTest" name="test_foo" time="0.000" /><system-out>&lt;![CDATA[\n\n]]&gt;</system-out><system-err>&lt;![CDATA[\n\n]]&gt;</system-err></testsuite>""")
 
     def test_failure(self):
         """Regression test: Check whether a test run with a failing test
@@ -83,14 +74,7 @@ class XMLTestRunnerTest(unittest.TestCase):
         class TestTest(unittest.TestCase):
             def test_foo(self):
                 self.assert_(False)
-        self._try_test_run(TestTest, """<testsuite errors="0" failures="1" name="unittest.TestSuite" tests="1" time="0.000">
-  <testcase classname="__main__.TestTest" name="test_foo" time="0.000">
-    <failure type="exceptions.AssertionError">Foobar</failure>
-  </testcase>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>
-""")
+        self._try_test_run(TestTest, """<testsuite errors="0" failures="1" name="unittest.suite.TestSuite" tests="1" time="0.000"><testcase classname="test.test_xmlrunner.TestTest" name="test_foo" time="0.000"><failure type="AssertionError">Foobar</failure></testcase><system-out>&lt;![CDATA[\n\n]]&gt;</system-out><system-err>&lt;![CDATA[\n\n]]&gt;</system-err></testsuite>""")
 
     def test_error(self):
         """Regression test: Check whether a test run with a erroneous test
@@ -100,14 +84,7 @@ class XMLTestRunnerTest(unittest.TestCase):
         class TestTest(unittest.TestCase):
             def test_foo(self):
                 raise IndexError()
-        self._try_test_run(TestTest, """<testsuite errors="1" failures="0" name="unittest.TestSuite" tests="1" time="0.000">
-  <testcase classname="__main__.TestTest" name="test_foo" time="0.000">
-    <error type="exceptions.IndexError">Foobar</error>
-  </testcase>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>
-""")
+        self._try_test_run(TestTest, """<testsuite errors="1" failures="0" name="unittest.suite.TestSuite" tests="1" time="0.000"><testcase classname="test.test_xmlrunner.TestTest" name="test_foo" time="0.000"><error type="IndexError">Foobar</error></testcase><system-out>&lt;![CDATA[\n\n]]&gt;</system-out><system-err>&lt;![CDATA[\n\n]]&gt;</system-err></testsuite>""")
 
     def test_stdout_capture(self):
         """Regression test: Check whether a test run with output to stdout
@@ -116,14 +93,8 @@ class XMLTestRunnerTest(unittest.TestCase):
         """
         class TestTest(unittest.TestCase):
             def test_foo(self):
-                print("Test")
-        self._try_test_run(TestTest, """<testsuite errors="0" failures="0" name="unittest.TestSuite" tests="1" time="0.000">
-  <testcase classname="__main__.TestTest" name="test_foo" time="0.000"></testcase>
-  <system-out><![CDATA[Test
-]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>
-""")
+                print("Foo > Bar")
+        self._try_test_run(TestTest, """<testsuite errors="0" failures="0" name="unittest.suite.TestSuite" tests="1" time="0.000"><testcase classname="test.test_xmlrunner.TestTest" name="test_foo" time="0.000" /><system-out>&lt;![CDATA[\nFoo &gt; Bar\n\n]]&gt;</system-out><system-err>&lt;![CDATA[\n\n]]&gt;</system-err></testsuite>""")
 
     def test_stderr_capture(self):
         """Regression test: Check whether a test run with output to stderr
@@ -132,14 +103,8 @@ class XMLTestRunnerTest(unittest.TestCase):
         """
         class TestTest(unittest.TestCase):
             def test_foo(self):
-                print("Test", file=sys.stderr)
-        self._try_test_run(TestTest, """<testsuite errors="0" failures="0" name="unittest.TestSuite" tests="1" time="0.000">
-  <testcase classname="__main__.TestTest" name="test_foo" time="0.000"></testcase>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[Test
-]]></system-err>
-</testsuite>
-""")
+                print("Foo > Bar", file=sys.stderr)
+        self._try_test_run(TestTest, """<testsuite errors="0" failures="0" name="unittest.suite.TestSuite" tests="1" time="0.000"><testcase classname="test.test_xmlrunner.TestTest" name="test_foo" time="0.000" /><system-out>&lt;![CDATA[\n\n]]&gt;</system-out><system-err>&lt;![CDATA[\nFoo &gt; Bar\n\n]]&gt;</system-err></testsuite>""")
 
     class NullStream(object):
         """A file-like object that discards everything written to it."""

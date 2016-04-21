@@ -2,8 +2,8 @@
 Changelog for package rosunit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.12.7 (2016-04-21)
+-------------------
 * fix a regression in XML reports introduced in 1.12.6 (`#109 <https://github.com/ros/ros/pull/109>`_)
 
 1.12.6 (2016-03-10)

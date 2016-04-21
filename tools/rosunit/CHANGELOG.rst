@@ -2,6 +2,10 @@
 Changelog for package rosunit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix a regression in XML reports introduced in 1.12.6 (`#109 <https://github.com/ros/ros/pull/109>`_)
+
 1.12.6 (2016-03-10)
 -------------------
 * remove invalid characters from XML unit test results (`#89 <https://github.com/ros/ros/pull/89>`_, `#108 <https://github.com/ros/ros/pull/108>`_)

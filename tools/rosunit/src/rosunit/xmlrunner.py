@@ -98,11 +98,11 @@ class _TestInfo(object):
 
     def _print_error(self, testcase, tagname, error):
         """Print information from a failure or error to the supplied stream."""
-        error = ET.SubElement(testcase, tagname)
-        error.set('type', str(error[0].__name__))
+        errorElement = ET.SubElement(testcase, tagname)
+        errorElement.set('type', str(error[0].__name__))
         tb_stream = StringIO()
         traceback.print_tb(error[2], None, tb_stream)
-        error.text('%s\n%s' % (str(error[1]), tb_stream.getvalue()) )
+        errorElement.text = '%s\n%s' % (str(error[1]), tb_stream.getvalue())
 
     def _print_error_text(self, stream, tagname, error):
         """Print information from a failure or error to the supplied stream."""

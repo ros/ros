@@ -3,7 +3,7 @@ project(rosbash)
 find_package(catkin)
 catkin_package()
 
-install(FILES rosbash rostcsh roszsh
+install(FILES rosbash rosfish rostcsh roszsh
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 install(PROGRAMS scripts/rosrun
   DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION})
@@ -14,4 +14,4 @@ configure_file(${catkin_EXTRAS_DIR}/templates/script.bash.in
   ${CATKIN_DEVEL_PREFIX}/bin/rosrun
   @ONLY)
 
-catkin_add_env_hooks(15.rosbash SHELLS bash tcsh zsh DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks)
+catkin_add_env_hooks(15.rosbash SHELLS bash fish tcsh zsh DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks)

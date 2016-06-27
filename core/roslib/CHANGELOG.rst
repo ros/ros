@@ -2,8 +2,8 @@
 Changelog for package roslib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.11.13 (2016-06-27)
+--------------------
 * allow caching of rospack results (`#97 <https://github.com/ros/ros/issues/97>`_)
 
 1.11.12 (2016-03-10)

@@ -2,6 +2,10 @@
 Changelog for package roslib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* allow caching of rospack results (`#97 <https://github.com/ros/ros/issues/97>`_)
+
 1.11.12 (2016-03-10)
 --------------------
 * expose an API (ros::package::getPlugins) which can map multiple export values to one package name (`#103 <https://github.com/ros/ros/issues/103>`_)

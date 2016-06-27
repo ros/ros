@@ -2,6 +2,10 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* add support for fish shell (`#77 <https://github.com/ros/ros/pull/77>`_)
+
 1.11.12 (2016-03-10)
 --------------------
 * add roscat to display file contents (`#99 <https://github.com/ros/ros/pull/99>`_)

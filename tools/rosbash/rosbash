@@ -800,11 +800,11 @@ function _roscomplete_rosservice {
     arg="${COMP_WORDS[COMP_CWORD]}"
 
     if [[ $COMP_CWORD == 1 ]]; then
-        opts="list call type find uri"
+        opts="args call find info list type uri"
         COMPREPLY=($(compgen -W "$opts" -- ${arg}))
     elif [[ $COMP_CWORD == 2 ]]; then
         case ${COMP_WORDS[1]} in
-            uri|list|type|call)
+            args|call|info|list|type|uri)
                 opts=`rosservice list 2> /dev/null`
                 COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
                 ;;

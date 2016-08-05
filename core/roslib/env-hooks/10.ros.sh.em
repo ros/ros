@@ -23,7 +23,8 @@ for workspace in workspaces:
         data = f.read()
     if data == '':
         paths.append(os.path.join(workspace, 'share'))
-        paths.append(os.path.join(workspace, 'stacks'))
+        if os.path.isdir(os.path.join(workspace, 'stacks')):
+            paths.append(os.path.join(workspace, 'stacks'))
     else:
         for source_path in data.split(';'):
             paths.append(source_path)

@@ -2,6 +2,10 @@
 Changelog for package roslib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* avoid putting the rosbuild stacks dir on RPP if it doesn't exist (`#111 <https://github.com/ros/ros/pull/111>`_)
+
 1.13.1 (2016-03-13)
 -------------------
 

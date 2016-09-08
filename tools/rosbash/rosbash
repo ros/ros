@@ -259,7 +259,7 @@ function _roscmd {
 function rosed {
     local arg
     if [[ $1 = "--help" ]]; then
-       echo -e "usage: rossed [package] [file]\n\nEdit a file within a package."
+       echo -e "usage: rosed [package] [file]\n\nEdit a file within a package."
        return 0
     fi
     _roscmd ${1} ${2}

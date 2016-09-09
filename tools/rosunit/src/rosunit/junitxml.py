@@ -454,7 +454,7 @@ def read_all(filter_=[]):
     return root_result
 
 
-def test_failure_junit_xml(test_name, message, stdout=None):
+def test_failure_junit_xml(test_name, message, stdout=None, classname="Results"):
     """
     Generate JUnit XML file for a unary test suite where the test failed
     
@@ -475,7 +475,7 @@ def test_failure_junit_xml(test_name, message, stdout=None):
     testcase.set('name', 'test_ran')
     testcase.set('status', 'run')
     testcase.set('time', '1')
-    testcase.set('classname', 'Results')
+    testcase.set('classname', classname)
     failure = ET.SubElement(testcase, 'failure')
     failure.set('message', message)
     failure.set('type', '')
@@ -484,7 +484,7 @@ def test_failure_junit_xml(test_name, message, stdout=None):
         system_out.text = cdata(filter_nonprintable_text(stdout))
     return ET.tostring(testsuite, encoding='utf-8', method='xml')
 
-def test_success_junit_xml(test_name):
+def test_success_junit_xml(test_name, classname="Results"):
     """
     Generate JUnit XML file for a unary test suite where the test succeeded.
     
@@ -501,7 +501,7 @@ def test_success_junit_xml(test_name):
     testcase.set('name', 'test_ran')
     testcase.set('status', 'run')
     testcase.set('time', '1')
-    testcase.set('classname', 'Results')
+    testcase.set('classname', classname)
     return ET.tostring(testsuite, encoding='utf-8', method='xml')
 
 def print_summary(junit_results, runner_name='ROSUNIT'):

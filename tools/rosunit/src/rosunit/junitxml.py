@@ -454,7 +454,7 @@ def read_all(filter_=[]):
     return root_result
 
 
-def test_failure_junit_xml(test_name, message, stdout=None, classname="Results"):
+def test_failure_junit_xml(test_name, message, stdout=None, classname="Results", testcasename="test_ran"):
     """
     Generate JUnit XML file for a unary test suite where the test failed
     
@@ -472,7 +472,7 @@ def test_failure_junit_xml(test_name, message, stdout=None, classname="Results")
     testsuite.set('errors', '0')
     testsuite.set('name', test_name)
     testcase = ET.SubElement(testsuite, 'testcase')
-    testcase.set('name', 'test_ran')
+    testcase.set('name', testcasename)
     testcase.set('status', 'run')
     testcase.set('time', '1')
     testcase.set('classname', classname)
@@ -484,7 +484,7 @@ def test_failure_junit_xml(test_name, message, stdout=None, classname="Results")
         system_out.text = cdata(filter_nonprintable_text(stdout))
     return ET.tostring(testsuite, encoding='utf-8', method='xml')
 
-def test_success_junit_xml(test_name, classname="Results"):
+def test_success_junit_xml(test_name, classname="Results", testcasename="test_ran"):
     """
     Generate JUnit XML file for a unary test suite where the test succeeded.
     
@@ -498,7 +498,7 @@ def test_success_junit_xml(test_name, classname="Results"):
     testsuite.set('errors', '0')
     testsuite.set('name', test_name)
     testcase = ET.SubElement(testsuite, 'testcase')
-    testcase.set('name', 'test_ran')
+    testcase.set('name', testcasename)
     testcase.set('status', 'run')
     testcase.set('time', '1')
     testcase.set('classname', classname)

@@ -2,8 +2,8 @@
 Changelog for package rosunit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.13.3 (2016-09-16)
+-------------------
 * allow custom class_name, testcase_name in test_xx_junit_xml (`#119 <https://github.com/ros/ros/issues/119>`_)
 * fix check of test type (`#121 <https://github.com/ros/ros/issues/121>`_)
 

@@ -2,6 +2,10 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix spelling of 'rosed' in usage (`#118 <https://github.com/ros/ros/pull/118>`_)
+
 1.13.2 (2016-09-02)
 -------------------
 * add missing verbs to rosservice completion (`#117 <https://github.com/ros/ros/pull/117>`_)

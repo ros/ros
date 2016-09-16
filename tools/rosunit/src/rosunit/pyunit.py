@@ -87,7 +87,7 @@ def unitrun(package, test_name, test, sysargs=None, coverage_packages=None):
 
     # create and run unittest suite with our xmllrunner wrapper
     suite = None
-    if issubclass(test, unittest.TestCase):
+    if isinstance(test, unittest.TestCase):
         suite = unittest.TestLoader().loadTestsFromTestCase(test)
     else:
         suite = unittest.TestLoader().loadTestsFromName(test)

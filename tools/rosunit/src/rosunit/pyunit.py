@@ -87,10 +87,11 @@ def unitrun(package, test_name, test, sysargs=None, coverage_packages=None):
 
     # create and run unittest suite with our xmllrunner wrapper
     suite = None
-    if isinstance(test, unittest.TestCase):
-        suite = unittest.TestLoader().loadTestsFromTestCase(test)
-    else:
+    if isinstance(test, str):
         suite = unittest.TestLoader().loadTestsFromName(test)
+    else:
+        # some callers pass a TestCase type (instead of an instance)
+        suite = unittest.TestLoader().loadTestsFromTestCase(test)
 
     if text_mode:
         result = unittest.TextTestRunner(verbosity=2).run(suite)

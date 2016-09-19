@@ -2,8 +2,8 @@
 Changelog for package rosunit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.13.4 (2016-09-19)
+-------------------
 * fix test type handling (`#123 <https://github.com/ros/ros/issues/123>`_)
 
 1.13.3 (2016-09-16)

@@ -2,6 +2,9 @@
 Changelog for package roslib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.13.3 (2016-09-16)
 -------------------
 * allow expected ROS_DISTRO value to be overridden at compile time (`#122 <https://github.com/ros/ros/pull/122>`_)

@@ -53,6 +53,7 @@ def _ask_and_call(cmds, cwd=None):
     :param cwd: (optional) set cwd of command that is executed, ``str``
     :returns: ``True`` if cmds were run.
     """
+    # Pretty-print a string version of the commands
     def quote(s):
         return '"%s"'%s if ' ' in s else s
     sys.stdout.write("Okay to execute:\n\n%s\n(y/n)?\n"%('\n'.join([' '.join([quote(s) for s in c]) for c in cmds])))
@@ -224,7 +225,7 @@ def rosclean_main(argv=None):
     parser_purge = subparsers.add_parser('purge', help='Remove log files')
     parser_purge.set_defaults(func=_rosclean_cmd_purge)
     parser_purge.add_argument('-y', action='store_true', default=False, help='CAUTION: automatically confirms all questions to delete files')
-    parser_purge.add_argument('--size', action='store', default=None, type=int, help='Directory size in MB until deletes old log files.')
+    parser_purge.add_argument('--size', action='store', default=None, type=int, help='Minimum total size to keep when deleting old files')
     args = parser.parse_args(argv[1:])
     args.func(args)
 

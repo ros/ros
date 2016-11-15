@@ -776,17 +776,37 @@ function _roscomplete_rostopic {
 										COMPREPLY=($(compgen -W "$opts" -- ${arg}))
 										;;
 								pub)
-										if [[ $COMP_CWORD == 2 ]]; then
+										local topic_pos type_pos msg_pos
+										topic_pos=2
+										type_pos=3
+										msg_pos=4
+										while [ $topic_pos -lt ${#COMP_WORDS[*]} ]; do
+												if [[ ${COMP_WORDS[$topic_pos]} =~ \-.* ]]; then
+														# ignore any options starting with -
+														if [[ ${COMP_WORDS[$topic_pos]} == "-f" || ${COMP_WORDS[$topic_pos]} == "-r" ]]; then
+																# ignore additional argument of -f and -r
+																topic_pos=$((topic_pos + 1))
+																type_pos=$((type_pos + 1))
+																msg_pos=$((msg_pos + 1))
+														fi
+														topic_pos=$((topic_pos + 1))
+														type_pos=$((type_pos + 1))
+														msg_pos=$((msg_pos + 1))
+												else
+														break
+												fi
+										done
+										if [[ $COMP_CWORD == $topic_pos ]]; then
 												opts=`rostopic list 2> /dev/null`
 												COMPREPLY=($(compgen -W "$opts" -- ${arg}))
-										elif [[ $COMP_CWORD == 3 ]]; then
+										elif [[ $COMP_CWORD == $type_pos ]]; then
                                                                                                 opts=$(rostopic info ${COMP_WORDS[$COMP_CWORD-1]} 2> /dev/null | awk '/Type:/{print $2}')
                                                                                                 if [ -z "$opts" ]; then
                                                                                                         opts=`_msg_opts ${COMP_WORDS[$COMP_CWORD]}`
                                                                                                 fi
 												COMPREPLY=($(compgen -W "$opts" -- ${arg}))
-								    elif [[ $COMP_CWORD == 4 ]]; then
-								    		opts=`rosmsg-proto msg 2> /dev/null -s ${COMP_WORDS[3]}`
+								    elif [[ $COMP_CWORD == $msg_pos ]]; then
+								    		opts=`rosmsg-proto msg 2> /dev/null -s ${COMP_WORDS[$COMP_CWORD - 1]}`
 												if [ 0 -eq $? ]; then
 													COMPREPLY="$opts"
 												fi

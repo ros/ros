@@ -32,6 +32,7 @@
 
 from __future__ import print_function
 
+import errno
 import os
 import sys
 import logging
@@ -74,7 +75,11 @@ def makedirs_with_parent_perms(p):
     if not os.path.exists(p) and p and parent != p:
         makedirs_with_parent_perms(parent)
         s = os.stat(parent)
-        os.mkdir(p)
+        try:
+            os.mkdir(p)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
 
         # if perms of new dir don't match, set anew
         s2 = os.stat(p)

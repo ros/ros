@@ -776,14 +776,40 @@ function _roscomplete_rostopic {
 										COMPREPLY=($(compgen -W "$opts" -- ${arg}))
 										;;
 								pub)
-										if [[ $COMP_CWORD == 2 ]]; then
+										topic_pos=0
+										type_pos=0
+										msg_pos=0
+										
+										COUNTER=2
+										while [ $COUNTER -lt ${#COMP_WORDS[*]} ]; do
+											if [[ ${COMP_WORDS[$COUNTER]} == -r ]]; then
+												if [[ COUNTER -lt ${#COMP_WORDS[*]} ]]; then
+													(( COUNTER += 1 ))
+													if ! [[ ${COMP_WORDS[$COUNTER]} =~ [0-9]+ ]]; then
+														(( COUNTER -= 1 ))
+													fi
+												fi
+											elif ! [[ ${COMP_WORDS[$COUNTER]} =~ \-.* ]]; then
+												if [ $topic_pos == 0 ]; then
+													topic_pos=$COUNTER
+												elif [ $type_pos == 0 ]; then
+													type_pos=$COUNTER
+												elif [ $msg_pos == 0 ]; then
+													msg_pos=$COUNTER
+													break
+												fi
+											fi
+											(( COUNTER += 1 ))
+										done
+										
+										if [[ $COMP_CWORD == $topic_pos ]]; then
 												opts=`rostopic list 2> /dev/null`
 												COMPREPLY=($(compgen -W "$opts" -- ${arg}))
-										elif [[ $COMP_CWORD == 3 ]]; then
+										elif [[ $COMP_CWORD == $type_pos ]]; then
 												opts=`_msg_opts ${COMP_WORDS[$COMP_CWORD]}`
 												COMPREPLY=($(compgen -W "$opts" -- ${arg}))
-								    elif [[ $COMP_CWORD == 4 ]]; then
-								    		opts=`rosmsg-proto msg 2> /dev/null -s ${COMP_WORDS[3]}`
+								    elif [[ $COMP_CWORD == $msg_pos ]]; then
+								    		opts=`rosmsg-proto msg 2> /dev/null -s ${COMP_WORDS[$type_pos]}`
 												if [ 0 -eq $? ]; then
 													COMPREPLY="$opts"
 												fi

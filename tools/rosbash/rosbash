@@ -780,7 +780,14 @@ function _roscomplete_rostopic {
 												opts=`rostopic list 2> /dev/null`
 												COMPREPLY=($(compgen -W "$opts" -- ${arg}))
 										elif [[ $COMP_CWORD == 3 ]]; then
-												opts=`_msg_opts ${COMP_WORDS[$COMP_CWORD]}`
+												opts=${COMP_WORDS[$COMP_CWORD]}
+												info=`rostopic info $opts 2> /dev/null`
+												info=(${info[@]})
+												if [ "${info[0]}" == Type: ]; then
+													opts=${info[1]}
+												else
+													opts=`_msg_opts ${COMP_WORDS[$COMP_CWORD]}`
+												fi
 												COMPREPLY=($(compgen -W "$opts" -- ${arg}))
 								    elif [[ $COMP_CWORD == 4 ]]; then
 								    		opts=`rosmsg-proto msg 2> /dev/null -s ${COMP_WORDS[3]}`

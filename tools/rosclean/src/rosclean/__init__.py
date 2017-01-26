@@ -44,6 +44,17 @@ import rospkg
 
 class CleanupException(Exception): pass
 
+def _check_user_input():
+    """
+    Wait for user input and return result
+    @return: ``True`` if user input is ``y``
+    """
+    while 1:
+        input = sys.stdin.readline().strip().lower()
+        if input in ['y', 'n']:
+            break
+    return input == 'y'
+
 def _ask_and_call(cmds, cwd=None):
     """
     Pretty print cmds, ask if they should be run, and if so, runs
@@ -57,11 +68,7 @@ def _ask_and_call(cmds, cwd=None):
     def quote(s):
         return '"%s"'%s if ' ' in s else s
     sys.stdout.write("Okay to execute:\n\n%s\n(y/n)?\n"%('\n'.join([' '.join([quote(s) for s in c]) for c in cmds])))
-    while 1:
-        input = sys.stdin.readline().strip().lower()
-        if input in ['y', 'n']:
-            break
-    accepted = input == 'y'
+    accepted = _check_user_input()
     if accepted:
         _call(cmds, cwd)
     return accepted
@@ -74,11 +81,7 @@ def _ask(comment):
     :return: ``True`` if user responds with y
     """
     sys.stdout.write("Okey to perform:\n\n%s\n(y/n)?\n"%comment)
-    while 1:
-        input = sys.stdin.readline().strip().lower()
-        if input in ['y', 'n']:
-            break
-    return (input == 'y')
+    return _check_user_input()
 
 def _call(cmds, cwd=None):
     """
@@ -159,26 +162,27 @@ def _sort_file_by_oldest(d):
     :return:  a list of files and directories sorted by last modified time (old first), ```list```
     """
     files = os.listdir(d)
-    files.sort(key=lambda file: os.path.getmtime(os.path.join(d,file)))
+    files.sort(key=lambda f: os.path.getmtime(os.path.join(d, f)))
     return files
 
-def _check_delete_file_size(d, file):
+def _check_delete_file_size(log_size, d, f_name):
     """
     Get size of specified directory after deleting specified file or directory
+    :param log_size: size of log directory in bytes, ```int```
     :param d: directory path, ```str```
     :param file: file or directory, ```str```
     :return: size of directory after purging file, ```int```
     """
-    d_size = get_disk_usage(d)
-    target = os.path.join(d, file)
+    target = os.path.join(d, f_name)
+    f_size = 0
     if os.path.isdir(target):
-        files = os.listdir(target)
-        f_size = 0
-        for f in files:
-            f_size = f_size + os.path.getsize(os.path.join(target, f))
+        for dir_path, dir_name, filenames in os.walk(target):
+            for f in filenames:
+                fp = os.path.join(dir_path, f)
+                f_size += os.path.getsize(fp)
     else:
         f_size = os.path.getsize(target)
-    return (d_size - f_size)
+    return (log_size - f_size)
 
 def _rosclean_cmd_purge(args):
     dirs = _get_check_dirs()
@@ -199,21 +203,21 @@ def _rosclean_cmd_purge(args):
             print("Purging %s until directory size is %d MB."%(label, args.size))
             if not args.y:
                 print("PLEASE BE CAREFUL TO VERIFY THE COMMAND BELOW!")
-                exe = _ask("Purge some of old logs in %s"%d)
-            else:
-                exe = True
-            if exe:
-                files = _sort_file_by_oldest(d)
-                for file in files:
-                    if _check_delete_file_size(d, file) >= (args.size * 1024 * 1024):
-                        name = d + '/' + file
-                        cmds = [['rm', '-rf', name]]
-                        try:
-                            _call(cmds)
-                        except:
-                            print("FAILED to execute command", file=sys.stderr)
-                    else:
-                        break
+                if not _ask("Purge some of old logs in %s"%d):
+                    return
+            files = _sort_file_by_oldest(d)
+            log_size = get_disk_usage(d)
+            for f in files:
+                log_size = _check_delete_file_size(log_size, d, f)
+                if (log_size >= (args.size * 1000 * 1000) ):
+                    name = d + '/' + f
+                    cmds = [['rm', '-rf', name]]
+                    try:
+                        _call(cmds)
+                    except:
+                        print("FAILED to execute command", file=sys.stderr)
+                else:
+                    break
 
 def rosclean_main(argv=None):
     if argv is None:

@@ -44,17 +44,6 @@ import rospkg
 
 class CleanupException(Exception): pass
 
-def _check_user_input():
-    """
-    Wait for user input and return result
-    @return: ``True`` if user input is ``y``
-    """
-    while 1:
-        input = sys.stdin.readline().strip().lower()
-        if input in ['y', 'n']:
-            break
-    return input == 'y'
-
 def _ask_and_call(cmds, cwd=None):
     """
     Pretty print cmds, ask if they should be run, and if so, runs
@@ -67,8 +56,7 @@ def _ask_and_call(cmds, cwd=None):
     # Pretty-print a string version of the commands
     def quote(s):
         return '"%s"'%s if ' ' in s else s
-    sys.stdout.write("Okay to execute:\n\n%s\n(y/n)?\n"%('\n'.join([' '.join([quote(s) for s in c]) for c in cmds])))
-    accepted = _check_user_input()
+    accepted = _ask('\n'.join([' '.join([quote(s) for s in c]) for c in cmds]))
     if accepted:
         _call(cmds, cwd)
     return accepted
@@ -80,8 +68,12 @@ def _ask(comment):
     :param comment: comment, ``str``
     :return: ``True`` if user responds with y
     """
-    sys.stdout.write("Okey to perform:\n\n%s\n(y/n)?\n"%comment)
-    return _check_user_input()
+    sys.stdout.write("Okay to perform:\n\n%s\n(y/n)?\n"%comment)
+    while 1:
+        input = sys.stdin.readline().strip().lower()
+        if input in ['y', 'n']:
+            break
+    return input == 'y'
 
 def _call(cmds, cwd=None):
     """
@@ -165,25 +157,6 @@ def _sort_file_by_oldest(d):
     files.sort(key=lambda f: os.path.getmtime(os.path.join(d, f)))
     return files
 
-def _check_delete_file_size(log_size, d, f_name):
-    """
-    Get size of specified directory after deleting specified file or directory
-    :param log_size: size of log directory in bytes, ```int```
-    :param d: directory path, ```str```
-    :param file: file or directory, ```str```
-    :return: size of directory after purging file, ```int```
-    """
-    target = os.path.join(d, f_name)
-    f_size = 0
-    if os.path.isdir(target):
-        for dir_path, dir_name, filenames in os.walk(target):
-            for f in filenames:
-                fp = os.path.join(dir_path, f)
-                f_size += os.path.getsize(fp)
-    else:
-        f_size = os.path.getsize(target)
-    return (log_size - f_size)
-
 def _rosclean_cmd_purge(args):
     dirs = _get_check_dirs()
 
@@ -208,7 +181,7 @@ def _rosclean_cmd_purge(args):
             files = _sort_file_by_oldest(d)
             log_size = get_disk_usage(d)
             for f in files:
-                log_size = _check_delete_file_size(log_size, d, f)
+                log_size -= get_disk_usage(os.path.join(d, f))
                 if (log_size >= (args.size * 1000 * 1000) ):
                     name = d + '/' + f
                     cmds = [['rm', '-rf', name]]

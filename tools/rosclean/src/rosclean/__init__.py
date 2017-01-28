@@ -181,7 +181,7 @@ def _rosclean_cmd_purge(args):
             files = _sort_file_by_oldest(d)
             log_size = get_disk_usage(d)
             for f in files:
-                if (log_size <= (args.size * 1000 * 1000) ):
+                if log_size <= args.size * 1000 * 1000:
                     break
                 path = os.path.join(d, f)
                 log_size -= get_disk_usage(path)

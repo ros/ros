@@ -173,7 +173,7 @@ def _rosclean_cmd_purge(args):
             except:
                 print("FAILED to execute command", file=sys.stderr)
         else:
-            print("Purging %s until directory size is %d MB."%(label, args.size))
+            print("Purging %s until directory size is at most %d MB."%(label, args.size))
             if not args.y:
                 print("PLEASE BE CAREFUL TO VERIFY THE COMMAND BELOW!")
                 if not _ask("Purge some of old logs in %s"%d):
@@ -181,16 +181,15 @@ def _rosclean_cmd_purge(args):
             files = _sort_file_by_oldest(d)
             log_size = get_disk_usage(d)
             for f in files:
-                log_size -= get_disk_usage(os.path.join(d, f))
-                if (log_size >= (args.size * 1000 * 1000) ):
-                    name = d + '/' + f
-                    cmds = [['rm', '-rf', name]]
-                    try:
-                        _call(cmds)
-                    except:
-                        print("FAILED to execute command", file=sys.stderr)
-                else:
+                if (log_size <= (args.size * 1000 * 1000) ):
                     break
+                path = os.path.join(d, f)
+                log_size -= get_disk_usage(path)
+                cmds = [['rm', '-rf', path]]
+                try:
+                    _call(cmds)
+                except:
+                    print("FAILED to execute command", file=sys.stderr)
 
 def rosclean_main(argv=None):
     if argv is None:
@@ -202,7 +201,7 @@ def rosclean_main(argv=None):
     parser_purge = subparsers.add_parser('purge', help='Remove log files')
     parser_purge.set_defaults(func=_rosclean_cmd_purge)
     parser_purge.add_argument('-y', action='store_true', default=False, help='CAUTION: automatically confirms all questions to delete files')
-    parser_purge.add_argument('--size', action='store', default=None, type=int, help='Minimum total size to keep when deleting old files')
+    parser_purge.add_argument('--size', action='store', default=None, type=int, help='Maximum total size in MB to keep when deleting old files')
     args = parser.parse_args(argv[1:])
     args.func(args)
 

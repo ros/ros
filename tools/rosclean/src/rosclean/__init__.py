@@ -173,15 +173,18 @@ def _rosclean_cmd_purge(args):
             except:
                 print("FAILED to execute command", file=sys.stderr)
         else:
-            print("Purging %s until directory size is at most %d MB."%(label, args.size))
+            files = _sort_file_by_oldest(d)
+            log_size = get_disk_usage(d)
+            if log_size <= args.size * 1024 * 1024:
+                print("Directory size of %s is %d MB which is already below the requested threshold of %d MB."%(label, log_size / 1024 / 1024, args.size))
+                continue
+            print("Purging %s until directory size is at most %d MB (currently %d MB)."%(label, args.size, log_size / 1024 / 1024))
             if not args.y:
                 print("PLEASE BE CAREFUL TO VERIFY THE COMMAND BELOW!")
                 if not _ask("Purge some of old logs in %s"%d):
                     return
-            files = _sort_file_by_oldest(d)
-            log_size = get_disk_usage(d)
             for f in files:
-                if log_size <= args.size * 1000 * 1000:
+                if log_size <= args.size * 1024 * 1024:
                     break
                 path = os.path.join(d, f)
                 log_size -= get_disk_usage(path)

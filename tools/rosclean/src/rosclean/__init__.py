@@ -56,15 +56,24 @@ def _ask_and_call(cmds, cwd=None):
     # Pretty-print a string version of the commands
     def quote(s):
         return '"%s"'%s if ' ' in s else s
-    sys.stdout.write("Okay to execute:\n\n%s\n(y/n)?\n"%('\n'.join([' '.join([quote(s) for s in c]) for c in cmds])))
+    accepted = _ask('\n'.join([' '.join([quote(s) for s in c]) for c in cmds]))
+    if accepted:
+        _call(cmds, cwd)
+    return accepted
+
+def _ask(comment):
+    """
+    ask user with provided comment. If user responds with y, return True
+
+    :param comment: comment, ``str``
+    :return: ``True`` if user responds with y
+    """
+    sys.stdout.write("Okay to perform:\n\n%s\n(y/n)?\n"%comment)
     while 1:
         input = sys.stdin.readline().strip().lower()
         if input in ['y', 'n']:
             break
-    accepted = input == 'y'
-    if accepted:
-        _call(cmds, cwd)
-    return accepted
+    return input == 'y'
 
 def _call(cmds, cwd=None):
     """
@@ -138,20 +147,52 @@ def get_disk_usage(d):
     else:
         raise CleanupException("rosclean is not supported on this platform")
 
+def _sort_file_by_oldest(d):
+    """
+    Get files and directories in specified path sorted by last modified time
+    :param d: directory path, ```str```
+    :return:  a list of files and directories sorted by last modified time (old first), ```list```
+    """
+    files = os.listdir(d)
+    files.sort(key=lambda f: os.path.getmtime(os.path.join(d, f)))
+    return files
+
 def _rosclean_cmd_purge(args):
     dirs = _get_check_dirs()
 
     for d, label in dirs:
-        print("Purging %s."%label)
-        cmds = [['rm', '-rf', d]]
-        try:
-            if args.y:
-                _call(cmds)
-            else:
+        if not args.size:
+            print("Purging %s."%label)
+            cmds = [['rm', '-rf', d]]
+            try:
+                if args.y:
+                    _call(cmds)
+                else:
+                    print("PLEASE BE CAREFUL TO VERIFY THE COMMAND BELOW!")
+                    _ask_and_call(cmds)
+            except:
+                print("FAILED to execute command", file=sys.stderr)
+        else:
+            files = _sort_file_by_oldest(d)
+            log_size = get_disk_usage(d)
+            if log_size <= args.size * 1024 * 1024:
+                print("Directory size of %s is %d MB which is already below the requested threshold of %d MB."%(label, log_size / 1024 / 1024, args.size))
+                continue
+            print("Purging %s until directory size is at most %d MB (currently %d MB)."%(label, args.size, log_size / 1024 / 1024))
+            if not args.y:
                 print("PLEASE BE CAREFUL TO VERIFY THE COMMAND BELOW!")
-                _ask_and_call(cmds)
-        except:
-            print("FAILED to execute command", file=sys.stderr)
+                if not _ask("Purge some of old logs in %s"%d):
+                    return
+            for f in files:
+                if log_size <= args.size * 1024 * 1024:
+                    break
+                path = os.path.join(d, f)
+                log_size -= get_disk_usage(path)
+                cmds = [['rm', '-rf', path]]
+                try:
+                    _call(cmds)
+                except:
+                    print("FAILED to execute command", file=sys.stderr)
 
 def rosclean_main(argv=None):
     if argv is None:
@@ -163,6 +204,7 @@ def rosclean_main(argv=None):
     parser_purge = subparsers.add_parser('purge', help='Remove log files')
     parser_purge.set_defaults(func=_rosclean_cmd_purge)
     parser_purge.add_argument('-y', action='store_true', default=False, help='CAUTION: automatically confirms all questions to delete files')
+    parser_purge.add_argument('--size', action='store', default=None, type=int, help='Maximum total size in MB to keep when deleting old files')
     args = parser.parse_args(argv[1:])
     args.func(args)
 

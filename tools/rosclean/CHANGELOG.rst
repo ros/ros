@@ -2,8 +2,8 @@
 Changelog for package rosclean
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.13.5 (2017-02-14)
+-------------------
 * add --size option to rosclean purge (`#126 <https://github.com/ros/ros/issues/126>`_)
 
 1.13.4 (2016-09-19)

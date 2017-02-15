@@ -2,8 +2,8 @@
 Changelog for package rosunit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.13.5 (2017-02-14)
+-------------------
 * improve error message when creating test directory fails (`#134 <https://github.com/ros/ros/pull/134>`_)
 * fix race condition creating folder (`#130 <https://github.com/ros/ros/pull/130>`_)
 

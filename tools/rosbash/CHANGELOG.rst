@@ -2,8 +2,8 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.13.5 (2017-02-14)
+-------------------
 * add completion for "rosmsg info" (`#138 <https://github.com/ros/ros/pull/138>`_)
 * add "rostopic pub" completion for message type (`#132 <https://github.com/ros/ros/pull/132>`_)
 * fix "rostopic pub" completion when options are provided (`#131 <https://github.com/ros/ros/pull/131>`_)

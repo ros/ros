@@ -2,6 +2,10 @@
 Changelog for package roslib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix missing export depends (`#128 <https://github.com/ros/ros/issues/128>`_)
+
 1.13.4 (2016-09-19)
 -------------------
 

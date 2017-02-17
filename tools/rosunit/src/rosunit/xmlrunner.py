@@ -86,7 +86,7 @@ class _TestInfo(object):
         #        "method": self._method,
         #        "time": self._time,
         #    })
-        stream.write(self._method)
+        stream.write('[Testcase: ' + self._method + ']')
         if self._failure != None:
             stream.write(' ... FAILURE!\n')
             self._print_error_text(stream, 'failure', self._failure)

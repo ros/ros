@@ -121,13 +121,13 @@ def get_disk_usage(d):
     """
     Get disk usage in bytes for directory
     :param d: directory path, ``str``
-    :returns: disk usage in bytes (du -b) or (du -A) * 1024, ``int``
+    :returns: disk usage in bytes (du -k) * 1024 or (du -A) * 1024, ``int``
     :raises: :exc:`CleanupException` If get_disk_usage() cannot be used on this platform
     """
     # only implemented on Linux and FreeBSD for now. Should work on OS X but need to verify first (du is not identical)
     if platform.system() == 'Linux':
         try:
-            return int(subprocess.Popen(['du', '-sb', d], stdout=subprocess.PIPE).communicate()[0].split()[0])
+            return int(subprocess.Popen(['du', '-sk', d], stdout=subprocess.PIPE).communicate()[0].split()[0]) * 1024
         except:
             raise CleanupException("rosclean is not supported on this platform")
     elif platform.system() == 'FreeBSD':

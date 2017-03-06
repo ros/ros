@@ -8,8 +8,8 @@
   <license>BSD</license>
 
   <url type="website">http://ros.org/wiki/rosunit</url>
-  <url type="bugtracker">https://github.com/ros/ros_comm/issues</url>
-  <url type="repository">https://github.com/ros/ros_comm</url>
+  <url type="bugtracker">https://github.com/ros/ros/issues</url>
+  <url type="repository">https://github.com/ros/ros</url>
   <author>Ken Conley</author>
 
   <buildtool_depend version_gte="0.5.78">catkin</buildtool_depend>

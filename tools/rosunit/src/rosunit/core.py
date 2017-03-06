@@ -32,6 +32,7 @@
 
 from __future__ import print_function
 
+import errno
 import os
 import sys
 import logging
@@ -74,7 +75,11 @@ def makedirs_with_parent_perms(p):
     if not os.path.exists(p) and p and parent != p:
         makedirs_with_parent_perms(parent)
         s = os.stat(parent)
-        os.mkdir(p)
+        try:
+            os.mkdir(p)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
 
         # if perms of new dir don't match, set anew
         s2 = os.stat(p)
@@ -98,9 +103,9 @@ def xml_results_file(test_pkg, test_name, is_rostest=False, env=None):
     if not os.path.exists(test_dir):
         try:
             makedirs_with_parent_perms(test_dir)
-        except OSError:
-            raise IOError("cannot create test results directory [%s]. Please check permissions."%(test_dir))
-        
+        except OSError as error:
+            raise IOError("cannot create test results directory [%s]: %s"%(test_dir, str(error)))
+
     # #576: strip out chars that would bork the filename
     # this is fairly primitive, but for now just trying to catch some common cases
     for c in ' "\'&$!`/\\':
@@ -148,8 +153,8 @@ def create_xml_runner(test_pkg, test_name, results_file=None, is_rostest=False):
     if not os.path.exists(test_dir):
         try:
             makedirs_with_parent_perms(test_dir) #NOTE: this will pass up an error exception if it fails
-        except OSError:
-            raise IOError("cannot create test results directory [%s]. Please check permissions."%(test_dir))
+        except OSError as error:
+            raise IOError("cannot create test results directory [%s]: %s"%(test_dir, str(error)))
 
     elif os.path.isfile(test_dir):
         raise Exception("ERROR: cannot run test suite, file is preventing creation of test dir: %s"%test_dir)

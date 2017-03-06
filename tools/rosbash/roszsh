@@ -577,11 +577,11 @@ function _roscomplete_rosservice {
 
 
     if [[ ${CURRENT} == 2 ]]; then
-        opts="list call type find uri"
+        opts="args call find info list type uri"
         reply=(${=opts})
     elif [[ ${CURRENT} == 3 ]]; then
         case ${words[2]} in
-            uri|list|type|call)
+            args|call|info|list|type|uri)
                 opts=`rosservice list 2> /dev/null`
                 IFS=$'\n'
                 reply=(${=opts})

@@ -2,6 +2,12 @@
 Changelog for package rosunit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* improve error message when creating test directory fails (`#134 <https://github.com/ros/ros/pull/134>`_)
+* fix race condition creating folder (`#130 <https://github.com/ros/ros/pull/130>`_)
+* fix check of test type (`#121 <https://github.com/ros/ros/issues/121>`_, `#123 <https://github.com/ros/ros/issues/123>`_)
+
 1.12.7 (2016-04-21)
 -------------------
 * fix a regression in XML reports introduced in 1.12.6 (`#109 <https://github.com/ros/ros/pull/109>`_)

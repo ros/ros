@@ -2,6 +2,10 @@
 Changelog for package roslib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix missing export depends (`#128 <https://github.com/ros/ros/issues/128>`_)
+
 1.11.13 (2016-06-27)
 --------------------
 * allow caching of rospack results (`#97 <https://github.com/ros/ros/issues/97>`_)

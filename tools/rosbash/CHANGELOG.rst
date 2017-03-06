@@ -2,6 +2,12 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* add "rostopic pub" completion for message type (`#132 <https://github.com/ros/ros/pull/132>`_)
+* fix spelling of 'rosed' in usage (`#118 <https://github.com/ros/ros/pull/118>`_)
+* add missing verbs to rosservice completion (`#117 <https://github.com/ros/ros/pull/117>`_)
+
 1.11.13 (2016-06-27)
 --------------------
 * add support for fish shell (`#77 <https://github.com/ros/ros/pull/77>`_)

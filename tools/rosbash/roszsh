@@ -249,7 +249,7 @@ function rosed {
     if [[ -z $EDITOR ]]; then
         vim ${arg}
     else
-        $EDITOR ${arg}
+        eval $EDITOR ${arg}
     fi
 }
 

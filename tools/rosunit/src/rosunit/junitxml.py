@@ -39,12 +39,15 @@ Library for reading and manipulating Ant JUnit XML result files.
 
 from __future__ import print_function
 
+import codecs
 import os
 import sys
 try:
     from cStringIO import StringIO
+    python2 = True
 except ImportError:
     from io import StringIO
+    python2 = False
 import string
 import codecs
 import re
@@ -56,7 +59,14 @@ from xml.dom import Node as DomNode
 from functools import reduce
 import rospkg
 
-invalid_chars = re.compile(ur'[^\x09\x0A\x0D\x20-\x7E\x85\xA0-\xFF\u0100-\uD7FF\uE000-\uFDCF\uFDE0-\uFFFD]')
+pattern = r'[^\x09\x0A\x0D\x20-\x7E\x85\xA0-\xFF\u0100-\uD7FF\uE000-\uFDCF\uFDE0-\uFFFD]'
+if python2:
+    pattern = pattern.decode('unicode_escape')
+else:
+    pattern = codecs.decode(pattern, 'unicode_escape')
+invalid_chars = re.compile(pattern)
+
+
 def invalid_char_replacer(m):
     return "&#x"+('%04X' % ord(m.group(0)))+";"
 def filter_nonprintable_text(text):

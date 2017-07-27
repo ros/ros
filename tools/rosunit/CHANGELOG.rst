@@ -2,6 +2,12 @@
 Changelog for package rosunit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix syntax of unicode raw string in Python 3 (`#150 <https://github.com/ros/ros/pull/150>`_)
+* ensure cwd exists (`#143 <https://github.com/ros/ros/pull/143>`_)
+* more searchable testcase result message (`#139 <https://github.com/ros/ros/pull/139>`_)
+
 1.14.0 (2017-02-22)
 -------------------
 

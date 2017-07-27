@@ -2,6 +2,11 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* add options in completion for roslaunch to roszsh (`#147 <https://github.com/ros/ros/issues/147>`_)
+* allow arguments in EDITOR env in zsh rosed (`#144 <https://github.com/ros/ros/pull/144>`_)
+
 1.14.0 (2017-02-22)
 -------------------
 

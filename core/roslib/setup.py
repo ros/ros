@@ -58,5 +58,5 @@ setup(
     # based on directory hierarchy
     packages=['ros', 'roslib'],
     package_dir={'': 'src'},
-    install_requires=['catkin', 'rospkg'],
+    install_requires=['rospkg'],
 )

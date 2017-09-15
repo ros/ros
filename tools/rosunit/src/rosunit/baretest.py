@@ -40,6 +40,7 @@ executables. These do not run in a ROS environment.
 from __future__ import print_function
 
 import os
+import sys
 try:
     from cStringIO import StringIO
 except ImportError:
@@ -49,6 +50,7 @@ import time
 import signal
 import subprocess
 import traceback
+import re
 
 import rospkg
 
@@ -514,7 +516,11 @@ def print_runner_summary(runner_results, junit_results, runner_name='ROSUNIT'):
         for tc_result in runner_results.failures:
             buff.write(" * " +tc_result[0]._testMethodName + "\n")
 
-    print(buff.getvalue())
+    if not sys.stdout.isatty():
+        ansi_regex = re.compile(r'\x1b[^m]*m')
+        print(ansi_regex.sub('', buff.getvalue()))
+    else:
+        print(buff.getvalue())
 
 def _format_errors(errors):
     formatted = []
@@ -541,5 +547,10 @@ def print_unittest_summary(result):
     buff.write(" * TESTS: %s\n"%result.testsRun)
     buff.write(" * ERRORS: %s [%s]\n"%(len(result.errors), ', '.join(_format_errors(result.errors))))
     buff.write(" * FAILURES: %s [%s]\n"%(len(result.failures), ', '.join(_format_errors(result.failures))))
-    print(buff.getvalue())
+
+    if not sys.stdout.isatty():
+        ansi_regex = re.compile(r'\x1b[^m]*m')
+        print(ansi_regex.sub('', buff.getvalue()))
+    else:
+        print(buff.getvalue())
 

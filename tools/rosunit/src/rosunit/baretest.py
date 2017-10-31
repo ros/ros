@@ -320,6 +320,12 @@ class LocalProcess(pmon.Process):
                 cwd = get_ros_root()
             else:
                 cwd = rospkg.get_ros_home()
+            if not os.path.exists(cwd):
+                try:
+                    os.makedirs(cwd)
+                except OSError:
+                    # exist_ok=True
+                    pass
 
             try:
                 self.popen = subprocess.Popen(self.args, cwd=cwd, stdout=logfileout, stderr=logfileerr, env=full_env, close_fds=True, preexec_fn=os.setsid)

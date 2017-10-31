@@ -2,8 +2,8 @@
 Changelog for package rosunit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.13.6 (2017-10-31)
+-------------------
 * use python constants rather than hardcoded integers for error codes (`#153 <https://github.com/ros/ros/issues/153>`_)
 * fix syntax of unicode raw string in Python 3 (`#150 <https://github.com/ros/ros/pull/150>`_)
 * ensure cwd exists (`#143 <https://github.com/ros/ros/pull/143>`_)

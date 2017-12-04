@@ -120,7 +120,7 @@ class _TestInfo(object):
         stream.write(escape(tb_stream.getvalue()))
         stream.write('-'*80 + '\n')
 
-class _XMLTestResult(unittest.TestResult):
+class _XMLTestResult(unittest.TextTestResult):
 
     """A test result class that stores result as XML.
 
@@ -129,7 +129,7 @@ class _XMLTestResult(unittest.TestResult):
     """
 
     def __init__(self, classname):
-        unittest.TestResult.__init__(self)
+        unittest.TextTestResult.__init__(self)
         self._test_name = classname
         self._start_time = None
         self._tests = []
@@ -137,14 +137,14 @@ class _XMLTestResult(unittest.TestResult):
         self._failure = None
 
     def startTest(self, test):
-        unittest.TestResult.startTest(self, test)
+        unittest.TextTestResult.startTest(self, test)
         self._error = None
         self._failure = None
         self._start_time = time.time()
 
     def stopTest(self, test):
         time_taken = time.time() - self._start_time
-        unittest.TestResult.stopTest(self, test)
+        unittest.TextTestResult.stopTest(self, test)
         if self._error:
             info = _TestInfo.create_error(test, time_taken, self._error)
         elif self._failure:
@@ -154,11 +154,11 @@ class _XMLTestResult(unittest.TestResult):
         self._tests.append(info)
 
     def addError(self, test, err):
-        unittest.TestResult.addError(self, test, err)
+        unittest.TextTestResult.addError(self, test, err)
         self._error = err
 
     def addFailure(self, test, err):
-        unittest.TestResult.addFailure(self, test, err)
+        unittest.TextTestResult.addFailure(self, test, err)
         self._failure = err
 
     def filter_nonprintable_text(self, text):

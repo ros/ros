@@ -510,7 +510,9 @@ def find_resource(pkg, resource_name, filter_fn=None, rospack=None):
     for search_path in search_paths:
         matches.extend(_find_resource(search_path, resource_name, filter_fn=filter_fn))
 
-    matches.extend(_find_resource(pkg_path, resource_name, filter_fn=filter_fn))
+    # Only search ROS_PACKAGE_PATH if not matched in binary build dirs.
+    if not matches:
+        matches.extend(_find_resource(pkg_path, resource_name, filter_fn=filter_fn))
 
     # Uniquify the results, in case we found the same file twice, while keeping order
     unique_matches = []

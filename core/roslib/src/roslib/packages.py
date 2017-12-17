@@ -475,7 +475,6 @@ def find_resource(pkg, resource_name, filter_fn=None, rospack=None):
         returns True if the it matches the desired resource, ``fn(str)``
     :param rospack: `rospkg.RosPack` instance to use
     :returns: lists of matching paths for resource within a given scope, ``[str]``
-    :raises: :exc:`rospkg.ResourceNotFound` If package does not exist 
     """
 
     # New resource-location policy in Fuerte, induced by the new catkin 

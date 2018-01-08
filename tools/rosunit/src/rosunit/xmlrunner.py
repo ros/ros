@@ -128,8 +128,8 @@ class _XMLTestResult(unittest.TextTestResult):
 
     """
 
-    def __init__(self, classname):
-        unittest.TextTestResult.__init__(self)
+    def __init__(self, classname, stream=None):
+        unittest.TextTestResult.__init__(self, stream, 1, 1)
         self._test_name = classname
         self._start_time = None
         self._tests = []
@@ -248,7 +248,7 @@ class XMLTestRunner(object):
         else:
             stream = self._stream
 
-        result = _XMLTestResult(classname)
+        result = _XMLTestResult(classname, self._stream)
         start_time = time.time()
 
         # TODO: Python 2.5: Use the with statement

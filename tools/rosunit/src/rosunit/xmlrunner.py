@@ -3,7 +3,7 @@ XML Test Runner for PyUnit
 """
 
 # Written by Sebastian Rittau <srittau@jroger.in-berlin.de> and placed in
-# the Public Domain. With contributions by Paolo Borelli.
+# the Public Domain. With contributions by Paolo Borelli and Felix Divo.
 
 from __future__ import print_function
 
@@ -199,7 +199,13 @@ class _XMLTestResult(unittest.TestResult):
         output and standard error streams must be passed in.a
 
         """
-        stream.write(ET.tostring(self.xml(time_taken, out, err).getroot(), encoding='utf-8', method='xml'))
+        root = self.xml(time_taken, out, err).getroot()
+        if python2:
+            encoded = ET.tostring(root, encoding='utf-8', method='xml')
+        else:
+            encoded = ET.tostring(root, encoding='unicode', method='xml')
+        # stream.write() requires a str object
+        stream.write(encoded)
 
     def print_report_text(self, stream, time_taken, out, err):
         """Prints the text report to the supplied stream.

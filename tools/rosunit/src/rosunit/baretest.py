@@ -39,6 +39,7 @@ executables. These do not run in a ROS environment.
 
 from __future__ import print_function
 
+import errno
 import os
 try:
     from cStringIO import StringIO
@@ -256,7 +257,7 @@ class LocalProcess(pmon.Process):
             try:
                 os.makedirs(log_dir)
             except OSError as e:
-                if e.errno == 13:
+                if e.errno == errno.EACCES:
                     raise RLException("unable to create directory for log file [%s].\nPlease check permissions."%log_dir)
                 else:
                     raise RLException("unable to create directory for log file [%s]: %s"%(log_dir, e.strerror))
@@ -331,9 +332,9 @@ class LocalProcess(pmon.Process):
                 self.popen = subprocess.Popen(self.args, cwd=cwd, stdout=logfileout, stderr=logfileerr, env=full_env, close_fds=True, preexec_fn=os.setsid)
             except OSError as e:
                 self.started = True # must set so is_alive state is correct
-                if e.errno == 8: #Exec format error
+                if e.errno == errno.ENOEXEC: #Exec format error
                     raise pmon.FatalProcessLaunch("Unable to launch [%s]. \nIf it is a script, you may be missing a '#!' declaration at the top."%self.name)
-                elif e.errno == 2: #no such file or directory
+                elif e.errno == errno.ENOENT: #no such file or directory
                     raise pmon.FatalProcessLaunch("""Roslaunch got a '%s' error while attempting to run:
 
 %s

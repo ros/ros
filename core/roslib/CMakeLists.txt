@@ -24,13 +24,6 @@ if(NOT (APPLE OR WIN32 OR MINGW OR ANDROID))
   target_link_libraries(roslib rt)
 endif()
 
-
-if(CMAKE_HOST_UNIX)
-  catkin_add_env_hooks(10.ros SHELLS sh DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks)
-else()
-  catkin_add_env_hooks(10.ros SHELLS bat DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks)
-endif()
-
 catkin_python_setup()
 
 install(TARGETS roslib

@@ -20,6 +20,7 @@
 
   <run_depend>catkin</run_depend>
   <run_depend version_gte="1.0.37">python-rospkg</run_depend>
+  <run_depend>ros_environment</run_depend>
   <run_depend>rospack</run_depend>
 
   <export>

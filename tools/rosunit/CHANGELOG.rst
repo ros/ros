@@ -2,6 +2,9 @@
 Changelog for package rosunit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.14.2 (2017-10-26)
 -------------------
 * use python constants rather than hardcoded integers for error codes (`#153 <https://github.com/ros/ros/issues/153>`_)

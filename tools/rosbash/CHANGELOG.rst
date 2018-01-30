@@ -2,6 +2,10 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* do not remove paths containing ./ or ../ from completion (`#162 <https://github.com/ros/ros/issues/162>`_)
+
 1.14.2 (2017-10-26)
 -------------------
 

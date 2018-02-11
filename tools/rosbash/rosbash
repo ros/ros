@@ -955,11 +955,11 @@ function _roscomplete_rosconsole {
     arg="${COMP_WORDS[COMP_CWORD]}"
 
     if [[ $COMP_CWORD == 1 ]]; then
-        opts="get list set"
+        opts="echo get list set"
         COMPREPLY=($(compgen -W "$opts" -- ${arg}))
     elif [[ $COMP_CWORD == 2 ]]; then
         case ${COMP_WORDS[1]} in
-            get|set|list)
+            echo|get|set|list)
                 opts=$(rosnode list 2> /dev/null)
                 COMPREPLY=($(compgen -W "$opts" -- ${arg}))
                 ;;
@@ -967,7 +967,11 @@ function _roscomplete_rosconsole {
     elif [[ $COMP_CWORD == 3 ]]; then
         case ${COMP_WORDS[1]} in
             get|set)
-              opts=$(rosconsole list ${COMP_WORDS[2]} 2> /dev/null)
+                opts=$(rosconsole list ${COMP_WORDS[2]} 2> /dev/null)
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+                ;;
+            echo)
+                opts="debug info warn error fatal"
                 COMPREPLY=($(compgen -W "$opts" -- ${arg}))
                 ;;
         esac

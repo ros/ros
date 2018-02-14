@@ -341,9 +341,9 @@ function _roscomplete_search_dir {
     stackdir=`export ROS_CACHE_TIMEOUT=-1.0 && rosstack find ${pkg} 2> /dev/null`
     stack_result=$?
     if [[ $pkgdir_result == 0 ]]; then
-        opts=`find $pkgdir $catkin_package_libexec_dir ${=1} -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
+        opts=`find -L $pkgdir $catkin_package_libexec_dir ${=1} -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
     elif [[ $stack_result == 0 ]] ; then
-        opts=`find $stackdir ${=1} -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
+        opts=`find -L $stackdir ${=1} -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
     else
         opts=""
     fi

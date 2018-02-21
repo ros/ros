@@ -354,5 +354,5 @@ complete -x -c rosrun -a '(_roscomplete_rosrun)'
 complete -x -c roslaunch -a '(_roscomplete_launch)'
 complete -x -c rosed -a '(_roscomplete_file)'
 complete -c rosed -l help --description "prints command info"
-complete -x -c roscp -a '(_roscomplete_file)'et -x TEST works
+complete -x -c roscp -a '(_roscomplete_file)'
 complete -c roscp -l help --description "prints command info"

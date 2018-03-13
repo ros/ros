@@ -471,6 +471,60 @@ function _roscomplete_launch
         end
     else
         _roscomplete_search_dir '( -type f -regex .*\.launch$ -o -type f -regex .*\.test$ )'
+        # TODO add extra fancy stuff here for launch file arguments
+    end
+end
+
+function _roscomplete_rosbag
+    set -l command (_ros_command_line)
+    set -l arg $command[-1]
+
+    if test (count $command) = 2
+        set -l opts check compress decompress filter fix help info play record reindex
+        for i in $opts
+            echo $i
+        end
+    else
+        if echo -- $arg | grep -qE -- "--.*"
+            set -l opts
+            switch $command[2]
+            case check
+                set opts --genrules --append --noplugins --help
+            case compress decompress
+                set opts --output-dir --force --quiet --help
+            case filter
+                set opts --print --help
+            case fix
+                set opts --force --noplugins --help
+            case info
+                set opts --yaml --key --freq --help
+            case play
+                set opts --help --quiet --immediate --pause --queue --clock --hz --delay --rate --start --skip-empty --loop --keep-alive --try-future-version --topics --bags
+            case record
+                set opts --help --all --regex --exclude --quiet --output-prefix --output-name --split --size --duration --buffsize --limit --node --bz2
+            case reindex
+                set opts --help --force --quiet --output-dir
+            end
+
+            for i in $opts
+                echo $i
+            end
+        end
+    end
+end
+
+function _roscomplete_rospack
+    set -l command (_ros_command_line)
+
+    if test (count $command) = 2
+        set -l opts help find list list-names list-duplicates langs depends depends-manifests depends1 depends-indent depends-msgsrv depends-why rosdep rosdep0 vcs vcs0 depends-on depends-on1 export plugins cflags-only-I cflags-only-other libs-only-L libs-only-l libs-only-other profile
+        for i in $opts
+            echo $i
+        end
+    else
+        for i in (rospack list-names)
+            echo $i
+        end
     end
 end
 
@@ -716,3 +770,5 @@ complete -x -c rosservice -a '(_roscomplete_rosservice)'
 complete -x -c rostopic -a '(_roscomplete_rostopic)'
 complete -x -c rosparam -a '(_roscomplete_rosparam)'
 complete -x -c rosnode -a '(_roscomplete_rosnode)'
+complete -x -c rospack -a '(_roscomplete_rospack)'
+complete -x -c rosbag -a '(_roscomplete_rosbag)'

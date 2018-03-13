@@ -2,7 +2,7 @@ function _ros_command_line
     set -l command (commandline -cpo) (commandline -ct)
 
     for i in $command
-        echo $i
+        echo -- "$i"
     end
 end
 
@@ -94,32 +94,32 @@ function _ros_decode_path
         return 0
     end
 
-    set -l rosname (echo $argv[1] | sed -n 's/\([^/]\+\).*/\1/p')
+    set -l rosname (echo -- $argv[1] | sed -n 's/\([^/]\+\).*/\1/p')
 
     if not test -z $rosname
-        set remainder (echo $argv[1] | sed -n "s/$rosname"'\(.*\)/\1/p')
+        set remainder (echo -- $argv[1] | sed -n "s/$rosname"'\(.*\)/\1/p')
     else
         set rosname $argv[1]
         if test (count $argv) != "2" -o $argv[2] != "forceeval"
-           echo $rosname
+           echo -- $rosname
            return 1
         end
     end
 
     set -l rosdir (_ros_location_find $rosname)
     if test $status != "0"
-        echo $rosname
+        echo -- $rosname
         return 1
     end
-    set -l reldir (echo $remainder | sed -n 's/\(.*\/\)[^/]*/\1/p')
-    set -l last (echo $remainder | sed -n 's/.*\/\([^/]*\)/\1/p')
+    set -l reldir (echo -- $remainder | sed -n 's/\(.*\/\)[^/]*/\1/p')
+    set -l last (echo -- $remainder | sed -n 's/.*\/\([^/]*\)/\1/p')
 
     if test -z $reldir
         set reldir /
     end
 
     set rosvals {$rosname} {$rosdir} {$reldir} {$last}
-    echo {$rosdir}{$remainder}
+    echo -- {$rosdir}{$remainder}
     return 0
 end
 
@@ -308,7 +308,7 @@ function _roscomplete_sub_dir
 end
 
 function _msg_opts
-    if echo $argv[1] | grep -qE ".+/.*"
+    if echo -- $argv[1] | grep -qE ".+/.*"
         set -l splitname (string split / $argv[1])
         set -l pkgname $splitname[1]
         set -l msgname $splitname[-1]
@@ -318,7 +318,7 @@ function _msg_opts
         if test -d "$path/msg"
             set -l opts (find -L $path/msg -maxdepth 1 -mindepth 1 -name "*.msg" ! -regex ".*/[.][^./].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.msg/$pkgname\/\1/g")
             for i in $opts
-                echo $i
+                echo -- $i
             end
         end
     else
@@ -336,7 +336,7 @@ end
 function _srv_opts
     set -l pkgname
 
-    if echo $argv[1] | grep -qE ".+/.*"
+    if echo -- $argv[1] | grep -qE ".+/.*"
         set -l splitname (string split / $argv[1])
         set pkgname $splitname[1]
     else
@@ -360,7 +360,7 @@ function _srv_opts
 
         if test $count > 1
             for i in $opts
-                echo $i
+                echo -- $i
             end
             return 0
         end
@@ -371,7 +371,7 @@ function _srv_opts
     if test $status -eq 0 -a -d $path/srv
         set -l opts (find -L $path/srv -maxdepth 1 -mindepth 1 -name "*.srv" ! -regex ".*/[.][^./].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.srv/$pkgname\/\1/g")
         for i in $opts
-            echo $i
+            echo -- $i
         end
     end
 end
@@ -380,7 +380,7 @@ function _roscomplete_rosmake
     _roscomplete
     set options --test-only --all --mark-installed --unmark-installed --robust --build-everything --specified-only --buildtest --buildtest1 --output --pre-clean --bootstrap --disable-logging --target --pjobs= --threads --profile --skip-blacklist --status-rate
     for i in $options
-         echo $i
+         echo -- $i
     end
 end
 
@@ -400,14 +400,14 @@ function _roscomplete_find --description 'complete files that match $argv[2] wit
 
     set -l opts
     if test -n "$catkin_package_libexec_dir" -o -n "$pkgdir"
-        set -l args (echo -n $argv[1] | sed -e 's/ /\\n/g')
+        set -l args (echo -n -- $argv[1] | sed -e 's/ /\\n/g')
         set opts (_rosfind -L $catkin_package_libexec_dir "$pkgdir" $args ! -regex ".*/[.][^./].*" ! -regex ".*$pkgdir\/build\/.*"  -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g")
     else
         set opts ""
     end
 
     for i in $opts
-        echo $i
+        echo -- $i
     end
 end
 
@@ -464,10 +464,10 @@ end
 function _roscomplete_launch
     set -l command (_ros_command_line)
 
-    if echo $command[-1] | grep -qE "^--"
+    if echo -- $command[-1] | grep -qE "^--"
         set options --files --args --nodes --find-node --child --local --screen --server_uri --run_id --wait --port --core --pid --dump-params
         for i in $options
-            echo $i
+            echo -- $i
         end
     else
         _roscomplete_search_dir '( -type f -regex .*\.launch$ -o -type f -regex .*\.test$ )'
@@ -480,20 +480,20 @@ function _roscomplete_rosservice
     if test (count $command) = 2
         set -l opts args call find info list type uri
         for i in $opts
-            echo $i
+            echo -- $i
         end
     else if test (count $command) = 3
         switch $command[2]
         case args call info list type uri
             set -l opts (rosservice list ^ /dev/null)
             for i in $opts
-                echo $i
+                echo -- $i
             end
         case find
             # Need a clever way to do message searching
             set -l opts (_srv_opts $command[-1])
             for i in $opts
-                echo $i
+                echo -- $i
             end
         end
     else if test (count $command) = 4
@@ -503,7 +503,7 @@ function _roscomplete_rosservice
             set -l opts (rosmsg-proto srv ^ /dev/null -s $type)
 
             # TODO: better formatting here
-            echo (string unescape $opts)
+            echo -- (string unescape $opts)
         end
     end
 end
@@ -515,17 +515,17 @@ function _roscomplete_rosmsg
     if test (count $command) = 2
         set -l opts show list md5 package packages
         for i in $opts
-            echo $i
+            echo -- $i
         end
     else if test (count $command) = 3
         switch $command[2]
         case show info users md5
             for i in (_msg_opts $command[-1])
-                echo $i
+                echo -- $i
             end
         case package
             for i in (rospack list-names)
-                echo $i
+                echo -- $i
             end
         case packages list
             # This shouldn't really have a completion rule

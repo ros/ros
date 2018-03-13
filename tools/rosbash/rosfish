@@ -474,6 +474,75 @@ function _roscomplete_launch
     end
 end
 
+function _roscomplete_rosnode
+    set -l command (_ros_command_line)
+    set -l arg $command[-1]
+
+    if test (count $command) = 2
+        set -l opts ping list info machine kill cleanup
+        for i in $opts
+            echo $i
+        end
+    else if test (count $command) = 3
+        switch $command[2]
+        case info
+            for i in (rosnode list ^ /dev/null)
+                echo $i
+            end
+        case ping list kill
+            set -l opts
+            if echo -- $arg | grep -qE -- "--.*"
+                set opts --all --help
+            else
+                set opts (rosnode list ^ /dev/null)
+            end
+            for i in $opts
+                echo $i
+            end
+        case machine
+            # This takes more logic to determine which machines are present
+        end
+    else
+        switch $command[2]
+        case kill
+            # complete on node name
+            for i in (rosnode list ^ /dev/null)
+                echo $i
+            end
+        end
+    end
+end
+
+function _roscomplete_rosparam
+    set -l command (_ros_command_line)
+
+    if test (count $command) = 2
+        set -l opts set get load dump delete list
+        for i in $opts
+            echo $i
+        end
+    else if test (count $command) = 3
+        switch $command[2]
+        case set get delete list
+            for i in (rosparam list ^ /dev/null)
+                echo $i
+            end
+        case load dump
+            # TODO figure this out
+            # complete on files
+            complete -f
+        end
+    else if test (count $command) = 4
+        switch $command[2]
+        case load dump
+            # complete on namespace
+            for i in (rosparam list ^ /dev/null)
+                echo $i
+            end
+        end
+    end
+end
+
 function _roscomplete_rostopic
     set -l command (_ros_command_line)
     set -l arg $command[-1]
@@ -645,3 +714,5 @@ complete -c roscp -l help --description "prints command info"
 complete -x -c rosmsg -a '(_roscomplete_rosmsg)'
 complete -x -c rosservice -a '(_roscomplete_rosservice)'
 complete -x -c rostopic -a '(_roscomplete_rostopic)'
+complete -x -c rosparam -a '(_roscomplete_rosparam)'
+complete -x -c rosnode -a '(_roscomplete_rosnode)'

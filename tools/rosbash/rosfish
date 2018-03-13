@@ -239,7 +239,7 @@ function _roscmd
         echo "Couldn't find package $argv[1]"
         return 1
     end
-    set -l exepath (find -L $catkin_package_libexec_dir $pkgdir -name $2 -type f ! -regex .*/[.].* ! -regex .*$pkgdir\/build\/.* | uniq)
+    set -l exepath (_rosfind -L $catkin_package_libexec_dir $pkgdir -name $2 -type f ! -regex .*/[.].* ! -regex .*$pkgdir\/build\/.* | uniq)
     if test (count $execpath) = "0"
         echo "That file does not exist in that package."
         return 1
@@ -303,7 +303,7 @@ function _roscomplete_sub_dir
         _ros_list_locations
     else
         # The first section is a full ROS location, so we complete from it's subdirs
-        find -L $rosvals[2]$rosvals[3] -maxdepth 1 -mindepth 1 -type d ! -regex ".*/[.].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/$rosvals[1]\/\1/g"
+        _rosfind -L $rosvals[2]$rosvals[3] -maxdepth 1 -mindepth 1 -type d ! -regex ".*/[.].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/$rosvals[1]\/\1/g"
     end
 end
 
@@ -316,7 +316,7 @@ function _msg_opts
         set -l path (rospack find $pkgname)
 
         if test -d "$path/msg"
-            set -l opts (find -L $path/msg -maxdepth 1 -mindepth 1 -name "*.msg" ! -regex ".*/[.][^./].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.msg/$pkgname\/\1/g")
+            set -l opts (_rosfind -L $path/msg -maxdepth 1 -mindepth 1 -name "*.msg" ! -regex ".*/[.][^./].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.msg/$pkgname\/\1/g")
             for i in $opts
                 echo -- $i
             end
@@ -369,7 +369,7 @@ function _srv_opts
     set -l path (rospack find $pkgname ^ /dev/null)
 
     if test $status -eq 0 -a -d $path/srv
-        set -l opts (find -L $path/srv -maxdepth 1 -mindepth 1 -name "*.srv" ! -regex ".*/[.][^./].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.srv/$pkgname\/\1/g")
+        set -l opts (_rosfind -L $path/srv -maxdepth 1 -mindepth 1 -name "*.srv" ! -regex ".*/[.][^./].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.srv/$pkgname\/\1/g")
         for i in $opts
             echo -- $i
         end
@@ -501,7 +501,7 @@ function _roscomplete_roslaunch
         # Add launchfiles and directories in the current directory
         # Note: fish only uses these if user typed ./
         if test (count $command) = 2
-            set opts $opts (find -mindepth 1 -maxdepth 1 -type d -o -name "*.launch" -o -name "*.test")
+            set opts $opts (_rosfind -mindepth 1 -maxdepth 1 -type d -o -name "*.launch" -o -name "*.test")
         end
 
         # complete roslaunch arguments for a launch file

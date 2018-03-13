@@ -7,20 +7,20 @@ function _ros_command_line
 end
 
 function _rossed
-  if test (uname) = "Darwin" -o (uname) = "FreeBSD"
-      sed -E $argv
-  else
-      sed -r $argv
-  end
+    if test (uname) = "Darwin" -o (uname) = "FreeBSD"
+        sed -E $argv
+    else
+        sed -r $argv
+    end
 end
 
 function _rosfind
-  if test (uname) = "Darwin" -o (uname) = "FreeBSD"
-    # BSD find needs -E for extended regexp
-    find -E $argv
-  else
-    find $argv
-  end
+    if test (uname) = "Darwin" -o (uname) = "FreeBSD"
+        # BSD find needs -E for extended regexp
+        find -E $argv
+    else
+        find $argv
+    end
 end
 
 # _ros_location_find
@@ -124,73 +124,73 @@ function _ros_decode_path
 end
 
 function rospython
-  if test -z $argv
-    python -i -c "import roslib; roslib.load_manifest('$1')"
-    return 0
-  end
-  if test (count $argv) = 1
-    if test $argv[1] = "--help"
-      echo -e "usage: rospython [package] \n\nRun python loading package manifest first."
-      return 0
+    if test -z $argv
+        python -i -c "import roslib; roslib.load_manifest('$1')"
+        return 0
     end
-  end
-  if test -f ./manifest.xml
-    set pkgname (basename (pwd))
-    python -i -c "import roslib; roslib.load_manifest($pkgname)"
-  else
-    python
-  end
+    if test (count $argv) = 1
+        if test $argv[1] = "--help"
+            echo -e "usage: rospython [package] \n\nRun python loading package manifest first."
+            return 0
+        end
+    end
+    if test -f ./manifest.xml
+        set pkgname (basename (pwd))
+        python -i -c "import roslib; roslib.load_manifest($pkgname)"
+    else
+        python
+    end
 end
 
 function roscd
-  if test -z $argv[1]
-    if test -n $ROS_WORKSPACE
-      cd $ROS_WORKSPACE
-      return 0
-    end
-    if test -n $CMAKE_PREFIX_PATH[1]
-      for ws in $CMAKE_PREFIX_PATH
-        ls $ws/.catkin
-        if test -f $ws/.catkin
-          cd $ws
-          return 0
+    if test -z $argv[1]
+        if test -n $ROS_WORKSPACE
+            cd $ROS_WORKSPACE
+            return 0
         end
-      end
+        if test -n $CMAKE_PREFIX_PATH[1]
+            for ws in $CMAKE_PREFIX_PATH
+                ls $ws/.catkin
+                if test -f $ws/.catkin
+                    cd $ws
+                    return 0
+                end
+            end
+        end
+        echo -e "Neither ROS_WORKSPACE is set nor a catkin workspace is listed in CMAKE_PREFIX_PATH.  Please set ROS_WORKSPACE or source a catkin workspace to use roscd with no arguments."
+        return 1
     end
-    echo -e "Neither ROS_WORKSPACE is set nor a catkin workspace is listed in CMAKE_PREFIX_PATH.  Please set ROS_WORKSPACE or source a catkin workspace to use roscd with no arguments."
-    return 1
-  end
 
-  if test $argv[1] = "--help"
-    echo -e "usage: roscd package\n\nJump to target package."
-    return 0
-  end
-
-  set -l rospath (_ros_decode_path $argv[1] forceeval)
-  if test -z $rospath
-    if test -z $ROS_WORKSPACE
-      echo -e "No ROS_WORKSPACE set.  Please set ROS_WORKSPACE to use roscd with no arguments."
-      return 1
+    if test $argv[1] = "--help"
+        echo -e "usage: roscd package\n\nJump to target package."
+        return 0
     end
-    cd $ROS_WORKSPACE
-    return 0
-  else
-    cd $rospath
-    return 0
-  end
+
+    set -l rospath (_ros_decode_path $argv[1] forceeval)
+    if test -z $rospath
+        if test -z $ROS_WORKSPACE
+            echo -e "No ROS_WORKSPACE set.  Please set ROS_WORKSPACE to use roscd with no arguments."
+            return 1
+        end
+        cd $ROS_WORKSPACE
+        return 0
+    else
+        cd $rospath
+        return 0
+    end
 end
 
 function _is_integer
-  not test -z (expr $argv[1] - $argv[1] 2>/dev/null)
-  return $status
+    not test -z (expr $argv[1] - $argv[1] 2>/dev/null)
+    return $status
 end
 
 function rosd
     if test (count $argv) != 0
-      if test $argv[1] = "--help"
-        echo -e "usage: rosd\n\nDisplays the list of currently remembered directories with indexes."
-        return 0
-      end
+        if test $argv[1] = "--help"
+            echo -e "usage: rosd\n\nDisplays the list of currently remembered directories with indexes."
+            return 0
+        end
     end
     set count 0
     for items in (dirs | sed -e 's/  /\n/g')
@@ -201,13 +201,13 @@ end
 
 function rospd
     if test (count $argv) != 0
-      if test $argv[1] = "--help"
+        if test $argv[1] = "--help"
+            echo -e "usage: rospd\n\nLike pushd, also accepts indexes from rosd."
+            return 0
+        end
+    else
         echo -e "usage: rospd\n\nLike pushd, also accepts indexes from rosd."
         return 0
-      end
-    else
-      echo -e "usage: rospd\n\nLike pushd, also accepts indexes from rosd."
-      return 0
     end
     set -l rospath (_ros_decode_path $argv[1] forceeval)
     pushd $rospath > /dev/null
@@ -216,13 +216,13 @@ end
 
 function rosls
     if test (count $argv) != 0
-      if test $argv[1] = "--help"
+        if test $argv[1] = "--help"
+            echo -e "usage: rosls [package]\n\nLists contents of a package directory."
+            return 0
+        end
+    else
         echo -e "usage: rosls [package]\n\nLists contents of a package directory."
         return 0
-      end
-    else
-      echo -e "usage: rosls [package]\n\nLists contents of a package directory."
-      return 0
     end
     set -l rospath (_ros_decode_path $argv[1] forceeval)
     ls $rospath
@@ -259,12 +259,12 @@ end
 function rosed
     set -l arg
     if test (count $argv) = 0
-       echo -e "usage: rossed [package] [file]\n\nEdit a file within a package."
-       return 0
+        echo -e "usage: rossed [package] [file]\n\nEdit a file within a package."
+        return 0
     end
     if test $argv[1] = "--help"
-       echo -e "usage: rossed [package] [file]\n\nEdit a file within a package."
-       return 0
+        echo -e "usage: rossed [package] [file]\n\nEdit a file within a package."
+        return 0
     end
     _roscmd $argv[1]
     if test -n $arg
@@ -287,8 +287,8 @@ function roscp
 end
 
 function _roscomplete
-  _ros_list_locations
-  _ros_list_stacks
+    _ros_list_locations
+    _ros_list_stacks
 end
 
 function _roscomplete_sub_dir

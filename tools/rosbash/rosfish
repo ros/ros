@@ -1,20 +1,26 @@
-#alias roscat 'echo "unimplemented"'
+function _ros_command_line
+    set -l command (commandline -cpo) (commandline -ct)
 
-function _rossed
-    if test (uname) = "Darwin" -o (uname) = "FreeBSD"
-        sed -E $argv
-    else
-        sed -r $argv
+    for i in $command
+        echo $i
     end
 end
 
+function _rossed
+  if test (uname) = "Darwin" -o (uname) = "FreeBSD"
+      sed -E $argv
+  else
+      sed -r $argv
+  end
+end
+
 function _rosfind
-    if  test (uname) = "Darwin" -o (uanme) = "FreeBSD"
-        # BSD find needs -E for extended regexp
-        find -E $argv
-    else
-        find $argv
-    end
+  if  test (uname) = "Darwin" -o (uname) = "FreeBSD"
+    # BSD find needs -E for extended regexp
+    find -E $argv
+  else
+    find $argv
+  end
 end
 
 # _ros_location_find
@@ -60,8 +66,8 @@ function _ros_list_locations
 end
 
 function _ros_package_find
-    set -l loc (set -x ROS_CACHE_TIMEOUT -1.0; rospack find $1 2> /dev/null)
-    if test $status != 0
+    set -l loc (set -x ROS_CACHE_TIMEOUT -1.0; rospack find $argv[1] ^ /dev/null)
+    if test $status -ne 0
         return 1
     end
     echo $loc
@@ -118,73 +124,73 @@ function _ros_decode_path
 end
 
 function rospython
-    if test -z $argv
-        python -i -c "import roslib; roslib.load_manifest('$1')"
-        return 0
+  if test -z $argv
+    python -i -c "import roslib; roslib.load_manifest('$1')"
+    return 0
+  end
+  if test (count $argv) = 1
+    if test $argv[1] = "--help"
+      echo -e "usage: rospython [package] \n\nRun python loading package manifest first."
+      return 0
     end
-    if test (count $argv) = 1
-        if test $argv[1] = "--help"
-            echo -e "usage: rospython [package] \n\nRun python loading package manifest first."
-            return 0
-        end
-    end
-    if test -f ./manifest.xml
-        set pkgname (basename (pwd))
-        python -i -c "import roslib; roslib.load_manifest($pkgname)"
-    else
-        python
-    end
+  end
+  if test -f ./manifest.xml
+    set pkgname (basename (pwd))
+    python -i -c "import roslib; roslib.load_manifest($pkgname)"
+  else
+    python
+  end
 end
 
 function roscd
-    if test -z $argv[1]
-        if test -n $ROS_WORKSPACE
-            cd $ROS_WORKSPACE
-            return 0
+  if test -z $argv[1]
+    if test -n $ROS_WORKSPACE
+      cd $ROS_WORKSPACE
+      return 0
+    end
+    if test -n $CMAKE_PREFIX_PATH[1]
+      for ws in $CMAKE_PREFIX_PATH
+        ls $ws/.catkin
+        if test -f $ws/.catkin
+          cd $ws
+          return 0
         end
-        if test -n $CMAKE_PREFIX_PATH[1]
-            for ws in $CMAKE_PREFIX_PATH
-                ls $ws/.catkin
-                if test -f $ws/.catkin
-                    cd $ws
-                    return 0
-                end
-            end
-        end
-        echo -e "Neither ROS_WORKSPACE is set nor a catkin workspace is listed in CMAKE_PREFIX_PATH.  Please set ROS_WORKSPACE or source a catkin workspace to use roscd with no arguments."
-        return 1
       end
-
-    if test $argv[1] = "--help"
-        echo -e "usage: roscd package\n\nJump to target package."
-        return 0
     end
+    echo -e "Neither ROS_WORKSPACE is set nor a catkin workspace is listed in CMAKE_PREFIX_PATH.  Please set ROS_WORKSPACE or source a catkin workspace to use roscd with no arguments."
+    return 1
+  end
 
-    set -l rospath (_ros_decode_path $argv[1] forceeval)
-    if test -z $rospath
-        if test -z $ROS_WORKSPACE
-            echo -e "No ROS_WORKSPACE set.  Please set ROS_WORKSPACE to use roscd with no arguments."
-            return 1
-        end
-        cd $ROS_WORKSPACE
-        return 0
-    else
-        cd $rospath
-        return 0
+  if test $argv[1] = "--help"
+    echo -e "usage: roscd package\n\nJump to target package."
+    return 0
+  end
+
+  set -l rospath (_ros_decode_path $argv[1] forceeval)
+  if test -z $rospath
+    if test -z $ROS_WORKSPACE
+      echo -e "No ROS_WORKSPACE set.  Please set ROS_WORKSPACE to use roscd with no arguments."
+      return 1
     end
+    cd $ROS_WORKSPACE
+    return 0
+  else
+    cd $rospath
+    return 0
+  end
 end
 
 function _is_integer
-    not test -z (expr $argv[1] - $argv[1] 2>/dev/null)
-    return $status
+  not test -z (expr $argv[1] - $argv[1] 2>/dev/null)
+  return $status
 end
 
 function rosd
     if test (count $argv) != 0
-        if test $argv[1] = "--help"
-            echo -e "usage: rosd\n\nDisplays the list of currently remembered directories with indexes."
-            return 0
-        end
+      if test $argv[1] = "--help"
+        echo -e "usage: rosd\n\nDisplays the list of currently remembered directories with indexes."
+        return 0
+      end
     end
     set count 0
     for items in (dirs | sed -e 's/  /\n/g')
@@ -195,13 +201,13 @@ end
 
 function rospd
     if test (count $argv) != 0
-        if test $argv[1] = "--help"
-            echo -e "usage: rospd\n\nLike pushd, also accepts indexes from rosd."
-            return 0
-        end
-    else
+      if test $argv[1] = "--help"
         echo -e "usage: rospd\n\nLike pushd, also accepts indexes from rosd."
         return 0
+      end
+    else
+      echo -e "usage: rospd\n\nLike pushd, also accepts indexes from rosd."
+      return 0
     end
     set -l rospath (_ros_decode_path $argv[1] forceeval)
     pushd $rospath > /dev/null
@@ -210,13 +216,13 @@ end
 
 function rosls
     if test (count $argv) != 0
-        if test $argv[1] = "--help"
-            echo -e "usage: rosls [package]\n\nLists contents of a package directory."
-            return 0
-        end
-    else
+      if test $argv[1] = "--help"
         echo -e "usage: rosls [package]\n\nLists contents of a package directory."
         return 0
+      end
+    else
+      echo -e "usage: rosls [package]\n\nLists contents of a package directory."
+      return 0
     end
     set -l rospath (_ros_decode_path $argv[1] forceeval)
     ls $rospath
@@ -281,14 +287,15 @@ function roscp
 end
 
 function _roscomplete
-    _ros_list_locations
-    _ros_list_stacks
+  _ros_list_locations
+  _ros_list_stacks
 end
 
 function _roscomplete_sub_dir
     set -l wd $PWD
     set -l roslocs (_ros_list_locations)
-    set -l arg (commandline -ct)
+    set -l command (_ros_command_line)
+    set -l arg $command[-1]
     set -g rosvals
     set -l path (_ros_decode_path $arg)
     if test -z $rosvals[1]
@@ -300,6 +307,75 @@ function _roscomplete_sub_dir
     end
 end
 
+function _msg_opts
+    if echo $argv[1] | grep -qE ".+/.*"
+        set -l splitname (string split / $argv[1])
+        set -l pkgname $splitname[1]
+        set -l msgname $splitname[-1]
+
+        set -l path (rospack find $pkgname)
+
+        if test -d "$path/msg"
+            set -l opts (find -L $path/msg -maxdepth 1 -mindepth 1 -name "*.msg" ! -regex ".*/[.][^./].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.msg/$pkgname\/\1/g")
+            for i in $opts
+                echo $i
+            end
+        end
+    else
+        set -l pkgname $argv[1]
+        set -l pkgs (rospack list | sed 's/ /\n/g')
+
+        for i in (seq 1 2 (count $pkgs))
+            if test -d $pkgs[(math $i + 1)]"/msg"
+                echo $pkgs[$i]/
+            end
+        end
+    end
+end
+
+function _srv_opts
+    set -l pkgname
+
+    if echo $argv[1] | grep -qE ".+/.*"
+        set -l splitname (string split / $argv[1])
+        set pkgname $splitname[1]
+    else
+        set pkgname $argv[1]
+
+        set -l pkgs (rospack list | grep "^$pkgname")
+        set -l count 0
+        set -l opts
+
+        for i in $pkgs
+            set -l parts (string split ' ' $i)
+            set -l pkg_name $parts[1]
+            set -l pkg_path $parts[2]
+
+            if test -d $pkg_path/srv
+                set opts $opts $pkg_name
+                set pkgname $pkg_name
+                set count (math $count + 1)
+            end
+        end
+
+        if test $count > 1
+            for i in $opts
+                echo $i
+            end
+            return 0
+        end
+    end
+
+    set -l path (rospack find $pkgname ^ /dev/null)
+
+    if test $status -eq 0 -a -d $path/srv
+        set -l opts (find -L $path/srv -maxdepth 1 -mindepth 1 -name "*.srv" ! -regex ".*/[.][^./].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.srv/$pkgname\/\1/g")
+        for i in $opts
+            echo $i
+        end
+    end
+end
+
 function _roscomplete_rosmake
     _roscomplete
     set options --test-only --all --mark-installed --unmark-installed --robust --build-everything --specified-only --buildtest --buildtest1 --output --pre-clean --bootstrap --disable-logging --target --pjobs= --threads --profile --skip-blacklist --status-rate
@@ -308,24 +384,77 @@ function _roscomplete_rosmake
     end
 end
 
+function _roscomplete_find --description 'complete files that match $argv[2] within $argv[1], that start with $argv[3]'
+    set -l opts
+    set -l pkgdir
+    set -l catkin_package_libexec_dir
+    set -l perm $argv[1]
+    set -l pkg $argv[2]
+    set -l arg $argv[3]
+
+    if test -n "$CMAKE_PREFIX_PATH"
+        set catkin_package_libexec_dir (catkin_find --first-only --without-underlays --libexec $pkg ^ /dev/null)
+    end
+
+    set pkgdir (_ros_package_find $pkg)
+
+    set -l opts
+    if test -n "$catkin_package_libexec_dir" -o -n "$pkgdir"
+        set -l args (echo -n $argv[1] | sed -e 's/ /\\n/g')
+        set opts (_rosfind -L $catkin_package_libexec_dir "$pkgdir" $args ! -regex ".*/[.][^./].*" ! -regex ".*$pkgdir\/build\/.*"  -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g")
+    else
+        set opts ""
+    end
+
+    for i in $opts
+        echo $i
+    end
+end
+
 function _roscomplete_search_dir
-    set -l command (commandline -o)
-    if test (count $command) = 1
-        echo "1" >> ~/output.txt
-        _ros_list_packages
-    end
+    set -l command (_ros_command_line)
+
+    set -l arg $command[-1]
+
     if test (count $command) = 2
-        echo "2" >> ~/output.txt
-        _ros_list_packages
-    end
-    if test (count $command) = 3
-        echo "3" >> ~/output.txt
-        find (_ros_location_find $command[1]) $arg -printf "%f\n"
+        # complete packages
+        _ros_list_packages $arg
+    else if test (count $command) = 3
+        # complete files within package according to $argv[1]
+        _roscomplete_find $argv[1] $command[2] $arg
+    else
+        # TODO finish this
+        # complete filenames
+        complete -C
     end
 end
 
 function _roscomplete_rosrun
-    _roscomplete_search_dir '-type f -perm +111'
+    set -l perm
+    if test (uname) = "Darwin"
+        set perm "+111"
+    else
+        set perm "/111"
+    end
+
+    set -l command (_ros_command_line)
+    set -l arg $command[-1]
+
+    # TODO
+    # add --prefix, --debug flags
+
+    if test (count $command) = 2
+        # completing first argument; assuming package name
+        # TODO add --arg support
+        _ros_list_packages $arg
+    else if test (count $command) = 3
+        # completing second argument; node within package
+        set -l pkg $command[2]
+        _roscomplete_find "-type f -perm $perm" $pkg $arg
+    else
+        # completing remaining arguments; per "normal"
+        _roscomplete_search_dir "-type f -perm $perm"
+    end
 end
 
 function _roscomplete_file
@@ -333,15 +462,77 @@ function _roscomplete_file
 end
 
 function _roscomplete_launch
-    if test -z (commandline -ct | grep i-)
+    set -l command (_ros_command_line)
+
+    if echo $command[-1] | grep -qE "^--"
         set options --files --args --nodes --find-node --child --local --screen --server_uri --run_id --wait --port --core --pid --dump-params
         for i in $options
-             echo $i
+            echo $i
         end
     else
-        _roscomplete_search_dir '-type f -regex \'.*\.launch$\' -o -type f -regex \'.*\.test$\''
+        _roscomplete_search_dir '( -type f -regex .*\.launch$ -o -type f -regex .*\.test$ )'
     end
 end
+
+function _roscomplete_rosservice
+    set -l command (_ros_command_line)
+
+    if test (count $command) = 2
+        set -l opts args call find info list type uri
+        for i in $opts
+            echo $i
+        end
+    else if test (count $command) = 3
+        switch $command[2]
+        case args call info list type uri
+            set -l opts (rosservice list ^ /dev/null)
+            for i in $opts
+                echo $i
+            end
+        case find
+            # Need a clever way to do message searching
+            set -l opts (_srv_opts $command[-1])
+            for i in $opts
+                echo $i
+            end
+        end
+    else if test (count $command) = 4
+        switch $command[2]
+        case call
+            set -l type (rosservice type $command[3])
+            set -l opts (rosmsg-proto srv ^ /dev/null -s $type)
+
+            # TODO: better formatting here
+            echo (string unescape $opts)
+        end
+    end
+end
+
+function _roscomplete_rosmsg
+    set -l command (_ros_command_line)
+    set -l arg $command[-1]
+
+    if test (count $command) = 2
+        set -l opts show list md5 package packages
+        for i in $opts
+            echo $i
+        end
+    else if test (count $command) = 3
+        switch $command[2]
+        case show info users md5
+            for i in (_msg_opts $command[-1])
+                echo $i
+            end
+        case package
+            for i in (rospack list-names)
+                echo $i
+            end
+        case packages list
+            # This shouldn't really have a completion rule
+        end
+    end
+end
+
 
 complete -x -c roscd -a '(_roscomplete_sub_dir)'
 complete -c roscd -l help --description "prints command info"
@@ -354,5 +545,8 @@ complete -x -c rosrun -a '(_roscomplete_rosrun)'
 complete -x -c roslaunch -a '(_roscomplete_launch)'
 complete -x -c rosed -a '(_roscomplete_file)'
 complete -c rosed -l help --description "prints command info"
-complete -x -c roscp -a '(_roscomplete_file)'
+#complete -x -c roscp -a '(_roscomplete_file)'et -x TEST works
 complete -c roscp -l help --description "prints command info"
+
+complete -x -c rosmsg -a '(_roscomplete_rosmsg)'
+complete -x -c rosservice -a '(_roscomplete_rosservice)'

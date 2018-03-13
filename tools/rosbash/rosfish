@@ -474,6 +474,100 @@ function _roscomplete_launch
     end
 end
 
+function _roscomplete_rostopic
+    set -l command (_ros_command_line)
+    set -l arg $command[-1]
+
+    set -l opts
+
+    if test (count $command) = 2
+        set -l opts bw echo hz list pub type find info
+        for i in $opts
+            echo $i
+        end
+    else if test (count $command) -ge 3
+        if echo -- $arg | grep -qE -- '--.*'
+            set -l opts
+
+            switch $command[2]
+            case pub
+                set opts --rate --once --file --latch
+            case bw
+                set opts --window
+            case echo
+                set opts --bag --filter --nostr --noarr --clear --all offset
+            case hz
+                set opts --window --filter
+            case list
+                set opts --bag --verbose --host
+            end
+
+            for i in $opts
+                echo -- "$i"
+            end
+        else
+            switch $command[2]
+            case bw echo hz list type info
+                if test $command[-2] = '-b' -o $command[-2] = '--bag'
+                    # TODO
+                    complete -f
+                else
+                    for i in (rostopic list)
+                        echo $i
+                    end
+                end
+            case find
+                for i in (_msg_opts $command[-1])
+                    echo -- $i
+                end
+            case pub
+                set -l topic_pos 3
+                set -l type_pos 4
+                set -l msg_pos 5
+                while test $topic_pos -le (count $command)
+                    if echo -- $command[$topic_pos] | grep -qE -- "-.*"
+                        # ignore any options starting with -
+                        if test $command[$topic_pos] = '-f' -o $command[$topic_pos] = '-r'
+                            # ignore additional argument of -f and -r
+                            set topic_pos (math $topic_pos + 1)
+                            set type_pos (math $type_pos + 1)
+                            set msg_pos (math $msg_pos + 1)
+                        end
+
+                        set topic_pos (math $topic_pos + 1)
+                        set type_pos (math $type_pos + 1)
+                        set msg_pos (math $msg_pos + 1)
+                    else
+                        break
+                    end
+                end
+
+                if test (count $command) = $topic_pos
+                    set -l opts (rostopic list ^ /dev/null)
+                    for i in $opts
+                        echo -- $i
+                    end
+                else if test (count $command) = $type_pos
+                    set -l opts (rostopic info $command[-2] ^ /dev/null | awk '/Type:/{print $2}')
+                    if test -z $opts
+                        set opts (_msg_opts $command[-1])
+                    end
+                    for i in $opts
+                        echo -- $i
+                    end
+                else if test (count $command) = $msg_pos
+                    set -l opts (rosmsg-proto msg ^ /dev/null -s $command[-2])
+                    if test $status = 0
+                        for i in $opts
+                            echo -- $i
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
 function _roscomplete_rosservice
     set -l command (_ros_command_line)
 
@@ -550,3 +644,4 @@ complete -c roscp -l help --description "prints command info"
 
 complete -x -c rosmsg -a '(_roscomplete_rosmsg)'
 complete -x -c rosservice -a '(_roscomplete_rosservice)'
+complete -x -c rostopic -a '(_roscomplete_rostopic)'

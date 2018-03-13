@@ -15,7 +15,7 @@ function _rossed
 end
 
 function _rosfind
-  if  test (uname) = "Darwin" -o (uname) = "FreeBSD"
+  if test (uname) = "Darwin" -o (uname) = "FreeBSD"
     # BSD find needs -E for extended regexp
     find -E $argv
   else

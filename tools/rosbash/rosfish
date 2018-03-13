@@ -409,7 +409,8 @@ function _roscomplete_rossrv
     end
 end
 
-function _roscomplete_find --description 'complete files that match $argv[2] within $argv[1], that start with $argv[3]'
+function _roscomplete_find
+    # complete files that match $argv[2] within $argv[1], that start with $argv[3]
     set -l opts
     set -l pkgdir
     set -l catkin_package_libexec_dir

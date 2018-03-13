@@ -352,7 +352,7 @@ function _srv_opts
             set -l pkg_path $parts[2]
 
             if test -d $pkg_path/srv
-                set opts $opts $pkg_name
+                set opts $opts $pkg_name/
                 set pkgname $pkg_name
                 set count (math $count + 1)
             end
@@ -381,6 +381,31 @@ function _roscomplete_rosmake
     set options --test-only --all --mark-installed --unmark-installed --robust --build-everything --specified-only --buildtest --buildtest1 --output --pre-clean --bootstrap --disable-logging --target --pjobs= --threads --profile --skip-blacklist --status-rate
     for i in $options
          echo -- $i
+    end
+end
+
+function _roscomplete_rossrv
+    set -l command (_ros_command_line)
+    set -l arg $command[-1]
+
+    if test (count $command) = 2
+        set -l opts show list md5 package packages
+        for i in $opts
+            echo $i
+        end
+    else if test (count $command) = 3
+        switch $command[2]
+        case show users md5
+            for i in (_srv_opts $arg)
+                echo -- $i
+            end
+        case package
+            for i in (rospack list-names)
+                echo -- $i
+            end
+        case packages list
+            # This shouldn't really have a completion rule
+        end
     end
 end
 
@@ -772,3 +797,4 @@ complete -x -c rosparam -a '(_roscomplete_rosparam)'
 complete -x -c rosnode -a '(_roscomplete_rosnode)'
 complete -x -c rospack -a '(_roscomplete_rospack)'
 complete -x -c rosbag -a '(_roscomplete_rosbag)'
+complete -x -c rossrv -a '(_roscomplete_rossrv)'

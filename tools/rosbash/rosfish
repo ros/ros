@@ -487,7 +487,7 @@ function _roscomplete_file
     _roscomplete_search_dir '-type f ! -regex .*[.][oa]$'
 end
 
-function _roscomplete_launch
+function _roscomplete_roslaunch
     set -l command (_ros_command_line)
 
     if echo -- $command[-1] | grep -qE "^--"
@@ -496,8 +496,33 @@ function _roscomplete_launch
             echo -- $i
         end
     else
-        _roscomplete_search_dir '( -type f -regex .*\.launch$ -o -type f -regex .*\.test$ )'
-        # TODO add extra fancy stuff here for launch file arguments
+        set -l opts (_roscomplete_search_dir '( -type f -regex .*\.launch$ -o -type f -regex .*\.test$ )')
+
+        # Add launchfiles and directories in the current directory
+        # Note: fish only uses these if user typed ./
+        if test (count $command) = 2
+            set opts $opts (find -mindepth 1 -maxdepth 1 -type d -o -name "*.launch" -o -name "*.test")
+        end
+
+        # complete roslaunch arguments for a launch file
+        if test (count $command) -ge 2
+            set -l roslaunch_complete (which roslaunch-complete)
+
+            if test -x $roslaunch_complete
+                # Call roslaunch-complete instead of roslaunch to get arg completion
+                set -l roslaunch_args (eval $roslaunch_complete $command[2..3] ^ /dev/null | sed 's/ /\n/g')
+                # roslaunch-complete should be very silent about
+                # errors and return 0 if it produced usable completion.
+                if test $status = 0
+                    set opts $opts $roslaunch_args
+                    # FIXME maybe leave $opts out if we completed successfully.
+                end
+            end
+        end
+
+        for i in $opts
+            echo $i
+        end
     end
 end
 
@@ -785,7 +810,7 @@ complete -c rosls -l help --description "prints command info"
 complete -x -c rosmake -a '(_roscomplete_rosmake)'
 complete -x -c rosclean -a 'check purge'
 complete -x -c rosrun -a '(_roscomplete_rosrun)'
-complete -x -c roslaunch -a '(_roscomplete_launch)'
+complete -x -c roslaunch -a '(_roscomplete_roslaunch)'
 complete -x -c rosed -a '(_roscomplete_file)'
 complete -c rosed -l help --description "prints command info"
 #complete -x -c roscp -a '(_roscomplete_file)'

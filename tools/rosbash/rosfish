@@ -358,7 +358,7 @@ function _srv_opts
             end
         end
 
-        if test $count > 1
+        if test $count -gt 1
             for i in $opts
                 echo -- $i
             end

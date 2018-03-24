@@ -816,11 +816,11 @@ complete -c rosed -l help --description "prints command info"
 #complete -x -c roscp -a '(_roscomplete_file)'
 complete -c roscp -l help --description "prints command info"
 
-complete -x -c rosmsg -a '(_roscomplete_rosmsg)'
+complete -x -c rosmsg     -a '(_roscomplete_rosmsg)'
 complete -x -c rosservice -a '(_roscomplete_rosservice)'
-complete -x -c rostopic -a '(_roscomplete_rostopic)'
-complete -x -c rosparam -a '(_roscomplete_rosparam)'
-complete -x -c rosnode -a '(_roscomplete_rosnode)'
-complete -x -c rospack -a '(_roscomplete_rospack)'
-complete -x -c rosbag -a '(_roscomplete_rosbag)'
-complete -x -c rossrv -a '(_roscomplete_rossrv)'
+complete -x -c rostopic   -a '(_roscomplete_rostopic)'
+complete -x -c rosparam   -a '(_roscomplete_rosparam)'
+complete -x -c rosnode    -a '(_roscomplete_rosnode)'
+complete -x -c rospack    -a '(_roscomplete_rospack)'
+complete -x -c rosbag     -a '(_roscomplete_rosbag)'
+complete -x -c rossrv     -a '(_roscomplete_rossrv)'

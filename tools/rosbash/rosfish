@@ -76,13 +76,17 @@ end
 
 function _ros_list_packages
     set -l packages (set -x ROS_CACHE_TIMEOUT -1.0; rospack list-names)
-    echo $packages | tr ' ' '\n'
+    for i in $packages
+        echo -- $i
+    end
     return 0
 end
 
 function _ros_list_stacks
     set -l stacks (set -x ROS_CACHE_TIMEOUT -1.0; rosstack list-names)
-    echo $stacks | tr ' ' '\n'
+    for i in $stacks
+        echo -- $i
+    end
     return 0
 end
 
@@ -330,9 +334,10 @@ function _roscomplete_rosmake
 
     if echo -- $arg | grep -qE -- "^--.*"
         set opts $opts --test-only --all --mark-installed --unmark-installed --robust --build-everything --specified-only --buildtest --buildtest1 --output --pre-clean --bootstrap --disable-logging --target --pjobs= --threads --profile --skip-blacklist --status-rate
-        for i in $opts
-             echo -- $i
-        end
+    end
+
+    for i in $opts
+         echo -- $i
     end
 end
 

@@ -315,6 +315,20 @@ function _roscomplete
     _ros_list_stacks
 end
 
+function _roscomplete_rosmake
+    set -l command (_ros_command_line)
+    set -l arg $command[-1]
+
+    set -l opts (_roscomplete)
+
+    if echo -- $arg | grep -qE -- "^--.*"
+        set opts $opts --test-only --all --mark-installed --unmark-installed --robust --build-everything --specified-only --buildtest --buildtest1 --output --pre-clean --bootstrap --disable-logging --target --pjobs= --threads --profile --skip-blacklist --status-rate
+        for i in $opts
+             echo -- $i
+        end
+    end
+end
+
 function _roscomplete_sub_dir
     set -l wd $PWD
     set -l roslocs (_ros_list_locations)
@@ -397,14 +411,6 @@ function _srv_opts
         for i in $opts
             echo -- $i
         end
-    end
-end
-
-function _roscomplete_rosmake
-    _roscomplete
-    set options --test-only --all --mark-installed --unmark-installed --robust --build-everything --specified-only --buildtest --buildtest1 --output --pre-clean --bootstrap --disable-logging --target --pjobs= --threads --profile --skip-blacklist --status-rate
-    for i in $options
-         echo -- $i
     end
 end
 

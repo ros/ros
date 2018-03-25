@@ -553,7 +553,7 @@ function _roscomplete_rosrun
 
     if test $start_arg -gt $end_arg
         # complete command names for --prefix
-        # TODO implement this
+        complete -C$arg
     else if test $start_arg = $end_arg
         # completing first argument; can be --arg or package name
         if echo -- $arg | grep -qE -- "-.*"
@@ -744,7 +744,6 @@ function _roscomplete_rosparam
                 echo $i
             end
         case load dump
-            # TODO figure this out
             # complete on files
             set -l arg $command[-1]
             complete --do-complete="$arg"
@@ -794,9 +793,8 @@ function _roscomplete_rostopic
         else
             switch $command[2]
             case bw echo hz list type info
-                if test $command[-2] = '-b' -o $command[-2] = '--bag'
-                    # TODO
-                    complete -f
+                if test "$command[-2]" = '-b' -o "$command[-2]" = '--bag'
+                    __fish_complete_path "$arg"
                 else
                     for i in (rostopic list)
                         echo $i
@@ -935,11 +933,8 @@ function _roscomplete_roswtf
         end
     else
         if test (count $command) = 2
-            # TODO fix path names here
-            set -l opts (_rosfind -mindepth 1 -maxdepth 1 -type d -o -name "*.launch")
-            for i in $opts
-                echo -- (string split --max 1 / $i)[2]
-            end
+            __fish_complete_directories "$arg"
+            _rosfind "$arg" -mindepth 1 -maxdepth 1 -name "*.launch" ^ /dev/null
         end
     end
 end
@@ -973,7 +968,7 @@ function _roscomplete_rosconsole
     end
 end
 
-# TODO add options for nospace, filenames, defualt
+# TODO add options for filenames, default
 complete -x -c roscd          -a '(_roscomplete_sub_dir)'
 complete -x -c rospd          -a '(_roscomplete_sub_dir)'
 complete -x -c rosls          -a '(_roscomplete_sub_dir)'

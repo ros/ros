@@ -283,12 +283,15 @@ end
 
 function roscp
     set -l arg
-    if test  (count $argv) != "3"
+    if test (count $argv) != 3
         echo -e "usage: roscp package filename target\n\nCopy a file from a package to target location."
         return 0
     end
-    _roscmd $argv[1] $argv[2]
-    cp $arg $argv[3]
+
+    set -l arg (_roscmd $argv[1] $argv[2])
+    if test $status = 0
+        cp $arg $argv[3]
+    end
 end
 
 function roscat
@@ -888,7 +891,7 @@ complete -x -c rosrun -a '(_roscomplete_rosrun)'
 complete -x -c roslaunch -a '(_roscomplete_roslaunch)'
 complete -x -c rosed -a '(_roscomplete_file)'
 complete -c rosed -l help --description "prints command info"
-#complete -x -c roscp -a '(_roscomplete_file)'
+complete -x -c roscp -a '(_roscomplete_file)'
 complete -c roscp -l help --description "prints command info"
 
 complete -x -c rosmsg     -a '(_roscomplete_rosmsg)'

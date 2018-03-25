@@ -745,7 +745,8 @@ function _roscomplete_rosparam
         case load dump
             # TODO figure this out
             # complete on files
-            complete -f
+            set -l arg $command[-1]
+            complete --do-complete="$arg"
         end
     else if test (count $command) = 4
         switch $command[2]

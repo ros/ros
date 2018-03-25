@@ -193,7 +193,7 @@ function rosd
             return 0
         end
     end
-    set count 0
+    set -l count 0
     for items in (dirs | sed -e 's/  /\n/g')
         echo $count $items;
         set count (expr $count + 1)

@@ -110,7 +110,7 @@ function _ros_decode_path
     else
         set rosname $argv[1]
         if test -z "$argv[2]" -o "$argv[2]" != "forceeval"
-            echo $rosname
+            echo -- $rosname
             return 1
         end
     end
@@ -202,7 +202,7 @@ function rosd
     end
     set -l count 0
     for items in (dirs | sed -e 's/  /\n/g')
-        echo $count $items;
+        echo -- $count $items;
         set count (expr $count + 1)
     end
 end
@@ -270,7 +270,7 @@ function _roscmd
     else
         set opt $exepath[1]
     end
-    echo $opt
+    echo -- $opt
 end
 
 function rosed

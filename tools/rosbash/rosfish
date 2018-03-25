@@ -90,7 +90,7 @@ end
 # returns 0 for no argument or if package (+ path) exist, 1 else
 # on success with arguments returns [name, abspath, basepath, remainder]
 function _ros_decode_path
-    if test -z $argv[1]
+    if test -z "$argv[1]"
         return 0
     end
 
@@ -105,7 +105,7 @@ function _ros_decode_path
         set reldir (string split --max 1 --right / $reldir)[1]/
     else
         set rosname $argv[1]
-        if test -z $argv[2] -o "$argv[2]" != "forceval"
+        if test -z "$argv[2]" -o "$argv[2]" != "forceeval"
             echo $rosname
             return 1
         end
@@ -210,8 +210,17 @@ function rospd
         echo -e "usage: rospd\n\nLike pushd, also accepts indexes from rosd."
         return 0
     end
-    set -l rospath (_ros_decode_path $argv[1] forceeval)
-    pushd $rospath > /dev/null
+
+    if _is_integer $argv[1]
+        pushd +$argv[1] > /dev/null
+    else
+        set -l rosvals (_ros_decode_path $argv[1] forceeval)
+        if test $status != 0 -a (count $argv) -gt 0
+            echo "rospd: No such package/stack '$argv[1]'"
+            return 1
+        end
+        pushd $rosvals[2]$rosvals[3]$rosvals[4] > /dev/null
+    end
     rosd
 end
 

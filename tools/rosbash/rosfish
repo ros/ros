@@ -481,16 +481,44 @@ function _roscomplete_rosrun
     end
 
     set -l command (_ros_command_line)
+
+    # rosrun ONLY accepts arguments before the package names; we need to honor this
+    set -l start_arg 2
+    set -l prev_arg
+    # loop through args and skip --prefix, arg to prefix and --debug
+    for i in (seq 2 (count $command))
+        set -l arg $command[$i]
+        switch $arg
+        case --prefix -p --debug -d
+            set start_arg (math $start_arg + 1)
+        case '*'
+            if test "$prev_arg" = '--prefix' -o "$prev_arg" = '-p'
+                set start_arg (math $start_arg + 1)
+            else
+                break
+            end
+        end
+
+        set prev_arg $arg
+    end
+
+    set -l end_arg (count $command)
     set -l arg $command[-1]
 
-    # TODO
-    # add --prefix, --debug flags
-
-    if test (count $command) = 2
-        # completing first argument; assuming package name
-        # TODO add --arg support
-        _ros_list_packages $arg
-    else if test (count $command) = 3
+    if test $start_arg -gt $end_arg
+        # complete command names for --prefix
+        # TODO implement this
+    else if test $start_arg = $end_arg
+        # completing first argument; can be --arg or package name
+        if echo -- $arg | grep -qE -- "-.*"
+            set -l opts --prefix --debug
+            for i in $opts
+                echo $i
+            end
+        else
+            _ros_list_packages $arg
+        end
+    else if test (math $start_arg + 1) = $end_arg
         # completing second argument; node within package
         set -l pkg $command[2]
         _roscomplete_find "-type f -perm $perm" $pkg $arg

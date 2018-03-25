@@ -262,21 +262,17 @@ function _roscmd
 end
 
 function rosed
-    set -l arg
-    if test (count $argv) = 0
+    if test (count $argv) = 0 -o $argv[1] = "--help"
         echo -e "usage: rossed [package] [file]\n\nEdit a file within a package."
         return 0
     end
-    if test $argv[1] = "--help"
-        echo -e "usage: rossed [package] [file]\n\nEdit a file within a package."
-        return 0
-    end
-    _roscmd $argv[1]
-    if test -n $arg
+
+    set -l arg (_roscmd $argv[1] $argv[2])
+    if test $status = 0
         if test -z $EDITOR
-            vi $arg
+            vim $arg
         else
-            $EDITOR $arg
+            eval $EDITOR $arg
         end
     end
 end

@@ -125,21 +125,22 @@ function _ros_decode_path
 end
 
 function rospython
-    if test -z $argv
-        python -i -c "import roslib; roslib.load_manifest('$1')"
-        return 0
-    end
     if test (count $argv) = 1
         if test $argv[1] = "--help"
             echo -e "usage: rospython [package] \n\nRun python loading package manifest first."
             return 0
         end
     end
-    if test -f ./manifest.xml
-        set pkgname (basename (pwd))
-        python -i -c "import roslib; roslib.load_manifest($pkgname)"
+
+    if test -z $argv
+        if test -f ./manifest.xml
+            set -l pkgname (basename (pwd))
+            python -i -c "import roslib; roslib.load_manifest('$pkgname')"
+        else
+            python
+        end
     else
-        python
+        python -i -c "import roslib; roslib.load_manifest('$argv[1]')"
     end
 end
 

@@ -345,18 +345,19 @@ function _roscomplete_rosmake
 end
 
 function _roscomplete_sub_dir
-    set -l wd $PWD
-    set -l roslocs (_ros_list_locations)
     set -l command (_ros_command_line)
     set -l arg $command[-1]
-    set -g rosvals
-    set -l path (_ros_decode_path $arg)
+
+    set -l rosvals (_ros_decode_path $arg)
+
     if test -z $rosvals[1]
         # Not a full ROS location
-        _ros_list_locations
+        for i in (_ros_list_locations)
+            echo -- "$i/"
+        end
     else
         # The first section is a full ROS location, so we complete from it's subdirs
-        _rosfind -L $rosvals[2]$rosvals[3] -maxdepth 1 -mindepth 1 -type d ! -regex ".*/[.].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/$rosvals[1]\/\1/g"
+        _rosfind -L "$rosvals[2]$rosvals[3]" -maxdepth 1 -mindepth 1 -type d ! -regex ".*/[.].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/$rosvals[1]\/\1\//g"
     end
 end
 
@@ -509,7 +510,7 @@ function _roscomplete_search_dir
             set opts (find -L $path -maxdepth 1 -type d ! -regex ".*/[.][^./].*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/\$/\//g" -e "s/^[.]\///g" -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g")
             set opts $opts (find -L $path -maxdepth 1 -type f ! -regex ".*/[.][^.]*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/^[.]\///g" -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g")
             for i in $opts
-                echo $i
+                echo -- $i
             end
         end
 

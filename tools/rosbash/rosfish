@@ -449,9 +449,26 @@ function _roscomplete_search_dir
         # complete files within package according to $argv[1]
         _roscomplete_find $argv[1] $command[2] $arg
     else
-        # TODO finish this
         # complete filenames
-        complete -C
+        set -l arg (echo $arg | sed -e "s|~|$HOME|g")
+
+        set -l path
+        if echo -- $arg | grep -qE -- "^/*.+/.*"
+            set path (string split --max 1 --right / $argv[1])[1]
+        else
+            set path .
+        end
+
+        set -l opts
+        if test -e $path
+            set opts (find -L $path -maxdepth 1 -type d ! -regex ".*/[.][^./].*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/\$/\//g" -e "s/^[.]\///g" -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g")
+            set opts $opts (find -L $path -maxdepth 1 -type f ! -regex ".*/[.][^.]*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/^[.]\///g" -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g")
+            for i in $opts
+                echo $i
+            end
+        end
+
+        # TODO rosbash does some extra stuff here for some reason
     end
 end
 

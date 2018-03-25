@@ -231,29 +231,34 @@ end
 # sets arg as return value
 function _roscmd
     set -l opt
-    if test -n $CMAKE_PREFIX_PATH
-        set -l catkin_package_libexec_dir (catkin_find --without-underlays --libexec $argv[1] 2> /dev/null)
+    set -l catkin_package_libexec_dir
+
+    if test -n "$CMAKE_PREFIX_PATH"
+        set catkin_package_libexec_dir (catkin_find --first-only --without-underlays --libexec $argv[1] ^ /dev/null)
     end
+
     set -l pkgdir (_ros_package_find $argv[1])
-    if test -z $catkin_package_libexec_dir -a -z $pkgdir
-        echo "Couldn't find package $argv[1]"
+    if test -z "$catkin_package_libexec_dir" -a -z "$pkgdir"
+        echo "Couldn't find package $argv[1]" >&2
         return 1
     end
-    set -l exepath (_rosfind -L $catkin_package_libexec_dir $pkgdir -name $2 -type f ! -regex .*/[.].* ! -regex .*$pkgdir\/build\/.* | uniq)
-    if test (count $execpath) = "0"
-        echo "That file does not exist in that package."
+
+    set -l exepath (_rosfind -L $catkin_package_libexec_dir $pkgdir -name $argv[2] -type f ! -regex ".*/[.].*" ! -regex ".*$pkgdir\/build\/.*" | uniq)
+    set -l opt
+    if test (count $exepath) = 0
+        echo "That file does not exist in that package." >&2
         return 1
-    else if test (expr (count $exepath) '>' 1) = "1"
-        echo "You have chosen a non-unique filename, please pick one of the following:"
-        for i in (seq (count $execpath))
-            echo $i") " $execpath[i]
+    else if test (count $exepath) -gt 1
+        echo "You have chosen a non-unique filename, please pick one of the following:" >&2
+        for i in (seq (count $exepath))
+            echo $i") " $exepath[$i] >&2
         end
         read choice
-        set -l opt $execpath[$choice]
+        set opt $exepath[$choice]
     else
-        set -l opt $exepath[1]
+        set opt $exepath[1]
     end
-    arg=$opt
+    echo $opt
 end
 
 function rosed
@@ -284,6 +289,25 @@ function roscp
     end
     _roscmd $argv[1] $argv[2]
     cp $arg $argv[3]
+end
+
+function roscat
+    if test $argv[1] = "--help" -o (count $argv) -ne 2
+        echo -e "usage: roscat [package] [file]\n\nDisplay a file content within a package."
+        test $argv[1] = "--help"; and return 0; or return 1
+    end
+
+    set -l arg (_roscmd $argv[1] $argv[2])
+
+    test $status -eq 1; and return 1
+
+    if test -n $arg
+        if test -z $CATTER
+            cat $arg
+        else
+            eval $CATTER $arg
+        end
+    end
 end
 
 function _roscomplete

@@ -94,32 +94,33 @@ function _ros_decode_path
         return 0
     end
 
-    set -l rosname (echo -- $argv[1] | sed -n 's/\([^/]\+\).*/\1/p')
-
-    if not test -z $rosname
-        set remainder (echo -- $argv[1] | sed -n "s/$rosname"'\(.*\)/\1/p')
+    set -l rosname
+    set -l reldir
+    set -l last
+    set -l reldir
+    if echo -- $argv[1] | grep -qE -- ".+/.*"
+        set rosname (string split / $argv[1])[1]
+        set reldir /(string split --max 1 / $argv[1])[-1]
+        set last (string split / $reldir)[-1]
+        set reldir (string split --max 1 --right / $reldir)[1]/
     else
         set rosname $argv[1]
-        if test (count $argv) != "2" -o $argv[2] != "forceeval"
-           echo -- $rosname
-           return 1
+        if test -z $argv[2] -o "$argv[2]" != "forceval"
+            echo $rosname
+            return 1
         end
     end
 
     set -l rosdir (_ros_location_find $rosname)
-    if test $status != "0"
+    if test $status != 0
         echo -- $rosname
         return 1
     end
-    set -l reldir (echo -- $remainder | sed -n 's/\(.*\/\)[^/]*/\1/p')
-    set -l last (echo -- $remainder | sed -n 's/.*\/\([^/]*\)/\1/p')
 
-    if test -z $reldir
-        set reldir /
-    end
-
-    set rosvals {$rosname} {$rosdir} {$reldir} {$last}
-    echo -- {$rosdir}{$remainder}
+    echo -- $rosname
+    echo -- $rosdir
+    echo -- $reldir
+    echo -- $last
     return 0
 end
 
@@ -215,17 +216,12 @@ function rospd
 end
 
 function rosls
-    if test (count $argv) != 0
-        if test $argv[1] = "--help"
-            echo -e "usage: rosls [package]\n\nLists contents of a package directory."
-            return 0
-        end
-    else
+    if test (count $argv) = 0 -o "$argv[1]" = "--help"
         echo -e "usage: rosls [package]\n\nLists contents of a package directory."
         return 0
     end
-    set -l rospath (_ros_decode_path $argv[1] forceeval)
-    ls $rospath
+    set -l rosvals (_ros_decode_path $argv[1] forceeval)
+    ls $rosvals[2]$rosvals[3]$rosvals[4] $argv[2]
 end
 
 # sets arg as return value

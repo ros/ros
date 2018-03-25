@@ -1,3 +1,6 @@
+# rosfish - functions to support ROS users
+# Developed and tested on fish 2.7.1
+
 function _ros_command_line
     set -l command (commandline -cpo) (commandline -ct)
 
@@ -613,6 +616,26 @@ function _roscomplete_roslaunch
     end
 end
 
+function _roscomplete_rostest
+    set -l command (_ros_command_line)
+    set -l arg $command[-1]
+
+    if echo -- $arg | grep -qE -- "--.*"
+        set -l opts --bare --bare-limit --bare-name --pkgdir --package
+        for i in $opts
+            echo -- $i
+        end
+    else
+        set -l opts (_roscomplete_search_dir '( -type f -regex .*\.launch$ -o -type f -regex .*\.test$ )')
+        if test (count $command) = 2
+            set opts $opts (_rosfind -mindepth 1 -maxdepth 1 -type d -o -name "*.launch" -o -name "*.test")
+        end
+        for i in $opts
+            echo -- $i
+        end
+    end
+end
+
 function _roscomplete_rosbag
     set -l command (_ros_command_line)
     set -l arg $command[-1]
@@ -888,26 +911,86 @@ function _roscomplete_rosmsg
     end
 end
 
+function _roscomplete_roscreate_pkg
+    set -l command (_ros_command_line)
 
-complete -x -c roscd -a '(_roscomplete_sub_dir)'
-complete -c roscd -l help --description "prints command info"
-complete -c rospd -a '(_roscomplete_sub_dir)'
-complete -c rosls -a '(_roscomplete_sub_dir)'
-complete -c rosls -l help --description "prints command info"
-complete -x -c rosmake -a '(_roscomplete_rosmake)'
-complete -x -c rosclean -a 'check purge'
-complete -x -c rosrun -a '(_roscomplete_rosrun)'
-complete -x -c roslaunch -a '(_roscomplete_roslaunch)'
-complete -x -c rosed -a '(_roscomplete_file)'
-complete -c rosed -l help --description "prints command info"
-complete -x -c roscp -a '(_roscomplete_file)'
-complete -c roscp -l help --description "prints command info"
+    if test (count $command) != 2
+        set -l opts (rospack list-names)
+        for i in $opts
+            echo $i
+        end
+    end
+end
 
-complete -x -c rosmsg     -a '(_roscomplete_rosmsg)'
-complete -x -c rosservice -a '(_roscomplete_rosservice)'
-complete -x -c rostopic   -a '(_roscomplete_rostopic)'
-complete -x -c rosparam   -a '(_roscomplete_rosparam)'
-complete -x -c rosnode    -a '(_roscomplete_rosnode)'
-complete -x -c rospack    -a '(_roscomplete_rospack)'
-complete -x -c rosbag     -a '(_roscomplete_rosbag)'
-complete -x -c rossrv     -a '(_roscomplete_rossrv)'
+function _roscomplete_roswtf
+    set -l command (_ros_command_line)
+    set -l arg $command[-1]
+
+    if echo -- $arg | grep -qE -- "--.*"
+        set -l opts --all --noplugins --offline
+        for i in $opts
+            echo -- $i
+        end
+    else
+        if test (count $command) = 2
+            # TODO fix path names here
+            set -l opts (_rosfind -mindepth 1 -maxdepth 1 -type d -o -name "*.launch")
+            for i in $opts
+                echo -- (string split --max 1 / $i)[2]
+            end
+        end
+    end
+end
+
+function _roscomplete_rosconsole
+    set -l command (_ros_command_line)
+    set -l arg $command[-1]
+
+    set -l opts
+    if test (count $command) = 2
+        set opts get list set
+    else if test (count $command) = 3
+        switch "$command[2]"
+        case get set list
+            set opts (rosnode list ^ /dev/null)
+        end
+    else if test (count $command) = 4
+        switch "$command[2]"
+        case get set
+            set opts (rosconsole list "$command[3]" ^ /dev/null)
+        end
+    else if test (count $command) = 5
+        switch "$command[2]"
+        case set
+            set opts debug info warn error fatal
+        end
+    end
+
+    for i in $opts
+        echo -- $i
+    end
+end
+
+# TODO add options for nospace, filenames, defualt
+complete -x -c roscd          -a '(_roscomplete_sub_dir)'
+complete -x -c rospd          -a '(_roscomplete_sub_dir)'
+complete -x -c rosls          -a '(_roscomplete_sub_dir)'
+complete -x -c rosmake        -a '(_roscomplete_rosmake)'
+complete -x -c rosclean       -a 'check purge'
+complete -x -c rosrun         -a '(_roscomplete_rosrun)'
+complete -x -c rosed          -a '(_roscomplete_file)'
+complete -x -c roscp          -a '(_roscomplete_file)'
+complete -x -c roscat         -a '(_roscomplete_file)'
+complete -x -c roslaunch      -a '(_roscomplete_roslaunch)'
+complete -x -c rostest        -a '(_roscomplete_rostest)'
+complete -x -c rospack        -a '(_roscomplete_rospack)'
+complete -x -c rosbag         -a '(_roscomplete_rosbag)'
+complete -x -c rosnode        -a '(_roscomplete_rosnode)'
+complete -x -c rosparam       -a '(_roscomplete_rosparam)'
+complete -x -c rostopic       -a '(_roscomplete_rostopic)'
+complete -x -c rosservice     -a '(_roscomplete_rosservice)'
+complete -x -c rosmsg         -a '(_roscomplete_rosmsg)'
+complete -x -c rossrv         -a '(_roscomplete_rossrv)'
+complete -x -c roscreate-pkg  -a '(_roscomplete_roscreate_pkg)'
+complete -x -c roswtf         -a '(_roscomplete_roswtf)'
+complete -x -c rosconsole     -a '(_roscomplete_rosconsole)'

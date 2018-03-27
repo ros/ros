@@ -580,6 +580,7 @@ end
 
 function _roscomplete_roslaunch
     set -l command (_ros_command_line)
+    set -l arg $command[-1]
 
     if echo -- $command[-1] | grep -qE "^--"
         set options --files --args --nodes --find-node --child --local --screen --server_uri --run_id --wait --port --core --pid --dump-params
@@ -590,9 +591,9 @@ function _roscomplete_roslaunch
         set -l opts (_roscomplete_search_dir '( -type f -regex .*\.launch$ -o -type f -regex .*\.test$ )')
 
         # Add launchfiles and directories in the current directory
-        # Note: fish only uses these if user typed ./
         if test (count $command) = 2
-            set opts $opts (_rosfind -mindepth 1 -maxdepth 1 -type d -o -name "*.launch" -o -name "*.test")
+            set opts $opts (__fish_complete_directories "$arg")
+            set opts $opts (_rosfind "$arg" -mindepth 1 -maxdepth 1 -name "*.launch" ^ /dev/null)
         end
 
         # complete roslaunch arguments for a launch file
@@ -629,7 +630,8 @@ function _roscomplete_rostest
     else
         set -l opts (_roscomplete_search_dir '( -type f -regex .*\.launch$ -o -type f -regex .*\.test$ )')
         if test (count $command) = 2
-            set opts $opts (_rosfind -mindepth 1 -maxdepth 1 -type d -o -name "*.launch" -o -name "*.test")
+            set opts $opts (__fish_complete_directories "$arg")
+            set opts $opts (_rosfind "$arg" -mindepth 1 -maxdepth 1 -name "*.launch" -o -name "*.test" ^ /dev/null)
         end
         for i in $opts
             echo -- $i

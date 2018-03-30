@@ -64,7 +64,17 @@ function _ros_list_locations
     set -l ROS_LOCATION_KEYS (echo $ROS_LOCATIONS | _rossed -e 's/([^:=]*)=([^:=]*)(:*[^=])*(:|$)/\1 /g')
     set -l packages (set -x ROS_CACHE_TIMEOUT -1.0; rospack list-names)
     set -l stacks (set -x ROS_CACHE_TIMEOUT -1.0; rosstack list-names)
-    echo $packages $stacks log test_results $ROS_LOCATION_KEYS | tr ' ' '\n'
+    for i in $packages
+        echo -- "$i"
+    end
+    for i in $stacks
+        echo -- "$i"
+    end
+    echo log
+    echo test_results
+    for i in (string split ' ' "$ROS_LOCATION_KEYS")
+        echo -- "$i"
+    end
     return 0
 end
 
@@ -105,13 +115,13 @@ function _ros_decode_path
     set -l reldir
     set -l last
     set -l reldir
-    if echo -- $argv[1] | grep -qE -- ".+/.*"
+    if echo -- "$argv[1]" | grep -qE -- ".+/.*"
         set rosname (string split / $argv[1])[1]
         set reldir /(string split --max 1 / $argv[1])[-1]
         set last (string split / $reldir)[-1]
         set reldir (string split --max 1 --right / $reldir)[1]/
     else
-        set rosname $argv[1]
+        set rosname "$argv[1]"
         if test -z "$argv[2]" -o "$argv[2]" != "forceeval"
             echo -- $rosname
             return 1
@@ -350,14 +360,21 @@ function _roscomplete_sub_dir
 
     set -l rosvals (_ros_decode_path $arg)
 
-    if test -z $rosvals[1]
+    if test -z "$rosvals[3]"
         # Not a full ROS location
         for i in (_ros_list_locations)
             echo -- "$i/"
         end
     else
         # The first section is a full ROS location, so we complete from it's subdirs
-        _rosfind -L "$rosvals[2]$rosvals[3]" -maxdepth 1 -mindepth 1 -type d ! -regex ".*/[.].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/$rosvals[1]\/\1\//g"
+        set -l opts
+        if test -e "$rosvals[2]$rosvals[3]"
+            set opts (_rosfind -L "$rosvals[2]$rosvals[3]" -maxdepth 1 -mindepth 1 -type d ! -regex ".*/[.][^./].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1\//g")
+        end
+
+        for i in $opts
+            echo -- "$rosvals[1]$rosvals[3]$i"
+        end
     end
 end
 

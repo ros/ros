@@ -610,7 +610,7 @@ function _roscomplete_roslaunch
         # Add launchfiles and directories in the current directory
         if test (count $command) = 2
             set opts $opts (__fish_complete_directories "$arg")
-            set opts $opts (_rosfind "$arg" -mindepth 1 -maxdepth 1 -name "*.launch" ^ /dev/null)
+            set opts $opts (_rosfind (string split --max 1 --right / "$arg")[1]/ -mindepth 1 -maxdepth 1 -name "*.launch" -o -name "*.test" ^ /dev/null)
         end
 
         # complete roslaunch arguments for a launch file

@@ -49,11 +49,11 @@ esac
 
 if [[ -n $CMAKE_PREFIX_PATH ]]; then
   IFS=$'\n'
-  catkin_package_libexec_dirs=(`catkin_find --without-underlays --libexec --share "$1" 2> /dev/null`)
+  catkin_package_libexec_dirs=($(catkin_find --without-underlays --libexec --share "$1" 2> /dev/null))
   unset IFS
   debug "Looking in catkin libexec dirs: $catkin_package_libexec_dirs"
 fi
-pkgdir=`rospack find "$1"`
+pkgdir=$(rospack find "$1")
 debug "Looking in rospack dir: $pkgdir"
 if [[ ${#catkin_package_libexec_dirs[@]} -eq 0 && -z $pkgdir ]]; then
   exit 2
@@ -62,20 +62,20 @@ if [[ ! $2 == */* ]]; then
   # The -perm /mode usage is not available in find on the Mac
   #exepathlist=(`find $pkgdir -name $2 -type f -perm /u+x,g+x,o+x`)
   # -L: #3475
-  if [[ `uname` == Darwin ]]; then
+  if [[ $(uname) == Darwin ]]; then
     _perm="+111"
   else
     _perm="/111"
   fi
   debug "Searching for $2 with permissions $_perm"
-  exepathlist="`find -L "${catkin_package_libexec_dirs[@]}" "$pkgdir" -name "$2" -type f  -perm "$_perm" ! -regex ".*$pkgdir\/build\/.*" | uniq`"
+  exepathlist="$(find -L "${catkin_package_libexec_dirs[@]}" "$pkgdir" -name "$2" -type f  -perm "$_perm" ! -regex ".*$pkgdir\/build\/.*" | uniq)"
   IFS=$'\n'
   exepathlist=($exepathlist)
   unset IFS
   unset _perm
   if [[ ${#exepathlist[@]} == 0 ]]; then
     echo "[rosrun] Couldn't find executable named $2 below $pkgdir"
-    nonexepathlist=(`find -H "$pkgdir" -name "$2"`)
+    nonexepathlist=($(find -H "$pkgdir" -name "$2"))
     if [[ ${#nonexepathlist[@]} != 0 ]]; then
       echo "[rosrun] Found the following, but they're either not files,"
       echo "[rosrun] or not executable:"

@@ -4,7 +4,7 @@
 # COMPREPLY is the var used by bash complete builtin
 
 function _rossed {
-    if [[ `uname` == Darwin || `uname` == FreeBSD ]]; then
+    if [[ $(uname) == Darwin || $(uname) == FreeBSD ]]; then
         sed -E "$@"
     else
         sed -r "$@"
@@ -12,7 +12,7 @@ function _rossed {
 }
 
 function _rosfind {
-    if [[ `uname` == Darwin || `uname` == FreeBSD ]]; then
+    if [[ $(uname) == Darwin || $(uname) == FreeBSD ]]; then
         # BSD find needs -E for extended regexp
         find -E "$@"
     else
@@ -27,8 +27,8 @@ function _rosfind {
 # stack echoes its result
 function _ros_location_find {
     local ROS_LOCATION_KEYS_ARR ROS_LOCATIONS_ARR loc
-    ROS_LOCATION_KEYS_ARR=(`echo $ROS_LOCATIONS | _rossed -e 's/([^:=]*)=([^:=]*)(:*[^=])*(:|$)/\1 /g'`)
-    ROS_LOCATIONS_ARR=(`echo $ROS_LOCATIONS | _rossed -e 's/([^:=]*)=([^:=]*)(:*[^=])*(:|$)/\2 /g' -e "s|~|$HOME|g"`)
+    ROS_LOCATION_KEYS_ARR=($(echo $ROS_LOCATIONS | _rossed -e 's/([^:=]*)=([^:=]*)(:*[^=])*(:|$)/\1 /g'))
+    ROS_LOCATIONS_ARR=($(echo $ROS_LOCATIONS | _rossed -e 's/([^:=]*)=([^:=]*)(:*[^=])*(:|$)/\2 /g' -e "s|~|$HOME|g"))
 
     for (( i = 0 ; i < ${#ROS_LOCATION_KEYS_ARR[@]} ; i++ )); do
         if [[ $1 == ${ROS_LOCATION_KEYS_ARR[$i]} ]]; then
@@ -38,16 +38,16 @@ function _ros_location_find {
     done
 
     if [[ $1 == log ]]; then
-        echo `roslaunch-logs`
+        echo $(roslaunch-logs)
         return 0
     elif [[ $1 == test_results ]]; then
-        echo `rosrun rosunit test_results_dir.py`
+        echo $(rosrun rosunit test_results_dir.py)
         return 0
     fi
 
-    loc=`export ROS_CACHE_TIMEOUT=-1.0 && rospack find $1 2> /dev/null`
+    loc=$(export ROS_CACHE_TIMEOUT=-1.0 && rospack find $1 2> /dev/null)
     if [[ $? != 0 ]]; then
-        loc=`export ROS_CACHE_TIMEOUT=-1.0 && rosstack find $1 2> /dev/null`
+        loc=$(export ROS_CACHE_TIMEOUT=-1.0 && rosstack find $1 2> /dev/null)
         if [[ $? != 0 ]]; then
             return 1
         fi
@@ -60,16 +60,16 @@ function _ros_location_find {
 
 function _ros_list_locations {
     local ROS_LOCATION_KEYS packages stacks
-    ROS_LOCATION_KEYS=`echo $ROS_LOCATIONS | _rossed -e 's/([^:=]*)=([^:=]*)(:*[^=])*(:|$)/\1 /g'`
-    packages=`export ROS_CACHE_TIMEOUT=-1.0 && rospack list-names`
-    stacks=`export ROS_CACHE_TIMEOUT=-1.0 && rosstack list-names`
+    ROS_LOCATION_KEYS=$(echo $ROS_LOCATIONS | _rossed -e 's/([^:=]*)=([^:=]*)(:*[^=])*(:|$)/\1 /g')
+    packages=$(export ROS_CACHE_TIMEOUT=-1.0 && rospack list-names)
+    stacks=$(export ROS_CACHE_TIMEOUT=-1.0 && rosstack list-names)
     echo $packages $stacks log test_results $ROS_LOCATION_KEYS | tr ' ' '\n'
     return 0
 }
 
 function _ros_package_find {
     local loc
-    loc=`export ROS_CACHE_TIMEOUT=-1.0 && rospack find $1 2> /dev/null`
+    loc=$(export ROS_CACHE_TIMEOUT=-1.0 && rospack find $1 2> /dev/null)
     if [[ $? != 0 ]]; then
         return 1
     fi
@@ -79,14 +79,14 @@ function _ros_package_find {
 
 function _ros_list_packages {
     local packages
-    packages=`export ROS_CACHE_TIMEOUT=-1.0 && rospack list-names`
+    packages=$(export ROS_CACHE_TIMEOUT=-1.0 && rospack list-names)
     echo $packages | tr ' ' '\n'
     return 0
 }
 
 function _ros_list_stacks {
     local stacks
-    stacks=`export ROS_CACHE_TIMEOUT=-1.0 && rosstack list-names`
+    stacks=$(export ROS_CACHE_TIMEOUT=-1.0 && rosstack list-names)
     echo $stacks | tr ' ' '\n'
     return 0
 }
@@ -114,7 +114,7 @@ function _ros_decode_path {
         fi
     fi
     
-    rosdir=`_ros_location_find $rosname`
+    rosdir=$(_ros_location_find $rosname)
     if [[ $? != 0 ]]; then
         rosvals=(${rosname})
         return 1
@@ -131,7 +131,7 @@ function rospython {
   fi
   if [[ -z $1 ]]; then
     if [[ -f ./manifest.xml ]]; then
-      pkgname=`basename \`pwd\``
+      pkgname=$(basename $(pwd))
       python -i -c "import roslib; roslib.load_manifest('$pkgname')"
     else
       python
@@ -193,7 +193,7 @@ function rosd {
         return 0
     fi
     let count=0;
-    for items in `dirs`;
+    for items in $(dirs);
     do
         echo $count $items;
         let count=$((count+1));
@@ -233,14 +233,14 @@ function rosls {
 function _roscmd {
     local pkgdir exepath opt catkin_package_libexec_dir opts
     if [[ -n $CMAKE_PREFIX_PATH ]]; then
-        catkin_package_libexec_dir=`catkin_find --first-only --without-underlays --libexec $1 2> /dev/null`
+        catkin_package_libexec_dir=$(catkin_find --first-only --without-underlays --libexec $1 2> /dev/null)
     fi
-    pkgdir=`_ros_package_find $1`
+    pkgdir=$(_ros_package_find $1)
     if [[ -z $catkin_package_libexec_dir && -z $pkgdir ]]; then
         echo "Couldn't find package [$1]"
         return 1
     fi
-    exepath=(`find -L $catkin_package_libexec_dir $pkgdir -name $2 -type f ! -regex .*/[.].* ! -regex .*$pkgdir\/build\/.* | uniq`)
+    exepath=($(find -L $catkin_package_libexec_dir $pkgdir -name $2 -type f ! -regex .*/[.].* ! -regex .*$pkgdir\/build\/.* | uniq))
     if [[ ${#exepath[@]} == 0 ]] ; then
         echo "That file does not exist in that package."
         return 1
@@ -309,7 +309,7 @@ function _roscomplete {
     local arg opts
     COMPREPLY=()
     arg="${COMP_WORDS[COMP_CWORD]}"
-    opts="`_ros_list_packages` `_ros_list_stacks`"
+    opts="$(_ros_list_packages) $(_ros_list_stacks)"
     IFS=$'\n'
     COMPREPLY=($(compgen -W "${opts}" -- ${arg}))
     unset IFS
@@ -331,13 +331,13 @@ function _roscomplete_sub_dir {
     arg="${COMP_WORDS[COMP_CWORD]}"
     _ros_decode_path ${arg}
     if [[ -z ${rosvals[2]} ]]; then
-        opts=`_ros_list_locations`
+        opts=$(_ros_list_locations)
         IFS=$'\n'
         COMPREPLY=($(compgen -W "${opts}" -S / -- ${rosvals[0]}))
         unset IFS
     else
         if [ -e ${rosvals[1]}${rosvals[2]} ]; then
-          opts=`find -L ${rosvals[1]}${rosvals[2]} -maxdepth 1 -mindepth 1 -type d ! -regex ".*/[.][^./].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1\//g"`
+          opts=$(find -L ${rosvals[1]}${rosvals[2]} -maxdepth 1 -mindepth 1 -type d ! -regex ".*/[.][^./].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1\//g")
         else
           opts=''
         fi
@@ -359,7 +359,7 @@ function _msg_opts {
     fi
 
     if [[ -z ${searchmsg} ]]; then
-        pkgs=(`rospack list`)
+        pkgs=($(rospack list))
         
         for (( i = 0 ; i < ${#pkgs[@]} ; i=i+2 )); do
             if [[ -d ${pkgs[i+1]}/msg ]]; then
@@ -367,9 +367,9 @@ function _msg_opts {
             fi
         done
     else
-        path=`rospack find ${pkgname}`
+        path=$(rospack find ${pkgname})
         if [ -d ${path}/msg ]; then
-            echo `find -L ${path}/msg -maxdepth 1 -mindepth 1 -name *.msg ! -regex ".*/[.][^./].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.msg/${pkgname}\/\1/g"`
+            echo $(find -L ${path}/msg -maxdepth 1 -mindepth 1 -name *.msg ! -regex ".*/[.][^./].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.msg/${pkgname}\/\1/g")
         fi
     fi
 }
@@ -386,7 +386,7 @@ function _srv_opts {
     fi
 
     if [[ -z ${searchsrv} ]]; then
-        pkgs=(`rospack list | grep "^${pkgname}"`)
+        pkgs=($(rospack list | grep "^${pkgname}"))
         count=0
 
         opts=""
@@ -405,10 +405,10 @@ function _srv_opts {
         fi
     fi
 
-    path=`rospack find ${pkgname} 2> /dev/null`
+    path=$(rospack find ${pkgname} 2> /dev/null)
 
     if [ $? -eq 0 ] && [ -d ${path}/srv ]; then
-        echo `find -L ${path}/srv -maxdepth 1 -mindepth 1 -name *.srv ! -regex ".*/[.][^./].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.srv/${pkgname}\/\1/g"`
+      echo $(find -L ${path}/srv -maxdepth 1 -mindepth 1 -name *.srv ! -regex ".*/[.][^./].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.srv/${pkgname}\/\1/g")
     fi
 }
 
@@ -422,11 +422,11 @@ function _roscomplete_rossrv {
     elif [[ $COMP_CWORD == 2 ]]; then
         case ${COMP_WORDS[1]} in
             show|users|md5)
-                opts=`_srv_opts ${COMP_WORDS[$COMP_CWORD]}`
+                opts=$(_srv_opts ${COMP_WORDS[$COMP_CWORD]})
                 COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
                 ;;
             package)
-                opts=`rospack list-names`
+                opts=$(rospack list-names)
                 COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
                 ;;
             packages|list)
@@ -439,7 +439,7 @@ function _roscomplete_rossrv {
 function _roscomplete_pkg {
     # complete package names that start with $1
     local arg=${1}
-    local opts=`_ros_list_packages`
+    local opts=$(_ros_list_packages)
     IFS=$'\n'
     COMPREPLY=($(compgen -W "${opts}" -- ${arg}))
     unset IFS
@@ -452,11 +452,11 @@ function _roscomplete_find {
     local pkg=${2}
     local arg=${3}
     if [[ -n $CMAKE_PREFIX_PATH ]]; then
-        catkin_package_libexec_dir=`catkin_find --first-only --without-underlays --libexec ${pkg} 2> /dev/null`
+        catkin_package_libexec_dir=$(catkin_find --first-only --without-underlays --libexec ${pkg} 2> /dev/null)
     fi
-    pkgdir=`_ros_package_find ${pkg}`
+    pkgdir=$(_ros_package_find ${pkg})
     if [[ -n "$catkin_package_libexec_dir" || -n "$pkgdir" ]]; then
-        opts=`_rosfind -L $catkin_package_libexec_dir "$pkgdir" ${1} ! -regex ".*/[.][^./].*" ! -regex ".*$pkgdir\/build\/.*"  -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g"`
+        opts=$(_rosfind -L $catkin_package_libexec_dir "$pkgdir" ${1} ! -regex ".*/[.][^./].*" ! -regex ".*$pkgdir\/build\/.*"  -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g")
     else
         opts=""
     fi
@@ -477,14 +477,14 @@ function _roscomplete_search_dir {
         _roscomplete_find "${1}" "${COMP_WORDS[1]}" "${arg}"
     else
        # complete filenames
-       arg=`echo ${arg} | sed -e "s|~|$HOME|g"`
+       arg=$(echo ${arg} | sed -e "s|~|$HOME|g")
         if [[ $arg =~ ^/*.+/.* ]]; then
            path=${arg%/*}
         else
            path=.
         fi
         if [[ -e ${path} ]]; then
-           opts=`find -L $path -maxdepth 1 -type d ! -regex ".*/[.][^./].*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/$/\//g" -e "s/^[.]\///g" -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g"`$'\n'`find -L $path -maxdepth 1 -type f ! -regex ".*/[.][^.]*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/^[.]\///g"  -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g"`
+           opts=$(find -L $path -maxdepth 1 -type d ! -regex ".*/[.][^./].*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/$/\//g" -e "s/^[.]\///g" -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g")$'\n'$(find -L $path -maxdepth 1 -type f ! -regex ".*/[.][^.]*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/^[.]\///g"  -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g")
         else
            opts=""
         fi
@@ -494,7 +494,7 @@ function _roscomplete_search_dir {
         if [[ ${#COMPREPLY[*]} = 1 ]]; then
             newpath=${COMPREPLY[0]%/*}
             if [[ -d ${newpath} ]]; then
-               opts=`find -L $newpath -maxdepth 1 -type d ! -regex ".*/[.][^./].*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/$/\//g" -e "s/^[.]\///g" -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g"`$'\n'`find -L $newpath -maxdepth 1 -type f ! -regex ".*/[.][^.]*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/^[.]\///g"  -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g"`
+               opts=$(find -L $newpath -maxdepth 1 -type d ! -regex ".*/[.][^./].*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/$/\//g" -e "s/^[.]\///g" -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g")$'\n'$(find -L $newpath -maxdepth 1 -type f ! -regex ".*/[.][^.]*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/^[.]\///g"  -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g")
                IFS=$'\n'
                COMPREPLY=($(compgen -W "$opts" -- ${arg}))
                unset IFS
@@ -506,7 +506,7 @@ function _roscomplete_search_dir {
 
 function _roscomplete_exe {
     local perm i prev_arg
-    if [[ `uname` == Darwin ]]; then
+    if [[ $(uname) == Darwin ]]; then
         perm="+111"
     else
         perm="/111"
@@ -661,7 +661,7 @@ function _roscomplete_rospack {
         opts="help find list list-names list-duplicates langs depends depends-manifests depends1 depends-indent depends-msgsrv depends-why rosdep rosdep0 vcs vcs0 depends-on depends-on1 export plugins cflags-only-I cflags-only-other libs-only-L libs-only-l libs-only-other profile"
         COMPREPLY=($(compgen -W "$opts" -- ${arg}))
     else
-        opts=`rospack list-names`
+        opts=$(rospack list-names)
         COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
     fi
 
@@ -678,14 +678,14 @@ function _roscomplete_rosnode {
     elif [[ $COMP_CWORD == 2 ]]; then
         case ${COMP_WORDS[1]} in
             info)
-                opts=`rosnode list 2> /dev/null`
+                opts=$(rosnode list 2> /dev/null)
                 COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
                 ;;
             ping|list|kill)
                 if [[ ${arg} =~ \-\-.* ]]; then
                     opts="--all --help"
                 else
-                    opts=`rosnode list 2> /dev/null`
+                    opts=$(rosnode list 2> /dev/null)
                 fi
                 COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
                 ;;
@@ -697,7 +697,7 @@ function _roscomplete_rosnode {
         case ${COMP_WORDS[1]} in
             kill)
                 # complete on node name
-                opts=`rosnode list 2> /dev/null`
+                opts=$(rosnode list 2> /dev/null)
                 COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
                 ;;
         esac
@@ -715,7 +715,7 @@ function _roscomplete_rosparam {
     elif [[ $COMP_CWORD == 2 ]]; then
         case ${COMP_WORDS[1]} in
             set|get|delete|list)
-                opts=`rosparam list 2> /dev/null`
+                opts=$(rosparam list 2> /dev/null)
                 COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
                 ;;
             load|dump)
@@ -727,7 +727,7 @@ function _roscomplete_rosparam {
         case ${COMP_WORDS[1]} in
             load|dump)
                 # complete on namespace
-                opts=`rosparam list 2> /dev/null`
+                opts=$(rosparam list 2> /dev/null)
                 COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
                 ;;
         esac
@@ -767,12 +767,12 @@ function _roscomplete_rostopic {
 										if [[ ${COMP_WORDS[$(( $COMP_CWORD - 1 ))]} == "-b" ]]; then
 												COMPREPLY=($(compgen -f -- ${arg}))
 										else
-												opts=`rostopic list 2> /dev/null`
+												opts=$(rostopic list 2> /dev/null)
 												COMPREPLY=($(compgen -W "$opts" -- ${arg}))
 										fi
 										;;
 								find)
-										opts=`_msg_opts ${COMP_WORDS[$COMP_CWORD]}`
+										opts=$(_msg_opts ${COMP_WORDS[$COMP_CWORD]})
 										COMPREPLY=($(compgen -W "$opts" -- ${arg}))
 										;;
 								pub)
@@ -797,16 +797,16 @@ function _roscomplete_rostopic {
 												fi
 										done
 										if [[ $COMP_CWORD == $topic_pos ]]; then
-												opts=`rostopic list 2> /dev/null`
+												opts=$(rostopic list 2> /dev/null)
 												COMPREPLY=($(compgen -W "$opts" -- ${arg}))
 										elif [[ $COMP_CWORD == $type_pos ]]; then
                                                                                                 opts=$(rostopic info ${COMP_WORDS[$COMP_CWORD-1]} 2> /dev/null | awk '/Type:/{print $2}')
                                                                                                 if [ -z "$opts" ]; then
-                                                                                                        opts=`_msg_opts ${COMP_WORDS[$COMP_CWORD]}`
+                                                                                                        opts=$(_msg_opts ${COMP_WORDS[$COMP_CWORD]})
                                                                                                 fi
 												COMPREPLY=($(compgen -W "$opts" -- ${arg}))
 								    elif [[ $COMP_CWORD == $msg_pos ]]; then
-								    		opts=`rosmsg-proto msg 2> /dev/null -s ${COMP_WORDS[$COMP_CWORD - 1]}`
+								    		opts=$(rosmsg-proto msg 2> /dev/null -s ${COMP_WORDS[$COMP_CWORD - 1]})
 												if [ 0 -eq $? ]; then
 													COMPREPLY="$opts"
 												fi
@@ -828,20 +828,20 @@ function _roscomplete_rosservice {
     elif [[ $COMP_CWORD == 2 ]]; then
         case ${COMP_WORDS[1]} in
             args|call|info|list|type|uri)
-                opts=`rosservice list 2> /dev/null`
+                opts=$(rosservice list 2> /dev/null)
                 COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
                 ;;
             find)
                 # Need a clever way to do message searching
-                opts=`_srv_opts ${COMP_WORDS[$COMP_CWORD]}`
+                opts=$(_srv_opts ${COMP_WORDS[$COMP_CWORD]})
                 COMPREPLY=($(compgen -W "$opts" -- ${arg}))
                 ;;
         esac
     elif [[ $COMP_CWORD == 3 ]]; then
         case ${COMP_WORDS[1]} in
             call)
-                type=`rosservice type ${COMP_WORDS[2]}`
-                opts=`rosmsg-proto srv 2> /dev/null -s ${type}`
+                type=$(rosservice type ${COMP_WORDS[2]})
+                opts=$(rosmsg-proto srv 2> /dev/null -s ${type})
                 if [ 0 -eq $? ]; then
                   COMPREPLY="$opts"
                 fi
@@ -863,7 +863,7 @@ function _msg_opts {
     fi
 
     if [[ -z ${searchmsg} ]]; then
-        pkgs=(`rospack list | grep "^${pkgname}"`)
+        pkgs=($(rospack list | grep "^${pkgname}"))
         count=0
 
         opts=""
@@ -882,10 +882,10 @@ function _msg_opts {
         fi
     fi
 
-    path=`rospack find ${pkgname} 2> /dev/null`
+    path=$(rospack find ${pkgname} 2> /dev/null)
 
     if [ $? -eq 0 ] && [ -d ${path}/msg ]; then
-        echo `find -L ${path}/msg -maxdepth 1 -mindepth 1 -name *.msg ! -regex ".*/[.][^./].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.msg/${pkgname}\/\1/g"`
+        echo $(find -L ${path}/msg -maxdepth 1 -mindepth 1 -name *.msg ! -regex ".*/[.][^./].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.msg/${pkgname}\/\1/g")
     fi
 }
 
@@ -900,11 +900,11 @@ function _roscomplete_rosmsg {
     elif [[ $COMP_CWORD == 2 ]]; then
         case ${COMP_WORDS[1]} in
             show|info|users|md5)
-                opts=`_msg_opts ${COMP_WORDS[$COMP_CWORD]}`
+              opts=$(_msg_opts ${COMP_WORDS[$COMP_CWORD]})
                 COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
                 ;;
             package)
-                opts=`rospack list-names`
+              opts=$(rospack list-names)
                 COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
                 ;;
             packages|list)
@@ -921,7 +921,7 @@ function _roscomplete_roscreate_pkg {
     arg="${COMP_WORDS[COMP_CWORD]}"
 
     if [[ $COMP_CWORD != 1 ]]; then
-        opts=`rospack list-names`
+        opts=$(rospack list-names)
         COMPREPLY=($(compgen -W "$opts" -- ${arg}))
     fi
 }
@@ -960,14 +960,14 @@ function _roscomplete_rosconsole {
     elif [[ $COMP_CWORD == 2 ]]; then
         case ${COMP_WORDS[1]} in
             get|set|list)
-                opts=`rosnode list 2> /dev/null`
+                opts=$(rosnode list 2> /dev/null)
                 COMPREPLY=($(compgen -W "$opts" -- ${arg}))
                 ;;
         esac
     elif [[ $COMP_CWORD == 3 ]]; then
         case ${COMP_WORDS[1]} in
             get|set)
-                opts=`rosconsole list ${COMP_WORDS[2]} 2> /dev/null`
+              opts=$(rosconsole list ${COMP_WORDS[2]} 2> /dev/null)
                 COMPREPLY=($(compgen -W "$opts" -- ${arg}))
                 ;;
         esac

@@ -79,7 +79,7 @@ function _ros_list_locations
 end
 
 function _ros_package_find
-    set -l loc (set -x ROS_CACHE_TIMEOUT -1.0; rospack find $argv[1] ^ /dev/null)
+    set -l loc (set -x ROS_CACHE_TIMEOUT -1.0; rospack find $argv[1] 2> /dev/null)
     if test $status -ne 0
         return 1
     end
@@ -259,7 +259,7 @@ function _roscmd
     set -l catkin_package_libexec_dir
 
     if test -n "$CMAKE_PREFIX_PATH"
-        set catkin_package_libexec_dir (catkin_find --first-only --without-underlays --libexec $argv[1] ^ /dev/null)
+        set catkin_package_libexec_dir (catkin_find --first-only --without-underlays --libexec $argv[1] 2> /dev/null)
     end
 
     set -l pkgdir (_ros_package_find $argv[1])
@@ -437,7 +437,7 @@ function _srv_opts
         end
     end
 
-    set -l path (rospack find $pkgname ^ /dev/null)
+    set -l path (rospack find $pkgname 2> /dev/null)
 
     if test $status -eq 0 -a -d $path/srv
         set -l opts (_rosfind -L $path/srv -maxdepth 1 -mindepth 1 -name "*.srv" ! -regex ".*/[.][^./].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.srv/$pkgname\/\1/g")
@@ -482,7 +482,7 @@ function _roscomplete_find
     set -l arg $argv[3]
 
     if test -n "$CMAKE_PREFIX_PATH"
-        set catkin_package_libexec_dir (catkin_find --first-only --without-underlays --libexec $pkg ^ /dev/null)
+        set catkin_package_libexec_dir (catkin_find --first-only --without-underlays --libexec $pkg 2> /dev/null)
     end
 
     set pkgdir (_ros_package_find $pkg)
@@ -610,7 +610,7 @@ function _roscomplete_roslaunch
         # Add launchfiles and directories in the current directory
         if test (count $command) = 2
             set opts $opts (__fish_complete_directories "$arg")
-            set opts $opts (_rosfind (string split --max 1 --right / "$arg")[1]/ -mindepth 1 -maxdepth 1 -name "*.launch" -o -name "*.test" ^ /dev/null)
+            set opts $opts (_rosfind (string split --max 1 --right / "$arg")[1]/ -mindepth 1 -maxdepth 1 -name "*.launch" -o -name "*.test" 2> /dev/null)
         end
 
         # complete roslaunch arguments for a launch file
@@ -619,7 +619,7 @@ function _roscomplete_roslaunch
 
             if test -x $roslaunch_complete
                 # Call roslaunch-complete instead of roslaunch to get arg completion
-                set -l roslaunch_args (eval $roslaunch_complete $command[2..3] ^ /dev/null | sed 's/ /\n/g')
+                set -l roslaunch_args (eval $roslaunch_complete $command[2..3] 2> /dev/null | sed 's/ /\n/g')
                 # roslaunch-complete should be very silent about
                 # errors and return 0 if it produced usable completion.
                 if test $status = 0
@@ -648,7 +648,7 @@ function _roscomplete_rostest
         set -l opts (_roscomplete_search_dir '( -type f -regex .*\.launch$ -o -type f -regex .*\.test$ )')
         if test (count $command) = 2
             set opts $opts (__fish_complete_directories "$arg")
-            set opts $opts (_rosfind "$arg" -mindepth 1 -maxdepth 1 -name "*.launch" -o -name "*.test" ^ /dev/null)
+            set opts $opts (_rosfind "$arg" -mindepth 1 -maxdepth 1 -name "*.launch" -o -name "*.test" 2> /dev/null)
         end
         for i in $opts
             echo -- $i
@@ -721,7 +721,7 @@ function _roscomplete_rosnode
     else if test (count $command) = 3
         switch $command[2]
         case info
-            for i in (rosnode list ^ /dev/null)
+            for i in (rosnode list 2> /dev/null)
                 echo $i
             end
         case ping list kill
@@ -729,7 +729,7 @@ function _roscomplete_rosnode
             if echo -- $arg | grep -qE -- "--.*"
                 set opts --all --help
             else
-                set opts (rosnode list ^ /dev/null)
+                set opts (rosnode list 2> /dev/null)
             end
             for i in $opts
                 echo $i
@@ -741,7 +741,7 @@ function _roscomplete_rosnode
         switch $command[2]
         case kill
             # complete on node name
-            for i in (rosnode list ^ /dev/null)
+            for i in (rosnode list 2> /dev/null)
                 echo $i
             end
         end
@@ -759,7 +759,7 @@ function _roscomplete_rosparam
     else if test (count $command) = 3
         switch $command[2]
         case set get delete list
-            for i in (rosparam list ^ /dev/null)
+            for i in (rosparam list 2> /dev/null)
                 echo $i
             end
         case load dump
@@ -771,7 +771,7 @@ function _roscomplete_rosparam
         switch $command[2]
         case load dump
             # complete on namespace
-            for i in (rosparam list ^ /dev/null)
+            for i in (rosparam list 2> /dev/null)
                 echo $i
             end
         end
@@ -846,12 +846,12 @@ function _roscomplete_rostopic
                 end
 
                 if test (count $command) = $topic_pos
-                    set -l opts (rostopic list ^ /dev/null)
+                    set -l opts (rostopic list 2> /dev/null)
                     for i in $opts
                         echo -- $i
                     end
                 else if test (count $command) = $type_pos
-                    set -l opts (rostopic info $command[-2] ^ /dev/null | awk '/Type:/{print $2}')
+                    set -l opts (rostopic info $command[-2] 2> /dev/null | awk '/Type:/{print $2}')
                     if test -z $opts
                         set opts (_msg_opts $command[-1])
                     end
@@ -859,7 +859,7 @@ function _roscomplete_rostopic
                         echo -- $i
                     end
                 else if test (count $command) = $msg_pos
-                    set -l opts (rosmsg-proto msg ^ /dev/null -s $command[-2])
+                    set -l opts (rosmsg-proto msg 2> /dev/null -s $command[-2])
                     if test $status = 0
                         for i in $opts
                             echo -- $i
@@ -882,7 +882,7 @@ function _roscomplete_rosservice
     else if test (count $command) = 3
         switch $command[2]
         case args call info list type uri
-            set -l opts (rosservice list ^ /dev/null)
+            set -l opts (rosservice list 2> /dev/null)
             for i in $opts
                 echo -- $i
             end
@@ -897,7 +897,7 @@ function _roscomplete_rosservice
         switch $command[2]
         case call
             set -l type (rosservice type $command[3])
-            set -l opts (rosmsg-proto srv ^ /dev/null -s $type)
+            set -l opts (rosmsg-proto srv 2> /dev/null -s $type)
 
             # TODO: better formatting here
             echo -- (string unescape $opts)
@@ -953,7 +953,7 @@ function _roscomplete_roswtf
     else
         if test (count $command) = 2
             __fish_complete_directories "$arg"
-            _rosfind "$arg" -mindepth 1 -maxdepth 1 -name "*.launch" ^ /dev/null
+            _rosfind "$arg" -mindepth 1 -maxdepth 1 -name "*.launch" 2> /dev/null
         end
     end
 end
@@ -968,12 +968,12 @@ function _roscomplete_rosconsole
     else if test (count $command) = 3
         switch "$command[2]"
         case get set list
-            set opts (rosnode list ^ /dev/null)
+            set opts (rosnode list 2> /dev/null)
         end
     else if test (count $command) = 4
         switch "$command[2]"
         case get set
-            set opts (rosconsole list "$command[3]" ^ /dev/null)
+            set opts (rosconsole list "$command[3]" 2> /dev/null)
         end
     else if test (count $command) = 5
         switch "$command[2]"

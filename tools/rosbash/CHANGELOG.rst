@@ -2,8 +2,8 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.4 (2018-05-01)
+-------------------
 * rosrun: array is now properly expanded in debug-echo (`#176 <https://github.com/ros/ros/issues/176>`_)
 * rosbash: replaced `...` with $(...) (`#177 <https://github.com/ros/ros/issues/177>`_)
 * rosrun: replaced `...` with $(...) (`#175 <https://github.com/ros/ros/issues/175>`_)

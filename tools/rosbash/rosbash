@@ -954,56 +954,73 @@ function _roscomplete_rosconsole {
     COMPREPLY=()
     arg="${COMP_WORDS[COMP_CWORD]}"
 
+    VERSION=$(rosversion rospy)
+    if [[ $? == 1 ]]; then
+        VERSION="0.0.0"
+    fi
+
+    VERSION_ECHO="1.13.7"
+    dpkg --compare-versions ${VERSION_ECHO} le ${VERSION}
+    HAS_ECHO=$?
+
     if [[ $COMP_CWORD == 1 ]]; then
-        opts="echo get list set"
+        if [[ $HAS_ECHO -eq 0 ]]; then
+            opts="echo get list set"
+        else
+            opts="get list set"
+        fi
         COMPREPLY=($(compgen -W "$opts" -- ${arg}))
     elif [[ $COMP_CWORD -ge 2 ]]; then
         if [[ ${arg} =~ \-.* ]]; then
-            case ${COMP_WORDS[1]} in
-                echo)
-                    opts="-h --help -l --level --nocolor -1 --once --topic -v --verbose"
-                    COMPREPLY=($(compgen -W "$opts" -- ${arg}))
-                    ;;
-            esac
-        else
-            if [[ ${COMP_WORDS[1]} == "echo" ]]; then
-                local prev_arg
-                prev_arg="${COMP_WORDS[$(( $COMP_CWORD - 1 ))]}"
-
-                case ${prev_arg} in
-                    --topic)
-                        opts=$(rostopic list 2> /dev/null)
+            if [[ $HAS_ECHO -eq 0 ]]; then
+                case ${COMP_WORDS[1]} in
+                    echo)
+                        opts="-h --help -l --level --nocolor -1 --once --topic -v --verbose"
                         COMPREPLY=($(compgen -W "$opts" -- ${arg}))
-                        ;;
-                    -l|--level)
-                        opts="debug info warn error fatal"
-                        COMPREPLY=($(compgen -W "$opts" -- ${arg}))
-                        ;;
-                    *)
-                        local node_pos
-                        node_pos=2
-
-                        while [ $node_pos -lt ${#COMP_WORDS[*]} ]; do
-                            # Ignore any options starting with -
-                            if [[ ${COMP_WORDS[$node_pos]} =~ \-.* ]]; then
-                                # Ignore additional argument of -l, --level and --topic
-                                case ${COMP_WORDS[$node_pos]} in
-                                    --topic|-l|--level)
-                                        node_pose=$((node_pos + 1))
-                                        ;;
-                                esac
-                                node_pos=$((node_pos + 1))
-                            else
-                                break
-                            fi
-                        done
-
-                        if [[ $COMP_CWORD == $node_pos ]]; then
-                            opts=$(rosnode list 2> /dev/null)
-                            COMPREPLY=($(compgen -W "$opts" -- ${arg}))
-                        fi
                         ;;
                 esac
+            fi
+        else
+            if [[ ${COMP_WORDS[1]} == "echo" ]]; then
+                if [[ $HAS_ECHO -eq 0 ]]; then
+                    local prev_arg
+                    prev_arg="${COMP_WORDS[$(( $COMP_CWORD - 1 ))]}"
+
+                    case ${prev_arg} in
+                        --topic)
+                            opts=$(rostopic list 2> /dev/null)
+                            COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+                            ;;
+                        -l|--level)
+                            opts="debug info warn error fatal"
+                            COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+                            ;;
+                        *)
+                            local node_pos
+                            node_pos=2
+
+                            while [ $node_pos -lt ${#COMP_WORDS[*]} ]; do
+                                # Ignore any options starting with -
+                                if [[ ${COMP_WORDS[$node_pos]} =~ \-.* ]]; then
+                                    # Ignore additional argument of -l, --level and --topic
+                                    case ${COMP_WORDS[$node_pos]} in
+                                        --topic|-l|--level)
+                                            node_pose=$((node_pos + 1))
+                                            ;;
+                                    esac
+                                    node_pos=$((node_pos + 1))
+                                else
+                                    break
+                                fi
+                            done
+
+                            if [[ $COMP_CWORD == $node_pos ]]; then
+                                opts=$(rosnode list 2> /dev/null)
+                                COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+                            fi
+                            ;;
+                    esac
+                fi
             else
                 if [[ $COMP_CWORD == 2 ]]; then
                     case ${COMP_WORDS[1]} in

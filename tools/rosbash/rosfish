@@ -785,7 +785,7 @@ function _roscomplete_rostopic
     set -l opts
 
     if test (count $command) = 2
-        set -l opts bw echo hz list pub type find info
+        set -l opts bw delay echo hz list pub type find info
         for i in $opts
             echo $i
         end
@@ -798,6 +798,8 @@ function _roscomplete_rostopic
                 set opts --rate --once --file --latch
             case bw
                 set opts --window
+            case delay
+                set opts --window --tcpnodelay
             case echo
                 set opts --bag --filter --nostr --noarr --clear --all offset
             case hz
@@ -811,7 +813,7 @@ function _roscomplete_rostopic
             end
         else
             switch $command[2]
-            case bw echo hz list type info
+            case bw delay echo hz list type info
                 if test "$command[-2]" = '-b' -o "$command[-2]" = '--bag'
                     __fish_complete_path "$arg"
                 else

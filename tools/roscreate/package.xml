@@ -16,4 +16,5 @@
   <buildtool_depend version_gte="0.5.68">catkin</buildtool_depend>
 
   <run_depend>python-rospkg</run_depend>
+  <run_depend>roslib</run_depend>
 </package>

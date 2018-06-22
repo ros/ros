@@ -688,7 +688,34 @@ function _roscomplete_rosbag
             end
 
             for i in $opts
-                echo $i
+                echo -- $i
+            end
+        else
+            set -l opts
+            set -l arg (string replace --regex '^~/' "$HOME/" "$arg")
+            set -l replaced_home $status
+            if test -z "$arg"
+                set arg ./
+            end
+            set -l replaced_empty $status
+            set opts $opts (_rosfind (string split --max 1 --right / "$arg")[1]/ -mindepth 1 -maxdepth 1 -name "*.bag" 2> /dev/null)
+            set opts $opts (__fish_complete_directories "$arg")
+            if test $replaced_home = 0
+                set -l fixed_opts
+                for opt in $opts
+                    set fixed_opts $fixed_opts (string replace --regex "^$HOME/" "~/" "$opt")
+                end
+                set opts $fixed_opts
+            end
+            if test $replaced_empty = 0
+                set -l fixed_opts
+                for opt in $opts
+                    set fixed_opts $fixed_opts (string replace --regex "^\./" "" "$opt")
+                end
+                set opts $fixed_opts
+            end
+            for i in $opts
+                echo -- $i
             end
         end
     end

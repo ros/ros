@@ -31,7 +31,6 @@
 
 #include <gtest/gtest.h>
 #include <ros/package.h>
-#include <sys/time.h>
 
 using namespace ros;
 

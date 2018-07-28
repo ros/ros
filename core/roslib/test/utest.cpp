@@ -32,10 +32,27 @@
 #include <string>
 #include <vector>
 #include <stdlib.h>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
+#include <boost/filesystem.hpp>
 #include <boost/thread.hpp>
 #include <gtest/gtest.h>
 #include "ros/package.h"
+
+#ifdef _WIN32
+int setenv(const char *name, const char *value, int overwrite)
+{
+  if(!overwrite)
+  {
+    size_t envsize = 0;
+    errno_t errcode = getenv_s(&envsize, NULL, 0, name);
+    if(errcode || envsize)
+      return errcode;
+  }
+  return _putenv_s(name, value);
+}
+#endif
 
 void string_split(const std::string &s, std::vector<std::string> &t, const std::string &d)
 {                                                                                 t.clear();
@@ -50,23 +67,25 @@ void string_split(const std::string &s, std::vector<std::string> &t, const std::
     t.push_back(s.substr(start));
 }
 
-char g_rr_buf[1024];
+std::string g_rr_path;
 void set_env_vars(void)
 {
   // Point ROS_PACKAGE_PATH at the roslib directory, and point
   // ROS_ROOT into an empty directory.
-  getcwd(g_rr_buf, sizeof(g_rr_buf));
-  setenv("ROS_PACKAGE_PATH", g_rr_buf, 1);
-  strncpy(g_rr_buf+strlen(g_rr_buf), "/tmp.XXXXXX", sizeof(g_rr_buf)-strlen(g_rr_buf)-1);
-  g_rr_buf[sizeof(g_rr_buf)-1] = '\0';
-  mkdtemp(g_rr_buf);
-  setenv("ROS_ROOT", g_rr_buf, 1);
+  char rr_buf[1024];
+  getcwd(rr_buf, sizeof(rr_buf));
+  setenv("ROS_PACKAGE_PATH", rr_buf, 1);
+
+  boost::filesystem::path temp_path = boost::filesystem::unique_path();
+  boost::filesystem::create_directories(temp_path);
+  g_rr_path = temp_path.string();
+  setenv("ROS_ROOT", g_rr_path.c_str(), 1);
 }
 void cleanup_env_vars(void)
 {
   // Remove the empty directory that we created in set_env_vars().
-  rmdir(g_rr_buf);
-  memset(g_rr_buf, 0, sizeof(g_rr_buf));
+  rmdir(g_rr_path.c_str());
+  g_rr_path.clear();
 }
 
 TEST(roslib, commandListNames)
@@ -118,7 +137,11 @@ roslib_caller()
   for(int i=0;i<100;i++)
   {
     output = ros::package::command("plugins --attrib=foo roslib");
+#ifndef _WIN32
     nanosleep(&ts, NULL);
+#else
+    boost::this_thread::sleep(boost::posix_time::milliseconds(1));
+#endif
   }
 }
 

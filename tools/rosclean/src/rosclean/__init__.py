@@ -135,10 +135,10 @@ def get_disk_usage(d):
     :raises: :exc:`CleanupException` If get_disk_usage() cannot be used on this platform
     """
     # only implemented on Linux and FreeBSD for now. Should work on OS X but need to verify first (du is not identical)
-    cmd = []
+    cmd = None
     unit = 1
     du = find_executable('du')
-    if du != None:
+    if du is not None:
         if platform.system() == 'Linux':
             cmd = [du, '-sb', d]
         elif platform.system() == 'FreeBSD':
@@ -152,7 +152,7 @@ def get_disk_usage(d):
         except:
             pass
 
-    if cmd == []:
+    if cmd is None:
         raise CleanupException("rosclean is not supported on this platform")
     try:
         return int(subprocess.Popen(cmd, stdout=subprocess.PIPE).communicate()[0].split()[0]) * unit

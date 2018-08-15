@@ -149,7 +149,8 @@ def get_disk_usage(d):
             if os.path.basename(os.readlink(du)) == 'busybox':
                 cmd = [du, '-sk', d]
                 unit = 1024
-        except:
+        except OSError:
+            # readlink raises OSError if the target is not symlink
             pass
 
     if cmd is None:

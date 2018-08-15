@@ -34,6 +34,7 @@ from __future__ import print_function
 
 __version__ = '1.7.0'
 
+from distutils.spawn import find_executable
 import argparse
 import os
 import sys
@@ -134,17 +135,29 @@ def get_disk_usage(d):
     :raises: :exc:`CleanupException` If get_disk_usage() cannot be used on this platform
     """
     # only implemented on Linux and FreeBSD for now. Should work on OS X but need to verify first (du is not identical)
-    if platform.system() == 'Linux':
+    cmd = None
+    unit = 1
+    du = find_executable('du')
+    if du is not None:
+        if platform.system() == 'Linux':
+            cmd = [du, '-sb', d]
+        elif platform.system() == 'FreeBSD':
+            cmd = [du, '-skA', d]
+            unit = 1024
         try:
-            return int(subprocess.Popen(['du', '-sb', d], stdout=subprocess.PIPE).communicate()[0].split()[0])
-        except:
-            raise CleanupException("rosclean is not supported on this platform")
-    elif platform.system() == 'FreeBSD':
-        try:
-            return int(subprocess.Popen(['du', '-sA', d], stdout=subprocess.PIPE).communicate()[0].split()[0]) * 1024
-        except:
-            raise CleanupException("rosclean is not supported on this platform")
-    else:
+            # detect BusyBox du command by following symlink
+            if os.path.basename(os.readlink(du)) == 'busybox':
+                cmd = [du, '-sk', d]
+                unit = 1024
+        except OSError:
+            # readlink raises OSError if the target is not symlink
+            pass
+
+    if cmd is None:
+        raise CleanupException("rosclean is not supported on this platform")
+    try:
+        return int(subprocess.Popen(cmd, stdout=subprocess.PIPE).communicate()[0].split()[0]) * unit
+    except:
         raise CleanupException("rosclean is not supported on this platform")
 
 def _sort_file_by_oldest(d):

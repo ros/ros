@@ -199,7 +199,8 @@ class _XMLTestResult(unittest.TestResult):
         output and standard error streams must be passed in.a
 
         """
-        stream.write(ET.tostring(self.xml(time_taken, out, err).getroot(), encoding='utf-8', method='xml'))
+        root = self.xml(time_taken, out, err).getroot()
+        stream.write(ET.tostring(root, encoding='utf-8', method='xml').decode('utf-8'))
 
     def print_report_text(self, stream, time_taken, out, err):
         """Prints the text report to the supplied stream.

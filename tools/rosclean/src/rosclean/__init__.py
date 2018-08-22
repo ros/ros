@@ -127,9 +127,9 @@ def get_human_readable_disk_usage(d):
     elif platform.system() == 'Windows':
         total_size = 0
         for dirpath, dirnames, filenames in os.walk(d):
-        for f in filenames:
-            fp = os.path.join(dirpath, f)
-            total_size += os.path.getsize(fp)
+            for f in filenames:
+                fp = os.path.join(dirpath, f)
+                total_size += os.path.getsize(fp)
         diskusage = "Total Size: " + total_size + " " + d
         return diskusage
     else:
@@ -163,9 +163,9 @@ def get_disk_usage(d):
     elif platform.system() == 'Windows':
         total_size = 0
         for dirpath, dirnames, filenames in os.walk(d):
-        for f in filenames:
-            fp = os.path.join(dirpath, f)
-            total_size += os.path.getsize(fp)
+            for f in filenames:
+                fp = os.path.join(dirpath, f)
+                total_size += os.path.getsize(fp)
         return total_size
 
     if cmd is None:

@@ -1,6 +1,5 @@
 @echo off
-REM setlocal EnableDelayedExpansion
-setlocal
+setlocal EnableDelayedExpansion
 
 set args=0
 set rosrun_prefix=""
@@ -45,7 +44,7 @@ if NOT EXIST %CMAKE_PREFIX_PATH% (
       set "prevline=TRUE"
       set "catkin_package_libexec_dirs=%%g"
     ) else (
-      set "catkin_package_libexec_dirs=%catkin_package_libexec_dirs% %%g"
+      set catkin_package_libexec_dirs=!catkin_package_libexec_dirs! %%g
     )
   )
   call :debug "Looking in catkin libexec dirs: %catkin_package_libexec_dirs%"

@@ -86,7 +86,7 @@ if NOT "%wildchar%" == "*" (
   set nexes=0
   set exepath=%exepaths_0%
 ) else (
-   set "absname=%pkgdir%\%2.exe"
+   set absname=%pkgdir%/%2.exe
    call :debug "Path given. Looking for %absname%"
    if NOT EXIST "%absname%" (
     echo Couldn't find executable named %absname%

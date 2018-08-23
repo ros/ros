@@ -42,11 +42,11 @@ if NOT EXIST %CMAKE_PREFIX_PATH% (
   set prevline=
   for /f "delims=" %%g in ('catkin_find --without-underlays --libexec --share %1') do (
     if NOT DEFINED prevline (
-	  set "prevline=TRUE"
-	  set "catkin_package_libexec_dirs=%%g"
-	) else (
+      set "prevline=TRUE"
+      set "catkin_package_libexec_dirs=%%g"
+    ) else (
       set "catkin_package_libexec_dirs=%catkin_package_libexec_dirs% %%g"
-	)
+    )
   )
   call :debug "Looking in catkin libexec dirs: %catkin_package_libexec_dirs%"
 )
@@ -77,7 +77,7 @@ if NOT "%wildchar%" == "*" (
   REM Select the first exe in the list
   if %nexes% EQU 0 (
     echo [rosrun] Couldn't find executable named %2.exe
-	  exit /b 3
+    exit /b 3
   )
   if %nexes% GTR 1 (
     echo [rosrun] You have chosen a non-unique executable, selecting the first.

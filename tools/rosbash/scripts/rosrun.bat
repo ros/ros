@@ -2,7 +2,7 @@
 setlocal EnableDelayedExpansion
 
 set args=0
-set rosrun_prefix=""
+set rosrun_prefix=
 set DEBUG=0
 
 for %%i in (%*) do set /A args+=1
@@ -67,34 +67,33 @@ if NOT "%wildchar%" == "*" (
   if NOT "%catkin_package_libexec_dirs%" == "" (
     for %%g in (%catkin_package_libexec_dirs%) do (
       call :findexe %2.exe %%g
-	  )
+    )
   )
   call :findexe %2.exe %pkgdir%
   for /f "delims=" %%a in ('catkin_find --bin') do set "catbin=%%a"
-  call :findexe %2.exe %catbin%
-  
+  call :findexe %2.exe !catbin!
+
   REM Select the first exe in the list
-  if %nexes% EQU 0 (
+  if !nexes! EQU 0 (
     echo [rosrun] Couldn't find executable named %2.exe
     exit /b 3
   )
-  if %nexes% GTR 1 (
+  if !nexes! GTR 1 (
     echo [rosrun] You have chosen a non-unique executable, selecting the first.
   )
-  
+
   set nexes=0
-  set exepath=%exepaths_0%
+  set exepath=!exepaths_0!
 ) else (
-   set absname=%pkgdir%/%2.exe
-   call :debug "Path given. Looking for %absname%"
-   if NOT EXIST "%absname%" (
+  set absname=%pkgdir%/%2.exe
+  call :debug "Path given. Looking for %absname%"
+  if NOT EXIST "%absname%" (
     echo Couldn't find executable named %absname%
     exit /b 3
-   )
-   set exepath=%absname%
+  )
+  set exepath=%absname%
 )
 
-:rosrun
 set exeargs=
 if NOT %args% gtr 2 goto :start
 shift /1
@@ -107,9 +106,9 @@ if %args% gtr 0 goto :argloop
 
 :start
 call :debug "Running %rosrun_prefix% %exepath% %exeargs%"
-start /b %rosrun_prefix% %exepath% %exeargs%
+start cmd.exe /c "%rosrun_prefix% %exepath% %exeargs%"
 
-exit /b 0
+goto :eof
 
 :findexe
 REM Convert forward slashes and make sure dirs end with slashes
@@ -119,7 +118,7 @@ if NOT EXIST %lpath% goto :eof
 pushd
 cd %lpath%
 for /f "delims=" %%d in ('dir %1 /s /A:-D /B') do (
-  call set "exepaths_%%nexes%%=%%d"
+  set exepaths_!nexes!=%%d
   set /A nexes+=1
 )
 popd

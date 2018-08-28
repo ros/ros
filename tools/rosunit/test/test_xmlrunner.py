@@ -4,7 +4,7 @@
 # nosetests test_dotname.py. Alternatively, just run with python test_dotname.py.
 # You will get the output from rostest as well.
 
-# Original code for xmlrunner written by Sebastian Rittau
+# Original code for xmlrunner written by Sebastian Rittau 
 # <srittau@jroger.in-berlin.de> and placed in the Public Domain.
 # With contributions by Paolo Borelli.
 # These tests refactored into a separate package by Edward Venator.
@@ -18,7 +18,6 @@ try:
 except ImportError:
     from io import StringIO
 from rosunit.xmlrunner import XMLTestRunner
-
 
 class XMLTestRunnerTest(unittest.TestCase):
     def setUp(self):
@@ -51,7 +50,7 @@ class XMLTestRunnerTest(unittest.TestCase):
     def test_no_tests(self):
         """Regression test: Check whether a test run without any tests
         matches a previous run.
-
+        
         """
         class TestTest(unittest.TestCase):
             pass
@@ -60,7 +59,7 @@ class XMLTestRunnerTest(unittest.TestCase):
     def test_success(self):
         """Regression test: Check whether a test run with a successful test
         matches a previous run.
-
+        
         """
         class TestTest(unittest.TestCase):
             def test_foo(self):
@@ -72,7 +71,7 @@ class XMLTestRunnerTest(unittest.TestCase):
     def test_failure(self):
         """Regression test: Check whether a test run with a failing test
         matches a previous run.
-
+        
         """
         class TestTest(unittest.TestCase):
             def test_foo(self):
@@ -84,7 +83,7 @@ class XMLTestRunnerTest(unittest.TestCase):
     def test_error(self):
         """Regression test: Check whether a test run with a erroneous test
         matches a previous run.
-
+        
         """
         class TestTest(unittest.TestCase):
             def test_foo(self):
@@ -96,7 +95,7 @@ class XMLTestRunnerTest(unittest.TestCase):
     def test_stdout_capture(self):
         """Regression test: Check whether a test run with output to stdout
         matches a previous run.
-
+        
         """
         class TestTest(unittest.TestCase):
             def test_foo(self):
@@ -108,7 +107,7 @@ class XMLTestRunnerTest(unittest.TestCase):
     def test_stderr_capture(self):
         """Regression test: Check whether a test run with output to stderr
         matches a previous run.
-
+        
         """
         class TestTest(unittest.TestCase):
             def test_foo(self):
@@ -152,7 +151,6 @@ class XMLTestProgram(unittest.TestProgram):
         if self.testRunner is None:
             self.testRunner = XMLTestRunner()
         unittest.TestProgram.runTests(self)
-
 
 main = XMLTestProgram
 

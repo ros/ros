@@ -130,7 +130,7 @@ def get_human_readable_disk_usage(d):
             for f in filenames:
                 fp = os.path.join(dirpath, f)
                 total_size += os.path.getsize(fp)
-        diskusage = "Total Size: " + total_size + " " + d
+        diskusage = "Total Size: " + str(total_size) + " " + d
         return diskusage
     else:
         raise CleanupException("rosclean is not supported on this platform")

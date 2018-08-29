@@ -258,6 +258,8 @@ class Printer:
                 width = struct.unpack('HHHH', x)[1]
             except IOError:
                 pass
+            except ImportError:
+                pass
             if width <= 0:
                 try:
                     width = int(os.environ['COLUMNS'])

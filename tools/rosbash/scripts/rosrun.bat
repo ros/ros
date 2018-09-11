@@ -117,7 +117,7 @@ set lpath=%lpath:/=\%
 if NOT EXIST %lpath% goto :eof
 pushd
 cd %lpath%
-for /f "delims=" %%d in ('dir %1 /s /A:-D /B') do (
+for /r %%d in (%1) do (
   set exepaths_!nexes!=%%d
   set /A nexes+=1
 )

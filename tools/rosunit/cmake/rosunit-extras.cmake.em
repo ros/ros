@@ -4,11 +4,11 @@ macro(rosunit_initialize_tests)
 @[if DEVELSPACE]@
   # binary and script in develspace
   set(ROSUNIT_SCRIPTS_DIR "@(CMAKE_CURRENT_SOURCE_DIR)/scripts")
-  set(ROSUNIT_EXE "${ROSUNIT_SCRIPTS_DIR}/rosunit")
+  set(ROSUNIT_EXE "${PYTHON_EXECUTABLE} ${ROSUNIT_SCRIPTS_DIR}/rosunit")
 @[else]@
   # binary and script in installspace
   set(ROSUNIT_SCRIPTS_DIR "${rosunit_DIR}/../scripts")
-  set(ROSUNIT_EXE "${rosunit_DIR}/../../../@(CATKIN_GLOBAL_BIN_DESTINATION)/rosunit")
+  set(ROSUNIT_EXE "${PYTHON_EXECUTABLE} ${rosunit_DIR}/../../../@(CATKIN_GLOBAL_BIN_DESTINATION)/rosunit")
 @[end if]@
 endmacro()
 

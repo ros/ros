@@ -100,8 +100,13 @@ shift /1
 shift /1
 set /A args-=2
 :argloop
-set "exeargs=%exeargs% %1%"
-set /A args-=1
+set n=%1%
+set v=%2%
+set "exeargs=%exeargs% %n%=%v%"
+shift /1
+shift /1
+set /A args-=2
+call :debug "%exeargs%"
 if %args% gtr 0 goto :argloop
 
 :start

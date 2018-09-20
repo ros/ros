@@ -14,9 +14,16 @@ else()
 endif()
 
 # making toplevel forward script for bash script rosrun
-set(BASH_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/scripts/rosrun)
-configure_file(${catkin_EXTRAS_DIR}/templates/script.bash.in
-  ${CATKIN_DEVEL_PREFIX}/bin/rosrun
-  @ONLY)
+if(NOT WIN32)
+  set(BASH_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/scripts/rosrun)
+  configure_file(${catkin_EXTRAS_DIR}/templates/script.bash.in
+    ${CATKIN_DEVEL_PREFIX}/bin/rosrun
+    @ONLY)
+else()
+  set(BAT_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/scripts/rosrun.bat)
+  configure_file(${catkin_EXTRAS_DIR}/templates/script.bat.in
+    ${CATKIN_DEVEL_PREFIX}/bin/rosrun.bat
+    @ONLY)
+endif()
 
 catkin_add_env_hooks(15.rosbash SHELLS bash fish tcsh zsh DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/env-hooks)

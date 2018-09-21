@@ -5,7 +5,7 @@ set args=0
 set rosrun_prefix=
 set DEBUG=0
 
-for %%i in (%*) do set /A args+=1
+call :getargc args %*
 
 :handleargs
 if "%1" equ "--help" goto :usage
@@ -146,3 +146,15 @@ echo   rosrun will locate PACKAGE and try to find
 echo   an executable named EXECUTABLE in the PACKAGE tree.
 echo   If it finds it, it will run it with ARGS.
 exit /b 0
+
+:getargc
+  set getargc_v0=%1
+  set /A "%getargc_v0% = 0"
+:getargc_loop
+  if not x%2x==xx (
+    shift
+    set /A "%getargc_v0% = %getargc_v0% + 1"
+    goto :getargc_loop
+  )
+  set getargc_v0=
+  goto eof:

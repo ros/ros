@@ -35,68 +35,60 @@ if %args% gtr 0 goto :handleargs
 :rosrun
 if %args% lss 2 goto :usage
 
-set catkin_package_libexec_dirs=
-set pkgdir=
-if NOT EXIST %CMAKE_PREFIX_PATH% (
-  set prevline=
+set catbin=
+set rosrun_search_path=
+set catkin_find_search_path=
+set rospack_find_search_path=
+if NOT "%CMAKE_PREFIX_PATH%"=="" (
   for /f "delims=" %%g in ('catkin_find --without-underlays --libexec --share %1') do (
-    if NOT DEFINED prevline (
-      set "prevline=TRUE"
-      set "catkin_package_libexec_dirs=%%g"
-    ) else (
-      set catkin_package_libexec_dirs=!catkin_package_libexec_dirs! %%g
-    )
+    set "catkin_find_search_path=!catkin_find_search_path!;%%g"
   )
-  call :debug "Looking in catkin libexec dirs: %catkin_package_libexec_dirs%"
+  call :debug "Looking in catkin libexec dirs: !catkin_find_search_path!"
 )
 
-for /f "delims=" %%a in ('rospack find %1') do set "pkgdir=%%a"
-call :debug "Looking in rospack dir: %pkgdir%"
+for /f "delims=" %%a in ('rospack find %1') do (
+  set "rospack_find_search_path=!rospack_find_search_path!;%%a"
+)
+call :debug "Looking in rospack dir: %rospack_find_search_path%"
 
-if "%catkin_package_libexec_dirs%" == "" (
-  if "%pkgdir%" == "" (
+if "%catkin_find_search_path%" == "" (
+  if "%rospack_find_search_path%" == "" (
     exit /b 2
   )
 )
 
-set wildchar=%2
-set wildchar=%wildchar:~-1%
-if NOT "%wildchar%" == "*" (
-  call :debug "Searching for %2.exe"
-  REM on Windows, we will have a pecking order, libexec, pkgdir, global bin dir
-  set nexes=0
-  if NOT "%catkin_package_libexec_dirs%" == "" (
-    for %%g in (%catkin_package_libexec_dirs%) do (
-      call :findexe %2.exe %%g
-    )
-  )
-  call :findexe %2.exe %pkgdir%
-  for /f "delims=" %%a in ('catkin_find --bin') do set "catbin=%%a"
-  if NOT "!catbin!" == "" (
-    call :findexe %2.exe !catbin!
-  )
-
-  REM Select the first exe in the list
-  if !nexes! EQU 0 (
-    echo [rosrun] Couldn't find executable named %2.exe
-    exit /b 3
-  )
-  if !nexes! GTR 1 (
-    echo [rosrun] You have chosen a non-unique executable, selecting the first.
-  )
-
-  set nexes=0
-  set exepath=!exepaths_0!
-) else (
-  set absname=%pkgdir%\%2.exe
-  call :debug "Path given. Looking for !absname!"
-  if NOT EXIST "!absname!" (
-    echo Couldn't find executable named !absname!
-    exit /b 3
-  )
-  set exepath=!absname!
+for /f "delims=" %%a in ('catkin_find --bin') do (
+  set "catbin=!catbin!;%%a"
 )
 
+REM on Windows, we will have a pecking order, libexec, pkgdir, global bin dir
+set "rosrun_search_path=%catkin_find_search_path%;%rospack_find_search_path%;%catbin%"
+
+if "%~x2"=="" (
+  REM iterate through PATHEXT if no file extension specified.
+  for %%a in (%PATHEXT%) do (
+    call :debug "Searching for %2%%a"
+    for %%i in (%2%%a) do (
+      set "exepath=%%~$rosrun_search_path:i"
+      if NOT "!exepath!" == "" (
+        goto :process_exeargs
+      )
+    )
+  )
+) else (
+  REM directly search for the file if extension specified.
+  call :debug "Searching for %2"
+  for %%i in (%2) do (
+    set "exepath=%%~$rosrun_search_path:i"
+  )
+)
+
+if "!exepath!" == "" (
+  echo [rosrun] Couldn't find executable named %2
+  exit /b 3
+)
+
+:process_exeargs
 set exeargs=
 if NOT %args% gtr 2 goto :start
 shift /1
@@ -116,23 +108,6 @@ if %args% gtr 0 goto :argloop
 call :debug "Running %rosrun_prefix% %exepath% %exeargs%"
 call %rosrun_prefix% %exepath% %exeargs%
 exit /b %ERRORLEVEL%
-
-
-:findexe
-REM Convert forward slashes and make sure dirs end with slashes
-set lpath=%2
-set lpath=%lpath:/=\%
-if NOT EXIST %lpath% goto :eof
-pushd
-cd %lpath%
-for /r %%d in (%1) do (
-  if EXIST "%%d" (
-    set exepaths_!nexes!=%%d
-    set /A nexes+=1
-  )
-)
-popd
-goto :eof
 
 :debug
 if %DEBUG% == 1 (

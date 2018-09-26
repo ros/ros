@@ -157,4 +157,4 @@ exit /b 0
     goto :getargc_loop
   )
   set getargc_v0=
-  goto eof:
+  goto :eof

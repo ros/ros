@@ -1,11 +1,12 @@
 @echo off
 setlocal EnableDelayedExpansion
 
-set args=0
-set rosrun_prefix=
 set DEBUG=0
 
-call :getargc args %*
+set rosrun_args=%*
+set rosrun_prefix=
+set rosrun_package=
+set rosrun_executable=
 
 :handleargs
 if "%1" equ "--help" goto :usage
@@ -20,33 +21,46 @@ if "%1" equ "-d" (
   set DEBUG=1 
   goto :nextarg 
 )
-goto :rosrun
+goto :find_rosrun_parameters
 
 :prefix
 set rosrun_prefix=%2
 shift /1
-set /A args-=1
+call :trim_first_arg result_args !rosrun_args!
+set rosrun_args=!result_args!
 
 :nextarg
 shift /1
-set /A args-=1
-if %args% gtr 0 goto :handleargs
+call :trim_first_arg result_args !rosrun_args!
+set rosrun_args=!result_args!
 
-:rosrun
-if %args% lss 2 goto :usage
+if not "%1"=="" goto :handleargs
+
+:find_rosrun_parameters
+if "%1"=="" goto :usage
+set rosrun_package=%1
+call :trim_first_arg result_args !rosrun_args!
+set rosrun_args=!result_args!
+shift /1
+
+if "%1"=="" goto :usage
+set rosrun_executable=%1
+call :trim_first_arg result_args !rosrun_args!
+set rosrun_args=!result_args!
+shift /1
 
 set catbin=
 set rosrun_search_path=
 set catkin_find_search_path=
 set rospack_find_search_path=
 if NOT "%CMAKE_PREFIX_PATH%"=="" (
-  for /f "delims=" %%g in ('catkin_find --without-underlays --libexec --share %1') do (
+  for /f "delims=" %%g in ('catkin_find --without-underlays --libexec --share !rosrun_package!') do (
     set "catkin_find_search_path=!catkin_find_search_path!;%%g"
   )
   call :debug "Looking in catkin libexec dirs: !catkin_find_search_path!"
 )
 
-for /f "delims=" %%a in ('rospack find %1') do (
+for /f "delims=" %%a in ('rospack find !rosrun_package!') do (
   set "rospack_find_search_path=!rospack_find_search_path!;%%a"
 )
 call :debug "Looking in rospack dir: %rospack_find_search_path%"
@@ -64,54 +78,42 @@ for /f "delims=" %%a in ('catkin_find --bin') do (
 REM on Windows, we will have a pecking order, libexec, pkgdir, global bin dir
 set "rosrun_search_path=%catkin_find_search_path%;%rospack_find_search_path%;%catbin%"
 
-if "%~x2"=="" (
+for %%a in ("!rosrun_executable!") do (
+  set rosrun_executable_extension=%%~xa
+)    
+
+if "!rosrun_executable_extension!"=="" (
   REM iterate through PATHEXT if no file extension specified.
   for %%a in (%PATHEXT%) do (
-    call :debug "Searching for %2%%a"
-    for %%i in (%2%%a) do (
+    call :debug "Searching for !rosrun_executable!%%a"
+    for %%i in (!rosrun_executable!%%a) do (
       set "exepath=%%~$rosrun_search_path:i"
       if NOT "!exepath!" == "" (
-        goto :process_exeargs
+        goto :run_rosrun_exectuable
       )
     )
   )
 ) else (
   REM directly search for the file if extension specified.
-  call :debug "Searching for %2"
-  for %%i in (%2) do (
+  call :debug "Searching for !rosrun_executable!"
+  for %%i in (!rosrun_executable!) do (
     set "exepath=%%~$rosrun_search_path:i"
   )
 )
 
 if "!exepath!" == "" (
-  echo [rosrun] Couldn't find executable named %2
+  echo [rosrun] Couldn't find executable named !rosrun_executable!
   exit /b 3
 )
 
-:process_exeargs
-set exeargs=
-if NOT %args% gtr 2 goto :start
-shift /1
-shift /1
-set /A args-=2
-:argloop
-set n=%1%
-set v=%2%
-set "exeargs=%exeargs% %n%=%v%"
-shift /1
-shift /1
-set /A args-=2
-call :debug "%exeargs%"
-if %args% gtr 0 goto :argloop
-
-:start
-call :debug "Running %rosrun_prefix% %exepath% %exeargs%"
-call %rosrun_prefix% %exepath% %exeargs%
+:run_rosrun_exectuable
+call :debug "Running %rosrun_prefix% %exepath% %rosrun_args%"
+call %rosrun_prefix% %exepath% %rosrun_args%
 exit /b %ERRORLEVEL%
 
 :debug
 if %DEBUG% == 1 (
-  echo [rosrun] %~1
+  echo [rosrun] %*
 )  
 goto :eof
 
@@ -122,14 +124,8 @@ echo   an executable named EXECUTABLE in the PACKAGE tree.
 echo   If it finds it, it will run it with ARGS.
 exit /b 0
 
-:getargc
-  set getargc_v0=%1
-  set /A "%getargc_v0% = 0"
-:getargc_loop
-  if not x%2x==xx (
-    shift
-    set /A "%getargc_v0% = %getargc_v0% + 1"
-    goto :getargc_loop
-  )
-  set getargc_v0=
-  goto :eof
+:trim_first_arg
+setlocal EnableDelayedExpansion
+set params=%*
+for /f "tokens=2*" %%a in ("!params!") do EndLocal & set %1=%%b
+exit /b

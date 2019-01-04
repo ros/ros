@@ -85,7 +85,7 @@ for %%a in ("!rosrun_executable!") do (
 if "!rosrun_executable_extension!"=="" (
   REM iterate through PATHEXT if no file extension specified.
   for %%a in (%PATHEXT%) do (
-    call :debug "Searching for !rosrun_executable!%%a"
+    call :debug "Searching for executable !rosrun_executable!%%a"
     for %%i in (!rosrun_executable!%%a) do (
       set "exepath=%%~$rosrun_search_path:i"
       if NOT "!exepath!" == "" (
@@ -95,9 +95,15 @@ if "!rosrun_executable_extension!"=="" (
   )
 ) else (
   REM directly search for the file if extension specified.
-  call :debug "Searching for !rosrun_executable!"
-  for %%i in (!rosrun_executable!) do (
-    set "exepath=%%~$rosrun_search_path:i"
+  call :debug "Searching for script !rosrun_executable!"
+  for /r %%i in (!rosrun_executable!) do (
+    if EXIST %%i (
+      call :debug "found %%i"
+      set "exepath=%%i"
+      if NOT "!exepath!" == "" (
+        goto :run_rosrun_script
+      )
+    )
   )
 )
 
@@ -109,6 +115,16 @@ if "!exepath!" == "" (
 :run_rosrun_exectuable
 call :debug "Running %rosrun_prefix% %exepath% %rosrun_args%"
 call %rosrun_prefix% %exepath% %rosrun_args%
+exit /b %ERRORLEVEL%
+
+:run_rosrun_script
+call :debug "Running %rosrun_prefix% %exepath% %rosrun_args%"
+set script_extension=%~x1
+if script_extension == ".py" (
+  call %rosrun_prefix% "%PYTHONHOME%\python.exe" %exepath% %rosrun_args%
+) else (
+  call %rosrun_prefix% %exepath% %rosrun_args%
+)
 exit /b %ERRORLEVEL%
 
 :debug

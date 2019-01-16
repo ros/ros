@@ -105,6 +105,13 @@ if "!rosrun_executable_extension!"=="" (
       )
     )
   )
+  rem search in the catkin and rospack path
+  for %%i in (!rosrun_executable!) do (
+    set "exepath=%%~$rosrun_search_path:i"
+    if NOT "!exepath!" == "" (
+      goto :run_rosrun_exectuable
+    )
+  )
 )
 
 if "!exepath!" == "" (

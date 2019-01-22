@@ -124,6 +124,14 @@ def get_human_readable_disk_usage(d):
             return subprocess.Popen(['du', '-sh', d], stdout=subprocess.PIPE).communicate()[0].split()[0]
         except:
             raise CleanupException("rosclean is not supported on this platform")
+    elif platform.system() == 'Windows':
+        total_size = 0
+        for dirpath, dirnames, filenames in os.walk(d):
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            total_size += os.path.getsize(fp)
+        diskusage = "Total Size: " + total_size + " " + d
+        return diskusage
     else:
         raise CleanupException("rosclean is not supported on this platform")
     
@@ -152,6 +160,13 @@ def get_disk_usage(d):
         except OSError:
             # readlink raises OSError if the target is not symlink
             pass
+    elif platform.system() == 'Windows':
+        total_size = 0
+        for dirpath, dirnames, filenames in os.walk(d):
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            total_size += os.path.getsize(fp)
+        return total_size
 
     if cmd is None:
         raise CleanupException("rosclean is not supported on this platform")
@@ -201,7 +216,10 @@ def _rosclean_cmd_purge(args):
                     break
                 path = os.path.join(d, f)
                 log_size -= get_disk_usage(path)
-                cmds = [['rm', '-rf', path]]
+                if platform.system() == 'Windows':
+                    cmds = [['deltree', '/Y', path ]]
+                else:
+                    cmds = [['rm', '-rf', path]]
                 try:
                     _call(cmds)
                 except:

@@ -36,7 +36,7 @@
 #if defined(__GNUC__)
 #  define ROS_DEPRECATED __attribute__((deprecated))
 #  define ROS_FORCE_INLINE __attribute__((always_inline))
-#elif defined(MSVC)
+#elif defined(_MSC_VER)
 #  define ROS_DEPRECATED
 #  define ROS_FORCE_INLINE __forceinline
 #else

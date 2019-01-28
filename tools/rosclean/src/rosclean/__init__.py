@@ -111,6 +111,14 @@ def _rosclean_cmd_check(args):
         desc = get_human_readable_disk_usage(d)
         print("%s %s"%(desc, label))
 
+def _get_disk_usage_by_walking_tree(d):
+    total_size = 0
+    for dirpath, dirnames, filenames in os.walk(d):
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            total_size += os.path.getsize(fp)
+    return total_size
+    
 def get_human_readable_disk_usage(d):
     """
     Get human-readable disk usage for directory
@@ -124,6 +132,9 @@ def get_human_readable_disk_usage(d):
             return subprocess.Popen(['du', '-sh', d], stdout=subprocess.PIPE).communicate()[0].split()[0]
         except:
             raise CleanupException("rosclean is not supported on this platform")
+    elif platform.system() == 'Windows':
+        total_size = _get_disk_usage_by_walking_tree(d)
+        return "Total Size: " + str(total_size) + " " + d
     else:
         raise CleanupException("rosclean is not supported on this platform")
     
@@ -134,6 +145,9 @@ def get_disk_usage(d):
     :returns: disk usage in bytes (du -b) or (du -A) * 1024, ``int``
     :raises: :exc:`CleanupException` If get_disk_usage() cannot be used on this platform
     """
+    if platform.system() == 'Windows':
+        return _get_disk_usage_by_walking_tree(d)
+
     # only implemented on Linux and FreeBSD for now. Should work on OS X but need to verify first (du is not identical)
     cmd = None
     unit = 1
@@ -201,7 +215,10 @@ def _rosclean_cmd_purge(args):
                     break
                 path = os.path.join(d, f)
                 log_size -= get_disk_usage(path)
-                cmds = [['rm', '-rf', path]]
+                if platform.system() == 'Windows':
+                    cmds = [['rd', '/s', '/q', path]]
+                else:
+                    cmds = [['rm', '-rf', path]]
                 try:
                     _call(cmds)
                 except:

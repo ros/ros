@@ -256,6 +256,8 @@ class Printer:
                 s = struct.pack('HHHH', 0, 0, 0, 0)
                 x = fcntl.ioctl(1, termios.TIOCGWINSZ, s)
                 width = struct.unpack('HHHH', x)[1]
+            except ImportError:
+                pass
             except IOError:
                 pass
             if width <= 0:

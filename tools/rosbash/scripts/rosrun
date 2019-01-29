@@ -49,13 +49,9 @@ esac
 
 if [[ -n $CMAKE_PREFIX_PATH ]]; then
   IFS=$'\n'
-  catkin_package_libexec_dirs=($(catkin_find --without-underlays --libexec --share "$1"))
-  if [[ $? -ne 0  ]]; then
-    echo "${catkin_package_libexec_dirs[@]}"
-    exit 3
-  fi
+  catkin_package_libexec_dirs=($(catkin_find --without-underlays --libexec --share "$1" 2> /dev/null))
+  debug "Looking in catkin libexec dirs: $IFS$(catkin_find --without-underlays --libexec --share "$1" 2>&1)"
   unset IFS
-  debug "Looking in catkin libexec dirs: ${catkin_package_libexec_dirs[*]}"
 fi
 pkgdir=$(rospack find "$1")
 debug "Looking in rospack dir: $pkgdir"

@@ -402,7 +402,11 @@ def find_node(pkg, node_type, rospack=None):
 def _executable_filter(test_path):
     s = os.stat(test_path)
     flags = stat.S_IRUSR | stat.S_IXUSR
-    if os.name == 'nt' and os.path.splitext(test_path)[1] == '.py':
+
+    # Python scripts in ROS tend to omit .py extension since they could become executable
+    # by adding a shebang line (#!/usr/bin/env python) in Linux environments
+    # special handle this case in Windows environment
+    if os.name == 'nt' and os.path.splitext(test_path)[1].lower() in ['.py', '']:
         flags = stat.S_IRUSR
     return (s.st_mode & flags) == flags
 

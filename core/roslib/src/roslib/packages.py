@@ -406,7 +406,7 @@ def _executable_filter(test_path):
     # Python scripts in ROS tend to omit .py extension since they could become executable
     # by adding a shebang line (#!/usr/bin/env python) in Linux environments
     # special handle this case in Windows environment
-    if os.name == 'nt' and os.path.splitext(test_path)[1] in ['.py', '']:
+    if os.name == 'nt' and os.path.splitext(test_path)[1].lower() in ['.py', '']:
         flags = stat.S_IRUSR
     return (s.st_mode & flags) == flags
 

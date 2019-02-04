@@ -41,8 +41,9 @@ class RoslibStacksTest(unittest.TestCase):
   
     def test_list_stacks(self):
         from roslib.stacks import list_stacks
-        l = list_stacks()
-        self.assert_('ros' in l)
+        # roslib can't depend on ros and therefore can't expect it being in the environment
+        # l = list_stacks()
+        # self.assert_('ros' in l)
 
         # test with env
         test_dir = os.path.join(roslib.packages.get_pkg_dir('roslib'), 'test', 'stack_tests', 's1')

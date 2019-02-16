@@ -15,7 +15,7 @@
 
   <buildtool_depend version_gte="0.5.69">catkin</buildtool_depend>
 
-  <build_export_depend>rospack</build_export_depend>
+  <depend>rospack</depend>
 
   <run_depend>rosbuild</run_depend>
 </package>

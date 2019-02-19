@@ -45,6 +45,7 @@ shift /1
 
 if "%1"=="" goto :usage
 set rosrun_executable=%1
+set rosrun_executable_extension=%~x1
 call :trim_first_arg result_args !rosrun_args!
 set rosrun_args=!result_args!
 shift /1
@@ -78,10 +79,6 @@ for /f "delims=" %%a in ('catkin_find --bin') do (
 REM on Windows, we will have a pecking order, libexec, pkgdir, global bin dir
 set "rosrun_search_path=%catkin_find_search_path%;%rospack_find_search_path%;%catbin%"
 
-for %%a in ("!rosrun_executable!") do (
-  set rosrun_executable_extension=%%~xa
-)    
-
 if "!rosrun_executable_extension!"=="" (
   REM iterate through PATHEXT if no file extension specified.
   for %%a in (%PATHEXT%) do (
@@ -89,28 +86,18 @@ if "!rosrun_executable_extension!"=="" (
     for %%i in (!rosrun_executable!%%a) do (
       set "exepath=%%~$rosrun_search_path:i"
       if NOT "!exepath!" == "" (
-        goto :run_rosrun_exectuable
+        goto :run_rosrun_internal
       )
     )
   )
-) else (
-  REM directly search for the file if extension specified.
-  call :debug "Searching for script !rosrun_executable!"
-  for /r %%i in (!rosrun_executable!) do (
-    if EXIST %%i (
-      call :debug "found %%i"
-      set "exepath=%%i"
-      if NOT "!exepath!" == "" (
-        goto :run_rosrun_script
-      )
-    )
-  )
-  rem search in the catkin and rospack path
-  for %%i in (!rosrun_executable!) do (
-    set "exepath=%%~$rosrun_search_path:i"
-    if NOT "!exepath!" == "" (
-      goto :run_rosrun_exectuable
-    )
+)
+
+REM search in the catkin and rospack path
+call :debug "Searching for executable !rosrun_executable!"
+for %%i in (!rosrun_executable!) do (
+  set "exepath=%%~$rosrun_search_path:i"
+  if NOT "!exepath!" == "" (
+    goto :run_rosrun_internal
   )
 )
 
@@ -119,15 +106,14 @@ if "!exepath!" == "" (
   exit /b 3
 )
 
-:run_rosrun_exectuable
+:run_rosrun_internal
 call :debug "Running %rosrun_prefix% %exepath% %rosrun_args%"
-call %rosrun_prefix% %exepath% %rosrun_args%
-exit /b %ERRORLEVEL%
-
-:run_rosrun_script
-call :debug "Running %rosrun_prefix% %exepath% %rosrun_args%"
-set script_extension=%~x1
-if script_extension == ".py" (
+for %%a in ("%exepath%") do (
+  set exepath_extension=%%~xa
+)
+if "!exepath_extension!" == ".py" (
+  call %rosrun_prefix% "%PYTHONHOME%\python.exe" %exepath% %rosrun_args%
+) else if "!exepath_extension!" == "" (
   call %rosrun_prefix% "%PYTHONHOME%\python.exe" %exepath% %rosrun_args%
 ) else (
   call %rosrun_prefix% %exepath% %rosrun_args%

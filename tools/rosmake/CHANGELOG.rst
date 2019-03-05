@@ -2,6 +2,11 @@
 Changelog for package rosmake
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fall back to default value if modules are not available (`#199 <https://github.com/ros/ros/issues/199>`_)
+* chmod -x on Python modules (`#183 <https://github.com/ros/ros/issues/183>`_)
+
 1.14.4 (2018-05-01)
 -------------------
 

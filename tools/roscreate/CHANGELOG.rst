@@ -2,6 +2,11 @@
 Changelog for package roscreate
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* chmod -x on Python modules (`#183 <https://github.com/ros/ros/issues/183>`_)
+* add missing dependencies (`#181 <https://github.com/ros/ros/issues/181>`_)
+
 1.14.4 (2018-05-01)
 -------------------
 

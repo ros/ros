@@ -2,6 +2,13 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* add rosrun.bat (`#208 <https://github.com/ros/ros/issues/208>`_)
+* add verbose output to rosrun if catkin_find fails (`#182 <https://github.com/ros/ros/issues/182>`_)
+* add missing rospack dependency (`#189 <https://github.com/ros/ros/issues/189>`_)
+* fix rosfish (`#172 <https://github.com/ros/ros/issues/172>`_)
+
 1.14.4 (2018-05-01)
 -------------------
 * rosrun: array is now properly expanded in debug-echo (`#176 <https://github.com/ros/ros/issues/176>`_)

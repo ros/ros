@@ -2,6 +2,10 @@
 Changelog for package rosboost_cfg
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* chmod -x on Python modules (`#183 <https://github.com/ros/ros/issues/183>`_)
+
 1.14.4 (2018-05-01)
 -------------------
 

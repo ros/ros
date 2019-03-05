@@ -2,8 +2,8 @@
 Changelog for package rosbuild
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.5 (2019-03-04)
+-------------------
 * pull in CATKIN_ENV_HOOK_WORKSPACE if defined (`#15 <https://github.com/ros/ros/issues/15>`_) (`#196 <https://github.com/ros/ros/issues/196>`_)
 
 1.14.4 (2018-05-01)

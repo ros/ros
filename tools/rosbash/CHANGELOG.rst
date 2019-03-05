@@ -2,8 +2,8 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.5 (2019-03-04)
+-------------------
 * add rosrun.bat (`#208 <https://github.com/ros/ros/issues/208>`_)
 * add verbose output to rosrun if catkin_find fails (`#182 <https://github.com/ros/ros/issues/182>`_)
 * add missing rospack dependency (`#189 <https://github.com/ros/ros/issues/189>`_)

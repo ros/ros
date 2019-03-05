@@ -2,8 +2,8 @@
 Changelog for package roslib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.5 (2019-03-04)
+-------------------
 * disable test with invalid dependency (`#202 <https://github.com/ros/ros/issues/202>`_)
 * special handle Python script without extension on Windows (`#197 <https://github.com/ros/ros/issues/197>`_)
 * use _MSC_VER for ROS_FORCE_INLINE (`#194 <https://github.com/ros/ros/issues/194>`_)

@@ -580,9 +580,8 @@ function _roscomplete_launch {
         _roscomplete_search_dir "( -type f -regex .*\.launch$ -o -type f -regex .*\.test$ )"
         if [[ $COMP_CWORD == 1 ]]; then
            COMPREPLY=($(compgen -o plusdirs -f -X "!*.launch" -- ${arg}) ${COMPREPLY[@]} $(compgen -o plusdirs -f -X "!*.test" -- ${arg}) ${COMPREPLY[@]})
-        fi
-        # complete roslaunch arguments for a launch file
-        if [[ ${#COMP_WORDS[@]} -ge 2 ]]; then
+        elif [[ ${#COMP_WORDS[@]} -ge 2 ]]; then
+            # complete roslaunch arguments for a launch file
             ROSLAUNCH_COMPLETE=$(which roslaunch-complete)
             if [[ -x ${ROSLAUNCH_COMPLETE} ]]; then
                 # Call roslaunch-complete instead of roslaunch to get arg completion
@@ -590,8 +589,7 @@ function _roscomplete_launch {
                 # roslaunch-complete should be very silent about
                 # errors and return 0 if it produced usable completion.
                 if [[ $? == 0 ]]; then
-                    COMPREPLY=($(compgen -W "${_roslaunch_args}" -- "${arg}") ${COMPREPLY[@]})
-                    # FIXME maybe leave ${COMPREPLY[@]} out if we completed successfully.
+                    COMPREPLY=($(compgen -W "${_roslaunch_args}" -- "${arg}"))
                 fi
             fi
         fi

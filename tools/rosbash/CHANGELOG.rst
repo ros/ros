@@ -2,8 +2,8 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.6 (2019-03-18)
+-------------------
 * add roscd, rosls support for Windows (`#210 <https://github.com/ros/ros/issues/210>`_)
 * exclude files when completing roslaunch args (`#211 <https://github.com/ros/ros/issues/211>`_)
 

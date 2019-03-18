@@ -9,7 +9,7 @@ if (WIN32)
   install(PROGRAMS scripts/rosrun.bat
     DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION})
 
-  install(PROGRAMS  scripts/findpath.py scripts/roscd.bat scripts/rosls.bat
+  install(PROGRAMS scripts/rosfindpath.py scripts/roscd.bat scripts/rosls.bat
     DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION})
 else()
   install(PROGRAMS scripts/rosrun

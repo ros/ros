@@ -1,7 +1,8 @@
 from __future__ import print_function
-import sys
+
 import os
 import subprocess
+import sys
 
 ROS_CACHE_TIMEOUT_ENV_NAME = 'ROS_CACHE_TIMEOUT'
 ROS_LOCATIONS_ENV_NAME = 'ROS_LOCATIONS'
@@ -18,22 +19,22 @@ def ros_location_find(package_name):
             if index != -1:
                 if package_name == loc[:index]:
                     return 0, loc[index + 1:]
-    
+
     if package_name == 'log':
         p = subprocess.Popen('roslaunch-logs', stdout=subprocess.PIPE)
         result_location = p.communicate()[0].strip()
         result_code = p.returncode
-        return result_code, result_location if result_code == 0 else package_name + ' not found'
+        return result_code, result_location if result_code == 0 else ''
 
     if package_name == 'test_results':
         p = subprocess.Popen('rosrun.bat rosunit test_results_dir.py', stdout=subprocess.PIPE)
         result_location = p.communicate()[0].strip()
         result_code = p.returncode
-        return result_code, result_location if result_code == 0 else package_name + ' not found'
+        return result_code, result_location if result_code == 0 else ''
 
     # process package_name and return
     env = os.environ
-    env[ROS_CACHE_TIMEOUT_ENV_NAME]='-1.0'
+    env[ROS_CACHE_TIMEOUT_ENV_NAME] = '-1.0'
     p = subprocess.Popen(['rospack', 'find', package_name], stdout=subprocess.PIPE)
     result_location = p.communicate()[0].strip()
     result_code = p.returncode
@@ -45,7 +46,9 @@ def ros_location_find(package_name):
     result_code = p.returncode
     if result_code == 0:
         return result_code, result_location
-    return result_code, 'No such package/stack ' + package_name
+
+    # package <package_name> not found
+    return result_code, ''
 
 # takes as argument either just a package-path or just a pkgname
 # returns 0 for no argument or if package (+ path) exist, 1 else
@@ -55,19 +58,19 @@ def findpathmain(argv):
     parameters = os.path.normpath(argv[0]).split(os.path.sep)
     package_name = parameters[0]
     if len(parameters) > 1:
-        reldir = os.path.sep.join(parameters[1:len(parameters)])
+        reldir = os.path.sep.join(parameters[1:])
     else:
-        if len(argv) <2 or argv[1] != 'forceeval':
-            print (ERROR_PREFIX + package_name)
+        if len(argv) < 2 or argv[1] != 'forceeval':
+            print(ERROR_PREFIX + '[' + package_name + '] is not a valid argument!', file=sys.stderr)
             return 1
 
     error_code, package_dir = ros_location_find(package_name)
     if error_code != 0:
-        print (ERROR_PREFIX + package_dir)
+        print(ERROR_PREFIX + '[' + package_name + '] not found!', file=sys.stderr)
         return error_code
     else:
         rosdir = os.path.normpath(os.path.sep.join([package_dir, reldir]))
-        print (rosdir)
+        print(rosdir)
         return 0
 
 if __name__ == '__main__':

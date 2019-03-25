@@ -104,14 +104,14 @@ class XmlResultTestGeneration(unittest.TestCase):
     def testGenerateError(self):
         error = junitxml.TestError('error_type', 'error_text')
         error_str = error.xml()
-        self.assertEquals('''<error type="error_type">&lt;![CDATA[
+        self.assertEquals(b'''<error type="error_type">&lt;![CDATA[
 error_text
 ]]&gt;</error>''', error_str)
 
     def testGenerateFailure(self):
         failure = junitxml.TestFailure('failure_type', 'failure_text')
         failure_str = failure.xml()
-        self.assertEquals('''<failure type="failure_type">&lt;![CDATA[
+        self.assertEquals(b'''<failure type="failure_type">&lt;![CDATA[
 failure_text
 ]]&gt;</failure>''', failure_str)
 
@@ -124,7 +124,7 @@ failure_text
         testcase.add_error(error)
         testcase.add_failure(failure)
         testcase_str = testcase.xml()
-        self.assertEquals('''<testcase classname="" name="test_case" time="0.0"><failure type="failure_type">&lt;![CDATA[
+        self.assertEquals(b'''<testcase classname="" name="test_case" time="0.0"><failure type="failure_type">&lt;![CDATA[
 failure_text
 ]]&gt;</failure><error type="error_type">&lt;![CDATA[
 error_text

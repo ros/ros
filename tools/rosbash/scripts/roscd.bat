@@ -22,7 +22,7 @@ if "%1" equ "" (
     exit /b 1
 )
 
-for /f "tokens=*" %%g in ('call python %~dp0\findpath.py %1 forceeval') do (
+for /f "tokens=*" %%g in ('call python %~dp0\rosfindpath.py %1 forceeval') do (
     set target_path=%%~g
 )
 

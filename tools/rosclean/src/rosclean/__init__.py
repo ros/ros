@@ -190,7 +190,10 @@ def _rosclean_cmd_purge(args):
     for d, label in dirs:
         if not args.size:
             print("Purging %s."%label)
-            cmds = [['rm', '-rf', d]]
+            if platform.system() == 'Windows':
+                cmds = [['rd', '/s', '/q', d]]
+            else:
+                cmds = [['rm', '-rf', d]]
             try:
                 if args.y:
                     _call(cmds)

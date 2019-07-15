@@ -447,7 +447,7 @@ def _find_resource(d, resource_name, filter_fn=None):
             for x in to_prune:
                 dirs.remove(x)
     else: #UNIX            
-        for p, dirs, files in os.walk(d):
+        for p, dirs, files in os.walk(d, followlinks=True):
             if resource_name in files:
                 test_path = os.path.join(p, resource_name)
                 if filter_fn is not None:

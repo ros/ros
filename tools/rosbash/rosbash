@@ -369,7 +369,7 @@ function _msg_opts {
     else
         path=$(rospack find ${pkgname})
         if [ -d ${path}/msg ]; then
-            echo $(find -L ${path}/msg -maxdepth 1 -mindepth 1 -name *.msg ! -regex ".*/[.][^./].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.msg/${pkgname}\/\1/g")
+            echo $(find -L ${path}/msg -maxdepth 1 -mindepth 1 -name '*.msg' ! -regex ".*/[.][^./].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.msg/${pkgname}\/\1/g")
         fi
     fi
 }
@@ -883,7 +883,7 @@ function _msg_opts {
     path=$(rospack find ${pkgname} 2> /dev/null)
 
     if [ $? -eq 0 ] && [ -d ${path}/msg ]; then
-        echo $(find -L ${path}/msg -maxdepth 1 -mindepth 1 -name *.msg ! -regex ".*/[.][^./].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.msg/${pkgname}\/\1/g")
+        echo $(find -L ${path}/msg -maxdepth 1 -mindepth 1 -name '*.msg' ! -regex ".*/[.][^./].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)\.msg/${pkgname}\/\1/g")
     fi
 }
 

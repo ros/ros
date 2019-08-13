@@ -1,4 +1,8 @@
-<package>
+<?xml version="1.0"?>
+<?xml-model
+  href="http://download.ros.org/schema/package_format3.xsd"
+  schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
   <name>rosunit</name>
   <version>1.14.6</version>
   <description>
@@ -7,15 +11,16 @@
   <maintainer email="dthomas@osrfoundation.org">Dirk Thomas</maintainer>
   <license>BSD</license>
 
-  <url type="website">http://ros.org/wiki/rosunit</url>
+  <url type="website">http://wiki.ros.org/rosunit</url>
   <url type="bugtracker">https://github.com/ros/ros/issues</url>
   <url type="repository">https://github.com/ros/ros</url>
   <author>Ken Conley</author>
 
   <buildtool_depend version_gte="0.5.78">catkin</buildtool_depend>
 
-  <run_depend>python-rospkg</run_depend>
-  <run_depend>roslib</run_depend>
+  <exec_depend condition="$ROS_PYTHON_VERSION == 2">python-rospkg</exec_depend>
+  <exec_depend condition="$ROS_PYTHON_VERSION == 3">python3-rospkg</exec_depend>
+  <exec_depend>roslib</exec_depend>
 
   <export>
     <rosdoc config="rosdoc.yaml" />

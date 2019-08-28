@@ -48,10 +48,12 @@ case $2 in
 esac
 
 if [[ -n $CMAKE_PREFIX_PATH ]]; then
+  _rosbash_IFS="$IFS"
   IFS=$'\n'
   catkin_package_libexec_dirs=($(catkin_find --without-underlays --libexec --share "$1" 2> /dev/null))
   debug "Looking in catkin libexec dirs: $IFS$(catkin_find --without-underlays --libexec --share "$1" 2>&1)"
-  unset IFS
+  IFS="_rosbash_IFS"
+  unset _rosbash_IFS
 fi
 pkgdir=$(rospack find "$1")
 debug "Looking in rospack dir: $pkgdir"
@@ -69,9 +71,11 @@ if [[ ! $2 == */* ]]; then
   fi
   debug "Searching for $2 with permissions $_perm"
   exepathlist="$(find -L "${catkin_package_libexec_dirs[@]}" "$pkgdir" -name "$2" -type f  -perm "$_perm" ! -regex ".*$pkgdir\/build\/.*" | uniq)"
+  _rosbash_IFS="$IFS"
   IFS=$'\n'
   exepathlist=($exepathlist)
-  unset IFS
+  IFS="_rosbash_IFS"
+  unset _rosbash_IFS
   unset _perm
   if [[ ${#exepathlist[@]} == 0 ]]; then
     echo "[rosrun] Couldn't find executable named $2 below $pkgdir"

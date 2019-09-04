@@ -52,7 +52,7 @@ if [[ -n $CMAKE_PREFIX_PATH ]]; then
   IFS=$'\n'
   catkin_package_libexec_dirs=($(catkin_find --without-underlays --libexec --share "$1" 2> /dev/null))
   debug "Looking in catkin libexec dirs: $IFS$(catkin_find --without-underlays --libexec --share "$1" 2>&1)"
-  IFS="_rosbash_IFS"
+  IFS="$_rosbash_IFS"
   unset _rosbash_IFS
 fi
 pkgdir=$(rospack find "$1")
@@ -74,7 +74,7 @@ if [[ ! $2 == */* ]]; then
   _rosbash_IFS="$IFS"
   IFS=$'\n'
   exepathlist=($exepathlist)
-  IFS="_rosbash_IFS"
+  IFS="$_rosbash_IFS"
   unset _rosbash_IFS
   unset _perm
   if [[ ${#exepathlist[@]} == 0 ]]; then

@@ -310,9 +310,11 @@ function _roscomplete {
     COMPREPLY=()
     arg="${COMP_WORDS[COMP_CWORD]}"
     opts="$(_ros_list_packages) $(_ros_list_stacks)"
+    _rosbash_roscomplete_IFS="$IFS"
     IFS=$'\n'
     COMPREPLY=($(compgen -W "${opts}" -- ${arg}))
-    unset IFS
+    IFS="$_rosbash_roscomplete_IFS"
+    unset _rosbash_roscomplete_IFS
 }
 
 function _roscomplete_rosmake {
@@ -332,18 +334,22 @@ function _roscomplete_sub_dir {
     _ros_decode_path ${arg}
     if [[ -z ${rosvals[2]} ]]; then
         opts=$(_ros_list_locations)
+        _rosbash_roscomplete_sub_dir_IFS="$IFS"
         IFS=$'\n'
         COMPREPLY=($(compgen -W "${opts}" -S / -- ${rosvals[0]}))
-        unset IFS
+        IFS="$_rosbash_roscomplete_sub_dir_IFS"
+        unset _rosbash_roscomplete_sub_dir_IFS
     else
         if [ -e ${rosvals[1]}${rosvals[2]} ]; then
           opts=$(find -L ${rosvals[1]}${rosvals[2]} -maxdepth 1 -mindepth 1 -type d ! -regex ".*/[.][^./].*" -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1\//g")
         else
           opts=''
         fi
+        _rosbash_roscomplete_sub_dir_IFS="$IFS"
         IFS=$'\n'
         COMPREPLY=($(compgen -P ${rosvals[0]}${rosvals[2]} -W "${opts}" -- ${rosvals[3]}))
-        unset IFS
+        IFS="$_rosbash_roscomplete_sub_dir_IFS"
+        unset _rosbash_roscomplete_sub_dir_IFS
     fi
 }
 
@@ -440,9 +446,11 @@ function _roscomplete_pkg {
     # complete package names that start with $1
     local arg=${1}
     local opts=$(_ros_list_packages)
+    _rosbash_roscomplete_pkg_IFS="$IFS"
     IFS=$'\n'
     COMPREPLY=($(compgen -W "${opts}" -- ${arg}))
-    unset IFS
+    IFS="$_rosbash_roscomplete_pkg_IFS"
+    unset _rosbash_roscomplete_pkg_IFS
 }
 
 function _roscomplete_find {
@@ -460,9 +468,11 @@ function _roscomplete_find {
     else
         opts=""
     fi
+    _rosbash_roscomplete_find_IFS="$IFS"
     IFS=$'\n'
     COMPREPLY=($(compgen -W "${opts}" -- ${arg}))
-    unset IFS
+    IFS="$_rosbash_roscomplete_find_IFS"
+    unset _rosbash_roscomplete_find_IFS
 }
 
 function _roscomplete_search_dir {
@@ -488,16 +498,20 @@ function _roscomplete_search_dir {
         else
            opts=""
         fi
+        _rosbash_roscomplete_search_dir_IFS="$IFS"
         IFS=$'\n'
         COMPREPLY=($(compgen -W "$opts" -- ${arg}))
-        unset IFS
+        IFS="$_rosbash_roscomplete_search_dir_IFS"
+        unset _rosbash_roscomplete_search_dir_IFS
         if [[ ${#COMPREPLY[*]} = 1 ]]; then
             newpath=${COMPREPLY[0]%/*}
             if [[ -d ${newpath} ]]; then
                opts=$(find -L $newpath -maxdepth 1 -type d ! -regex ".*/[.][^./].*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/$/\//g" -e "s/^[.]\///g" -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g")$'\n'$(find -L $newpath -maxdepth 1 -type f ! -regex ".*/[.][^.]*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/^[.]\///g"  -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g")
+               _rosbash_roscomplete_search_dir_IFS="$IFS"
                IFS=$'\n'
                COMPREPLY=($(compgen -W "$opts" -- ${arg}))
-               unset IFS
+               IFS="$_rosbash_roscomplete_search_dir_IFS"
+               unset _rosbash_roscomplete_search_dir_IFS
             fi
         fi
     fi

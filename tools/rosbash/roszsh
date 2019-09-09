@@ -283,9 +283,11 @@ function _roscomplete {
     reply=()
     opts=`export ROS_CACHE_TIMEOUT=-1.0 && rospack list-names`
     stack_opts=`export ROS_CACHE_TIMEOUT=-1.0 && rosstack list-names`
+    _roszsh_roscomplete_IFS="$IFS"
     IFS=$'\n'
     reply=(${=opts} ${=stack_opts})
-    unset IFS
+    IFS="$_roszsh_roscomplete_IFS"
+    unset _roszsh_roscomplete_IFS
 }
 
 function _roscomplete_rosmake {
@@ -305,9 +307,11 @@ function _roscomplete_sub_dir {
     if [[ -z ${rosvals[3]} ]]; then
         opts=`export ROS_CACHE_TIMEOUT=-1.0 && rospack list-names`
         stack_opts=`export ROS_CACHE_TIMEOUT=-1.0 && rosstack list-names`
+        _roszsh_roscomplete_sub_dir_IFS="$IFS"
         IFS=$'\n'
         reply=(${=opts} ${=stack_opts})
-        unset IFS
+        IFS="$_roszsh_roscomplete_sub_dir_IFS"
+        unset _roszsh_roscomplete_sub_dir_IFS
     else
         if [ -e ${rosvals[2]}${rosvals[3]} ]; then
             sedcmd="s:^${rosvals[2]}:${rosvals[1]}:"g
@@ -315,9 +319,11 @@ function _roscomplete_sub_dir {
         else
             opts=''
         fi
+        _roszsh_roscomplete_sub_dir_IFS="$IFS"
         IFS=$'\n'
         reply=(${=opts})
-        unset IFS
+        IFS="$_roszsh_roscomplete_sub_dir_IFS"
+        unset _roszsh_roscomplete_sub_dir_IFS
     fi
 }
 
@@ -347,9 +353,11 @@ function _roscomplete_search_dir {
     else
         opts=""
     fi
+    _roszsh_roscomplete_search_dir_IFS="$IFS"
     IFS=$'\n'
     reply=(${=opts})
-    unset IFS
+    IFS="$_roszsh_roscomplete_search_dir_IFS"
+    unset _roszsh_roscomplete_search_dir_IFS
 }
 
 function _roscomplete_exe {
@@ -583,9 +591,11 @@ function _roscomplete_rosservice {
         case ${words[2]} in
             args|call|info|list|type|uri)
                 opts=`rosservice list 2> /dev/null`
+                _roszsh_roscomplete_rosservice_IFS="$IFS"
                 IFS=$'\n'
                 reply=(${=opts})
-                unset IFS
+                IFS="$_roszsh_roscomplete_rosservice_IFS"
+                unset _roszsh_roscomplete_rosservice_IFS
                 ;;
             find)
                 opts=`_srv_opts ${words[3]}`

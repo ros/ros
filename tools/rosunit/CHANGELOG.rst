@@ -2,6 +2,11 @@
 Changelog for package rosunit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* use condition attributes to specify Python 2 and 3 dependencies (`#226 <https://github.com/ros/ros/issues/226>`_)
+* Python 3 support (`#212 <https://github.com/ros/ros/issues/212>`_)
+
 1.14.6 (2019-03-18)
 -------------------
 

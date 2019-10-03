@@ -2,6 +2,11 @@
 Changelog for package roslib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* use condition attributes to specify Python 2 and 3 dependencies (`#226 <https://github.com/ros/ros/issues/226>`_)
+* symlink search for roslib (`#225 <https://github.com/ros/ros/issues/225>`_)
+
 1.14.6 (2019-03-18)
 -------------------
 

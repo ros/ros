@@ -2,6 +2,14 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* zsh launch args completion (`#217 <https://github.com/ros/ros/issues/217>`_)
+* use _rosrun\_ prefix for temporary variable (`#228 <https://github.com/ros/ros/issues/228>`_)
+* restore IFS after changing it in rosbash and rosrun (`#227 <https://github.com/ros/ros/issues/227>`_)
+* [revent filename glob expansion in _msg_opts in rosbash (`#218 <https://github.com/ros/ros/issues/218>`_)
+* correct name of the findpath script (`#27 <https://github.com/ros/ros/issues/27>`_) (`#213 <https://github.com/ros/ros/issues/213>`_)
+
 1.14.6 (2019-03-18)
 -------------------
 * add roscd, rosls support for Windows (`#210 <https://github.com/ros/ros/issues/210>`_)

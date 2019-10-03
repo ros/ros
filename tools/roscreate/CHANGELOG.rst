@@ -2,6 +2,10 @@
 Changelog for package roscreate
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* use condition attributes to specify Python 2 and 3 dependencies (`#226 <https://github.com/ros/ros/issues/226>`_)
+
 1.14.6 (2019-03-18)
 -------------------
 

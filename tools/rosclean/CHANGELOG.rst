@@ -2,8 +2,8 @@
 Changelog for package rosclean
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.7 (2019-10-03)
+-------------------
 * use condition attributes to specify Python 2 and 3 dependencies (`#226 <https://github.com/ros/ros/issues/226>`_)
 * use rd on Windows (`#224 <https://github.com/ros/ros/issues/224>`_)
 

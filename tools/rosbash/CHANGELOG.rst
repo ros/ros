@@ -2,8 +2,8 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.7 (2019-10-03)
+-------------------
 * zsh launch args completion (`#217 <https://github.com/ros/ros/issues/217>`_)
 * use _rosrun\_ prefix for temporary variable (`#228 <https://github.com/ros/ros/issues/228>`_)
 * restore IFS after changing it in rosbash and rosrun (`#227 <https://github.com/ros/ros/issues/227>`_)

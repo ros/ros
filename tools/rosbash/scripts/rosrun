@@ -61,10 +61,10 @@ if [[ ${#catkin_package_libexec_dirs[@]} -eq 0 && -z $pkgdir ]]; then
   exit 2
 fi
 if [[ ! $2 == */* ]]; then
-  # The -perm /mode usage is not available in find on the Mac
+  # The -perm /mode usage is not available in find on the Mac or FreeBSD
   #exepathlist=(`find $pkgdir -name $2 -type f -perm /u+x,g+x,o+x`)
   # -L: #3475
-  if [[ $(uname) == Darwin ]]; then
+  if [[ $(uname) == Darwin || $(uname) == FreeBSD ]]; then
     _perm="+111"
   else
     _perm="/111"

@@ -537,7 +537,7 @@ end
 
 function _roscomplete_rosrun
     set -l perm
-    if test (uname) = "Darwin"
+    if test (uname) = "Darwin" -o (uname) = "FreeBSD"
         set perm "+111"
     else
         set perm "/111"

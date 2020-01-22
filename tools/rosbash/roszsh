@@ -362,7 +362,7 @@ function _roscomplete_search_dir {
 
 function _roscomplete_exe {
     local perm
-    if [[ `uname` == Darwin ]]; then
+    if [[ `uname` == Darwin || `uname` == FreeBSD ]]; then
         perm="+111"
     else
         perm="/111"

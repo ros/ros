@@ -47,30 +47,33 @@ case $2 in
     ;;
 esac
 
+pkg_name="$1"
+file_name="$2"
+
 if [[ -n $CMAKE_PREFIX_PATH ]]; then
   _rosrun_IFS="$IFS"
   IFS=$'\n'
-  catkin_package_libexec_dirs=($(catkin_find --without-underlays --libexec --share "$1" 2> /dev/null))
-  debug "Looking in catkin libexec dirs: $IFS$(catkin_find --without-underlays --libexec --share "$1" 2>&1)"
+  catkin_package_libexec_dirs=($(catkin_find --without-underlays --libexec --share "$pkg_name" 2> /dev/null))
+  debug "Looking in catkin libexec dirs: $IFS$(catkin_find --without-underlays --libexec --share "$pkg_name" 2>&1)"
   IFS="$_rosrun_IFS"
   unset _rosrun_IFS
 fi
-pkgdir=$(rospack find "$1")
+pkgdir=$(rospack find "$pkg_name")
 debug "Looking in rospack dir: $pkgdir"
 if [[ ${#catkin_package_libexec_dirs[@]} -eq 0 && -z $pkgdir ]]; then
   exit 2
 fi
-if [[ ! $2 == */* ]]; then
+if [[ ! $file_name == */* ]]; then
   # The -perm /mode usage is not available in find on the Mac or FreeBSD
-  #exepathlist=(`find $pkgdir -name $2 -type f -perm /u+x,g+x,o+x`)
+  #exepathlist=(`find $pkgdir -name $file_name -type f -perm /u+x,g+x,o+x`)
   # -L: #3475
   if [[ $(uname) == Darwin || $(uname) == FreeBSD ]]; then
     _perm="+111"
   else
     _perm="/111"
   fi
-  debug "Searching for $2 with permissions $_perm"
-  exepathlist="$(find -L "${catkin_package_libexec_dirs[@]}" "$pkgdir" -name "$2" -type f  -perm "$_perm" ! -regex ".*$pkgdir\/build\/.*" | uniq)"
+  debug "Searching for $file_name with permissions $_perm"
+  exepathlist="$(find -L "${catkin_package_libexec_dirs[@]}" "$pkgdir" -name "$file_name" -type f  -perm "$_perm" ! -regex ".*$pkgdir\/build\/.*" | uniq)"
   _rosrun_IFS="$IFS"
   IFS=$'\n'
   exepathlist=($exepathlist)
@@ -78,8 +81,8 @@ if [[ ! $2 == */* ]]; then
   unset _rosrun_IFS
   unset _perm
   if [[ ${#exepathlist[@]} == 0 ]]; then
-    echo "[rosrun] Couldn't find executable named $2 below $pkgdir"
-    nonexepathlist=($(find -H "$pkgdir" -name "$2"))
+    echo "[rosrun] Couldn't find executable named $file_name below $pkgdir"
+    nonexepathlist=($(find -H "$pkgdir" -name "$file_name"))
     if [[ ${#nonexepathlist[@]} != 0 ]]; then
       echo "[rosrun] Found the following, but they're either not files,"
       echo "[rosrun] or not executable:"
@@ -99,7 +102,7 @@ if [[ ! $2 == */* ]]; then
     exepath="${exepathlist[0]}"
   fi
 else
-  absname="$pkgdir/$2"
+  absname="$pkgdir/$file_name"
   debug "Path given. Looing for $absname"
   if [[ ! -f $absname || ! -x $absname ]]; then
     echo "[rosrun] Couldn't find executable named $absname"

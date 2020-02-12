@@ -2,6 +2,10 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* add heuristic to run python devel space relays (`#233 <https://github.com/ros/ros/issues/233>`_)
+
 1.14.8 (2020-02-11)
 -------------------
 * update style to pass flake8 (`#240 <https://github.com/ros/ros/issues/240>`_)

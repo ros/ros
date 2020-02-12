@@ -35,12 +35,15 @@
 """
 Wrapper for running Python unittest within rosunit/rostest framework.
 """
-from __future__ import with_statement, print_function
+from __future__ import print_function
+from __future__ import with_statement
 
 import sys
 
-from .core import create_xml_runner, XML_OUTPUT_FLAG
 from .baretest import print_unittest_summary
+from .core import XML_OUTPUT_FLAG
+from .core import create_xml_runner
+
 
 def unitrun(package, test_name, test, sysargs=None, coverage_packages=None):
     """
@@ -54,7 +57,7 @@ def unitrun(package, test_name, test, sysargs=None, coverage_packages=None):
     WARNING: unitrun() will trigger a sys.exit() on test failure in
     order to properly exit with an error code. This routine is meant
     to be used as a main() routine, not as a library.
-    
+
     @param package: name of ROS package that is running the test
     @type  package: str
     @param test: a test case instance or a name resolving to a test case or suite
@@ -70,11 +73,11 @@ def unitrun(package, test_name, test, sysargs=None, coverage_packages=None):
         sysargs = sys.argv
 
     import unittest
-    
+
     if coverage_packages is None:
         coverage_packages = [package]
-        
-    #parse sysargs
+
+    # parse sysargs
     result_file = None
     for arg in sysargs:
         if arg.startswith(XML_OUTPUT_FLAG):
@@ -103,13 +106,16 @@ def unitrun(package, test_name, test, sysargs=None, coverage_packages=None):
 
     # test over, summarize results and exit appropriately
     print_unittest_summary(result)
-    
+
     if not result.wasSuccessful():
         import sys
         sys.exit(1)
 
+
 # coverage instance
 _cov = None
+
+
 def start_coverage(packages):
     global _cov
     try:
@@ -121,9 +127,10 @@ def start_coverage(packages):
             _cov.start()
         except coverage.CoverageException:
             print("WARNING: you have an older version of python-coverage that is not support. Please update to the version provided by 'easy_install coverage'", file=sys.stderr)
-    except ImportError as e:
+    except ImportError:
         print("""WARNING: cannot import python-coverage, coverage tests will not run.
 To install coverage, run 'easy_install coverage'""", file=sys.stderr)
+
 
 def stop_coverage(packages, html=None):
     """
@@ -134,31 +141,32 @@ def stop_coverage(packages, html=None):
     """
     if _cov is None:
         return
-    import sys, os
+    import os
+    import sys
     try:
         _cov.stop()
         # accumulate results
         _cov.save()
-        
+
         # - update our own .coverage-modules file list for
         #   coverage-html tool. The reason we read and rewrite instead
         #   of append is that this does a uniqueness check to keep the
         #   file from growing unbounded
         if os.path.exists('.coverage-modules'):
-            with open('.coverage-modules','r') as f:
+            with open('.coverage-modules', 'r') as f:
                 all_packages = set([x for x in f.read().split('\n') if x.strip()] + packages)
         else:
             all_packages = set(packages)
-        with open('.coverage-modules','w') as f:
+        with open('.coverage-modules', 'w') as f:
             f.write('\n'.join(all_packages)+'\n')
-            
+
         try:
             # list of all modules for html report
             all_mods = []
 
             # iterate over packages to generate per-package console reports
             for package in packages:
-                pkg = __import__(package)
+                __import__(package)
                 m = [v for v in sys.modules.values() if v and v.__name__.startswith(package)]
                 all_mods.extend(m)
 
@@ -166,16 +174,14 @@ def stop_coverage(packages, html=None):
                 _cov.report(m, show_missing=0)
                 for mod in m:
                     res = _cov.analysis(mod)
-                    print("\n%s:\nMissing lines: %s"%(res[0], res[3]))
-                    
+                    print('\n%s:\nMissing lines: %s' % (res[0], res[3]))
+
             if html:
-                
-                print("="*80+"\ngenerating html coverage report to %s\n"%html+"="*80)
+
+                print('=' * 80 + '\ngenerating html coverage report to %s\n' % html + '=' * 80)
                 _cov.html_report(all_mods, directory=html)
-        except ImportError as e:
-            print("WARNING: cannot import '%s', will not generate coverage report"%package, file=sys.stderr)
-    except ImportError as e:
+        except ImportError:
+            print("WARNING: cannot import '%s', will not generate coverage report" % package, file=sys.stderr)
+    except ImportError:
         print("""WARNING: cannot import python-coverage, coverage tests will not run.
 To install coverage, run 'easy_install coverage'""", file=sys.stderr)
-    
-    

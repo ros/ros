@@ -1,10 +1,10 @@
 /*
  * Copyright (c) 2008, Willow Garage, Inc.
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  *     * Redistributions of source code must retain the above copyright
  *       notice, this list of conditions and the following disclaimer.
  *     * Redistributions in binary form must reproduce the above copyright
@@ -13,7 +13,7 @@
  *     * Neither the name of Willow Garage, Inc. nor the names of its
  *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -58,11 +58,11 @@ void string_split(const std::string &s, std::vector<std::string> &t, const std::
 {                                                                                 t.clear();
   size_t start = 0, end;
   while ((end = s.find_first_of(d, start)) != std::string::npos)
-  {     
+  {
     if((end-start) > 0)
       t.push_back(s.substr(start, end-start));
     start = end + 1;
-  }   
+  }
   if(start < s.size())
     t.push_back(s.substr(start));
 }
@@ -162,4 +162,3 @@ int main(int argc, char **argv)
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
-

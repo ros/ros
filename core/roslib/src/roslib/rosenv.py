@@ -32,7 +32,6 @@
 #
 # Revision $Id$
 
-
 """
 Warning: do not use this library.  It is unstable and most of the routines
 here have been superceded by other libraries (e.g. rospkg).  These
@@ -41,32 +40,34 @@ routines will likely be *deleted* in future releases.
 
 import os
 import sys
+import warnings
 
 # Global, usually set in setup
-ROS_ROOT         = "ROS_ROOT"
-ROS_MASTER_URI   = "ROS_MASTER_URI"
-ROS_PACKAGE_PATH = "ROS_PACKAGE_PATH"
-ROS_HOME         = "ROS_HOME"
+ROS_ROOT = 'ROS_ROOT'
+ROS_MASTER_URI = 'ROS_MASTER_URI'
+ROS_PACKAGE_PATH = 'ROS_PACKAGE_PATH'
+ROS_HOME = 'ROS_HOME'
 
 # Build-related
-ROS_BINDEPS_PATH = "ROS_BINDEPS_PATH"
-ROS_BOOST_ROOT = "ROS_BOOST_ROOT"
+ROS_BINDEPS_PATH = 'ROS_BINDEPS_PATH'
+ROS_BOOST_ROOT = 'ROS_BOOST_ROOT'
 
 # Per session
-## hostname/address to bind XML-RPC services to. 
-ROS_IP           ="ROS_IP"
-ROS_HOSTNAME     ="ROS_HOSTNAME"
-ROS_NAMESPACE    ="ROS_NAMESPACE"
-## directory in which log files are written
-ROS_LOG_DIR      ="ROS_LOG_DIR"
+# hostname/address to bind XML-RPC services to.
+ROS_IP = 'ROS_IP'
+ROS_HOSTNAME = 'ROS_HOSTNAME'
+ROS_NAMESPACE = 'ROS_NAMESPACE'
+# directory in which log files are written
+ROS_LOG_DIR = 'ROS_LOG_DIR'
 
 
 class ROSEnvException(Exception):
     """Base class of roslib.rosenv errors."""
     pass
 
-import warnings
-warnings.warn("roslib.rosenv is deprecated, please use rospkg or rosgraph.rosenv", stacklevel=2)
+
+warnings.warn('roslib.rosenv is deprecated, please use rospkg or rosgraph.rosenv', stacklevel=2)
+
 
 def get_ros_root(required=True, env=None):
     """
@@ -85,13 +86,14 @@ def get_ros_root(required=True, env=None):
 The %(ROS_ROOT)s environment variable has not been set.
 Please set to the location of your ROS installation
 before continuing.
-"""%globals())
+""" % globals())
 
         return env[ROS_ROOT]
-    except Exception as e:
+    except Exception:
         if required:
             raise
         return p
+
 
 def get_ros_package_path(required=False, env=None):
     """
@@ -105,9 +107,10 @@ def get_ros_package_path(required=False, env=None):
         env = os.environ
     try:
         return env[ROS_PACKAGE_PATH]
-    except KeyError as e:
+    except KeyError:
         if required:
-            raise ROSEnvException("%s has not been configured"%ROS_PACKAGE_PATH)
+            raise ROSEnvException('%s has not been configured' % ROS_PACKAGE_PATH)
+
 
 def get_master_uri(required=True, env=None, argv=None):
     """
@@ -121,7 +124,7 @@ def get_master_uri(required=True, env=None, argv=None):
     @type  argv: [str]
     @raise ROSEnvException: if ROS_MASTER_URI value is invalidly
     specified or if required and ROS_MASTER_URI is not set
-    """    
+    """
     if env is None:
         env = os.environ
     if argv is None:
@@ -132,20 +135,21 @@ def get_master_uri(required=True, env=None, argv=None):
                 val = None
                 try:
                     _, val = arg.split(':=')
-                except:
+                except Exception:
                     pass
-                
+
                 # we ignore required here because there really is no
                 # correct return value as the configuration is bad
                 # rather than unspecified
                 if not val:
-                    raise ROSEnvException("__master remapping argument '%s' improperly specified"%arg)
+                    raise ROSEnvException("__master remapping argument '%s' improperly specified" % arg)
                 return val
         return env[ROS_MASTER_URI]
-    except KeyError as e:
+    except KeyError:
         if required:
-            raise ROSEnvException("%s has not been configured"%ROS_MASTER_URI)
-        
+            raise ROSEnvException('%s has not been configured' % ROS_MASTER_URI)
+
+
 def get_ros_home(env=None):
     """
     Get directory location of '.ros' directory (aka ROS home).
@@ -163,9 +167,10 @@ def get_ros_home(env=None):
     if ROS_HOME in env:
         return env[ROS_HOME]
     else:
-        #slightly more robust than $HOME
+        # slightly more robust than $HOME
         return os.path.join(os.path.expanduser('~'), '.ros')
-    
+
+
 def get_log_dir(env=None):
     """
     Get directory to use for writing log files. There are multiple
@@ -185,6 +190,7 @@ def get_log_dir(env=None):
     else:
         return os.path.join(get_ros_home(env), 'log')
 
+
 def get_test_results_dir(env=None):
     """
     Get directory to use for writing test result files. There are multiple
@@ -198,6 +204,7 @@ def get_test_results_dir(env=None):
     """
     return os.path.join(get_ros_home(env), 'test_results')
 
+
 # this is a copy of the roslogging utility. it's been moved here as it is a common
 # routine for programs using accessing ROS directories
 def makedirs_with_parent_perms(p):
@@ -207,7 +214,7 @@ def makedirs_with_parent_perms(p):
     root process sometimes has to log in the user's space.
     @param p: directory to create
     @type  p: str
-    """    
+    """
     p = os.path.abspath(p)
     parent = os.path.dirname(p)
     # recurse upwards, checking to make sure we haven't reached the
@@ -222,4 +229,4 @@ def makedirs_with_parent_perms(p):
         if s.st_uid != s2.st_uid or s.st_gid != s2.st_gid:
             os.chown(p, s.st_uid, s.st_gid)
         if s.st_mode != s2.st_mode:
-            os.chmod(p, s.st_mode)    
+            os.chmod(p, s.st_mode)

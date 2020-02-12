@@ -32,47 +32,48 @@
 #
 # Revision $Id$
 
-from __future__ import with_statement, print_function
+from __future__ import print_function
+from __future__ import with_statement
 
 import os
 import sys
-import time
 import unittest
-import logging
 
 import rospkg
 
 from . import pmon
-from . core import xml_results_file, create_xml_runner
-
-from .junitxml import print_summary, Result
-from .baretest import BareTestCase, print_runner_summary
-
+from .baretest import BareTestCase
+from .baretest import print_runner_summary
+from . core import create_xml_runner
+from . core import xml_results_file
+from .junitxml import Result
+from .junitxml import print_summary  # noqa: F401
 
 _NAME = 'rosunit'
 
+
 def rosunitmain():
     from optparse import OptionParser
-    parser = OptionParser(usage="usage: %prog [options] <file> [test args...]", prog=_NAME)
-    parser.add_option("-t", "--text",
-                      action="store_true", dest="text_mode", default=False,
-                      help="Run with stdout output instead of XML output")
-    parser.add_option("--time-limit", metavar="TIME_LIMIT",
-                      dest="time_limit", default=60,
-                      help="Set time limit for test")
-    parser.add_option("--name", metavar="TEST_NAME",
-                      dest="test_name", default=None,
-                      help="Test name")
-    parser.add_option("--package", metavar="PACKAGE_NAME",
-                      dest="pkg", default=None,
-                      help="Package name (optional)")
+    parser = OptionParser(usage='usage: %prog [options] <file> [test args...]', prog=_NAME)
+    parser.add_option('-t', '--text',
+                      action='store_true', dest='text_mode', default=False,
+                      help='Run with stdout output instead of XML output')
+    parser.add_option('--time-limit', metavar='TIME_LIMIT',
+                      dest='time_limit', default=60,
+                      help='Set time limit for test')
+    parser.add_option('--name', metavar='TEST_NAME',
+                      dest='test_name', default=None,
+                      help='Test name')
+    parser.add_option('--package', metavar='PACKAGE_NAME',
+                      dest='pkg', default=None,
+                      help='Package name (optional)')
     (options, args) = parser.parse_args()
 
     if len(args) < 1:
-        parser.error("You must supply a test file.")
+        parser.error('You must supply a test file.')
 
     test_file = args[0]
-    
+
     if options.test_name:
         test_name = options.test_name
     else:
@@ -87,15 +88,15 @@ def rosunitmain():
     if not pkg:
         pkg = rospkg.get_package_name(test_file)
     if not pkg:
-        print("Error: failed to determine package name for file '%s'; maybe you should supply the --package argument to rosunit?"%(test_file))
+        print("Error: failed to determine package name for file '%s'; maybe you should supply the --package argument to rosunit?" % (test_file))
         sys.exit(1)
 
     try:
         runner_result = None
         results = Result('rosunit', 0, 0, 0)
 
-        test_case = BareTestCase(test_file, args[1:], \
-                                 retry=0, time_limit=time_limit, \
+        test_case = BareTestCase(test_file, args[1:],
+                                 retry=0, time_limit=time_limit,
                                  test_name=test_name, text_mode=options.text_mode, package_name=pkg)
         suite = unittest.TestSuite()
         suite.addTest(test_case)
@@ -105,9 +106,9 @@ def rosunitmain():
         else:
             results_file = xml_results_file(pkg, test_name, True)
             # the is_rostest really just means "wrapper"
-            xml_runner = create_xml_runner(pkg, test_name, \
-                                               results_file=results_file, \
-                                               is_rostest=True)
+            xml_runner = create_xml_runner(pkg, test_name,
+                                           results_file=results_file,
+                                           is_rostest=True)
             runner_result = xml_runner.run(suite)
     finally:
         pmon.pmon_shutdown()
@@ -117,12 +118,13 @@ def rosunitmain():
     if not options.text_mode:
         print_runner_summary(runner_result, results)
     else:
-        print("WARNING: overall test result is not accurate when --text is enabled")
+        print('WARNING: overall test result is not accurate when --text is enabled')
 
     if runner_result is not None and not runner_result.wasSuccessful():
         sys.exit(1)
     elif results.num_errors or results.num_failures:
         sys.exit(2)
-    
+
+
 if __name__ == '__main__':
     rosunitmain()

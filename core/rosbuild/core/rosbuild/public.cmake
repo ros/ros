@@ -388,7 +388,6 @@ macro(rosbuild_init)
   # The 'test-future' target runs the future tests
   add_custom_target(test-future)
 
-
   add_custom_target(test-results-run)
   add_custom_target(test-results
                     COMMAND ${ROSUNIT_SCRIPTS_DIR}/summarize_results.py --nodeps ${_project})
@@ -490,7 +489,6 @@ macro(rosbuild_init)
       set(${_f}_INCLUDED Y)
     endif(NOT ${_f}_INCLUDED)
   endforeach(_f)
-
 
   # gtest has been found by catkin
   if(GTEST_FOUND)
@@ -1242,4 +1240,3 @@ endmacro(rosbuild_add_rostest_future)
 macro(rosbuild_add_pyunit_future file)
   _rosbuild_warn("The *_future() macros are deprecated.")
 endmacro(rosbuild_add_pyunit_future)
-

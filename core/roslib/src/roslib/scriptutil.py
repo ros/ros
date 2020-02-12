@@ -40,27 +40,27 @@ routines will likely be *deleted* in future releases.
 """
 
 import os
-import sys
+import warnings
 
-import roslib.names 
+import roslib.names
 
-## caller ID for master calls where caller ID is not vital
+# caller ID for master calls where caller ID is not vital
 _GLOBAL_CALLER_ID = '/script'
 
 
-import warnings
 def deprecated(func):
     """This is a decorator which can be used to mark functions
     as deprecated. It will result in a warning being emmitted
     when the function is used."""
     def newFunc(*args, **kwargs):
-        warnings.warn("Call to deprecated function %s." % func.__name__,
+        warnings.warn('Call to deprecated function %s.' % func.__name__,
                       category=DeprecationWarning, stacklevel=2)
         return func(*args, **kwargs)
     newFunc.__name__ = func.__name__
     newFunc.__doc__ = func.__doc__
     newFunc.__dict__.update(func.__dict__)
     return newFunc
+
 
 @deprecated
 def script_resolve_name(script_name, name):
@@ -75,15 +75,16 @@ def script_resolve_name(script_name, name):
     @return: resolved name
     @rtype: str
     """
-    if not name: #empty string resolves to namespace
+    if not name:  # empty string resolves to namespace
         return roslib.names.get_ros_namespace()
-    #Check for global name: /foo/name resolves to /foo/name
+    # Check for global name: /foo/name resolves to /foo/name
     if roslib.names.is_global(name):
         return name
-    #Check for private name: ~name resolves to /caller_id/name
+    # Check for private name: ~name resolves to /caller_id/name
     elif roslib.names.is_private(name):
         return ns_join(roslib.names.make_caller_id(script_name), name[1:])
     return roslib.names.get_ros_namespace() + name
+
 
 @deprecated
 def get_master():
@@ -91,19 +92,20 @@ def get_master():
     Get an XMLRPC handle to the Master. It is recommended to use the
     `rosgraph.masterapi` library instead, as it provides many
     conveniences.
-    
+
     @return: XML-RPC proxy to ROS master
     @rtype: xmlrpclib.ServerProxy
     @raises ValueError if master URI is invalid
     """
     try:
-        import xmlrpc.client as xmlrpcclient  #Python 3.x
+        import xmlrpc.client as xmlrpcclient  # Python 3.x
     except ImportError:
-        import xmlrpclib as xmlrpcclient #Python 2.x
-    
+        import xmlrpclib as xmlrpcclient  # Python 2.x
+
     # changed this to not look as sys args and remove dependency on roslib.rosenv for cleaner cleanup
     uri = os.environ['ROS_MASTER_URI']
     return xmlrpcclient.ServerProxy(uri)
+
 
 @deprecated
 def get_param_server():

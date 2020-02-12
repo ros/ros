@@ -39,21 +39,23 @@ currently a no-frills backend tool.
 """
 
 import sys
+
 import roslib
 
 try:
     import coverage
-except ImportError as e:
+except ImportError:
     sys.stderr.write("ERROR: cannot import python-coverage, coverage report will not run.\nTo install coverage, run 'easy_install coverage'\n")
     sys.exit(1)
+
 
 def coverage_html():
     import os.path
     if not os.path.isfile('.coverage-modules'):
-        sys.stderr.write("No .coverage-modules file; nothing to do\n")
+        sys.stderr.write('No .coverage-modules file; nothing to do\n')
         return
 
-    with open('.coverage-modules','r') as f:
+    with open('.coverage-modules', 'r') as f:
         modules = [x for x in f.read().split('\n') if x.strip()]
 
     cov = coverage.coverage()
@@ -65,21 +67,22 @@ def coverage_html():
             base = m.split('.')[0]
             roslib.load_manifest(base)
             __import__(m)
-        except:
-            sys.stderr.write("WARN: cannot import %s\n"%(base))
+        except Exception:
+            sys.stderr.write('WARN: cannot import %s\n' % (base))
 
-    modlist = '\n'.join([" * %s"%m for m in modules])
-    sys.stdout.write("Generating for\n%s\n"%(modlist))
+    modlist = '\n'.join([' * %s' % m for m in modules])
+    sys.stdout.write('Generating for\n%s\n' % (modlist))
 
     # load the module instances to pass to coverage so it can generate annotation html reports
     mods = []
 
     # TODO: rewrite, buggy
     for m in modules:
-        mods.extend([v for v in sys.modules.values() if v and v.__name__.startswith(m) and not v in mods])
-        
+        mods.extend([v for v in sys.modules.values() if v and v.__name__.startswith(m) and v not in mods])
+
     # dump the output to covhtml directory
-    cov.html_report(mods, directory="covhtml")
-    
+    cov.html_report(mods, directory='covhtml')
+
+
 if __name__ == '__main__':
     coverage_html()

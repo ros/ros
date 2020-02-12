@@ -48,7 +48,6 @@ macro(_rosbuild_dequote_string _out _in)
   endforeach(_item)
 endmacro(_rosbuild_dequote_string)
 
-
 # list(FIND) was introduced after cmake 2.4.6, so we write our own
 macro(_rosbuild_list_find _list _item _idx)
     set(${_idx} -1)
@@ -77,8 +76,6 @@ macro(_rosbuild_check_manifest)
     message("${_manifest_error}")
     message(FATAL_ERROR "[rosbuild] Syntax check of ${PROJECT_NAME}/manifest.xml failed; aborting")
   endif(_manifest_failed)
-
-
 endmacro(_rosbuild_check_manifest)
 
 # Check that the directory where we're building is also where rospack
@@ -128,7 +125,6 @@ macro(_rosbuild_add_gtest exe)
 
   # Create a legal target name, in case the target name has slashes in it
   string(REPLACE "/" "_" _testname ${exe})
-
 
   # Create target for this test
   # We use rosunit to call the executable to get process control, #1629, #3112
@@ -445,4 +441,3 @@ ENDMACRO(PARSE_ARGUMENTS)
 
 # Internal macros above
 ###############################################################################
-

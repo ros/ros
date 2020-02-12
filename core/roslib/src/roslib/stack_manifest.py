@@ -40,27 +40,29 @@ here have been superceded by other libraries (e.g. rospkg).  These
 routines will likely be *deleted* in future releases.
 """
 
-import sys
 import os
-import getopt
-
-STACK_FILE = 'stack.xml'
 
 import roslib.manifestlib
 # re-export symbols so that external code does not have to import manifestlib as well
-from roslib.manifestlib import ManifestException, StackDepend
+from roslib.manifestlib import ManifestException  # noqa: F401
+from roslib.manifestlib import StackDepend  # noqa: F401
+
+STACK_FILE = 'stack.xml'
+
 
 class StackManifest(roslib.manifestlib._Manifest):
     """
     Object representation of a ROS manifest file
     """
     __slots__ = []
+
     def __init__(self):
         """
         Create an empty stack manifest instance.
         """
         super(StackManifest, self).__init__('stack')
-        
+
+
 def _stack_file_by_dir(stack_dir, required=True):
     """
     @param stack_dir: path to stack directory
@@ -78,11 +80,12 @@ def _stack_file_by_dir(stack_dir, required=True):
         if not os.path.isfile(p):
             raise roslib.stacks.InvalidROSStackException("""
 Stack '%(stack_dir)s' is improperly configured: no manifest file is present.
-"""%locals())
+""" % locals())
         return p
-    except roslib.stacks.InvalidROSStackException as e:
+    except roslib.stacks.InvalidROSStackException:
         if required:
             raise
+
 
 def stack_file(stack, required=True):
     """
@@ -96,7 +99,8 @@ def stack_file(stack, required=True):
     """
     d = roslib.stacks.get_stack_dir(stack)
     return _stack_file_by_dir(d, required)
-        
+
+
 def parse_file(file):
     """
     Parse stack.xml file
@@ -107,6 +111,7 @@ def parse_file(file):
     """
     return roslib.manifestlib.parse_file(StackManifest(), file)
 
+
 def parse(string, filename='string'):
     """
     Parse stack.xml string contents
@@ -116,5 +121,5 @@ def parse(string, filename='string'):
     @rtype:  L{StackManifest}
     """
     s = roslib.manifestlib.parse(StackManifest(), string, filename)
-    #TODO: validate
+    # TODO: validate
     return s

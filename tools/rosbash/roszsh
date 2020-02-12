@@ -602,7 +602,6 @@ function _roscomplete_rosservice {
     local opts
     reply=()
 
-
     if [[ ${CURRENT} == 2 ]]; then
         opts="args call find info list type uri"
         reply=(${=opts})

@@ -9,7 +9,7 @@ all:
 	#cd build && make $(ROS_PARALLEL_JOBS)
 
 # The clean target blows everything away
-# It also removes auto-generated message/service code directories, 
+# It also removes auto-generated message/service code directories,
 # to handle the case where the original .msg/.srv file has been removed,
 # and thus CMake no longer knows about it.
 clean:
@@ -32,5 +32,3 @@ package_source: all
 #	cd build && make $@
 
 #include $(shell rospack find mk)/buildtest.mk
-
-

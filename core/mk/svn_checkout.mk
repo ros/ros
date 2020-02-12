@@ -28,5 +28,5 @@ endif
 	touch patched
 
 SVN_UP_REVERT_PATCH: $(SVN_DIR) patched
-	 
+	
 download: SVN_UP

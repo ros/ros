@@ -9,6 +9,7 @@ ROS_LOCATIONS_ENV_NAME = 'ROS_LOCATIONS'
 ROS_LOCATION_SEP = ';'
 ERROR_PREFIX = 'Error: '
 
+
 def ros_location_find(package_name):
     # process ROS_LOCATION and return if found
     ros_location = os.environ.get(ROS_LOCATIONS_ENV_NAME)
@@ -50,6 +51,7 @@ def ros_location_find(package_name):
     # package <package_name> not found
     return result_code, ''
 
+
 # takes as argument either just a package-path or just a pkgname
 # returns 0 for no argument or if package (+ path) exist, 1 else
 # on success with arguments print result_path or Error: error message
@@ -72,6 +74,7 @@ def findpathmain(argv):
         rosdir = os.path.normpath(os.path.sep.join([package_dir, reldir]))
         print(rosdir)
         return 0
+
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:

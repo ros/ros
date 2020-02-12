@@ -39,9 +39,7 @@ Internal library for processing 'manifest' files, i.e. manifest.xml and stack.xm
 For external code apis, see L{roslib.manifest} and L{roslib.stack_manifest}.
 """
 
-import sys
 import os
-import xml.dom
 import xml.dom.minidom as dom
 
 import roslib.exceptions
@@ -55,11 +53,15 @@ OPTIONAL = ['logo', 'url', 'brief', 'description', 'status',
             'catkin']
 VALID = REQUIRED + OPTIONAL
 
-class ManifestException(roslib.exceptions.ROSLibException): pass
+
+class ManifestException(roslib.exceptions.ROSLibException):
+    pass
+
 
 def get_nodes_by_name(n, name):
     return [t for t in n.childNodes if t.nodeType == t.ELEMENT_NODE and t.tagName == name]
-    
+
+
 def check_optional(name, allowXHTML=False, merge_multiple=False):
     """
     Validator for optional elements.
@@ -68,7 +70,7 @@ def check_optional(name, allowXHTML=False, merge_multiple=False):
     def check(n, filename):
         n = get_nodes_by_name(n, name)
         if len(n) > 1 and not merge_multiple:
-            raise ManifestException("Invalid manifest file: must have a single '%s' element"%name)
+            raise ManifestException("Invalid manifest file: must have a single '%s' element" % name)
         if n:
             values = []
             for child in n:
@@ -79,6 +81,7 @@ def check_optional(name, allowXHTML=False, merge_multiple=False):
             return ', '.join(values)
     return check
 
+
 def check_required(name, allowXHTML=False, merge_multiple=False):
     """
     Validator for required elements.
@@ -87,10 +90,10 @@ def check_required(name, allowXHTML=False, merge_multiple=False):
     def check(n, filename):
         n = get_nodes_by_name(n, name)
         if not n:
-            #print >> sys.stderr, "Invalid manifest file[%s]: missing required '%s' element"%(filename, name)
+            # print >> sys.stderr, "Invalid manifest file[%s]: missing required '%s' element"%(filename, name)
             return ''
         if len(n) != 1 and not merge_multiple:
-            raise ManifestException("Invalid manifest file: must have only one '%s' element"%name)
+            raise ManifestException("Invalid manifest file: must have only one '%s' element" % name)
         values = []
         for child in n:
             if allowXHTML:
@@ -99,6 +102,7 @@ def check_required(name, allowXHTML=False, merge_multiple=False):
                 values.append(_get_text(child.childNodes).strip())
         return ', '.join(values)
     return check
+
 
 def check_platform(name):
     """
@@ -110,9 +114,10 @@ def check_platform(name):
         try:
             vals = [(p.attributes['os'].value, p.attributes['version'].value, p.getAttribute('notes')) for p in platforms]
         except KeyError as e:
-            raise ManifestException("<platform> tag is missing required '%s' attribute"%str(e))
+            raise ManifestException("<platform> tag is missing required '%s' attribute" % str(e))
         return [Platform(*v) for v in vals]
     return check
+
 
 def check_depends(name):
     """
@@ -123,7 +128,7 @@ def check_depends(name):
         nodes = get_nodes_by_name(n, name)
         # TDS 20110419:  this is a hack.
         # rosbuild2 has a <depend thirdparty="depname"/> tag,
-        # which is confusing this subroutine with 
+        # which is confusing this subroutine with
         # KeyError: 'package'
         # for now, explicitly don't consider thirdparty depends
         depends = [e.attributes for e in nodes if 'thirdparty' not in e.attributes.keys()]
@@ -134,6 +139,7 @@ def check_depends(name):
 
         return [Depend(p) for p in packages]
     return check
+
 
 def check_stack_depends(name):
     """
@@ -147,9 +153,10 @@ def check_stack_depends(name):
         return [StackDepend(p) for p in packages]
     return check
 
+
 def check_rosdeps(name):
     """
-    Validator for stack rosdeps.    
+    Validator for stack rosdeps.
     @raise ManifestException: if validation fails
     """
     def check(n, filename):
@@ -159,20 +166,23 @@ def check_rosdeps(name):
         return [ROSDep(n) for n in names]
     return check
 
+
 def _attrs(node):
     attrs = {}
-    for k in node.attributes.keys(): 
+    for k in node.attributes.keys():
         attrs[k] = node.attributes.get(k).value
     return attrs
-    
+
+
 def check_exports(name):
     def check(n, filename):
         ret_val = []
         for e in get_nodes_by_name(n, name):
             elements = [c for c in e.childNodes if c.nodeType == c.ELEMENT_NODE]
             ret_val.extend([Export(t.tagName, _attrs(t), _get_text(t.childNodes)) for t in elements])
-        return ret_val 
+        return ret_val
     return check
+
 
 def check_versioncontrol(name):
     def check(n, filename):
@@ -182,6 +192,7 @@ def check_versioncontrol(name):
         # note: 'url' isn't actually required, but as we only support type=svn it implicitly is for now
         return VersionControl(e[0].attributes['type'].value, e[0].attributes['url'].value)
     return check
+
 
 def check(name, merge_multiple=False):
     if name == 'depend':
@@ -202,12 +213,13 @@ def check(name, merge_multiple=False):
         if name in ALLOWXHTML:
             return check_optional(name, True, merge_multiple)
         return check_optional(name, merge_multiple=merge_multiple)
-    
+
+
 class Export(object):
     """
     Manifest 'export' tag
     """
-    
+
     def __init__(self, tag, attrs, str):
         """
         Create new export instance.
@@ -228,17 +240,19 @@ class Export(object):
         @rtype:  str
         """
         return self.attrs.get(attr, None)
+
     def xml(self):
         """
         @return: export instance represented as manifest XML
         @rtype: str
-        """        
-        attrs = ' '.join([' %s="%s"'%(k,v) for k,v in self.attrs.items()]) #py3k
+        """
+        attrs = ' '.join([' %s="%s"' % (k, v) for k, v in self.attrs.items()])  # py3k
         if self.str:
-            return '<%s%s>%s</%s>'%(self.tag, attrs, self.str, self.tag)
+            return '<%s%s>%s</%s>' % (self.tag, attrs, self.str, self.tag)
         else:
-            return '<%s%s />'%(self.tag, attrs)
-        
+            return '<%s%s />' % (self.tag, attrs)
+
+
 class Platform(object):
     """
     Manifest 'platform' tag
@@ -262,27 +276,31 @@ class Platform(object):
         self.os = os
         self.version = version
         self.notes = notes
-        
+
     def __str__(self):
-        return "%s %s"%(self.os, self.version)
+        return '%s %s' % (self.os, self.version)
+
     def __repr__(self):
-        return "%s %s"%(self.os, self.version)
+        return '%s %s' % (self.os, self.version)
+
     def __eq__(self, obj):
         """
         Override equality test. notes *are* considered in the equality test.
         """
         if not isinstance(obj, Platform):
             return False
-        return self.os == obj.os and self.version == obj.version and self.notes == obj.notes 
+        return self.os == obj.os and self.version == obj.version and self.notes == obj.notes
+
     def xml(self):
         """
         @return: instance represented as manifest XML
         @rtype: str
         """
         if self.notes is not None:
-            return '<platform os="%s" version="%s" notes="%s"/>'%(self.os, self.version, self.notes)
+            return '<platform os="%s" version="%s" notes="%s"/>' % (self.os, self.version, self.notes)
         else:
-            return '<platform os="%s" version="%s"/>'%(self.os, self.version)
+            return '<platform os="%s" version="%s"/>' % (self.os, self.version)
+
 
 class Depend(object):
     """
@@ -299,21 +317,26 @@ class Depend(object):
         if not package:
             raise ValueError("bad 'package' attribute")
         self.package = package
+
     def __str__(self):
         return self.package
+
     def __repr__(self):
         return self.package
+
     def __eq__(self, obj):
         if not isinstance(obj, Depend):
             return False
-        return self.package == obj.package 
+        return self.package == obj.package
+
     def xml(self):
         """
         @return: depend instance represented as manifest XML
         @rtype: str
         """
-        return '<depend package="%s" />'%self.package
-        
+        return '<depend package="%s" />' % self.package
+
+
 class StackDepend(object):
     """
     Stack Manifest 'depend' tag
@@ -329,30 +352,34 @@ class StackDepend(object):
             raise ValueError("bad 'stack' attribute")
         self.stack = stack
         self.annotation = None
-        
+
     def __str__(self):
         return self.stack
+
     def __repr__(self):
         return self.stack
+
     def __eq__(self, obj):
         if not isinstance(obj, StackDepend):
             return False
-        return self.stack == obj.stack 
+        return self.stack == obj.stack
+
     def xml(self):
         """
         @return: stack depend instance represented as stack manifest XML
         @rtype: str
         """
         if self.annotation:
-            return '<depend stack="%s" /> <!-- %s -->'%(self.stack, self.annotation)
+            return '<depend stack="%s" /> <!-- %s -->' % (self.stack, self.annotation)
         else:
-            return '<depend stack="%s" />'%self.stack            
+            return '<depend stack="%s" />' % self.stack
+
 
 class ROSDep(object):
     """
-    Manifest 'rosdep' tag    
+    Manifest 'rosdep' tag
     """
-    __slots__ = ['name',]
+    __slots__ = ['name', ]
 
     def __init__(self, name):
         """
@@ -363,12 +390,14 @@ class ROSDep(object):
         if not name:
             raise ValueError("bad 'name' attribute")
         self.name = name
+
     def xml(self):
         """
         @return: rosdep instance represented as manifest XML
         @rtype: str
-        """        
-        return '<rosdep name="%s" />'%self.name
+        """
+        return '<rosdep name="%s" />' % self.name
+
 
 class VersionControl(object):
     """
@@ -391,31 +420,34 @@ class VersionControl(object):
 
         if not type_ or not is_string_type(type_):
             raise ValueError("bad 'type' attribute")
-        if not url is None and not is_string_type(url):
+        if url is not None and not is_string_type(url):
             raise ValueError("bad 'url' attribute")
         self.type = type_
         self.url = url
+
     def xml(self):
         """
         @return: versioncontrol instance represented as manifest XML
         @rtype: str
-        """        
+        """
         if self.url:
-            return '<versioncontrol type="%s" url="%s" />'%(self.type, self.url)
+            return '<versioncontrol type="%s" url="%s" />' % (self.type, self.url)
         else:
-            return '<versioncontrol type="%s" />'%self.type
-    
+            return '<versioncontrol type="%s" />' % self.type
+
+
 class _Manifest(object):
     """
     Object representation of a ROS manifest file
     """
-    __slots__ = ['description', 'brief', \
-                 'author', 'license', 'license_url', 'url', \
-                 'depends', 'rosdeps','platforms',\
-                 'logo', 'exports', 'version',\
-                 'versioncontrol', 'status', 'notes',\
-                 'unknown_tags',\
+    __slots__ = ['description', 'brief',
+                 'author', 'license', 'license_url', 'url',
+                 'depends', 'rosdeps', 'platforms',
+                 'logo', 'exports', 'version',
+                 'versioncontrol', 'status', 'notes',
+                 'unknown_tags',
                  '_type']
+
     def __init__(self, _type='package'):
         self.description = self.brief = self.author = \
                            self.license = self.license_url = \
@@ -426,60 +458,63 @@ class _Manifest(object):
         self.exports = []
         self.platforms = []
         self._type = _type
-        
+
         # store unrecognized tags during parsing
         self.unknown_tags = []
-        
+
     def __str__(self):
         return self.xml()
+
     def get_export(self, tag, attr):
         """
         @return: exports that match the specified tag and attribute, e.g. 'python', 'path'
         @rtype: [L{Export}]
         """
         return [e.get(attr) for e in self.exports if e.tag == tag if e.get(attr) is not None]
+
     def xml(self):
         """
         @return: Manifest instance as ROS XML manifest
         @rtype: str
         """
         if not self.brief:
-            desc = "  <description>%s</description>"%self.description
+            desc = '  <description>%s</description>' % self.description
         else:
-            desc = '  <description brief="%s">%s</description>'%(self.brief, self.description) 
-        author  = "  <author>%s</author>"%self.author
+            desc = '  <description brief="%s">%s</description>' % (self.brief, self.description)
+        author = '  <author>%s</author>' % self.author
         if self.license_url:
-            license = '  <license url="%s">%s</license>'%(self.license_url, self.license)
+            license = '  <license url="%s">%s</license>' % (self.license_url, self.license)
         else:
-            license = "  <license>%s</license>"%self.license
-        versioncontrol = url = logo = exports = version = ""
+            license = '  <license>%s</license>' % self.license
+        versioncontrol = url = logo = exports = version = ''
         if self.url:
-            url     = "  <url>%s</url>"%self.url
+            url = '  <url>%s</url>' % self.url
         if self.version:
-            version = "  <version>%s</version>"%self.version
+            version = '  <version>%s</version>' % self.version
         if self.logo:
-            logo    = "  <logo>%s</logo>"%self.logo
-        depends = '\n'.join(["  %s"%d.xml() for d in self.depends])
-        rosdeps = '\n'.join(["  %s"%rd.xml() for rd in self.rosdeps])
-        platforms = '\n'.join(["  %s"%p.xml() for p in self.platforms])
+            logo = '  <logo>%s</logo>' % self.logo
+        depends = '\n'.join(['  %s' % d.xml() for d in self.depends])
+        rosdeps = '\n'.join(['  %s' % rd.xml() for rd in self.rosdeps])
+        platforms = '\n'.join(['  %s' % p.xml() for p in self.platforms])
         if self.exports:
-            exports = '  <export>\n' + '\n'.join(["  %s"%e.xml() for e in self.exports]) + '  </export>'
+            exports = '  <export>\n' + '\n'.join(['  %s' % e.xml() for e in self.exports]) + '  </export>'
         if self.versioncontrol:
-            versioncontrol = "  %s"%self.versioncontrol.xml()
+            versioncontrol = '  %s' % self.versioncontrol.xml()
         if self.status or self.notes:
-            review = '  <review status="%s" notes="%s" />'%(self.status, self.notes)
-
+            review = '  <review status="%s" notes="%s" />' % (self.status, self.notes)
 
         fields = filter(lambda x: x,
                         [desc, author, license, review, url, logo, depends,
                          rosdeps, platforms, exports, versioncontrol, version])
-        return "<%s>\n"%self._type + "\n".join(fields) + "\n</%s>"%self._type
+        return '<%s>\n' % self._type + '\n'.join(fields) + '\n</%s>' % self._type
+
 
 def _get_text(nodes):
     """
     DOM utility routine for getting contents of text nodes
     """
-    return "".join([n.data for n in nodes if n.nodeType == n.TEXT_NODE])
+    return ''.join([n.data for n in nodes if n.nodeType == n.TEXT_NODE])
+
 
 def parse_file(m, file):
     """
@@ -492,15 +527,16 @@ def parse_file(m, file):
     @rtype: L{_Manifest}
     """
     if not file:
-        raise ValueError("Missing manifest file argument")
+        raise ValueError('Missing manifest file argument')
     if not os.path.isfile(file):
-        raise ValueError("Invalid/non-existent manifest file: %s"%file)
+        raise ValueError('Invalid/non-existent manifest file: %s' % file)
     with open(file, 'r') as f:
         text = f.read()
     try:
         return parse(m, text, file)
     except ManifestException as e:
-        raise ManifestException("Invalid manifest file [%s]: %s"%(os.path.abspath(file), e))
+        raise ManifestException('Invalid manifest file [%s]: %s' % (os.path.abspath(file), e))
+
 
 def parse(m, string, filename='string'):
     """
@@ -515,21 +551,21 @@ def parse(m, string, filename='string'):
     try:
         d = dom.parseString(string)
     except Exception as e:
-        raise ManifestException("invalid XML: %s"%e)
-    
+        raise ManifestException('invalid XML: %s' % e)
+
     p = get_nodes_by_name(d, m._type)
     if len(p) != 1:
-        raise ManifestException("manifest must have a single '%s' element"%m._type)
+        raise ManifestException("manifest must have a single '%s' element" % m._type)
     p = p[0]
     m.description = check('description')(p, filename)
     m.brief = ''
     try:
         tag = get_nodes_by_name(p, 'description')[0]
         m.brief = tag.getAttribute('brief') or ''
-    except:
+    except Exception:
         # means that 'description' tag is missing
         pass
-    #TODO: figure out how to multiplex
+    # TODO: figure out how to multiplex
     if m._type == 'package':
         m.depends = check_depends('depend')(p, filename)
     elif m._type == 'stack':
@@ -537,31 +573,31 @@ def parse(m, string, filename='string'):
     elif m._type == 'app':
         # not implemented yet
         pass
-    m.rosdeps = check('rosdep')(p, filename)    
-    m.platforms = check('platform')(p, filename)    
+    m.rosdeps = check('rosdep')(p, filename)
+    m.platforms = check('platform')(p, filename)
     m.exports = check('export')(p, filename)
-    m.versioncontrol = check('versioncontrol')(p,filename)
+    m.versioncontrol = check('versioncontrol')(p, filename)
     m.license = check('license')(p, filename)
     m.license_url = ''
     try:
         tag = get_nodes_by_name(p, 'license')[0]
         m.license_url = tag.getAttribute('url') or ''
-    except:
-        pass #manifest is missing required 'license' tag
-  
-    m.status='unreviewed'
-    try:
-        tag = get_nodes_by_name(p, 'review')[0]
-        m.status=tag.getAttribute('status') or ''
-    except:
-        pass #manifest is missing optional 'review status' tag
+    except Exception:
+        pass  # manifest is missing required 'license' tag
 
-    m.notes=''
+    m.status = 'unreviewed'
     try:
         tag = get_nodes_by_name(p, 'review')[0]
-        m.notes=tag.getAttribute('notes') or ''
-    except:
-        pass #manifest is missing optional 'review notes' tag
+        m.status = tag.getAttribute('status') or ''
+    except Exception:
+        pass  # manifest is missing optional 'review status' tag
+
+    m.notes = ''
+    try:
+        tag = get_nodes_by_name(p, 'review')[0]
+        m.notes = tag.getAttribute('notes') or ''
+    except Exception:
+        pass  # manifest is missing optional 'review notes' tag
 
     m.author = check('author', True)(p, filename)
     m.url = check('url')(p, filename)
@@ -571,9 +607,9 @@ def parse(m, string, filename='string'):
     # do some validation on what we just parsed
     if m._type == 'stack':
         if m.exports:
-            raise ManifestException("stack manifests are not allowed to have exports")
+            raise ManifestException('stack manifests are not allowed to have exports')
         if m.rosdeps:
-            raise ManifestException("stack manifests are not allowed to have rosdeps") 
+            raise ManifestException('stack manifests are not allowed to have rosdeps')
 
     # store unrecognized tags
     m.unknown_tags = [e for e in p.childNodes if e.nodeType == e.ELEMENT_NODE and e.tagName not in VALID]

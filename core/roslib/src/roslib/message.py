@@ -39,34 +39,40 @@ libraries for type checking and retrieving message classes by type
 name.
 """
 
-import os
-import sys
-import rospkg
+import genmsg
+
+import genpy.message  # for wrapping get_message_class, get_service_class
+# forward a bunch of old symbols from genpy for backwards compat
+from genpy import DeserializationError  # noqa: F401
+from genpy import Duration  # noqa: F401
+from genpy import Message  # noqa: F401
+from genpy import SerializationError  # noqa: F401
+from genpy import TVal  # noqa: F401
+from genpy import Time  # noqa: F401
+from genpy.message import check_type  # noqa: F401
+from genpy.message import fill_message_args  # noqa: F401
+from genpy.message import get_printable_message_args  # noqa: F401
+from genpy.message import strify_message  # noqa: F401
+
 import roslib
 
-import genmsg
-import genpy.message #for wrapping get_message_class, get_service_class
+import rospkg
 
-# forward a bunch of old symbols from genpy for backwards compat
-from genpy import Message, DeserializationError, SerializationError, \
-     Time, Duration, TVal
-from genpy.message import get_printable_message_args, fill_message_args
-from genpy.message import check_type, strify_message
 
 def _get_message_or_service_class(type_str, message_type, reload_on_error=False):
-    ## parse package and local type name for import
+    # parse package and local type name for import
     package, base_type = genmsg.package_resource_name(message_type)
     if not package:
         if base_type == 'Header':
             package = 'std_msgs'
         else:
-            raise ValueError("message type is missing package name: %s"%str(message_type))
+            raise ValueError('message type is missing package name: %s' % str(message_type))
     pypkg = val = None
-    try: 
+    try:
         # bootstrap our sys.path
         roslib.launcher.load_manifest(package)
         # import the package and return the class
-        pypkg = __import__('%s.%s'%(package, type_str))
+        pypkg = __import__('%s.%s' % (package, type_str))
         val = getattr(getattr(pypkg, type_str), base_type)
     except rospkg.ResourceNotFound:
         val = None
@@ -82,15 +88,18 @@ def _get_message_or_service_class(type_str, message_type, reload_on_error=False)
             if pypkg:
                 reload(pypkg)
             val = getattr(getattr(pypkg, type_str), base_type)
-        except:
+        except Exception:
             val = None
     return val
-        
-## cache for get_message_class
+
+
+# cache for get_message_class
 _message_class_cache = {}
 
-## cache for get_service_class
+
+# cache for get_service_class
 _service_class_cache = {}
+
 
 def get_message_class(message_type, reload_on_error=False):
     if message_type in _message_class_cache:
@@ -103,6 +112,7 @@ def get_message_class(message_type, reload_on_error=False):
     if cls:
         _message_class_cache[message_type] = cls
     return cls
+
 
 def get_service_class(service_type, reload_on_error=False):
     if service_type in _service_class_cache:

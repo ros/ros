@@ -35,7 +35,7 @@ roslib is largely deprecated starting in the ROS Fuerte release.
 
 roslib has a very important role in all Python code written for ROS:
 it contains the L{load_manifest()} method, which updates the
-PYTHONPATH based on a set of ROS Package manifest.xml files. 
+PYTHONPATH based on a set of ROS Package manifest.xml files.
 
 Beyond the important load_manifest() call, most of the rest of roslib
 consists of low-level libraries that 99% of ROS users need not
@@ -47,13 +47,14 @@ numerous ROS tools (e.g. rostopic).
 
 __version__ = '1.7.0'
 
-from roslib.launcher import load_manifest
-
+from roslib.launcher import load_manifest  # noqa: F401
 # this import is necessary due to a bug in purge_build.py in our
 # debian assets.
-import roslib.stacks
+import roslib.stacks  # noqa: F401, I100
 
 _is_interactive = False
+
+
 def set_interactive(interactive):
     """
     General API for a script specifying that it is being run in an
@@ -67,6 +68,7 @@ def set_interactive(interactive):
     global _is_interactive
     _is_interactive = interactive
 
+
 def is_interactive():
     """
     General API for a script specifying that it is being run in an
@@ -78,4 +80,3 @@ def is_interactive():
     @rtype: bool
     """
     return _is_interactive
-

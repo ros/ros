@@ -47,11 +47,13 @@ _bootstrapped = []
 # _rospack is our cache of ROS package data
 _rospack = rospkg.RosPack()
 
+
 def get_depends(package, rospack):
     vals = rospack.get_depends(package, implicit=True)
     return [v for v in vals if not rospack.get_manifest(v).is_catkin]
 
-def load_manifest(package_name, bootstrap_version="0.7"):
+
+def load_manifest(package_name, bootstrap_version='0.7'):
     """
     Update the Python sys.path with package's dependencies
 
@@ -60,7 +62,8 @@ def load_manifest(package_name, bootstrap_version="0.7"):
     if package_name in _bootstrapped:
         return
     sys.path = _generate_python_path(package_name, _rospack) + sys.path
-    
+
+
 def _append_package_paths(manifest_, paths, pkg_dir):
     """
     Added paths for package to paths
@@ -68,7 +71,7 @@ def _append_package_paths(manifest_, paths, pkg_dir):
     :param pkg_dir: package's filesystem directory path, ``str``
     :param paths: list of paths, ``[str]``
     """
-    exports = manifest_.get_export('python','path')
+    exports = manifest_.get_export('python', 'path')
     if exports:
         for export in exports:
             if ':' in export:
@@ -80,7 +83,8 @@ def _append_package_paths(manifest_, paths, pkg_dir):
     else:
         dirs = [os.path.join(pkg_dir, d) for d in ['src', 'lib']]
         paths.extend([d for d in dirs if os.path.isdir(d)])
-    
+
+
 def _generate_python_path(pkg, rospack):
     """
     Recursive subroutine for building dependency list and python path
@@ -95,7 +99,7 @@ def _generate_python_path(pkg, rospack):
         _bootstrapped.append(pkg)
         return []
 
-    packages = get_depends(pkg, rospack) 
+    packages = get_depends(pkg, rospack)
     packages.append(pkg)
 
     paths = []
@@ -105,7 +109,7 @@ def _generate_python_path(pkg, rospack):
             d = rospack.get_path(p)
             _append_package_paths(m, paths, d)
             _bootstrapped.append(p)
-    except:
+    except Exception:
         if pkg in _bootstrapped:
             _bootstrapped.remove(pkg)
         raise

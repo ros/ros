@@ -67,4 +67,3 @@ function(ProcessorCount var)
 
   set(${var} ${count} PARENT_SCOPE)
 endfunction()
-

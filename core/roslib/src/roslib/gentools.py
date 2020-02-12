@@ -46,19 +46,20 @@ md5sums and message definitions of classes.
 import sys
 
 try:
-    from cStringIO import StringIO # Python 2.x
+    from cStringIO import StringIO  # Python 2.x
 except ImportError:
-    from io import StringIO # Python 3.x
+    from io import StringIO  # Python 3.x
+
+import roslib.msgs
+import roslib.names
+import roslib.srvs
+from roslib.msgs import MsgSpecException
 
 import rospkg
 
-import roslib.msgs
-from roslib.msgs import MsgSpecException
-import roslib.names
-import roslib.srvs
-
 # name of the Header type as gentools knows it
 _header_type_name = 'std_msgs/Header'
+
 
 def _add_msgs_depends(rospack, spec, deps, package_context):
     """
@@ -107,12 +108,13 @@ def _add_msgs_depends(rospack, spec, deps, package_context):
                     # if we are allowed to load the message, load it.
                     key, depspec = roslib.msgs.load_by_type(t, package_context)
                     if t != roslib.msgs.HEADER:
-                      deps.append(key)
+                        deps.append(key)
                     roslib.msgs.register(key, depspec)
                 else:
                     # not allowed to load the message, so error.
                     raise KeyError(t)
             _add_msgs_depends(rospack, depspec, deps, package_context)
+
 
 def compute_md5_text(get_deps_dict, spec, rospack=None):
     """
@@ -133,12 +135,12 @@ def compute_md5_text(get_deps_dict, spec, rospack=None):
     buff = StringIO()
 
     for c in spec.constants:
-        buff.write("%s %s=%s\n"%(c.type, c.name, c.val_text))
+        buff.write('%s %s=%s\n' % (c.type, c.name, c.val_text))
     for type_, name in zip(spec.types, spec.names):
         base_msg_type = roslib.msgs.base_msg_type(type_)
         # md5 spec strips package names
         if roslib.msgs.is_builtin(base_msg_type):
-            buff.write("%s %s\n"%(type_, name))
+            buff.write('%s %s\n' % (type_, name))
         else:
             # recursively generate md5 for subtype.  have to build up
             # dependency representation for subtype in order to
@@ -153,9 +155,10 @@ def compute_md5_text(get_deps_dict, spec, rospack=None):
             sub_spec = roslib.msgs.get_registered(base_msg_type, package)
             sub_deps = get_dependencies(sub_spec, sub_pkg, compute_files=compute_files, rospack=rospack)
             sub_md5 = compute_md5(sub_deps, rospack)
-            buff.write("%s %s\n"%(sub_md5, name))
+            buff.write('%s %s\n' % (sub_md5, name))
 
-    return buff.getvalue().strip() # remove trailing new line
+    return buff.getvalue().strip()  # remove trailing new line
+
 
 def _compute_hash(get_deps_dict, hash, rospack=None):
     """
@@ -176,8 +179,9 @@ def _compute_hash(get_deps_dict, hash, rospack=None):
         hash.update(compute_md5_text(get_deps_dict, spec.request, rospack=rospack).encode())
         hash.update(compute_md5_text(get_deps_dict, spec.response, rospack=rospack).encode())
     else:
-        raise Exception("[%s] is not a message or service"%spec)
+        raise Exception('[%s] is not a message or service' % spec)
     return hash.hexdigest()
+
 
 def _compute_hash_v1(get_deps_dict, hash):
     """
@@ -197,6 +201,7 @@ def _compute_hash_v1(get_deps_dict, hash):
         hash.update(roslib.msgs.get_registered(d).text)
     return hash.hexdigest()
 
+
 def compute_md5_v1(get_deps_dict):
     """
     Compute original V1 md5 hash for message/service. This was replaced with V2 in ROS 0.6.
@@ -207,6 +212,7 @@ def compute_md5_v1(get_deps_dict):
     """
     import hashlib
     return _compute_hash_v1(get_deps_dict, hashlib.md5())
+
 
 def compute_md5(get_deps_dict, rospack=None):
     """
@@ -225,8 +231,10 @@ def compute_md5(get_deps_dict, rospack=None):
         import md5
         return _compute_hash(get_deps_dict, md5.new(), rospack=rospack)
 
-## alias
+
+# alias
 compute_md5_v2 = compute_md5
+
 
 def compute_full_text(get_deps_dict):
     """
@@ -250,11 +258,12 @@ def compute_full_text(get_deps_dict):
     # append the text of the dependencies (embedded types)
     for d in get_deps_dict['uniquedeps']:
         buff.write(sep)
-        buff.write("MSG: %s\n"%d)
+        buff.write('MSG: %s\n' % d)
         buff.write(roslib.msgs.get_registered(d).text)
         buff.write('\n')
     # #1168: remove the trailing \n separator that is added by the concatenation logic
     return buff.getvalue()[:-1]
+
 
 def get_file_dependencies(f, stdout=sys.stdout, stderr=sys.stderr, rospack=None):
     """
@@ -277,8 +286,9 @@ def get_file_dependencies(f, stdout=sys.stdout, stderr=sys.stderr, rospack=None)
     elif f.endswith(roslib.srvs.EXT):
         _, spec = roslib.srvs.load_from_file(f)
     else:
-        raise Exception("[%s] does not appear to be a message or service"%spec)
+        raise Exception('[%s] does not appear to be a message or service' % spec)
     return get_dependencies(spec, package, stdout, stderr, rospack=rospack)
+
 
 def get_dependencies(spec, package, compute_files=True, stdout=sys.stdout, stderr=sys.stderr, rospack=None):
     """
@@ -306,8 +316,7 @@ def get_dependencies(spec, package, compute_files=True, stdout=sys.stdout, stder
     # #518: as a performance optimization, we're going to manually control the loading
     # of msgs instead of doing package-wide loads.
 
-    #we're going to manipulate internal apis of msgs, so have to
-    #manually init
+    # we're going to manipulate internal apis of msgs, so have to manually init
     roslib.msgs._init()
 
     deps = []
@@ -320,9 +329,9 @@ def get_dependencies(spec, package, compute_files=True, stdout=sys.stdout, stder
             _add_msgs_depends(rospack, spec.request, deps, package)
             _add_msgs_depends(rospack, spec.response, deps, package)
         else:
-            raise MsgSpecException("spec does not appear to be a message or service")
+            raise MsgSpecException('spec does not appear to be a message or service')
     except KeyError as e:
-        raise MsgSpecException("Cannot load type %s.  Perhaps the package is missing a dependency."%(str(e)))
+        raise MsgSpecException('Cannot load type %s.  Perhaps the package is missing a dependency.' % (str(e)))
 
     # convert from type names to file names
 
@@ -330,7 +339,7 @@ def get_dependencies(spec, package, compute_files=True, stdout=sys.stdout, stder
         files = {}
         for d in set(deps):
             d_pkg, t = roslib.names.package_resource_name(d)
-            d_pkg = d_pkg or package # convert '' -> local package
+            d_pkg = d_pkg or package  # convert '' -> local package
             files[d] = roslib.msgs.msg_file(d_pkg, t)
     else:
         files = None
@@ -338,13 +347,10 @@ def get_dependencies(spec, package, compute_files=True, stdout=sys.stdout, stder
     # create unique dependency list
     uniquedeps = []
     for d in deps:
-        if not d in uniquedeps:
+        if d not in uniquedeps:
             uniquedeps.append(d)
 
     if compute_files:
-        return { 'files': files, 'deps': deps, 'spec': spec, 'package': package, 'uniquedeps': uniquedeps }
+        return {'files': files, 'deps': deps, 'spec': spec, 'package': package, 'uniquedeps': uniquedeps}
     else:
-        return { 'deps': deps, 'spec': spec, 'package': package, 'uniquedeps': uniquedeps }
-
-
-
+        return {'deps': deps, 'spec': spec, 'package': package, 'uniquedeps': uniquedeps}

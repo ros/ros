@@ -13,13 +13,13 @@ if "%1" equ "--help" goto :usage
 if "%1" equ "-h" goto :usage
 if "%1" equ "--prefix" goto :prefix
 if "%1" equ "-p" goto :prefix
-if "%1" equ "--debug" ( 
+if "%1" equ "--debug" (
   set /A DEBUG=1
-  goto :nextarg 
+  goto :nextarg
 )
-if "%1" equ "-d" ( 
-  set DEBUG=1 
-  goto :nextarg 
+if "%1" equ "-d" (
+  set DEBUG=1
+  goto :nextarg
 )
 goto :find_rosrun_parameters
 
@@ -123,7 +123,7 @@ exit /b %ERRORLEVEL%
 :debug
 if %DEBUG% == 1 (
   echo [rosrun] %*
-)  
+)
 goto :eof
 
 :usage

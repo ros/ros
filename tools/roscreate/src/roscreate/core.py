@@ -36,17 +36,20 @@ from __future__ import print_function
 import os
 import sys
 
-import rospkg
 import pkg_resources
+
+import rospkg
+
 
 def print_warning(msg):
     """print warning to screen (bold red)"""
-    print('\033[31m%s\033[0m'%msg, file=sys.stderr)
-    
+    print('\033[31m%s\033[0m' % msg, file=sys.stderr)
+
+
 def author_name():
     """
     Utility to compute logged in user name
-    
+
     :returns: name of current user, ``str``
     """
     import getpass
@@ -55,18 +58,19 @@ def author_name():
         import pwd
         login = name
         name = pwd.getpwnam(login)[4]
-        name = ''.join(name.split(',')) # strip commas
+        name = ''.join(name.split(','))  # strip commas
         # in case pwnam is not set
         if not name:
             name = login
-    except:
-        #pwd failed
+    except Exception:
+        # pwd failed
         pass
     try:
         name = name.decode('utf-8')
     except AttributeError:
         pass
     return name
+
 
 def read_template(tmplf):
     """
@@ -87,5 +91,3 @@ def read_template(tmplf):
     except AttributeError:
         pass
     return t
-
-    

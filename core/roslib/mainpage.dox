@@ -2,7 +2,6 @@
 \mainpage
 \htmlinclude manifest.html
 
-
 \b %roslib is the base library support for ROS <a href="http://ros.org/wiki/Client Libraries">client implementations</a> as well as ROS tools. It includes:
 
 - common message definitions used in ROS clients (e.g. Header)

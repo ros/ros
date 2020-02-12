@@ -39,5 +39,7 @@ results are stored in.
 """
 
 from __future__ import print_function
+
 import rospkg
+
 print(rospkg.get_test_results_dir())

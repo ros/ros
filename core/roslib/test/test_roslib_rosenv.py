@@ -31,72 +31,77 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
-import sys
 import unittest
 
 import roslib.rosenv
 
+
 class EnvTest(unittest.TestCase):
-  
-  def test_get_ros_root(self):
-    from roslib.rosenv import get_ros_root
-    self.assertEquals(None, get_ros_root(required=False, env={}))
-    self.assertEquals(None, get_ros_root(False, {}))    
-    try:
-      get_ros_root(required=True, env={})
-      self.fail("get_ros_root should have failed")
-    except: pass
 
-    env = {'ROS_ROOT': '/fake/path'}
-    self.assertEquals('/fake/path', get_ros_root(required=False, env=env))
-    try:
-      get_ros_root(required=True, env=env)
-      self.fail("get_ros_root should have failed")
-    except: pass
+    def test_get_ros_root(self):
+        from roslib.rosenv import get_ros_root
+        self.assertEquals(None, get_ros_root(required=False, env={}))
+        self.assertEquals(None, get_ros_root(False, {}))
+        try:
+            get_ros_root(required=True, env={})
+            self.fail('get_ros_root should have failed')
+        except Exception:
+            pass
 
-  def test_get_ros_package_path(self):
-    from roslib.rosenv import get_ros_package_path
-    self.assertEquals(None, get_ros_package_path(required=False, env={}))
-    self.assertEquals(None, get_ros_package_path(False, {}))
-    try:
-      get_ros_package_path(required=True, env={})
-      self.fail("get_ros_package_path should have raised")
-    except: pass
-    env = {'ROS_PACKAGE_PATH': ':'}
-    self.assertEquals(':', get_ros_package_path(True, env=env))
-    self.assertEquals(':', get_ros_package_path(False, env=env))
+        env = {'ROS_ROOT': '/fake/path'}
+        self.assertEquals('/fake/path', get_ros_root(required=False, env=env))
+        try:
+            get_ros_root(required=True, env=env)
+            self.fail('get_ros_root should have failed')
+        except Exception:
+            pass
 
-    # trip-wire tests. Cannot guarantee that ROS_PACKAGE_PATH is set
-    # to valid value on test machine, just make sure logic doesn't crash
-    self.assertEquals(os.environ.get('ROS_PACKAGE_PATH', None), get_ros_package_path(required=False))
+    def test_get_ros_package_path(self):
+        from roslib.rosenv import get_ros_package_path
+        self.assertEquals(None, get_ros_package_path(required=False, env={}))
+        self.assertEquals(None, get_ros_package_path(False, {}))
+        try:
+            get_ros_package_path(required=True, env={})
+            self.fail('get_ros_package_path should have raised')
+        except Exception:
+            pass
+        env = {'ROS_PACKAGE_PATH': ':'}
+        self.assertEquals(':', get_ros_package_path(True, env=env))
+        self.assertEquals(':', get_ros_package_path(False, env=env))
 
-  def test_get_ros_master_uri(self):
-    from roslib.rosenv import get_master_uri
-    self.assertEquals(None, get_master_uri(required=False, env={}))
-    self.assertEquals(None, get_master_uri(False, {}))
-    try:
-      get_master_uri(required=True, env={})
-      self.fail("get_ros_package_path should have raised")
-    except: pass
-    env = {'ROS_MASTER_URI': 'http://localhost:1234'}
-    self.assertEquals('http://localhost:1234', get_master_uri(True, env=env))
-    self.assertEquals('http://localhost:1234', get_master_uri(False, env=env))
+        # trip-wire tests. Cannot guarantee that ROS_PACKAGE_PATH is set
+        # to valid value on test machine, just make sure logic doesn't crash
+        self.assertEquals(os.environ.get('ROS_PACKAGE_PATH', None), get_ros_package_path(required=False))
 
-    argv = ['__master:=http://localhost:5678']
-    self.assertEquals('http://localhost:5678', get_master_uri(False, env=env, argv=argv))
+    def test_get_ros_master_uri(self):
+        from roslib.rosenv import get_master_uri
+        self.assertEquals(None, get_master_uri(required=False, env={}))
+        self.assertEquals(None, get_master_uri(False, {}))
+        try:
+            get_master_uri(required=True, env={})
+            self.fail('get_ros_package_path should have raised')
+        except Exception:
+            pass
+        env = {'ROS_MASTER_URI': 'http://localhost:1234'}
+        self.assertEquals('http://localhost:1234', get_master_uri(True, env=env))
+        self.assertEquals('http://localhost:1234', get_master_uri(False, env=env))
 
-    try:
-      argv = ['__master:=http://localhost:5678:=http://localhost:1234']
-      get_master_uri(required=False, env=env, argv=argv)
-      self.fail("should have thrown")
-    except roslib.rosenv.ROSEnvException: pass
+        argv = ['__master:=http://localhost:5678']
+        self.assertEquals('http://localhost:5678', get_master_uri(False, env=env, argv=argv))
 
-    try:
-      argv = ['__master:=']
-      get_master_uri(False, env=env, argv=argv)
-      self.fail("should have thrown")
-    except roslib.rosenv.ROSEnvException: pass
-    
-    # make sure test works with os.environ
-    self.assertEquals(os.environ.get('ROS_MASTER_URI', None), get_master_uri(required=False))
+        try:
+            argv = ['__master:=http://localhost:5678:=http://localhost:1234']
+            get_master_uri(required=False, env=env, argv=argv)
+            self.fail('should have thrown')
+        except roslib.rosenv.ROSEnvException:
+            pass
 
+        try:
+            argv = ['__master:=']
+            get_master_uri(False, env=env, argv=argv)
+            self.fail('should have thrown')
+        except roslib.rosenv.ROSEnvException:
+            pass
+
+        # make sure test works with os.environ
+        self.assertEquals(os.environ.get('ROS_MASTER_URI', None), get_master_uri(required=False))

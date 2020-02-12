@@ -17,7 +17,7 @@ endif
 PACKAGE_NAME=$(shell basename $(PWD))
 
 # The clean target blows everything away
-# It also removes auto-generated message/service code directories, 
+# It also removes auto-generated message/service code directories,
 # to handle the case where the original .msg/.srv file has been removed,
 # and thus CMake no longer knows about it.
 clean:
@@ -41,7 +41,7 @@ gcoverage: all
 # generate eclipse projects in the root of the package
 # remove all generated files and folders since after replacing the Makefile
 # they will all be regenerated in the subfolder build
-eclipse-project: 
+eclipse-project:
 	mv Makefile Makefile.ros
 	if ! (cmake -G"Eclipse CDT4 - Unix Makefiles" -Wno-dev . && rm Makefile && rm CMakeCache.txt && rm -rf CMakeFiles); then mv Makefile.ros Makefile && echo "**ERROR building Eclipse project!**" && false; fi
 	mv Makefile.ros Makefile

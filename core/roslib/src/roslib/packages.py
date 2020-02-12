@@ -40,16 +40,16 @@ routines will likely be *deleted* in future releases.
 """
 
 import os
-import sys
 import stat
-import string
-
-from subprocess import Popen, PIPE
+import sys
+from subprocess import PIPE
+from subprocess import Popen
 
 from catkin.find_in_workspaces import find_in_workspaces as catkin_find
-import rospkg
 
-import roslib.manifest
+import roslib.manifest  # noqa: F401
+
+import rospkg
 
 SRC_DIR = 'src'
 
@@ -57,16 +57,21 @@ SRC_DIR = 'src'
 ROS_PACKAGE_PATH = rospkg.environment.ROS_PACKAGE_PATH
 ROS_ROOT = rospkg.environment.ROS_ROOT
 
+
 class ROSPkgException(Exception):
     """
     Base class of package-related errors.
     """
     pass
+
+
 class InvalidROSPkgException(ROSPkgException):
     """
     Exception that indicates that a ROS package does not exist
     """
     pass
+
+
 class MultipleNodesException(ROSPkgException):
     """
     Exception that indicates that multiple ROS nodes by the same name are in the same package.
@@ -75,8 +80,10 @@ class MultipleNodesException(ROSPkgException):
 
 # TODO: go through the code and eliminate unused methods -- there's far too many combos here
 
+
 MANIFEST_FILE = 'manifest.xml'
 PACKAGE_FILE = 'package.xml'
+
 
 #
 # Map package/directory structure
@@ -93,10 +100,10 @@ def get_dir_pkg(d):
     @return: (package_directory, package) of the specified directory, or None,None if not in a package
     @rtype: (str, str)
     """
-    #TODO: the realpath is going to create issues with symlinks, most likely
+    # TODO: the realpath is going to create issues with symlinks, most likely
 
     parent = os.path.dirname(os.path.realpath(d))
-    #walk up until we hit ros root or ros/pkg
+    # walk up until we hit ros root or ros/pkg
     while not os.path.exists(os.path.join(d, MANIFEST_FILE)) and not os.path.exists(os.path.join(d, PACKAGE_FILE)) and parent != d:
         d = parent
         parent = os.path.dirname(d)
@@ -105,7 +112,9 @@ def get_dir_pkg(d):
         return d, pkg
     return None, None
 
+
 _pkg_dir_cache = {}
+
 
 def get_pkg_dir(package, required=True, ros_root=None, ros_package_path=None):
     """
@@ -114,7 +123,7 @@ def get_pkg_dir(package, required=True, ros_root=None, ros_package_path=None):
 
     NOTE: cache does *not* rebuild if packages are relocated after
     this process is initiated.
-    
+
     @param package: package name
     @type  package: str
     @param required: if True, an exception will be raised if the
@@ -127,10 +136,10 @@ def get_pkg_dir(package, required=True, ros_root=None, ros_package_path=None):
     @return: directory containing package or None if package cannot be found and required is False.
     @rtype: str
     @raise InvalidROSPkgException: if required is True and package cannot be located
-    """    
+    """
 
-    #UNIXONLY
-    #TODO: replace with non-rospack-based solution (e.g. os.walk())
+    # UNIXONLY
+    # TODO: replace with non-rospack-based solution (e.g. os.walk())
     try:
         penv = os.environ.copy()
         if ros_root:
@@ -153,7 +162,7 @@ def get_pkg_dir(package, required=True, ros_root=None, ros_package_path=None):
         # update cache if we haven't. NOTE: we only get one cache
         if not _pkg_dir_cache:
             _read_rospack_cache(_pkg_dir_cache, ros_root, ros_package_path)
-            
+
         # now that we've resolved the args, check the cache
         if package in _pkg_dir_cache:
             dir_, rr, rpp = _pkg_dir_cache[package]
@@ -163,34 +172,35 @@ def get_pkg_dir(package, required=True, ros_root=None, ros_package_path=None):
                 else:
                     # invalidate cache
                     _invalidate_cache(_pkg_dir_cache)
-            
-        rpout, rperr = Popen([rospack, 'find', package], \
-                                 stdout=PIPE, stderr=PIPE, env=penv).communicate()
+
+        rpout, rperr = Popen([rospack, 'find', package],
+                             stdout=PIPE, stderr=PIPE, env=penv).communicate()
 
         pkg_dir = (rpout or '').strip()
-        #python3.1 popen returns as bytes
+        # python3.1 popen returns as bytes
         if (isinstance(pkg_dir, bytes)):
             pkg_dir = pkg_dir.decode()
         if not pkg_dir:
-            raise InvalidROSPkgException("Cannot locate installation of package %s: %s. ROS_ROOT[%s] ROS_PACKAGE_PATH[%s]"%(package, rperr.strip(), ros_root, ros_package_path))
+            raise InvalidROSPkgException('Cannot locate installation of package %s: %s. ROS_ROOT[%s] ROS_PACKAGE_PATH[%s]' % (package, rperr.strip(), ros_root, ros_package_path))
 
         pkg_dir = os.path.normpath(pkg_dir)
         if not os.path.exists(pkg_dir):
-            raise InvalidROSPkgException("Cannot locate installation of package %s: [%s] is not a valid path. ROS_ROOT[%s] ROS_PACKAGE_PATH[%s]"%(package, pkg_dir, ros_root, ros_package_path))
+            raise InvalidROSPkgException('Cannot locate installation of package %s: [%s] is not a valid path. ROS_ROOT[%s] ROS_PACKAGE_PATH[%s]' % (package, pkg_dir, ros_root, ros_package_path))
         elif not os.path.isdir(pkg_dir):
-            raise InvalidROSPkgException("Package %s is invalid: file [%s] is in the way"%(package, pkg_dir))
+            raise InvalidROSPkgException('Package %s is invalid: file [%s] is in the way' % (package, pkg_dir))
         # don't update cache: this should only be updated from
         # rospack_cache as it will corrupt package list otherwise.
-        #_pkg_dir_cache[package] = (pkg_dir, ros_root, ros_package_path)
+        # _pkg_dir_cache[package] = (pkg_dir, ros_root, ros_package_path)
         return pkg_dir
     except OSError as e:
         if required:
-            raise InvalidROSPkgException("Environment configuration is invalid: cannot locate rospack (%s)"%e)
+            raise InvalidROSPkgException('Environment configuration is invalid: cannot locate rospack (%s)' % e)
         return None
-    except Exception as e:
+    except Exception:
         if required:
             raise
         return None
+
 
 def _get_pkg_subdir_by_dir(package_dir, subdir, required=True, env=None):
     """
@@ -201,9 +211,9 @@ def _get_pkg_subdir_by_dir(package_dir, subdir, required=True, env=None):
     @type  package_dir: str
     @param subdir: name of subdirectory to locate
     @type  subdir: str
-    @param env: override os.environ dictionary    
+    @param env: override os.environ dictionary
     @type  env: dict
-    @param required: if True, directory must exist    
+    @param required: if True, directory must exist
     @type  required: bool
     @return: Package subdirectory if package exist, otherwise None.
     @rtype: str
@@ -213,25 +223,26 @@ def _get_pkg_subdir_by_dir(package_dir, subdir, required=True, env=None):
         env = os.environ
     try:
         if not package_dir:
-            raise Exception("Cannot create a '%(subdir)s' directory in %(package_dir)s: package %(package) cannot be located"%locals())
+            raise Exception("Cannot create a '%(subdir)s' directory in %(package_dir)s: package %(package) cannot be located" % locals())
         d = os.path.join(package_dir, subdir)
         if required and os.path.isfile(d):
-            raise Exception("""Package '%(package)s' is improperly configured: 
-file %(d)s is preventing the creation of a directory"""%locals())
+            raise Exception("""Package '%(package)s' is improperly configured:
+file %(d)s is preventing the creation of a directory""" % locals())
         elif required and not os.path.isdir(d):
             try:
-                os.makedirs(d) #lazy create
+                os.makedirs(d)  # lazy create
             except error:
-                raise Exception("""Package '%(package)s' is improperly configured: 
+                raise Exception("""Package '%(package)s' is improperly configured:
 Cannot create a '%(subdir)s' directory in %(package_dir)s.
 Please check permissions and try again.
-"""%locals())
+""" % locals())
         return d
-    except Exception as e:
+    except Exception:
         if required:
             raise
         return None
-    
+
+
 def get_pkg_subdir(package, subdir, required=True, env=None):
     """
     @param required: if True, will attempt to create the subdirectory
@@ -241,7 +252,7 @@ def get_pkg_subdir(package, subdir, required=True, env=None):
     @type  package: str
     @param env: override os.environ dictionary
     @type  env: dict
-    @param required: if True, directory must exist    
+    @param required: if True, directory must exist
     @type  required: bool
     @return: Package subdirectory if package exist, otherwise None.
     @rtype: str
@@ -249,8 +260,9 @@ def get_pkg_subdir(package, subdir, required=True, env=None):
     """
     if env is None:
         env = os.environ
-    pkg_dir = get_pkg_dir(package, required, ros_root=env[ROS_ROOT]) 
+    pkg_dir = get_pkg_dir(package, required, ros_root=env[ROS_ROOT])
     return _get_pkg_subdir_by_dir(pkg_dir, subdir, required, env)
+
 
 #
 # Map ROS resources to files
@@ -264,17 +276,18 @@ def resource_file(package, subdir, resource_name):
     @return: path to resource in the specified subdirectory of the
         package, or None if the package does not exists
     @rtype: str
-    @raise roslib.packages.InvalidROSPkgException: If package does not exist 
+    @raise roslib.packages.InvalidROSPkgException: If package does not exist
     """
     d = get_pkg_subdir(package, subdir, False)
     if d is None:
         raise InvalidROSPkgException(package)
     return os.path.join(d, resource_name)
 
+
 def _update_rospack_cache(env=None):
     """
     Internal routine to update global package directory cache
-    
+
     @return: True if cache is valid
     @rtype: bool
     """
@@ -287,18 +300,20 @@ def _update_rospack_cache(env=None):
     ros_package_path = env.get(ROS_PACKAGE_PATH, '')
     return _read_rospack_cache(cache, ros_root, ros_package_path)
 
+
 def _invalidate_cache(cache):
     # I've only made this a separate routine because roslib.packages should really be using
     # the roslib.stacks cache implementation instead with the separate cache marker
     cache.clear()
+
 
 def _read_rospack_cache(cache, ros_root, ros_package_path):
     """
     Read in rospack_cache data into cache. On-disk cache specifies a
     ROS_ROOT and ROS_PACKAGE_PATH, which must match the requested
     environment.
-    
-    @param cache: empty dictionary to store package list in. 
+
+    @param cache: empty dictionary to store package list in.
         If no cache argument provided, will use internal _pkg_dir_cache
         and will return cached answers if available.
         The format of the cache is {package_name: dir_path, ros_root, ros_package_path}.
@@ -327,9 +342,10 @@ def _read_rospack_cache(cache, ros_root, ros_package_path):
                 else:
                     cache[os.path.basename(l)] = l, ros_root, ros_package_path
         return True
-    except:
+    except Exception:
         pass
-    
+
+
 def list_pkgs_by_path(path, packages=None, cache=None, env=None):
     """
     List ROS packages within the specified path.
@@ -337,7 +353,7 @@ def list_pkgs_by_path(path, packages=None, cache=None, env=None):
     Optionally, a cache dictionary can be provided, which will be
     updated with the package->path mappings. list_pkgs_by_path() does
     NOT returned cached results -- it only updates the cache.
-    
+
     @param path: path to list packages in
     @type  path: str
     @param packages: list of packages to append to. If package is
@@ -365,11 +381,11 @@ def list_pkgs_by_path(path, packages=None, cache=None, env=None):
                 if cache is not None:
                     cache[package] = d, ros_root, ros_package_path
             del dirs[:]
-            continue #leaf
+            continue  # leaf
         elif 'rospack_nosubdirs' in files:
             del dirs[:]
-            continue #leaf
-        #small optimization
+            continue  # leaf
+        # small optimization
         elif '.svn' in dirs:
             dirs.remove('.svn')
         elif '.git' in dirs:
@@ -381,23 +397,25 @@ def list_pkgs_by_path(path, packages=None, cache=None, env=None):
             sub_p = os.path.join(d, sub_d)
             if os.path.islink(sub_p):
                 packages.extend(list_pkgs_by_path(sub_p, cache=cache))
-            
+
     return packages
+
 
 def find_node(pkg, node_type, rospack=None):
     """
     Warning: unstable API due to catkin.
 
     Locate the executable that implements the node
-    
+
     :param node_type: type of node, ``str``
     :returns: path to node or None if node is not in the package ``str``
-    :raises: :exc:rospkg.ResourceNotFound` If package does not exist 
+    :raises: :exc:rospkg.ResourceNotFound` If package does not exist
     """
 
     if rospack is None:
         rospack = rospkg.RosPack()
     return find_resource(pkg, node_type, filter_fn=_executable_filter, rospack=rospack)
+
 
 def _executable_filter(test_path):
     s = os.stat(test_path)
@@ -409,6 +427,7 @@ def _executable_filter(test_path):
     if os.name == 'nt' and os.path.splitext(test_path)[1].lower() in ['.py', '']:
         flags = stat.S_IRUSR
     return (s.st_mode & flags) == flags
+
 
 def _find_resource(d, resource_name, filter_fn=None):
     """
@@ -446,7 +465,7 @@ def _find_resource(d, resource_name, filter_fn=None):
             to_prune = [x for x in dirs if x.startswith('.')]
             for x in to_prune:
                 dirs.remove(x)
-    else: #UNIX            
+    else:  # UNIX
         for p, dirs, files in os.walk(d, followlinks=True):
             if resource_name in files:
                 test_path = os.path.join(p, resource_name)
@@ -461,9 +480,10 @@ def _find_resource(d, resource_name, filter_fn=None):
                 dirs.remove(x)
     return [os.path.abspath(m) for m in matches]
 
+
 # TODO: this routine really belongs in rospkg, but the catkin-isms really, really don't
 # belong in rospkg.  With more thought, they can probably be abstracted out so as
-# to no longer be catkin-specific. 
+# to no longer be catkin-specific.
 def find_resource(pkg, resource_name, filter_fn=None, rospack=None):
     """
     Warning: unstable API due to catkin.
@@ -474,15 +494,15 @@ def find_resource(pkg, resource_name, filter_fn=None, rospack=None):
     the binary build directory, it will only return matches in that
     directory; it will not return matches from the ROS_PACKAGE_PATH as
     well in this case.
-    
+
     :param filter: function that takes in a path argument and
         returns True if the it matches the desired resource, ``fn(str)``
     :param rospack: `rospkg.RosPack` instance to use
     :returns: lists of matching paths for resource within a given scope, ``[str]``
-    :raises: :exc:`rospkg.ResourceNotFound` If package does not exist 
+    :raises: :exc:`rospkg.ResourceNotFound` If package does not exist
     """
 
-    # New resource-location policy in Fuerte, induced by the new catkin 
+    # New resource-location policy in Fuerte, induced by the new catkin
     # build system:
     #   (1) Use catkin_find to find libexec and share locations, look
     #       recursively there.  If the resource is found, done.

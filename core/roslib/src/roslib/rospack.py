@@ -39,19 +39,22 @@ here have been superceded by other libraries (e.g. rospkg).  These
 routines will likely be *deleted* in future releases.
 """
 
-import os
-import sys
 import subprocess
-import roslib.exceptions
-import rospkg
+import sys
+import warnings
 
-if sys.hexversion > 0x03000000: #Python3
+import roslib.exceptions
+
+import rospkg  # noqa: F401
+
+if sys.hexversion > 0x03000000:  # Python3
     python3 = True
 else:
     python3 = False
 
-import warnings
-warnings.warn("roslib.rospack is deprecated, please use rospkg", stacklevel=2)
+
+warnings.warn('roslib.rospack is deprecated, please use rospkg', stacklevel=2)
+
 
 def rospackexec(args):
     """
@@ -64,10 +67,11 @@ def rospackexec(args):
         val = subprocess.Popen([rospack_bin] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0]
         val = val.decode().strip()
     else:
-        val = (subprocess.Popen([rospack_bin] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0] or '').strip()        
-    if val.startswith('rospack:'): #rospack error message
+        val = (subprocess.Popen([rospack_bin] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0] or '').strip()
+    if val.startswith('rospack:'):  # rospack error message
         raise roslib.exceptions.ROSLibException(val)
     return val
+
 
 def rospack_depends_on_1(pkg):
     """
@@ -78,6 +82,7 @@ def rospack_depends_on_1(pkg):
     """
     return rospackexec(['depends-on1', pkg]).split()
 
+
 def rospack_depends_on(pkg):
     """
     @param pkg: package name
@@ -87,36 +92,40 @@ def rospack_depends_on(pkg):
     """
     return rospackexec(['depends-on', pkg]).split()
 
+
 def rospack_depends_1(pkg):
     """
     @param pkg: package name
     @type  pkg: str
     @return: A list of the names of the packages which pkg directly depends on
-    @rtype: list    
+    @rtype: list
     """
     return rospackexec(['deps1', pkg]).split()
+
 
 def rospack_depends(pkg):
     """
     @param pkg: package name
     @type  pkg: str
     @return: A list of the names of the packages which pkg depends on
-    @rtype: list    
+    @rtype: list
     """
     return rospackexec(['deps', pkg]).split()
+
 
 def rospack_plugins(pkg):
     """
     @param pkg: package name
     @type  pkg: str
     @return: A list of the names of the packages which provide a plugin for pkg
-    @rtype: list    
+    @rtype: list
     """
     val = rospackexec(['plugins', '--attrib=plugin', pkg])
     if val:
-      return [tuple(x.split(' ')) for x in val.split('\n')]
+        return [tuple(x.split(' ')) for x in val.split('\n')]
     else:
-      return []
+        return []
+
 
 def rosstackexec(args):
     """
@@ -130,9 +139,10 @@ def rosstackexec(args):
         val = val.decode().strip()
     else:
         val = (subprocess.Popen([rosstack_bin] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()[0] or '').strip()
-    if val.startswith('rosstack:'): #rospack error message
+    if val.startswith('rosstack:'):  # rospack error message
         raise roslib.exceptions.ROSLibException(val)
     return val
+
 
 def rosstack_depends_on(s):
     """
@@ -143,6 +153,7 @@ def rosstack_depends_on(s):
     """
     return rosstackexec(['depends-on', s]).split()
 
+
 def rosstack_depends_on_1(s):
     """
     @param s: stack name
@@ -152,14 +163,16 @@ def rosstack_depends_on_1(s):
     """
     return rosstackexec(['depends-on1', s]).split()
 
+
 def rosstack_depends(s):
     """
     @param s: stack name
     @type  s: str
-    @return: A list of the names of the stacks which s depends on 
+    @return: A list of the names of the stacks which s depends on
     @rtype: list
     """
     return rosstackexec(['depends', s]).split()
+
 
 def rosstack_depends_1(s):
     """

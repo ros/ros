@@ -31,66 +31,66 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
-import sys
 import unittest
 
-import roslib
 
 def get_test_path():
     return os.path.abspath(os.path.dirname(__file__))
 
+
 class RoslibStackManifestTest(unittest.TestCase):
-  
-  def _subtest_parse_stack_example1(self, m):
-    from roslib.manifestlib import _Manifest
-    self.assert_(isinstance(m, _Manifest))
-    self.assertEquals('stack', m._type)
-    self.assertEquals("a brief description", m.brief)
-    self.assertEquals("Line 1\nLine 2", m.description.strip())
-    self.assertEquals("The authors\ngo here", m.author.strip())    
-    self.assertEquals("Public Domain\nwith other stuff", m.license.strip())
-    self.assertEquals("http://ros.org/stack/", m.url)
-    self.assertEquals("http://www.willowgarage.com/files/willowgarage/robot10.jpg", m.logo)
-    dpkgs = [d.stack for d in m.depends]
-    self.assertEquals(set(['stackname', 'common']), set(dpkgs))
-    self.assertEquals([], m.rosdeps)
-    self.assertEquals([], m.exports)    
 
-  def _subtest_parse_stack_version(self, m):
-    self.assertEquals("1.2.3", m.version)
+    def _subtest_parse_stack_example1(self, m):
+        from roslib.manifestlib import _Manifest
+        self.assert_(isinstance(m, _Manifest))
+        self.assertEquals('stack', m._type)
+        self.assertEquals('a brief description', m.brief)
+        self.assertEquals('Line 1\nLine 2', m.description.strip())
+        self.assertEquals('The authors\ngo here', m.author.strip())
+        self.assertEquals('Public Domain\nwith other stuff', m.license.strip())
+        self.assertEquals('http://ros.org/stack/', m.url)
+        self.assertEquals('http://www.willowgarage.com/files/willowgarage/robot10.jpg', m.logo)
+        dpkgs = [d.stack for d in m.depends]
+        self.assertEquals({'stackname', 'common'}, set(dpkgs))
+        self.assertEquals([], m.rosdeps)
+        self.assertEquals([], m.exports)
 
-  def test_parse_example1_file(self):
-    from roslib.stack_manifest import parse_file, StackManifest
-    
-    p = os.path.join(get_test_path(), 'manifest_tests', 'stack_example1.xml')
-    self._subtest_parse_stack_example1(parse_file(p))
+    def _subtest_parse_stack_version(self, m):
+        self.assertEquals('1.2.3', m.version)
 
-    p = os.path.join(get_test_path(), 'manifest_tests', 'stack_version.xml')
-    self._subtest_parse_stack_version(parse_file(p))
+    def test_parse_example1_file(self):
+        from roslib.stack_manifest import parse_file
 
-  def test_parse_example1_string(self):
-    from roslib.manifestlib import parse, _Manifest
-    self._subtest_parse_stack_example1(parse(_Manifest('stack'), STACK_EXAMPLE1))
-    
-  def test_StackManifest(self):
-    from roslib.stack_manifest import StackManifest
-    m = StackManifest()
-    self.assertEquals('stack', m._type)    
-    
-  def test_StackManifest_str(self):
-    # just make sure it doesn't crash
-    from roslib.stack_manifest import parse
-    str(parse(STACK_EXAMPLE1))
-    
-  def test_StackManifest_xml(self):
-    from roslib.stack_manifest import parse, StackManifest
-    m = parse(STACK_EXAMPLE1)
-    self._subtest_parse_stack_example1(m)
-    # verify roundtrip
-    m2 = parse(m.xml())
-    self._subtest_parse_stack_example1(m2)
-    
-  # bad file examples should be more like the roslaunch tests where there is just 1 thing wrong
+        p = os.path.join(get_test_path(), 'manifest_tests', 'stack_example1.xml')
+        self._subtest_parse_stack_example1(parse_file(p))
+
+        p = os.path.join(get_test_path(), 'manifest_tests', 'stack_version.xml')
+        self._subtest_parse_stack_version(parse_file(p))
+
+    def test_parse_example1_string(self):
+        from roslib.manifestlib import parse, _Manifest
+        self._subtest_parse_stack_example1(parse(_Manifest('stack'), STACK_EXAMPLE1))
+
+    def test_StackManifest(self):
+        from roslib.stack_manifest import StackManifest
+        m = StackManifest()
+        self.assertEquals('stack', m._type)
+
+    def test_StackManifest_str(self):
+        # just make sure it doesn't crash
+        from roslib.stack_manifest import parse
+        str(parse(STACK_EXAMPLE1))
+
+    def test_StackManifest_xml(self):
+        from roslib.stack_manifest import parse
+        m = parse(STACK_EXAMPLE1)
+        self._subtest_parse_stack_example1(m)
+        # verify roundtrip
+        m2 = parse(m.xml())
+        self._subtest_parse_stack_example1(m2)
+
+
+# bad file examples should be more like the roslaunch tests where there is just 1 thing wrong
 STACK_EXAMPLE1 = """<stack>
   <description brief="a brief description">Line 1
 Line 2

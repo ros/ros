@@ -2,6 +2,12 @@
 Changelog for package roscreate
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* update style to pass flake8 (`#240 <https://github.com/ros/ros/issues/240>`_)
+* Use setuptools instead of distutils (`#235 <https://github.com/ros/ros/issues/235>`_)
+* Bump CMake version to avoid CMP0048 warning (`#234 <https://github.com/ros/ros/issues/234>`_)
+
 1.14.7 (2019-10-03)
 -------------------
 * use condition attributes to specify Python 2 and 3 dependencies (`#226 <https://github.com/ros/ros/issues/226>`_)

@@ -2,6 +2,10 @@
 Changelog for package roslang
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Bump CMake version to avoid CMP0048 warning (`#234 <https://github.com/ros/ros/issues/234>`_)
+
 1.14.7 (2019-10-03)
 -------------------
 

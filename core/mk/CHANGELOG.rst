@@ -2,6 +2,11 @@
 Changelog for package mk
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* update style to pass flake8 (`#240 <https://github.com/ros/ros/issues/240>`_)
+* Bump CMake version to avoid CMP0048 warning (`#234 <https://github.com/ros/ros/issues/234>`_)
+
 1.14.7 (2019-10-03)
 -------------------
 

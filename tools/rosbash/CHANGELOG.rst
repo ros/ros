@@ -2,6 +2,14 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* update style to pass flake8 (`#240 <https://github.com/ros/ros/issues/240>`_)
+* Replace $1 and $2 with $pkg_name and $file_name (`#239 <https://github.com/ros/ros/issues/239>`_)
+* add roscp. (`#237 <https://github.com/ros/ros/issues/237>`_)
+* Bump CMake version to avoid CMP0048 warning (`#234 <https://github.com/ros/ros/issues/234>`_)
+* fix find -perm /mode usage for FreeBSD (`#232 <https://github.com/ros/ros/issues/232>`_)
+
 1.14.7 (2019-10-03)
 -------------------
 * zsh launch args completion (`#217 <https://github.com/ros/ros/issues/217>`_)

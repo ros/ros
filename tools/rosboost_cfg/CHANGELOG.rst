@@ -2,6 +2,12 @@
 Changelog for package rosboost_cfg
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* update style to pass flake8 (`#240 <https://github.com/ros/ros/issues/240>`_)
+* Use setuptools instead of distutils (`#235 <https://github.com/ros/ros/issues/235>`_)
+* Bump CMake version to avoid CMP0048 warning (`#234 <https://github.com/ros/ros/issues/234>`_)
+
 1.14.7 (2019-10-03)
 -------------------
 

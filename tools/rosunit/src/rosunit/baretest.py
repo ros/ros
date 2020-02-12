@@ -323,6 +323,7 @@ class LocalProcess(pmon.Process):
             elif self.cwd == 'cwd':
                 cwd = os.getcwd()
             elif self.cwd == 'ros-root':
+                from roslib.rosenv import get_ros_root
                 cwd = get_ros_root()
             else:
                 cwd = rospkg.get_ros_home()

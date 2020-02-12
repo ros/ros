@@ -231,7 +231,7 @@ file %(d)s is preventing the creation of a directory""" % locals())
         elif required and not os.path.isdir(d):
             try:
                 os.makedirs(d)  # lazy create
-            except error:
+            except os.error:
                 raise Exception("""Package '%(package)s' is improperly configured:
 Cannot create a '%(subdir)s' directory in %(package_dir)s.
 Please check permissions and try again.

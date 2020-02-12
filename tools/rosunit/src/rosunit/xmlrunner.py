@@ -7,8 +7,6 @@ XML Test Runner for PyUnit
 
 from __future__ import print_function
 
-__revision__ = '$Id$'
-
 import codecs
 import os.path
 import re
@@ -237,7 +235,7 @@ class XMLTestRunner(object):
         classname = class_.__module__ + '.' + class_.__name__
         if self._stream is None:
             filename = 'TEST-%s.xml' % classname
-            stream = file(os.path.join(self._path, filename), 'w')
+            stream = open(os.path.join(self._path, filename), 'w')
             stream.write('<?xml version="1.0" encoding="utf-8"?>\n')
         else:
             stream = self._stream

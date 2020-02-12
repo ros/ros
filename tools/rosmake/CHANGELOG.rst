@@ -2,8 +2,8 @@
 Changelog for package rosmake
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.8 (2020-02-11)
+-------------------
 * update style to pass flake8 (`#240 <https://github.com/ros/ros/issues/240>`_)
 * Use setuptools instead of distutils (`#235 <https://github.com/ros/ros/issues/235>`_)
 * Bump CMake version to avoid CMP0048 warning (`#234 <https://github.com/ros/ros/issues/234>`_)

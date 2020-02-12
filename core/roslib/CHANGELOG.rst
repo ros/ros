@@ -2,8 +2,8 @@
 Changelog for package roslib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.8 (2020-02-11)
+-------------------
 * fix various issues discovered by flake8 (`#241 <https://github.com/ros/ros/issues/241>`_)
 * update style to pass flake8 (`#240 <https://github.com/ros/ros/issues/240>`_)
 * restrict boost dependencies to components used (`#236 <https://github.com/ros/ros/issues/236>`_)

@@ -2,8 +2,8 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.14.8 (2020-02-11)
+-------------------
 * update style to pass flake8 (`#240 <https://github.com/ros/ros/issues/240>`_)
 * Replace $1 and $2 with $pkg_name and $file_name (`#239 <https://github.com/ros/ros/issues/239>`_)
 * add roscp. (`#237 <https://github.com/ros/ros/issues/237>`_)

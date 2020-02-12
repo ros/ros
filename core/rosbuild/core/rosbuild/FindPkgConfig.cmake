@@ -67,18 +67,17 @@
 #
 #   pkg_search_module (BAR     libxml-2.0 libxml2 libxml>=2)
 
-
 # Copyright (C) 2006 Enrico Scholz <enrico.scholz@informatik.tu-chemnitz.de>
 #
 # Redistribution and use, with or without modification, are permitted
 # provided that the following conditions are met:
-# 
+#
 #    1. Redistributions must retain the above copyright notice, this
 #       list of conditions and the following disclaimer.
 #    2. The name of the author may not be used to endorse or promote
 #       products derived from this software without specific prior
 #       written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
 # IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -91,7 +90,6 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 # IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 ### Common stuff ####
 set(PKG_CONFIG_VERSION 1)
 set(PKG_CONFIG_FOUND   0)
@@ -102,7 +100,6 @@ mark_as_advanced(PKG_CONFIG_EXECUTABLE)
 if(PKG_CONFIG_EXECUTABLE)
   set(PKG_CONFIG_FOUND 1)
 endif(PKG_CONFIG_EXECUTABLE)
-
 
 # Unsets the given variables
 macro(_pkgconfig_unset var)
@@ -151,7 +148,7 @@ endmacro(_pkgconfig_invoke_dyn)
 # Splits given arguments into options and a package list
 macro(_pkgconfig_parse_options _result _is_req)
   set(${_is_req} 0)
-  
+
   foreach(_pkg ${ARGN})
     if (_pkg STREQUAL "REQUIRED")
       set(${_is_req} 1)
@@ -198,7 +195,7 @@ macro(_pkg_check_modules_internal _is_required _is_silent _prefix)
         message(STATUS "checking for modules '${_pkg_check_modules_list}'")
       endif(_pkg_check_modules_cnt EQUAL 1)
     endif(NOT ${_is_silent})
-    
+
     set(_pkg_check_modules_packages)
     set(_pkg_check_modules_failed)
 
@@ -225,14 +222,14 @@ macro(_pkg_check_modules_internal _is_required _is_silent _prefix)
       if (_pkg_check_modules_pkg_op STREQUAL "=")
         list(APPEND _pkg_check_modules_exist_query --exact-version)
       endif(_pkg_check_modules_pkg_op STREQUAL "=")
-      
+
       if (_pkg_check_modules_pkg_op STREQUAL "<=")
         list(APPEND _pkg_check_modules_exist_query --max-version)
       endif(_pkg_check_modules_pkg_op STREQUAL "<=")
 
       # create the final query which is of the format:
       # * --atleast-version <version> <pkg-name>
-      # * --exact-version <version> <pkg-name>      
+      # * --exact-version <version> <pkg-name>
       # * --max-version <version> <pkg-name>
       # * --exists <pkg-name>
       if (_pkg_check_modules_pkg_op)
@@ -272,7 +269,7 @@ macro(_pkg_check_modules_internal _is_required _is_silent _prefix)
     else(_pkg_check_modules_failed)
       # when we are here, we checked whether requested modules
       # exist. Now, go through them and set variables
-      
+
       _pkgconfig_set(${_prefix}_FOUND 1)
       list(LENGTH _pkg_check_modules_packages pkg_count)
 
@@ -284,7 +281,7 @@ macro(_pkg_check_modules_internal _is_required _is_silent _prefix)
         else(pkg_count EQUAL 1)
           set(_pkg_check_prefix "${_prefix}_${_pkg_check_modules_pkg}")
         endif(pkg_count EQUAL 1)
-        
+
         _pkgconfig_invoke(${_pkg_check_modules_pkg} "${_pkg_check_prefix}" VERSION    ""   --modversion )
         _pkgconfig_invoke(${_pkg_check_modules_pkg} "${_pkg_check_prefix}" PREFIX     ""   --variable=prefix )
         _pkgconfig_invoke(${_pkg_check_modules_pkg} "${_pkg_check_prefix}" INCLUDEDIR ""   --variable=includedir )
@@ -350,9 +347,9 @@ macro(pkg_search_module _prefix _module0)
         message(SEND_ERROR "None of the required '${_pkg_modules_alt}' found")
       endif(${_pkg_is_required})
     endif(NOT ${_prefix}_FOUND)
-    
+
     _pkgconfig_set(__pkg_config_checked_${_prefix} ${PKG_CONFIG_VERSION})
-  endif(NOT DEFINED __pkg_config_checked_${_prefix} OR __pkg_config_checked_${_prefix} LESS ${PKG_CONFIG_VERSION} OR NOT ${_prefix}_FOUND)  
+  endif(NOT DEFINED __pkg_config_checked_${_prefix} OR __pkg_config_checked_${_prefix} LESS ${PKG_CONFIG_VERSION} OR NOT ${_prefix}_FOUND)
 endmacro(pkg_search_module)
 
 ### Local Variables:

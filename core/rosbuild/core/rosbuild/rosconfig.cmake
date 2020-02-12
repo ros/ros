@@ -4,8 +4,8 @@
 # 'rosconfig.cmake' and put it where it will be loaded from here.
 # The order of processing is the following, with later steps overriding
 # earlier ones:
-#  - read the beginning of the package's CMakeLists.txt (i.e., the 
-#    content before the invocation of rosbuild_init()), 
+#  - read the beginning of the package's CMakeLists.txt (i.e., the
+#    content before the invocation of rosbuild_init()),
 #    which is how we get here
 #  - read this file
 #  - if present, read $(ROS_ROOT)/core/rosbuild/rosconfig.cmake
@@ -42,11 +42,10 @@ if(PROJECTCONFIG)
 endif(PROJECTCONFIG)
 #############################################################
 
-
 #############################################################
 # These are default ROS-wide build configuration settings for CMake.  These
-# settings are used wherever rospack(<packagename>) is done in a 
-# CMakeLists.txt file.  Note that these setting only affect packages 
+# settings are used wherever rospack(<packagename>) is done in a
+# CMakeLists.txt file.  Note that these setting only affect packages
 # that are built with CMake.
 
 # Set the build type.  Options are:
@@ -79,11 +78,11 @@ endif(NOT DEFINED ROS_BUILD_STATIC_LIBS)
 include(CheckCXXCompilerFlag)
 if(NOT DEFINED ROS_COMPILE_FLAGS)
   set(ROS_COMPILE_FLAGS "-W -Wall -Wno-unused-parameter -fno-strict-aliasing")
-  # Old versions of gcc need -pthread to enable threading, #2095.  
+  # Old versions of gcc need -pthread to enable threading, #2095.
   # Also, some linkers, e.g., goLD, require -pthread (or another way to
   # generate -lpthread).
   # CYGWIN gcc has their -pthread disabled
-  if(UNIX AND NOT CYGWIN) 
+  if(UNIX AND NOT CYGWIN)
     set(ROS_COMPILE_FLAGS "${ROS_COMPILE_FLAGS} -pthread")
   endif(UNIX AND NOT CYGWIN)
 endif(NOT DEFINED ROS_COMPILE_FLAGS)
@@ -91,11 +90,11 @@ endif(NOT DEFINED ROS_COMPILE_FLAGS)
 # Default link flags for all executables and libraries
 if(NOT DEFINED ROS_LINK_FLAGS)
   set(ROS_LINK_FLAGS "")
-  # Old versions of gcc need -pthread to enable threading, #2095.  
+  # Old versions of gcc need -pthread to enable threading, #2095.
   # Also, some linkers, e.g., goLD, require -pthread (or another way to
   # generate -lpthread).
   # CYGWIN gcc has their -pthread disabled
-  if(UNIX AND NOT CYGWIN) 
+  if(UNIX AND NOT CYGWIN)
     set(ROS_LINK_FLAGS "${ROS_LINK_FLAGS} -pthread")
   endif(UNIX AND NOT CYGWIN)
 endif(NOT DEFINED ROS_LINK_FLAGS)
@@ -106,4 +105,3 @@ if(NOT DEFINED ROS_LINK_LIBS)
 endif(NOT DEFINED ROS_LINK_LIBS)
 
 #############################################################
-

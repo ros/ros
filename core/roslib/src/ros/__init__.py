@@ -32,16 +32,17 @@
 #
 # Revision $Id: __init__.py 3544 2009-01-24 00:09:21Z sfkwc $
 
-## The ros module enables dynamic importing of any ROS python module.
-## The common syntax is 'from ros import foo', where foo is a ROS package
-## name.
+# The ros module enables dynamic importing of any ROS python module.
+# The common syntax is 'from ros import foo', where foo is a ROS package name.
 
 import sys
 
-import roslib
+import roslib  # noqa: F401
 
-## @internal
+
+# @internal
 class Module(object):
+
     def __init__(self, wrapped):
         self.wrapped = wrapped
 
@@ -53,10 +54,9 @@ class Module(object):
             try:
                 roslib.load_manifest(name.split('.')[0])
             except roslib.packages.InvalidROSPkgException as e:
-                raise ImportError("Cannot import module '%s': \n%s"%(name, str(e)))
+                raise ImportError("Cannot import module '%s': \n%s" % (name, str(e)))
             return __import__(name)
 
-## rewrite our own entry in sys.modules so that dynamic loading
-## works.
-sys.modules[__name__] = Module(sys.modules[__name__])
 
+# rewrite our own entry in sys.modules so that dynamic loading works.
+sys.modules[__name__] = Module(sys.modules[__name__])

@@ -5,8 +5,10 @@
 # You will get the output from rostest as well.
 
 import unittest
-import rosunit
+
 from dotname_cases import DotnameLoadingTest, NotTestCase
+
+import rosunit
 
 
 class TestDotnameLoading(unittest.TestCase):

@@ -37,8 +37,9 @@
 Provides the L{ROSLibException} class, which is common to many roslib libraries.
 """
 
+
 class ROSLibException(Exception):
     """
-    Base class for exceptions in roslib    
+    Base class for exceptions in roslib
     """
     pass

@@ -31,48 +31,48 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
-import struct
-import sys
 import unittest
 
-import roslib.packages
 
 class RoslibPackagesTest(unittest.TestCase):
-  
-  def test_find_node(self):
-    import roslib.packages
-    d = roslib.packages.get_pkg_dir('roslib')
-    p = os.path.join(d, 'test', 'fake_node.py')
-    self.assertEquals([p], roslib.packages.find_node('roslib', 'fake_node.py'))
-    
-    self.assertEquals([], roslib.packages.find_node('roslib', 'not_a_node'))
-    
-  def test_get_pkg_dir(self):
-    import roslib.packages
-    import roslib.rospack
-    path = os.path.normpath(roslib.rospack.rospackexec(['find', 'roslib']))
-    self.assertEquals(path, roslib.packages.get_pkg_dir('roslib'))
-    try:
-      self.assertEquals(path, roslib.packages.get_pkg_dir('fake_roslib'))      
-      self.fail("should have raised")
-    except roslib.packages.InvalidROSPkgException: pass
 
-  def test_get_dir_pkg(self):
-    import roslib.packages
-    path = get_roslib_path()
+    def test_find_node(self):
+        import roslib.packages
+        d = roslib.packages.get_pkg_dir('roslib')
+        p = os.path.join(d, 'test', 'fake_node.py')
+        self.assertEquals([p], roslib.packages.find_node('roslib', 'fake_node.py'))
 
-    res = roslib.packages.get_dir_pkg(path)
-    res = (os.path.realpath(res[0]), res[1])
-    self.assertEquals((path, 'roslib'), res)
-    res = roslib.packages.get_dir_pkg(os.path.join(path, 'test'))
-    res = (os.path.realpath(res[0]), res[1])
-    self.assertEquals((path, 'roslib'), res)
+        self.assertEquals([], roslib.packages.find_node('roslib', 'not_a_node'))
 
-    # must fail on parent of roslib
-    self.assertEquals((None, None), roslib.packages.get_dir_pkg(os.path.dirname(path)))
-    
+    def test_get_pkg_dir(self):
+        import roslib.packages
+        import roslib.rospack
+        path = os.path.normpath(roslib.rospack.rospackexec(['find', 'roslib']))
+        self.assertEquals(path, roslib.packages.get_pkg_dir('roslib'))
+        try:
+            self.assertEquals(path, roslib.packages.get_pkg_dir('fake_roslib'))
+            self.fail('should have raised')
+        except roslib.packages.InvalidROSPkgException:
+            pass
+
+    def test_get_dir_pkg(self):
+        import roslib.packages
+        path = get_roslib_path()
+
+        res = roslib.packages.get_dir_pkg(path)
+        res = (os.path.realpath(res[0]), res[1])
+        self.assertEquals((path, 'roslib'), res)
+        res = roslib.packages.get_dir_pkg(os.path.join(path, 'test'))
+        res = (os.path.realpath(res[0]), res[1])
+        self.assertEquals((path, 'roslib'), res)
+
+        # must fail on parent of roslib
+        self.assertEquals((None, None), roslib.packages.get_dir_pkg(os.path.dirname(path)))
+
+
 def get_roslib_path():
     return os.path.realpath(os.path.abspath(os.path.join(get_test_path(), '..')))
+
 
 def get_test_path():
     return os.path.abspath(os.path.dirname(__file__))

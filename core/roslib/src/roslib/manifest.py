@@ -40,35 +40,39 @@ here have been superceded by other libraries (e.g. rospkg).  These
 routines will likely be *deleted* in future releases.
 """
 
-import sys
 import os
-import getopt
 
+import roslib.manifestlib
 import roslib.packages
+# re-export symbols for backwards compatibility
+from roslib.manifestlib import Depend  # noqa: F401
+from roslib.manifestlib import Export  # noqa: F401
+from roslib.manifestlib import ManifestException
+from roslib.manifestlib import ROSDep  # noqa: F401
+from roslib.manifestlib import VersionControl  # noqa: F401
 
 MANIFEST_FILE = 'manifest.xml'
 
-import roslib.manifestlib
-# re-export symbols for backwards compatibility
-from roslib.manifestlib import ManifestException, Depend, Export, ROSDep, VersionControl
 
 class Manifest(roslib.manifestlib._Manifest):
     """
     Object representation of a ROS manifest file
     """
     __slots__ = []
+
     def __init__(self):
         """
         Initialize new empty manifest.
         """
         super(Manifest, self).__init__('package')
-        
+
     def get_export(self, tag, attr):
         """
         @return: exports that match the specified tag and attribute, e.g. 'python', 'path'
         @rtype: [L{Export}]
         """
         return [e.get(attr) for e in self.exports if e.tag == tag if e.get(attr) is not None]
+
 
 def _manifest_file_by_dir(package_dir, required=True, env=None):
     """
@@ -91,11 +95,12 @@ def _manifest_file_by_dir(package_dir, required=True, env=None):
         if not os.path.isfile(p):
             raise roslib.packages.InvalidROSPkgException("""
 Package '%(package_dir)s' is improperly configured: no manifest file is present.
-"""%locals())
+""" % locals())
         return p
-    except roslib.packages.InvalidROSPkgException as e:
+    except roslib.packages.InvalidROSPkgException:
         if required:
             raise
+
 
 def manifest_file(package, required=True, env=None):
     """
@@ -114,8 +119,9 @@ def manifest_file(package, required=True, env=None):
     # path isn't setup correctly.
     if env is None:
         env = os.environ
-    d = roslib.packages.get_pkg_dir(package, required, ros_root=env['ROS_ROOT']) 
+    d = roslib.packages.get_pkg_dir(package, required, ros_root=env['ROS_ROOT'])
     return _manifest_file_by_dir(d, required=required, env=env)
+
 
 def load_manifest(package):
     """
@@ -127,7 +133,8 @@ def load_manifest(package):
     @raise InvalidROSPkgException: if package is unknown
     """
     return parse_file(manifest_file(package))
-    
+
+
 def parse_file(file):
     """
     Parse manifest.xml file
@@ -137,6 +144,7 @@ def parse_file(file):
     @rtype: L{Manifest}
     """
     return roslib.manifestlib.parse_file(Manifest(), file)
+
 
 def parse(string, filename='string'):
     """
@@ -148,5 +156,5 @@ def parse(string, filename='string'):
     """
     v = roslib.manifestlib.parse(Manifest(), string, filename)
     if v.version:
-        raise ManifestException("<version> tag is not valid in a package manifest.xml file")
+        raise ManifestException('<version> tag is not valid in a package manifest.xml file')
     return v

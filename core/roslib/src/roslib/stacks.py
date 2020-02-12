@@ -40,7 +40,6 @@ routines will likely be *deleted* in future releases.
 """
 
 import os
-import sys
 import re
 
 import roslib.packages
@@ -48,14 +47,20 @@ import roslib.stack_manifest
 
 import rospkg
 
-ROS_ROOT=rospkg.environment.ROS_ROOT
-ROS_PACKAGE_PATH=rospkg.environment.ROS_PACKAGE_PATH
+ROS_ROOT = rospkg.environment.ROS_ROOT
+ROS_PACKAGE_PATH = rospkg.environment.ROS_PACKAGE_PATH
 
 STACK_FILE = 'stack.xml'
 ROS_STACK = 'ros'
 
-class ROSStackException(Exception): pass
-class InvalidROSStackException(ROSStackException): pass
+
+class ROSStackException(Exception):
+    pass
+
+
+class InvalidROSStackException(ROSStackException):
+    pass
+
 
 def stack_of(pkg, env=None):
     """
@@ -72,18 +77,19 @@ def stack_of(pkg, env=None):
     while d and os.path.dirname(d) != d:
         stack_file = os.path.join(d, STACK_FILE)
         if os.path.exists(stack_file):
-            #TODO: need to resolve issues regarding whether the
-            #stack.xml or the directory defines the stack name
+            # TODO: need to resolve issues regarding whether the
+            # stack.xml or the directory defines the stack name
             return os.path.basename(d)
         d = os.path.dirname(d)
-        
+
+
 def get_stack_dir(stack, env=None):
     """
     Get the directory of a ROS stack. This will initialize an internal
     cache and return cached results if possible.
-    
+
     This routine is not thread-safe to os.environ changes.
-    
+
     @param env: override environment variables
     @type  env: {str: str}
     @param stack: name of ROS stack to locate on disk
@@ -99,8 +105,10 @@ def get_stack_dir(stack, env=None):
         # preserve old signature
         raise InvalidROSStackException(stack)
 
+
 _rosstack = None
 _ros_paths = None
+
 
 def _init_rosstack(env=None):
     global _rosstack, _ros_paths
@@ -110,7 +118,8 @@ def _init_rosstack(env=None):
     if ros_paths != _ros_paths:
         _ros_paths = ros_paths
         _rosstack = rospkg.RosStack(ros_paths)
-    
+
+
 def list_stacks(env=None):
     """
     Get list of all ROS stacks. This uses an internal cache.
@@ -125,6 +134,7 @@ def list_stacks(env=None):
     _init_rosstack(env=env)
     return _rosstack.list()
 
+
 def list_stacks_by_path(path, stacks=None, cache=None):
     """
     List ROS stacks within the specified path.
@@ -132,7 +142,7 @@ def list_stacks_by_path(path, stacks=None, cache=None):
     Optionally, a cache dictionary can be provided, which will be
     updated with the stack->path mappings. list_stacks_by_path() does
     NOT returned cached results -- it only updates the cache.
-    
+
     @param path: path to list stacks in
     @type  path: str
     @param stacks: list of stacks to append to. If stack is
@@ -155,13 +165,13 @@ def list_stacks_by_path(path, stacks=None, cache=None):
                 if cache is not None:
                     cache[stack] = d
             del dirs[:]
-            continue #leaf
+            continue  # leaf
         elif MANIFEST_FILE in files:
             del dirs[:]
-            continue #leaf     
+            continue  # leaf
         elif 'rospack_nosubdirs' in files:
             del dirs[:]
-            continue  #leaf
+            continue  # leaf
         # remove hidden dirs (esp. .svn/.git)
         [dirs.remove(di) for di in dirs if di[0] == '.']
         for sub_d in dirs:
@@ -171,6 +181,7 @@ def list_stacks_by_path(path, stacks=None, cache=None):
             if os.path.islink(sub_p):
                 stacks.extend(list_stacks_by_path(sub_p, cache=cache))
     return stacks
+
 
 # #2022
 def expand_to_packages(names, env=None):
@@ -191,6 +202,7 @@ def expand_to_packages(names, env=None):
     rosstack = rospkg.RosStack(ros_paths)
     return rospkg.expand_to_packages(names, rospack, rosstack)
 
+
 def get_stack_version(stack, env=None):
     """
     @param env: override environment variables
@@ -202,10 +214,11 @@ def get_stack_version(stack, env=None):
     _init_rosstack(env=env)
     return _rosstack.get_stack_version(stack)
 
+
 def get_stack_version_by_dir(stack_dir):
     """
     Get stack version where stack_dir points to root directory of stack.
-    
+
     @param env: override environment variables
     @type  env: {str: str}
 
@@ -218,7 +231,7 @@ def get_stack_version_by_dir(stack_dir):
         m = roslib.stack_manifest.parse_file(manifest_filename)
         if m.version:
             return m.version
-    
+
     cmake_filename = os.path.join(stack_dir, 'CMakeLists.txt')
     if os.path.isfile(cmake_filename):
         with open(cmake_filename) as f:
@@ -226,11 +239,12 @@ def get_stack_version_by_dir(stack_dir):
     else:
         return None
 
+
 def _get_cmake_version(text):
     for l in text.split('\n'):
         if l.strip().startswith('rosbuild_make_distribution'):
             x_re = re.compile(r'[()]')
             lsplit = x_re.split(l.strip())
             if len(lsplit) < 2:
-                raise ReleaseException("couldn't find version number in CMakeLists.txt:\n\n%s"%l)
+                raise ReleaseException("couldn't find version number in CMakeLists.txt:\n\n%s" % l)
             return lsplit[1]

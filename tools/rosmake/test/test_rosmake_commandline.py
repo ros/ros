@@ -30,9 +30,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import os
-import sys
 import subprocess
 
+
 def test_Rosmake_commandline_usage():
-    assert 0 == subprocess.call(["rosmake", "-h"])
+    assert 0 == subprocess.call(['rosmake', '-h'])

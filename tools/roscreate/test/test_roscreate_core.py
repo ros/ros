@@ -30,11 +30,13 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+
 def test_author_name():
     from roscreate.core import author_name
     val = author_name()
     assert val, val
-    
+
+
 def test_read_template():
     from roscreate.core import read_template
     s = set()
@@ -47,5 +49,5 @@ def test_read_template():
     assert len(s) == len(tests)
 
     # hardcode test against a known template
-    text = read_template('Makefile.tmpl')        
+    text = read_template('Makefile.tmpl')
     assert text == 'include $(shell rospack find mk)/cmake.mk'

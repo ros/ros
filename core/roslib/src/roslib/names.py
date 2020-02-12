@@ -39,27 +39,29 @@ routines will likely be *deleted* in future releases.
 """
 
 import os
+import re
 import sys
 
-#TODO: deprecate PRN_SEPARATOR
+# TODO: deprecate PRN_SEPARATOR
 PRN_SEPARATOR = '/'
-TYPE_SEPARATOR = PRN_SEPARATOR #alias
+TYPE_SEPARATOR = PRN_SEPARATOR  # alias
 SEP = '/'
 GLOBALNS = '/'
 PRIV_NAME = '~'
-REMAP = ":="
+REMAP = ':='
 ANYTYPE = '*'
 
-if sys.hexversion > 0x03000000: #Python3
+if sys.hexversion > 0x03000000:  # Python3
     def isstring(s):
-        return isinstance(s, str) #Python 3.x
+        return isinstance(s, str)  # Python 3.x
 else:
     def isstring(s):
         """
         Small helper version to check an object is a string in a way that works
         for both Python 2 and 3
         """
-        return isinstance(s, basestring) #Python 2.x
+        return isinstance(s, basestring)  # Python 2.x
+
 
 def get_ros_namespace(env=None, argv=None):
     """
@@ -69,8 +71,8 @@ def get_ros_namespace(env=None, argv=None):
     @type  argv: [str]
     @return: ROS namespace of current program
     @rtype: str
-    """    
-    #we force command-line-specified namespaces to be globally scoped
+    """
+    # we force command-line-specified namespaces to be globally scoped
     if argv is None:
         argv = sys.argv
     for a in argv:
@@ -80,6 +82,7 @@ def get_ros_namespace(env=None, argv=None):
         env = os.environ
     return make_global_ns(env.get('ROS_NAMESPACE', GLOBALNS))
 
+
 def make_caller_id(name):
     """
     Resolve a local name to the caller ID based on ROS environment settings (i.e. ROS_NAMESPACE)
@@ -88,65 +91,69 @@ def make_caller_id(name):
     @type  name: str
     @return: caller ID based on supplied local name
     @rtype: str
-    """    
+    """
     return make_global_ns(ns_join(get_ros_namespace(), name))
+
 
 def make_global_ns(name):
     """
     Convert name to a global name with a trailing namespace separator.
-    
+
     @param name: ROS resource name. Cannot be a ~name.
     @type  name: str
     @return str: name as a global name, e.g. 'foo' -> '/foo/'.
         This does NOT resolve a name.
     @rtype: str
-    @raise ValueError: if name is a ~name 
-    """    
+    @raise ValueError: if name is a ~name
+    """
     if is_private(name):
-        raise ValueError("cannot turn [%s] into a global name"%name)
+        raise ValueError('cannot turn [%s] into a global name' % name)
     if not is_global(name):
         name = SEP + name
     if name[-1] != SEP:
         name = name + SEP
     return name
 
+
 def is_global(name):
     """
     Test if name is a global graph resource name.
-    
+
     @param name: must be a legal name in canonical form
     @type  name: str
     @return: True if name is a globally referenced name (i.e. /ns/name)
     @rtype: bool
-    """    
+    """
     return name and name[0] == SEP
+
 
 def is_private(name):
     """
     Test if name is a private graph resource name.
-    
+
     @param name: must be a legal name in canonical form
     @type  name: str
     @return bool: True if name is a privately referenced name (i.e. ~name)
-    """    
+    """
     return name and name[0] == PRIV_NAME
+
 
 def namespace(name):
     """
     Get the namespace of name. The namespace is returned with a
     trailing slash in order to favor easy concatenation and easier use
     within the global context.
-        
+
     @param name: name to return the namespace of. Must be a legal
         name. NOTE: an empty name will return the global namespace.
     @type  name: str
     @return str: Namespace of name. For example, '/wg/node1' returns '/wg/'. The
-        global namespace is '/'. 
+        global namespace is '/'.
     @rtype: str
     @raise ValueError: if name is invalid
-    """    
-    "map name to its namespace"
-    if name is None: 
+    """
+    'map name to its namespace'
+    if name is None:
         raise ValueError('name')
     if not isstring(name):
         raise TypeError('name')
@@ -155,6 +162,7 @@ def namespace(name):
     elif name[-1] == SEP:
         name = name[:-1]
     return name[:name.rfind(SEP)+1] or SEP
+
 
 def ns_join(ns, name):
     """
@@ -167,16 +175,17 @@ def ns_join(ns, name):
     @return str: name concatenated to ns, or name if it is
         unjoinable.
     @rtype: str
-    """    
+    """
     if is_private(name) or is_global(name):
         return name
     if ns == PRIV_NAME:
         return PRIV_NAME + name
-    if not ns: 
+    if not ns:
         return name
     if ns[-1] == SEP:
         return ns + name
     return ns + SEP + name
+
 
 def load_mappings(argv):
     """
@@ -185,9 +194,9 @@ def load_mappings(argv):
 
     @param argv: command-line arguments
     @type  argv: [str]
-    @return: name->name remappings. 
+    @return: name->name remappings.
     @rtype: dict {str: str}
-    """    
+    """
     mappings = {}
     for arg in argv:
         if REMAP in arg:
@@ -195,13 +204,14 @@ def load_mappings(argv):
                 src, dst = [x.strip() for x in arg.split(REMAP)]
                 if src and dst:
                     if len(src) > 1 and src[0] == '_' and src[1] != '_':
-                        #ignore parameter assignment mappings
+                        # ignore parameter assignment mappings
                         pass
                     else:
                         mappings[src] = dst
-            except:
-                sys.stderr.write("ERROR: Invalid remapping argument '%s'\n"%arg)
+            except Exception:
+                sys.stderr.write("ERROR: Invalid remapping argument '%s'\n" % arg)
     return mappings
+
 
 #######################################################################
 # RESOURCE NAMES
@@ -216,42 +226,45 @@ def resource_name(res_pkg_name, name, my_pkg=None):
     @param name: resource base name
     @type  name: str
     @param my_pkg: name of package resource is being referred to
-        in. If specified, name will be returned in local form if 
+        in. If specified, name will be returned in local form if
         res_pkg_name is my_pkg
     @type  my_pkg: str
-    @return: name for resource 
+    @return: name for resource
     @rtype: str
-    """    
+    """
     if res_pkg_name != my_pkg:
         return res_pkg_name+PRN_SEPARATOR+name
     return name
 
+
 def resource_name_base(name):
     """
     pkg/typeName -> typeName, typeName -> typeName
-    
+
     Convert fully qualified resource name into the package-less resource name
     @param name: package resource name, e.g. 'std_msgs/String'
     @type  name: str
     @return: resource name sans package-name scope
     @rtype: str
-    """    
+    """
 
     return name[name.rfind(PRN_SEPARATOR)+1:]
+
 
 def resource_name_package(name):
     """
     pkg/typeName -> pkg, typeName -> None
-    
+
     @param name: package resource name, e.g. 'std_msgs/String'
     @type  name: str
     @return: package name of resource
     @rtype: str
-    """    
+    """
 
-    if not PRN_SEPARATOR in name:
+    if PRN_SEPARATOR not in name:
         return None
     return name[:name.find(PRN_SEPARATOR)]
+
 
 def package_resource_name(name):
     """
@@ -262,28 +275,31 @@ def package_resource_name(name):
     @return: package name, resource name
     @rtype: str
     @raise ValueError: if name is invalid
-    """    
+    """
     if PRN_SEPARATOR in name:
         val = tuple(name.split(PRN_SEPARATOR))
         if len(val) != 2:
-            raise ValueError("invalid name [%s]"%name)
+            raise ValueError('invalid name [%s]' % name)
         else:
             return val
     else:
         return '', name
 
+
 def _is_safe_name(name, type_name):
-    #windows long-file name length is 255
+    # windows long-file name length is 255
     if not isstring(name) or not name or len(name) > 255:
         return False
     return is_legal_resource_name(name)
 
+
 ################################################################################
 # NAME VALIDATORS
 
-import re
-#ascii char followed by (alphanumeric, _, /)
-RESOURCE_NAME_LEGAL_CHARS_P = re.compile('^[A-Za-z][\w_\/]*$') 
+# ascii char followed by (alphanumeric, _, /)
+RESOURCE_NAME_LEGAL_CHARS_P = re.compile(r'^[A-Za-z][\w_\/]*$')
+
+
 def is_legal_resource_name(name):
     """
     Check if name is a legal ROS name for filesystem resources
@@ -299,10 +315,13 @@ def is_legal_resource_name(name):
         return False
     m = RESOURCE_NAME_LEGAL_CHARS_P.match(name)
     # '//' check makes sure there isn't double-slashes
-    return m is not None and m.group(0) == name and not '//' in name
+    return m is not None and m.group(0) == name and '//' not in name
 
-#~,/, or ascii char followed by (alphanumeric, _, /)
-NAME_LEGAL_CHARS_P = re.compile('^[\~\/A-Za-z][\w_\/]*$') 
+
+# ~,/, or ascii char followed by (alphanumeric, _, /)
+NAME_LEGAL_CHARS_P = re.compile(r'^[\~\/A-Za-z][\w_\/]*$')
+
+
 def is_legal_name(name):
     """
     Check if name is a legal ROS name for graph resources
@@ -312,7 +331,7 @@ def is_legal_name(name):
 
     @param name: Name
     @type  name: str
-    """    
+    """
     # should we enforce unicode checks?
     if name is None:
         return False
@@ -320,9 +339,12 @@ def is_legal_name(name):
     if name == '':
         return True
     m = NAME_LEGAL_CHARS_P.match(name)
-    return m is not None and m.group(0) == name and not '//' in name
-    
-BASE_NAME_LEGAL_CHARS_P = re.compile('^[A-Za-z][\w_]*$') #ascii char followed by (alphanumeric, _)
+    return m is not None and m.group(0) == name and '//' not in name
+
+
+BASE_NAME_LEGAL_CHARS_P = re.compile(r'^[A-Za-z][\w_]*$')  # ascii char followed by (alphanumeric, _)
+
+
 def is_legal_base_name(name):
     """
     Validates that name is a legal base name for a graph resource. A base name has
@@ -333,7 +355,10 @@ def is_legal_base_name(name):
     m = BASE_NAME_LEGAL_CHARS_P.match(name)
     return m is not None and m.group(0) == name
 
-BASE_RESOURCE_NAME_LEGAL_CHARS_P = re.compile('^[A-Za-z][\w_]*$') #ascii char followed by (alphanumeric, _)
+
+BASE_RESOURCE_NAME_LEGAL_CHARS_P = re.compile(r'^[A-Za-z][\w_]*$')  # ascii char followed by (alphanumeric, _)
+
+
 def is_legal_resource_base_name(name):
     """
     Validates that name is a legal resource base name. A base name has
@@ -344,6 +369,7 @@ def is_legal_resource_base_name(name):
         return False
     m = BASE_NAME_LEGAL_CHARS_P.match(name)
     return m is not None and m.group(0) == name
+
 
 def canonicalize_name(name):
     """
@@ -357,12 +383,13 @@ def canonicalize_name(name):
     elif name[0] == SEP:
         return '/' + '/'.join([x for x in name.split(SEP) if x])
     else:
-        return '/'.join([x for x in name.split(SEP) if x])        
+        return '/'.join([x for x in name.split(SEP) if x])
+
 
 def resolve_name(name, namespace_, remappings=None):
     """
     Resolve a ROS name to its global, canonical form. Private ~names
-    are resolved relative to the node name. 
+    are resolved relative to the node name.
 
     @param name: name to resolve.
     @type  name: str
@@ -373,25 +400,26 @@ def resolve_name(name, namespace_, remappings=None):
     returns parent namespace_. If namespace_ is empty/None,
     @rtype: str
     """
-    if not name: #empty string resolves to parent of the namespace_
+    if not name:  # empty string resolves to parent of the namespace_
         return namespace(namespace_)
 
     name = canonicalize_name(name)
-    if name[0] == SEP: #global name
+    if name[0] == SEP:  # global name
         resolved_name = name
-    elif is_private(name): #~name
+    elif is_private(name):  # ~name
         # #3044: be careful not to accidentally make rest of name global
         resolved_name = canonicalize_name(namespace_ + SEP + name[1:])
-    else: #relative
+    else:  # relative
         resolved_name = namespace(namespace_) + name
 
-    #Mappings override general namespace-based resolution
+    # Mappings override general namespace-based resolution
     # - do this before canonicalization as remappings are meant to
     #   match the name as specified in the code
     if remappings and resolved_name in remappings:
         return remappings[resolved_name]
     else:
         return resolved_name
+
 
 def anonymous_name(id):
     """
@@ -400,12 +428,12 @@ def anonymous_name(id):
     @param id: prefix for anonymous name
     @type  id: str
     """
-    import socket, random
-    name = "%s_%s_%s_%s"%(id, socket.gethostname(), os.getpid(), random.randint(0, sys.maxsize))
+    import random
+    import socket
+    name = '%s_%s_%s_%s' % (id, socket.gethostname(), os.getpid(), random.randint(0, sys.maxsize))
     # RFC 952 allows hyphens, IP addrs can have '.'s, both
     # of which are illegal for ROS names. For good
-    # measure, screen ipv6 ':'. 
+    # measure, screen ipv6 ':'.
     name = name.replace('.', '_')
-    name = name.replace('-', '_')                
+    name = name.replace('-', '_')
     return name.replace(':', '_')
-

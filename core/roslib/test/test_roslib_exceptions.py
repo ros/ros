@@ -30,8 +30,6 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import os
-import sys
 
 def test_exceptions():
     from roslib.exceptions import ROSLibException

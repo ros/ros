@@ -34,58 +34,60 @@
 # Revision $Id: gendeps 3009 2008-12-05 00:47:44Z sfkwc $
 # $Author: sfkwc $
 
-## Script for determining the ROS messages a particular message
-## depends on.  This is important for determining messages file that
-## need to be rebuilt.
+# Script for determining the ROS messages a particular message
+# depends on.  This is important for determining messages file that
+# need to be rebuilt.
 
 from __future__ import print_function
 
 import sys
 
+import roslib.gentools
 import roslib.msgs
 import roslib.srvs
-import roslib.gentools
 
 import rospkg
 
-NAME='gendeps'
+NAME = 'gendeps'
+
 
 def usage(progname, stdout=sys.stdout):
-    print("%(progname)s msg-or-srv-file" % vars(), file=stdout)
+    print('%(progname)s msg-or-srv-file' % vars(), file=stdout)
 
-## main method for gendeps command
-## @param argv [str]: sys args
-## @param stdout pipe: stdout pipe
-## @param stderr pipe: stderr pipe
+
+# main method for gendeps command
+# @param argv [str]: sys args
+# @param stdout pipe: stdout pipe
+# @param stderr pipe: stderr pipe
 def gendeps_main(argv, stdout, stderr):
     from optparse import OptionParser
-    parser = OptionParser(usage="usage: %prog [options] [files...]", prog=NAME)
-    parser.add_option("-m", "--md5",
-                      dest="md5", default=False,
-                      action="store_true",
-                      help="Generate md5 hash of files")
-    parser.add_option("-s", "--sha1",
-                      dest="sha1", default=False,
-                      action="store_true",
-                      help="Generate SHA1 hash of files")
-    parser.add_option("-c", "--cat",
-                      dest="cat_files", default=False,
-                      action="store_true",
-                      help="Generate concatenated list of files")
+    parser = OptionParser(usage='usage: %prog [options] [files...]', prog=NAME)
+    parser.add_option('-m', '--md5',
+                      dest='md5', default=False,
+                      action='store_true',
+                      help='Generate md5 hash of files')
+    parser.add_option('-s', '--sha1',
+                      dest='sha1', default=False,
+                      action='store_true',
+                      help='Generate SHA1 hash of files')
+    parser.add_option('-c', '--cat',
+                      dest='cat_files', default=False,
+                      action='store_true',
+                      help='Generate concatenated list of files')
     (options, args) = parser.parse_args(argv)
 
     # get the file name
     if len(args) != 2:
-        parser.error("you must specify one input file")
+        parser.error('you must specify one input file')
     f = args[1]
 
     # validate that options are compatible
     if options.md5 and (options.sha1 or options.cat_files):
-        parser.error("md5 option is not compatible with other options")
+        parser.error('md5 option is not compatible with other options')
     if options.sha1 and (options.md5 or options.cat_files):
-        parser.error("sha1 option is not compatible with other options")
+        parser.error('sha1 option is not compatible with other options')
     if options.cat_files and (options.md5 or options.sha1):
-        parser.error("cat option is not compatible with other options")
+        parser.error('cat option is not compatible with other options')
 
     # rospack instance for caching of deps
     rospack = rospkg.RosPack()
@@ -103,10 +105,10 @@ def gendeps_main(argv, stdout, stderr):
     else:
         print(' '.join(retval['files'].values()), file=stdout)
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     try:
         gendeps_main(sys.argv, sys.stdout, sys.stderr)
     except Exception as e:
         print(e, file=sys.stderr)
         sys.exit(1)
-

@@ -55,4 +55,3 @@ ifneq ($(strip $(TARBALL_PATCH)),)
 	$(foreach patch,$(TARBALL_PATCH), patch -d $(SOURCE_DIR) -p0 < $(patch);)
 endif
 	touch $(SOURCE_DIR)/unpacked
-

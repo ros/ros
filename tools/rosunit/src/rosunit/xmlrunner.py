@@ -7,7 +7,7 @@ XML Test Runner for PyUnit
 
 from __future__ import print_function
 
-__revision__ = "$Id$"
+__revision__ = '$Id$'
 
 import codecs
 import os.path
@@ -22,22 +22,21 @@ try:
 except ImportError:
     from io import StringIO
     python2 = False
-from xml.sax.saxutils import escape
 import xml.etree.ElementTree as ET
+from xml.sax.saxutils import escape
+
 
 def cdata(cdata_text):
     return '<![CDATA[\n{}\n]]>'.format(cdata_text)
 
-class _TestInfo(object):
 
+class _TestInfo(object):
     """Information about a particular test.
-    
-    Used by _XMLTestResult.
-    
-    """
+
+    Used by _XMLTestResult."""
 
     def __init__(self, test, time):
-        (self._class, self._method) = test.id().rsplit(".", 1)
+        (self._class, self._method) = test.id().rsplit('.', 1)
         self._time = time
         self._error = None
         self._failure = None
@@ -65,13 +64,13 @@ class _TestInfo(object):
         """Create an XML tag with information about this test case.
 
         """
-        testcase = ET.Element("testcase")
+        testcase = ET.Element('testcase')
         testcase.set('classname', self._class)
         testcase.set('name', self._method)
         testcase.set('time', '%.4f' % self._time)
-        if self._failure != None:
+        if self._failure is not None:
             self._print_error(testcase, 'failure', self._failure)
-        if self._error != None:
+        if self._error is not None:
             self._print_error(testcase, 'error', self._error)
         return testcase
 
@@ -83,20 +82,20 @@ class _TestInfo(object):
         stream.write(ET.tostring(self.xml()))
 
     def print_report_text(self, stream):
-        #stream.write('  <testcase classname="%(class)s" name="%(method)s" time="%(time).4f">' % \
-        #    {
-        #        "class": self._class,
-        #        "method": self._method,
-        #        "time": self._time,
-        #    })
+        # stream.write('  <testcase classname="%(class)s" name="%(method)s" time="%(time).4f">' % \
+        #     {
+        #         "class": self._class,
+        #         "method": self._method,
+        #         "time": self._time,
+        #     })
         stream.write('[Testcase: ' + self._method + ']')
-        if self._failure != None:
+        if self._failure is not None:
             stream.write(' ... FAILURE!\n')
             self._print_error_text(stream, 'failure', self._failure)
-        if self._error != None:
-            stream.write(' ... ERROR!\n')            
+        if self._error is not None:
+            stream.write(' ... ERROR!\n')
             self._print_error_text(stream, 'error', self._error)
-        if self._failure == None and self._error == None:
+        if self._failure is None and self._error is None:
             stream.write(' ... ok\n')
 
     def _print_error(self, testcase, tagname, error):
@@ -108,25 +107,22 @@ class _TestInfo(object):
         tag.set('type', str(error[0].__name__))
         tb_stream = StringIO()
         traceback.print_tb(error[2], None, tb_stream)
-        tag.text ='%s\n%s' % (str(error[1]), tb_stream.getvalue())
+        tag.text = '%s\n%s' % (str(error[1]), tb_stream.getvalue())
 
     def _print_error_text(self, stream, tagname, error):
         """Print information from a failure or error to the supplied stream."""
         text = escape(str(error[1]))
-        stream.write('%s: %s\n' \
-            % (tagname.upper(), text))
+        stream.write('%s: %s\n' % (tagname.upper(), text))
         tb_stream = StringIO()
         traceback.print_tb(error[2], None, tb_stream)
         stream.write(escape(tb_stream.getvalue()))
-        stream.write('-'*80 + '\n')
+        stream.write('-' * 80 + '\n')
+
 
 class _XMLTestResult(unittest.TestResult):
-
     """A test result class that stores result as XML.
 
-    Used by XMLTestRunner.
-
-    """
+    Used by XMLTestRunner."""
 
     def __init__(self, classname):
         unittest.TestResult.__init__(self)
@@ -170,7 +166,7 @@ class _XMLTestResult(unittest.TestResult):
         invalid_chars = re.compile(pattern)
 
         def invalid_char_replacer(m):
-            return "&#x"+('%04X' % ord(m.group(0)))+";"
+            return '&#x' + ('%04X' % ord(m.group(0))) + ';'
         return re.sub(invalid_chars, invalid_char_replacer, str(text))
 
     def xml(self, time_taken, out, err):
@@ -194,7 +190,7 @@ class _XMLTestResult(unittest.TestResult):
 
     def print_report(self, stream, time_taken, out, err):
         """Prints the XML report to the supplied stream.
-        
+
         The time the tests took to perform as well as the captured standard
         output and standard error streams must be passed in.a
 
@@ -204,25 +200,24 @@ class _XMLTestResult(unittest.TestResult):
 
     def print_report_text(self, stream, time_taken, out, err):
         """Prints the text report to the supplied stream.
-        
+
         The time the tests took to perform as well as the captured standard
         output and standard error streams must be passed in.a
 
         """
-        #stream.write('<testsuite errors="%(e)d" failures="%(f)d" ' % \
-        #    { "e": len(self.errors), "f": len(self.failures) })
-        #stream.write('name="%(n)s" tests="%(t)d" time="%(time).3f">\n' % \
-        #    {
-        #        "n": self._test_name,
-        #        "t": self.testsRun,
-        #        "time": time_taken,
-        #    })
+        # stream.write('<testsuite errors="%(e)d" failures="%(f)d" ' % \
+        #     { "e": len(self.errors), "f": len(self.failures) })
+        # stream.write('name="%(n)s" tests="%(t)d" time="%(time).3f">\n' % \
+        #     {
+        #         "n": self._test_name,
+        #         "t": self.testsRun,
+        #         "time": time_taken,
+        #     })
         for info in self._tests:
             info.print_report_text(stream)
 
 
 class XMLTestRunner(object):
-
     """A test runner that stores results in XML format compatible with JUnit.
 
     XMLTestRunner(stream=None) -> XML test runner
@@ -230,21 +225,19 @@ class XMLTestRunner(object):
     The XML file is written to the supplied stream. If stream is None, the
     results are stored in a file called TEST-<module>.<class>.xml in the
     current working directory (if not overridden with the path property),
-    where <module> and <class> are the module and class name of the test class.
-
-    """
+    where <module> and <class> are the module and class name of the test class."""
 
     def __init__(self, stream=None):
         self._stream = stream
-        self._path = "."
+        self._path = '.'
 
     def run(self, test):
         """Run the given test case or test suite."""
         class_ = test.__class__
-        classname = class_.__module__ + "." + class_.__name__
-        if self._stream == None:
-            filename = "TEST-%s.xml" % classname
-            stream = file(os.path.join(self._path, filename), "w")
+        classname = class_.__module__ + '.' + class_.__name__
+        if self._stream is None:
+            filename = 'TEST-%s.xml' % classname
+            stream = file(os.path.join(self._path, filename), 'w')
             stream.write('<?xml version="1.0" encoding="utf-8"?>\n')
         else:
             stream = self._stream
@@ -263,11 +256,11 @@ class XMLTestRunner(object):
             try:
                 out_s = sys.stdout.getvalue()
             except AttributeError:
-                out_s = ""
+                out_s = ''
             try:
                 err_s = sys.stderr.getvalue()
             except AttributeError:
-                err_s = ""
+                err_s = ''
         finally:
             sys.stdout = old_stdout
             sys.stderr = old_stderr
@@ -282,8 +275,9 @@ class XMLTestRunner(object):
     def _set_path(self, path):
         self._path = path
 
-    path = property(lambda self: self._path, _set_path, None,
-            """The path where the XML files are stored.
-            
-            This property is ignored when the XML file is written to a file
-            stream.""")
+    path = property(
+        lambda self: self._path, _set_path, None,
+        """The path where the XML files are stored.
+
+        This property is ignored when the XML file is written to a file
+        stream.""")

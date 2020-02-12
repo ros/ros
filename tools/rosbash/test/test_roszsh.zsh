@@ -4,7 +4,6 @@
 
 # TODO extend this script
 
-
 . ../roszsh
 
 echo "Testing ZSH"

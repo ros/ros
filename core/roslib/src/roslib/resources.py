@@ -43,6 +43,7 @@ import roslib.manifest
 import roslib.names
 import roslib.packages
 
+
 def _get_manifest_by_dir(package_dir):
     """
     Helper routine for loading Manifest instances
@@ -57,6 +58,7 @@ def _get_manifest_by_dir(package_dir):
     else:
         return None
 
+
 def list_package_resources_by_dir(package_dir, include_depends, subdir, rfilter=os.path.isfile):
     """
     List resources in a package directory within a particular
@@ -65,7 +67,7 @@ def list_package_resources_by_dir(package_dir, include_depends, subdir, rfilter=
     @type  package_dir: str
     @param subdir: name of subdirectory
     @type  subdir: str
-    @param include_depends: if True, include resources in dependencies as well    
+    @param include_depends: if True, include resources in dependencies as well
     @type  include_depends: bool
     @param rfilter: resource filter function that returns true if filename is the desired resource type
     @type  rfilter: fn(filename)->bool
@@ -74,34 +76,34 @@ def list_package_resources_by_dir(package_dir, include_depends, subdir, rfilter=
     resources = []
     dir = roslib.packages._get_pkg_subdir_by_dir(package_dir, subdir, False)
     if os.path.isdir(dir):
-        resources = [roslib.names.resource_name(package, f, my_pkg=package) \
+        resources = [roslib.names.resource_name(package, f, my_pkg=package)
                      for f in os.listdir(dir) if rfilter(os.path.join(dir, f))]
     else:
         resources = []
     if include_depends:
         depends = _get_manifest_by_dir(package_dir).depends
         dirs = [roslib.packages.get_pkg_subdir(d.package, subdir, False) for d in depends]
-        for (dep, dir_) in zip(depends, dirs): #py3k
+        for (dep, dir_) in zip(depends, dirs):  # py3k
             if not dir_ or not os.path.isdir(dir_):
                 continue
-            resources.extend(\
-                [roslib.names.resource_name(dep.package, f, my_pkg=package) \
+            resources.extend(
+                [roslib.names.resource_name(dep.package, f, my_pkg=package)
                  for f in os.listdir(dir_) if rfilter(os.path.join(dir_, f))])
     return resources
+
 
 def list_package_resources(package, include_depends, subdir, rfilter=os.path.isfile):
     """
     List resources in a package within a particular subdirectory. This is useful for listing
-    messages, services, etc...    
+    messages, services, etc...
     @param package: package name
     @type  package: str
     @param subdir: name of subdirectory
     @type  subdir: str
-    @param include_depends: if True, include resources in dependencies as well    
+    @param include_depends: if True, include resources in dependencies as well
     @type  include_depends: bool
     @param rfilter: resource filter function that returns true if filename is the desired resource type
     @type  rfilter: fn(filename)->bool
-    """    
+    """
     package_dir = roslib.packages.get_pkg_dir(package)
     return list_package_resources_by_dir(package_dir, include_depends, subdir, rfilter)
-

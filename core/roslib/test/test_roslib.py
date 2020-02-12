@@ -30,20 +30,18 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import os
-import sys
-  
+
 def test_load_manifest():
     # this is a bit of a noop as it's a prerequisite of running with rosunit
     import roslib
     roslib.load_manifest('roslib')
-        
+
+
 def test_interactive():
     import roslib
-        
+
     # make sure that it's part of high-level API
-    assert not roslib.is_interactive(), "interactive should be false by default"
+    assert not roslib.is_interactive(), 'interactive should be false by default'
     for v in [True, False]:
-        roslib.set_interactive(v)        
+        roslib.set_interactive(v)
         assert v == roslib.is_interactive()
-        

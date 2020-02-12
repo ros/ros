@@ -93,7 +93,7 @@ function _ros_list_stacks {
 
 # takes as argument either just a package-path or just a pkgname
 # returns 0 for no argument or if package (+ path) exist, 1 else
-# on success with arguments returns [pkgname, abspath, relpath basename] 
+# on success with arguments returns [pkgname, abspath, relpath basename]
 function _ros_decode_path {
     local rosname rosdir reldir last
     rosvals=()
@@ -104,7 +104,7 @@ function _ros_decode_path {
     if [[ $1 =~ .+/.* ]]; then
         rosname=${1%%/*}
         reldir=/${1#*/}
-        last=${reldir##*/}        
+        last=${reldir##*/}
         reldir=${reldir%/*}/
     else
         rosname=$1
@@ -113,7 +113,7 @@ function _ros_decode_path {
            return 1
         fi
     fi
-    
+
     rosdir=$(_ros_location_find $rosname)
     if [[ $? != 0 ]]; then
         rosvals=(${rosname})
@@ -366,7 +366,7 @@ function _msg_opts {
 
     if [[ -z ${searchmsg} ]]; then
         pkgs=($(rospack list))
-        
+
         for (( i = 0 ; i < ${#pkgs[@]} ; i=i+2 )); do
             if [[ -d ${pkgs[i+1]}/msg ]]; then
                 echo ${pkgs[i]}/
@@ -429,11 +429,11 @@ function _roscomplete_rossrv {
         case ${COMP_WORDS[1]} in
             show|users|md5)
                 opts=$(_srv_opts ${COMP_WORDS[$COMP_CWORD]})
-                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))
                 ;;
             package)
                 opts=$(rospack list-names)
-                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))
                 ;;
             packages|list)
                 # This shouldn't really have a completion rule
@@ -589,7 +589,7 @@ function _roscomplete_launch {
     COMPREPLY=()
     if [[ ${arg} =~ \-\-.* ]]; then
         COMPREPLY=(${COMPREPLY[@]} $(compgen -W "--files --args --nodes --find-node --child --local --screen --server_uri --run_id --wait --port --core --pid --dump-params --skip-log-check --ros-args" -- ${arg}))
-        
+
     else
         _roscomplete_search_dir "( -type f -regex .*\.launch$ -o -type f -regex .*\.test$ )"
         if [[ $COMP_CWORD == 1 ]]; then
@@ -658,7 +658,7 @@ function _roscomplete_rosbag {
                     opts="--help --force --quiet --output-dir"
                     ;;
             esac
-            COMPREPLY=($(compgen -W "$opts" -- ${arg})) 
+            COMPREPLY=($(compgen -W "$opts" -- ${arg}))
         fi
     fi
 
@@ -674,7 +674,7 @@ function _roscomplete_rospack {
         COMPREPLY=($(compgen -W "$opts" -- ${arg}))
     else
         opts=$(rospack list-names)
-        COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+        COMPREPLY=($(compgen -W "$opts" -- ${arg}))
     fi
 
 }
@@ -691,7 +691,7 @@ function _roscomplete_rosnode {
         case ${COMP_WORDS[1]} in
             info)
                 opts=$(rosnode list 2> /dev/null)
-                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))
                 ;;
             ping|list|kill)
                 if [[ ${arg} =~ \-\-.* ]]; then
@@ -699,7 +699,7 @@ function _roscomplete_rosnode {
                 else
                     opts=$(rosnode list 2> /dev/null)
                 fi
-                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))
                 ;;
             machine)
                 # This takes more logic to determine which machines are present.
@@ -710,7 +710,7 @@ function _roscomplete_rosnode {
             kill)
                 # complete on node name
                 opts=$(rosnode list 2> /dev/null)
-                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))
                 ;;
         esac
     fi
@@ -728,7 +728,7 @@ function _roscomplete_rosparam {
         case ${COMP_WORDS[1]} in
             set|get|delete|list)
                 opts=$(rosparam list 2> /dev/null)
-                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))
                 ;;
             load|dump)
                 # complete on files
@@ -740,7 +740,7 @@ function _roscomplete_rosparam {
             load|dump)
                 # complete on namespace
                 opts=$(rosparam list 2> /dev/null)
-                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))
                 ;;
         esac
     fi
@@ -770,7 +770,7 @@ function _roscomplete_rostopic {
                     COMPREPLY=($(compgen -W "--window --filter" -- ${arg}))
                     ;;
                 list)
-                    COMPREPLY=($(compgen -W "--bag --verbose --host" -- ${arg})) 
+                    COMPREPLY=($(compgen -W "--bag --verbose --host" -- ${arg}))
                     ;;
             esac
         else
@@ -841,7 +841,7 @@ function _roscomplete_rosservice {
         case ${COMP_WORDS[1]} in
             args|call|info|list|type|uri)
                 opts=$(rosservice list 2> /dev/null)
-                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))
                 ;;
             find)
                 # Need a clever way to do message searching
@@ -913,11 +913,11 @@ function _roscomplete_rosmsg {
         case ${COMP_WORDS[1]} in
             show|info|users|md5)
               opts=$(_msg_opts ${COMP_WORDS[$COMP_CWORD]})
-                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))
                 ;;
             package)
               opts=$(rospack list-names)
-                COMPREPLY=($(compgen -W "$opts" -- ${arg}))                
+                COMPREPLY=($(compgen -W "$opts" -- ${arg}))
                 ;;
             packages|list)
                 # This shouldn't really have a completion rule

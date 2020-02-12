@@ -4,7 +4,6 @@
 
 # TODO extend this script
 
-
 . ../rosbash
 
 echo Testing BASH
@@ -35,7 +34,6 @@ if [[ ! ${COMPREPLY[@]} =~ "example.launch" ]]; then
    echo "example.launch missing from " ${COMPREPLY[@]} ; exit 1
 fi
 echo success roslaunch launchfiles
-
 
 # if [[ ! ${COMPREPLY[@]} =~ "example.launch" ]]; then
 #    echo "example.launch missing from " ${COMPREPLY[@]} ; exit 1

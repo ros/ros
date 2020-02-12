@@ -31,7 +31,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
-import sys
+
 
 def test__get_check_dirs():
     # just a tripwire, no way to assert the actual values w/o identical reimplementation
@@ -39,25 +39,29 @@ def test__get_check_dirs():
     vals = _get_check_dirs()
     for path, desc in vals:
         assert os.path.isdir(path)
-    
+
+
 def test_get_human_readable_disk_usage():
     from rosclean import get_human_readable_disk_usage
     val = get_human_readable_disk_usage(get_test_path())
     assert val
-    
+
+
 def get_test_path():
     return os.path.abspath(os.path.join(os.path.dirname(__file__)))
+
 
 def test_get_disk_usage():
     from rosclean import get_disk_usage
     val = get_disk_usage(get_test_path())
     assert val > 0
 
+
 def test_cmd():
     from rosclean import rosclean_main
     try:
         rosclean_main(['rosclean', 'fake'])
-        assert False, "should have raised sys exit"
+        assert False, 'should have raised sys exit'
     except SystemExit:
         pass
 
@@ -65,4 +69,4 @@ def test_cmd():
     try:
         rosclean_main(['rosclean', 'check'])
     except SystemExit:
-        assert False, "failed with sys exit"
+        assert False, 'failed with sys exit'

@@ -31,14 +31,15 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import os
-import sys
 import unittest
 
 import roslib
+
 import rospkg
 
+
 class RoslibStacksTest(unittest.TestCase):
-  
+
     def test_list_stacks(self):
         from roslib.stacks import list_stacks
         # roslib can't depend on ros and therefore can't expect it being in the environment
@@ -53,32 +54,31 @@ class RoslibStacksTest(unittest.TestCase):
         # ros stack not guaranteed to list anymore as ROS_ROOT may not be set
         if 'ros' in val:
             val.remove('ros')
-        self.assertEquals(set(['foo', 'bar']), val)
-
+        self.assertEquals({'foo', 'bar'}, val)
 
     def test_list_stacks_by_path(self):
         from roslib.stacks import list_stacks_by_path
 
         # test with synthetic stacks
         test_dir = os.path.join(roslib.packages.get_pkg_dir('roslib'), 'test', 'stack_tests')
-        self.assertEquals(set(['bar', 'foo']), set(list_stacks_by_path(test_dir)))
+        self.assertEquals({'bar', 'foo'}, set(list_stacks_by_path(test_dir)))
 
         test_dir = os.path.join(roslib.packages.get_pkg_dir('roslib'), 'test', 'stack_tests', 's1')
-        self.assertEquals(set(['bar', 'foo']), set(list_stacks_by_path(test_dir)))
+        self.assertEquals({'bar', 'foo'}, set(list_stacks_by_path(test_dir)))
 
         test_dir = os.path.join(roslib.packages.get_pkg_dir('roslib'), 'test', 'stack_tests', 's1', 'bar')
         self.assertEquals(['bar'], list_stacks_by_path(test_dir))
-        
+
         # test symlink following
 
         test_dir = os.path.join(roslib.packages.get_pkg_dir('roslib'), 'test', 'stack_tests2')
-        self.assertEquals(set(['foo', 'bar']), set(list_stacks_by_path(test_dir)))
-        
+        self.assertEquals({'foo', 'bar'}, set(list_stacks_by_path(test_dir)))
+
     def test_list_stacks_by_path_unary(self):
         from roslib.stacks import list_stacks_by_path
         # test with synthetic stacks
         test_dir = os.path.join(roslib.packages.get_pkg_dir('roslib'), 'test', 'stack_tests_unary')
-        self.assertEquals(set(['bar', 'foo', 'baz']), set(list_stacks_by_path(test_dir)))
+        self.assertEquals({'bar', 'foo', 'baz'}, set(list_stacks_by_path(test_dir)))
 
     def test_get_stack_dir_unary(self):
         # now manipulate the environment to test precedence
@@ -94,18 +94,18 @@ class RoslibStacksTest(unittest.TestCase):
             self.assertEquals(os.path.join(s1_d, 'bar'), roslib.stacks.get_stack_dir('bar'))
             self.assertEquals(os.path.join(s1_d, 'baz'), roslib.stacks.get_stack_dir('baz'))
         finally:
-            #restore rpp
+            # restore rpp
             if rpp is not None:
                 os.environ[rospkg.environment.ROS_PACKAGE_PATH] = rpp
             else:
-                del os.environ[rospkg.environment.ROS_PACKAGE_PATH] 
-        
+                del os.environ[rospkg.environment.ROS_PACKAGE_PATH]
+
     def test_get_stack_dir(self):
         import roslib.packages
-        from roslib.stacks import get_stack_dir, InvalidROSStackException, list_stacks
+        from roslib.stacks import get_stack_dir
         try:
             get_stack_dir('non_existent')
-            self.fail("should have raised")
+            self.fail('should have raised')
         except roslib.stacks.InvalidROSStackException:
             pass
 
@@ -117,7 +117,7 @@ class RoslibStacksTest(unittest.TestCase):
             d = os.path.join(d, 'test', 'stack_tests')
 
             # - s1/s2/s3
-            print("s1/s2/s3")
+            print('s1/s2/s3')
             paths = [os.path.join(d, p) for p in ['s1', 's2', 's3']]
             os.environ[rospkg.environment.ROS_PACKAGE_PATH] = os.pathsep.join(paths)
             # - run multiple times to test caching
@@ -132,8 +132,8 @@ class RoslibStacksTest(unittest.TestCase):
                 self.assertEquals(bar_p, roslib.stacks.get_stack_dir('bar'))
 
             # - s2/s3/s1
-            print("s2/s3/s1")
-            
+            print('s2/s3/s1')
+
             paths = [os.path.join(d, p) for p in ['s2', 's3', 's1']]
             os.environ[rospkg.environment.ROS_PACKAGE_PATH] = os.pathsep.join(paths)
             stacks = roslib.stacks.list_stacks()
@@ -145,12 +145,12 @@ class RoslibStacksTest(unittest.TestCase):
             self.assertEquals(foo_p, roslib.stacks.get_stack_dir('foo'))
             self.assertEquals(bar_p, roslib.stacks.get_stack_dir('bar'))
         finally:
-            #restore rpp
+            # restore rpp
             if rpp is not None:
                 os.environ[rospkg.environment.ROS_PACKAGE_PATH] = rpp
             else:
-                del os.environ[rospkg.environment.ROS_PACKAGE_PATH] 
-            
+                del os.environ[rospkg.environment.ROS_PACKAGE_PATH]
+
     def test_expand_to_packages_unary(self):
         # test unary
         test_dir = os.path.join(roslib.packages.get_pkg_dir('roslib'), 'test', 'stack_tests_unary')
@@ -158,7 +158,7 @@ class RoslibStacksTest(unittest.TestCase):
         env = os.environ.copy()
         env[rospkg.environment.ROS_PACKAGE_PATH] = test_dir
 
-        from roslib.stacks import expand_to_packages      
+        from roslib.stacks import expand_to_packages
         self.assertEquals((['foo'], []), expand_to_packages(['foo'], env=env))
         self.assertEquals((['foo', 'bar'], []), expand_to_packages(['foo', 'bar'], env=env))
 
@@ -169,25 +169,24 @@ class RoslibStacksTest(unittest.TestCase):
             # like a string and get weird results, so check that we
             # don't
             self.assertEquals(([], []), expand_to_packages('ros'))
-            self.fail("expand_to_packages should only take in a list of strings")
-        except ValueError: pass
-        
+            self.fail('expand_to_packages should only take in a list of strings')
+        except ValueError:
+            pass
+
         self.assertEquals(([], []), expand_to_packages([]))
         self.assertEquals((['rosmake', 'roslib', 'roslib'], []), expand_to_packages(['rosmake', 'roslib', 'roslib']))
         self.assertEquals(([], ['bogus_one', 'bogus_two']), expand_to_packages(['bogus_one', 'bogus_two']))
 
         # this test case is no more valid in a package-only world
         # TODO: setup directory tree so that this can be more precisely calculated
-        #valid, invalid = expand_to_packages(['ros', 'bogus_one'])
-        #self.assertEquals(['bogus_one'], invalid)
-        #check = ['rosbuild', 'rosunit', 'roslib']
-        #print valid
-        #for c in check:
-        #    self.assert_(c in valid, "expected [%s] to be in ros expansion"%c)
-            
+        # valid, invalid = expand_to_packages(['ros', 'bogus_one'])
+        # self.assertEquals(['bogus_one'], invalid)
+        # check = ['rosbuild', 'rosunit', 'roslib']
+        # print valid
+        # for c in check:
+        #     self.assert_(c in valid, "expected [%s] to be in ros expansion"%c)
+
     def test_get_stack_version(self):
-        from roslib.stacks import get_stack_version
-        
         test_dir = os.path.join(get_test_path(), 'stack_tests', 's1')
         env = os.environ.copy()
         env[rospkg.environment.ROS_PACKAGE_PATH] = test_dir
@@ -201,6 +200,7 @@ class RoslibStacksTest(unittest.TestCase):
             test_dir = os.path.join(roslib.packages.get_pkg_dir('roslib'), 'test', 'stack_tests_unary')
             env = os.environ.copy()
             env[rospkg.environment.ROS_PACKAGE_PATH] = test_dir
+
 
 def get_test_path():
     return os.path.abspath(os.path.dirname(__file__))

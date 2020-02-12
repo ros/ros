@@ -32,15 +32,18 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import sys
 import os
+import sys
+
 PKG = os.path.split(os.getcwd())[1]
 print("Creating pydev project for package '%s'" % PKG)
-import roslib; roslib.load_manifest(PKG)
+import roslib  # noqa: E402
+roslib.load_manifest(PKG)
 
-pathlist = "\n".join(["<path>%s</path>"%path for path in sys.path if os.path.exists(path)])
+pathlist = '\n'.join(
+    ['<path>%s</path>' % path for path in sys.path if os.path.exists(path)])
 
-pydev_project= '''<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+pydev_project = """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <?eclipse-pydev version="1.0"?>
 
 <pydev_project>
@@ -50,9 +53,9 @@ pydev_project= '''<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 %s
 </pydev_pathproperty>
 </pydev_project>
-'''%pathlist
+""" % pathlist
 
-print("Writing .pydevproject, adding %d modules" % len(sys.path))
-f = open(".pydevproject","w")
+print('Writing .pydevproject, adding %d modules' % len(sys.path))
+f = open('.pydevproject', 'w')
 f.write(pydev_project)
 f.close()

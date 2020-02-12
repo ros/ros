@@ -38,11 +38,14 @@ Library and tools support unit testing in ROS.
 
 # NOTE: while this makes some forward references to conventions used
 # in rostest, it does not use rostest itself.
-import os
 
-from .core import xml_results_file, rostest_name_from_path, create_xml_runner, XML_OUTPUT_FLAG
-from . import junitxml
-from .baretest import print_runner_summary, print_unittest_summary
-from .pyunit import unitrun
+from . import junitxml  # noqa: F401
+from .baretest import print_runner_summary  # noqa: F401
+from .baretest import print_unittest_summary  # noqa: F401
+from .core import XML_OUTPUT_FLAG  # noqa: F401
+from .core import create_xml_runner  # noqa: F401
+from .core import rostest_name_from_path  # noqa: F401
+from .core import xml_results_file  # noqa: F401
+from .pyunit import unitrun  # noqa: F401
 
 __version__ = '1.7.0'

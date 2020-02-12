@@ -35,28 +35,31 @@ from __future__ import print_function
 import errno
 import os
 import sys
-import logging
 
 import rospkg
 
 from .xmlrunner import XMLTestRunner
 
-XML_OUTPUT_FLAG = '--gtest_output=xml:' #use gtest-compatible flag
+XML_OUTPUT_FLAG = '--gtest_output=xml:'  # use gtest-compatible flag
+
 
 def printlog(msg, *args):
     if args:
-        msg = msg%args
-    print("[ROSUNIT]"+msg)
-    
+        msg = msg % args
+    print('[ROSUNIT]' + msg)
+
+
 def printlog_bold(msg, *args):
     if args:
-        msg = msg%args
+        msg = msg % args
     print('\033[1m[ROSUNIT]' + msg + '\033[0m')
-    
+
+
 def printerrlog(msg, *args):
     if args:
-        msg = msg%args
-    print("[ROSUNIT]"+msg, file=sys.stderr)
+        msg = msg % args
+    print('[ROSUNIT]' + msg, file=sys.stderr)
+
 
 # this is a copy of the roslogging utility. it's been moved here as it is a common
 # routine for programs using accessing ROS directories
@@ -67,7 +70,7 @@ def makedirs_with_parent_perms(p):
     root process sometimes has to log in the user's space.
     @param p: directory to create
     @type  p: str
-    """    
+    """
     p = os.path.abspath(p)
     parent = os.path.dirname(p)
     # recurse upwards, checking to make sure we haven't reached the
@@ -86,11 +89,12 @@ def makedirs_with_parent_perms(p):
         if s.st_uid != s2.st_uid or s.st_gid != s2.st_gid:
             os.chown(p, s.st_uid, s.st_gid)
         if s.st_mode != s2.st_mode:
-            os.chmod(p, s.st_mode)    
+            os.chmod(p, s.st_mode)
+
 
 def xml_results_file(test_pkg, test_name, is_rostest=False, env=None):
     """
-    @param test_pkg: name of test's package 
+    @param test_pkg: name of test's package
     @type  test_pkg: str
     @param test_name str: name of test
     @type  test_name: str
@@ -104,7 +108,7 @@ def xml_results_file(test_pkg, test_name, is_rostest=False, env=None):
         try:
             makedirs_with_parent_perms(test_dir)
         except OSError as error:
-            raise IOError("cannot create test results directory [%s]: %s"%(test_dir, str(error)))
+            raise IOError('cannot create test results directory [%s]: %s' % (test_dir, str(error)))
 
     # #576: strip out chars that would bork the filename
     # this is fairly primitive, but for now just trying to catch some common cases
@@ -112,15 +116,16 @@ def xml_results_file(test_pkg, test_name, is_rostest=False, env=None):
         if c in test_name:
             test_name = test_name.replace(c, '_')
     if is_rostest:
-        return os.path.join(test_dir, 'rostest-%s.xml'%test_name)
+        return os.path.join(test_dir, 'rostest-%s.xml' % test_name)
     else:
-        return os.path.join(test_dir, 'rosunit-%s.xml'%test_name)
-    
+        return os.path.join(test_dir, 'rosunit-%s.xml' % test_name)
+
+
 def rostest_name_from_path(pkg_dir, test_file):
     """
     Derive name of rostest based on file name/path. rostest follows a
     certain convention defined above.
-    
+
     @return: name of test
     @rtype: str
     """
@@ -134,6 +139,7 @@ def rostest_name_from_path(pkg_dir, test_file):
     if '.' in outname:
         outname = outname[:outname.rfind('.')]
     return outname
+
 
 def create_xml_runner(test_pkg, test_name, results_file=None, is_rostest=False):
     """
@@ -152,15 +158,14 @@ def create_xml_runner(test_pkg, test_name, results_file=None, is_rostest=False):
     test_dir = os.path.abspath(os.path.dirname(results_file))
     if not os.path.exists(test_dir):
         try:
-            makedirs_with_parent_perms(test_dir) #NOTE: this will pass up an error exception if it fails
+            makedirs_with_parent_perms(test_dir)  # NOTE: this will pass up an error exception if it fails
         except OSError as error:
-            raise IOError("cannot create test results directory [%s]: %s"%(test_dir, str(error)))
+            raise IOError('cannot create test results directory [%s]: %s' % (test_dir, str(error)))
 
     elif os.path.isfile(test_dir):
-        raise Exception("ERROR: cannot run test suite, file is preventing creation of test dir: %s"%test_dir)
-    
-    print("[ROSUNIT] Outputting test results to " + results_file)
+        raise Exception('ERROR: cannot run test suite, file is preventing creation of test dir: %s' % test_dir)
+
+    print('[ROSUNIT] Outputting test results to ' + results_file)
     outstream = open(results_file, 'w')
     outstream.write('<?xml version="1.0" encoding="utf-8"?>\n')
     return XMLTestRunner(stream=outstream)
-    

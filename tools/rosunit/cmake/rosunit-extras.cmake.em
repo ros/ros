@@ -52,4 +52,3 @@ function(add_pyunit file)
   set(cmd "${ROSUNIT_EXE} --name=${_testname} --time-limit=${_pyunit_TIMEOUT} --package=${PROJECT_NAME} -- ${_file_name} ${_covarg}")
   catkin_run_tests_target("rosunit" ${_testname} "rosunit-${_testname}.xml" COMMAND ${cmd} WORKING_DIRECTORY ${_pyunit_WORKING_DIRECTORY})
 endfunction()
-

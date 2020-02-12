@@ -50,6 +50,21 @@ esac
 pkg_name="$1"
 file_name="$2"
 
+function inonedir() {
+  exe=$1
+  shift
+  list_of_dirs=("$@")
+  for location in "${list_of_dirs[@]}";
+  do
+    if [[ "$exe" = "$location"* ]] ; then
+      # exe path starts with $location
+      echo "yes"
+      return
+    fi
+  done
+  echo "no"
+}
+
 if [[ -n $CMAKE_PREFIX_PATH ]]; then
   _rosrun_IFS="$IFS"
   IFS=$'\n'
@@ -91,8 +106,27 @@ if [[ ! $file_name == */* ]]; then
       done
     fi
     exit 3
+  elif [[ ${#exepathlist[@]} -eq 2 ]]; then
+    # If one executable is from share and another from libexec then use one from libexec.
+    # This assumes the one from libexec is a devel-space python relay script created by catkin.
 
-  elif [[ ${#exepathlist[@]} -gt 1 ]]; then
+    # Share dirs includes devel, install, or src space locations
+    catkin_package_share_dirs=($(catkin_find --without-underlays --share "$pkg_name" 2> /dev/null))
+    debug "Looking in catkin share dirs: $IFS$(catkin_find --without-underlays --share "$pkg_name" 2>&1)"
+
+    first_share=$(inonedir "${exepathlist[0]}" "${catkin_package_share_dirs[@]}")
+    second_share=$(inonedir "${exepathlist[1]}" "${catkin_package_share_dirs[@]}")
+
+    if [[ $first_share == "no" && $second_share == "yes" ]]; then
+      debug "Assuming ${exepathlist[0]} is a devel-space relay for ${exepathlist[1]}"
+      exepathlist=(${exepathlist[0]})
+    elif [[ $second_share == "no" && $first_share == "yes" ]]; then
+      debug "Assuming ${exepathlist[1]} is a devel-space relay for ${exepathlist[0]}"
+      exepathlist=(${exepathlist[1]})
+    fi
+  fi
+
+  if [[ ${#exepathlist[@]} -gt 1 ]]; then
     echo "[rosrun] You have chosen a non-unique executable, please pick one of the following:"
     select opt in "${exepathlist[@]}"; do
       exepath="$opt"

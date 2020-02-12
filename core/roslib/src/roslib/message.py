@@ -85,6 +85,10 @@ def _get_message_or_service_class(type_str, message_type, reload_on_error=False)
     # have to exit a shell just because a message wasn't built yet
     if val is None and reload_on_error:
         try:
+            reload  # Python 2
+        except NameError:
+            from importlib import reload  # Python 3
+        try:
             if pypkg:
                 reload(pypkg)
             val = getattr(getattr(pypkg, type_str), base_type)

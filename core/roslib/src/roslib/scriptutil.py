@@ -82,7 +82,7 @@ def script_resolve_name(script_name, name):
         return name
     # Check for private name: ~name resolves to /caller_id/name
     elif roslib.names.is_private(name):
-        return ns_join(roslib.names.make_caller_id(script_name), name[1:])
+        return roslib.names.ns_join(roslib.names.make_caller_id(script_name), name[1:])
     return roslib.names.get_ros_namespace() + name
 
 

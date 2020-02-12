@@ -341,7 +341,12 @@ class ProcessMonitor(Thread):
         method was called.
         @rtype: bool
         """
-        if not isinstance(name, basestring):
+        def is_string_type(obj):
+            try:
+                return isinstance(obj, basestring)
+            except NameError:
+                return isinstance(obj, str)
+        if not is_string_type(name):
             raise PmonException('kill_process takes in a process name but was given: %s' % name)
         printlog('[%s] kill requested' % name)
         with self.plock:

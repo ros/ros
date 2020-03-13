@@ -99,7 +99,11 @@ def unitrun(package, test_name, test, sysargs=None, coverage_packages=None):
     if text_mode:
         result = unittest.TextTestRunner(verbosity=2).run(suite)
     else:
-        result = create_xml_runner(package, test_name, result_file).run(suite)
+        runner = create_xml_runner(package, test_name, result_file)
+        try:
+            result = runner.run(suite)
+        finally:
+            runner.close()
     if coverage_mode:
         cov_html_dir = 'covhtml' if '--covhtml' in sysargs else None
         stop_coverage(coverage_packages, html=cov_html_dir)

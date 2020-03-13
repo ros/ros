@@ -109,7 +109,10 @@ def rosunitmain():
             xml_runner = create_xml_runner(pkg, test_name,
                                            results_file=results_file,
                                            is_rostest=True)
-            runner_result = xml_runner.run(suite)
+            try:
+                runner_result = xml_runner.run(suite)
+            finally:
+                xml_runner.close()
     finally:
         pmon.pmon_shutdown()
 

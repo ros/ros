@@ -240,7 +240,17 @@ class XMLTestRunner(object):
         else:
             stream = self._stream
 
-        result = _XMLTestResult(classname)
+        try:
+            result = _XMLTestResult(classname)
+            self._run(test, result, stream)
+        finally:
+            # only an internally created stream can be closed here
+            if self._stream is None:
+                stream.flush()  # necessary even though explicitly closed next
+                stream.close()
+        return result
+
+    def _run(self, test, result, stream):
         start_time = time.time()
 
         # TODO: Python 2.5: Use the with statement
@@ -269,6 +279,11 @@ class XMLTestRunner(object):
         result.print_report_text(sys.stdout, time_taken, out_s, err_s)
 
         return result
+
+    def close(self):
+        if self._stream is not None:
+            self._stream.flush()  # necessary even though explicitly closed next
+            self._stream.close()
 
     def _set_path(self, path):
         self._path = path

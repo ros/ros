@@ -265,10 +265,9 @@ class XMLTestRunner(object):
 
         time_taken = time.time() - start_time
         result.print_report(stream, time_taken, out_s, err_s)
+        stream.flush()
 
         result.print_report_text(sys.stdout, time_taken, out_s, err_s)
-
-        stream.flush()
 
         return result
 

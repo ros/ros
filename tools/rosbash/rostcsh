@@ -7,6 +7,7 @@ alias rosls 'ls `rospack find \!*`'
 #alias roscat 'echo "unimplemented"'
 #alias roscmd 'echo "unimplemented"'
 #alias roscp 'echo "unimplemented"'
+#alias rosmv 'echo "unimplemented"'
 
 complete roscd 'p/1/`rospack list-names && rosstack list-names`/'
 complete rosmake 'p/*/`rospack list-names && rosstack list-names`/'

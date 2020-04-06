@@ -229,6 +229,17 @@ function rosls {
     ls ${rosvals[1]}${rosvals[2]}${rosvals[3]} $2
 }
 
+function rosmv {
+    local arg
+    if [[ $1 = "--help" ]] || [[ $# -ne 3 ]]; then
+        echo -e "usage: rosmv package filename target\n\nMove a file from a package to target location."
+        return 0
+    fi
+    _roscmd ${1} ${2}
+    mv ${arg} ${3}
+
+}
+
 # sets arg as return value
 function _roscmd {
     local pkgdir exepath opt catkin_package_libexec_dir opts
@@ -1015,3 +1026,4 @@ complete -F "_roscomplete_rossrv" "rossrv"
 complete -F "_roscomplete_roscreate_pkg" "roscreate-pkg"
 complete -F "_roscomplete_roswtf" -o filenames "roswtf"
 complete -F "_roscomplete_rosconsole" "rosconsole"
+complete -F "_roscomplete_file" "rosmv"

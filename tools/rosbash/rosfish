@@ -253,6 +253,19 @@ function rosls
     ls $rosvals[2]$rosvals[3]$rosvals[4] $argv[2]
 end
 
+function rosmv
+    set -l arg
+    if test (count $argv) != 3 -o "$argv[1]" = "--help"
+        echo -e "usage: rosmv package filename target\n\nMove a file from a package to target location."
+        return 0
+    end
+
+    set -l arg (_roscmd $argv[1] $argv[2])
+    if test $status = 0
+        mv $arg $argv[3]
+    end
+end
+
 # sets arg as return value
 function _roscmd
     set -l opt
@@ -1039,3 +1052,4 @@ complete -x -c rossrv         -a '(_roscomplete_rossrv)'
 complete -x -c roscreate-pkg  -a '(_roscomplete_roscreate_pkg)'
 complete -x -c roswtf         -a '(_roscomplete_roswtf)'
 complete -x -c rosconsole     -a '(_roscomplete_rosconsole)'
+complete -x -c rosmv          -a '(_roscomplete_file)'

@@ -204,7 +204,7 @@ def _rosclean_cmd_purge(args):
         if not args.size:
             print('Purging %s.' % label)
             if platform.system() == 'Windows':
-                cmds = [['rd', '/s', '/q', d]]
+                cmds = [['cmd', '/c', 'rd', '/s', '/q', d]]
             else:
                 cmds = [['rm', '-rf', d]]
             try:
@@ -232,7 +232,7 @@ def _rosclean_cmd_purge(args):
                 path = os.path.join(d, f)
                 log_size -= get_disk_usage(path)
                 if platform.system() == 'Windows':
-                    cmds = [['rd', '/s', '/q', path]]
+                    cmds = [['cmd', '/c', 'rd', '/s', '/q', path]]
                 else:
                     cmds = [['rm', '-rf', path]]
                 try:

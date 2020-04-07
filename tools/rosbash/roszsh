@@ -263,6 +263,16 @@ function roscp {
     cp ${arg} ${3}
 }
 
+function rosmv {
+    local arg
+    if [[ $1 = "--help" ]] | [[ $# -ne 3 ]]; then
+        echo -e "usage: rosmv package filename target\n\nMove a file from a package to target location."
+        return 0
+    fi
+    _roscmd ${1} ${2}
+    mv ${arg} ${3}
+}
+
 function roscat {
     local arg
     if [[ $1 = "--help" ]] | [[ $# -ne 2 ]]; then
@@ -773,7 +783,7 @@ compctl -K "_roscomplete_sub_dir" -S / "roscd" "rospd" "rosls"
 compctl -K "_roscomplete_rosmake" "rosmake"
 
 compctl -x 'p[1]' -k "(check purge)" -- "rosclean"
-compctl -f -x 'p[1]' -K "_roscomplete" - 'p[2]' -K _roscomplete_file -- "rosed" "roscp" "roscat"
+compctl -f -x 'p[1]' -K "_roscomplete" - 'p[2]' -K _roscomplete_file -- "rosed" "roscp" "roscat" "rosmv"
 compctl -f -x 'S[-]' -k '(--debug --prefix)' - 'c[-1,--prefix][-1,-p]' -h '' - 'p[1],c[-1,-d],c[-1,--debug],c[-2,-p],c[-2,--prefix]' -K "_roscomplete" - 'p[2],c[-2,-d],c[-2,--debug],c[-3,-p],c[-3,--prefix]' -K _roscomplete_exe -- "rosrun"
 compctl -/g '*.(launch|test)' -x 'p[1]' -K "_roscomplete" -tx - 'p[2]' -K _roscomplete_launchfile - 'p[3,20]' -K _roscomplete_launchfile_args -- + -x 'S[--]' -k "(--files --args --nodes --find-node --child --local --screen --server_uri --run_id --wait --port --core --pid --dump-params --disable-title --help --numworkers --ros-args --skip-log-check --timeout)" -- "roslaunch"
 compctl -/g '*.(launch|test)' -x 'p[1]' -K "_roscomplete" -tx - 'p[2]' -K _roscomplete_launchfile -- + -x 'S[--]' -k "(--bare --bare-limit --bare-name --pkgdir --package)" -- "rostest"

@@ -4,7 +4,7 @@
   schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>rosboost_cfg</name>
-  <version>1.15.1</version>
+  <version>1.15.2</version>
   <description>
     Contains scripts used by the rosboost-cfg tool for determining cflags/lflags/etc. of boost on your system
   </description>

@@ -2,6 +2,10 @@
 Changelog for package rosunit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix missing rosunit results in Python 3 (`#244 <https://github.com/ros/ros/issues/244>`_)
+
 1.14.8 (2020-02-11)
 -------------------
 * fix various issues discovered by flake8 (`#241 <https://github.com/ros/ros/issues/241>`_)

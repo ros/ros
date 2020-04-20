@@ -2,6 +2,10 @@
 Changelog for package rosclean
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix log purge on Windows (`#251 <https://github.com/ros/ros/issues/251>`_)
+
 1.14.8 (2020-02-11)
 -------------------
 * update style to pass flake8 (`#240 <https://github.com/ros/ros/issues/240>`_)

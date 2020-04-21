@@ -265,19 +265,18 @@ function roscp {
 
 function rosmv {
     local arg rosvals
-    if [[ $1 = "--help" ]]; then
-        echo -e "usage: rosmv [OPTION]... source... destination\n   or: rosmv [OPTION]... package... filename... destination"
-        echo -e "\n-f    Move a file from a package to target location\n-d    Move package to target directory"
+    if [[ $1 = "--help" ]] || [[ $# -ne 3 && $# -ne 4  ]]; then
+        echo -e "usage: rosmv [OPTION]... source... destination\n   or: rosmv package... filename... destination"
+        echo -e "\nMove a file from a package to target location\n-d    Move package to target directory"
         return 0
-    fi
-    if [[ $1 = "-f" ]]; then
-        _roscmd ${2} ${3}
-        mv ${arg} ${4}
     fi
     if [[ $1 = "-d" ]]; then
         _ros_decode_path ${2} forceeval
         pic="${rosvals[1]}${rosvals[2]}${rosvals[3]}"
         mv -t ${3} ${pic}
+    else
+         _roscmd ${1} ${2}
+        mv ${arg} ${3}
     fi
 }
 
@@ -796,12 +795,12 @@ function _roscompletemv_search_dir {
     COMPREPLY=()
     arg="${COMP_WORDS[COMP_CWORD]}"
     option="$(echo -e "${COMP_WORDS[1]}" | tr -d '[:space:]')"
-    if [[ $COMP_CWORD == 2 ]]; then
+    if [[ $COMP_CWORD == 2 && ( $option == "-d" ) ]] || [[ $COMP_CWORD == 1 ]]; then
         # complete packages
         _roscomplete_pkg "${arg}"
-    elif [[ $COMP_CWORD == 3  && ( $option != "-d" && $option == "-f" ) ]]; then
+    elif [[ $COMP_CWORD == 2  && ( $option != "-d" ) ]]; then
         # complete files within package according to $1
-        _roscomplete_find "${1}" "${COMP_WORDS[2]}" "${arg}"
+        _roscomplete_find "${1}" "${COMP_WORDS[1]}" "${arg}"
     else
        # complete filenames
        arg=$(echo ${arg} | sed -e "s|~|$HOME|g")
@@ -834,6 +833,7 @@ function _roscompletemv_search_dir {
     fi
 
 }
+
 
 compctl -K "_roscomplete_sub_dir" -S / "roscd" "rospd" "rosls"
 compctl -K "_roscomplete_rosmake" "rosmake"

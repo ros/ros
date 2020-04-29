@@ -194,7 +194,7 @@ def get_local_addresses():
 
         max_bytes = 32 * ifsize
         # according to http://docs.python.org/library/fcntl.html, the buffer limit is 1024 bytes
-        buff = array.array('B', '\0' * max_bytes)
+        buff = array.array('B', b'\0' * max_bytes)
         # serialize the buffer length and address to ioctl
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         info = fcntl.ioctl(sock.fileno(), SIOCGIFCONF,

@@ -1098,4 +1098,3 @@ complete -x -c roscreate-pkg  -a '(_roscomplete_roscreate_pkg)'
 complete -x -c roswtf         -a '(_roscomplete_roswtf)'
 complete -x -c rosconsole     -a '(_roscomplete_rosconsole)'
 complete -x -c rosmv          -a '(_roscomplete_filemv)'
-

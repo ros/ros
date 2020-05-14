@@ -1058,7 +1058,6 @@ function _roscompletemv_search_dir {
 
 }
 
-
 complete -F "_roscomplete_sub_dir" -o "nospace" "roscd"
 complete -F "_roscomplete_sub_dir" -o "nospace" "rospd"
 complete -F "_roscomplete_sub_dir" -o "nospace" "rosls"
@@ -1082,4 +1081,3 @@ complete -F "_roscomplete_roscreate_pkg" "roscreate-pkg"
 complete -F "_roscomplete_roswtf" -o filenames "roswtf"
 complete -F "_roscomplete_rosconsole" "rosconsole"
 complete -F "_roscomplete_filemv" "rosmv"
-

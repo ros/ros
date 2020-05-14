@@ -853,4 +853,3 @@ compctl -x 'p[1]' -k "(md5 package packages show users)" - 'p[2]' -S '' -K "_ros
 compctl -x 'p[1]' -k "(md5 package packages show users)" - 'p[2]' -S '' -K "_roscomplete_rossrv" -- "rossrv"
 compctl -K "_roscomplete_roscreate_pkg" "roscreate-pkg"
 compctl -/g '*.(launch|test)' -x 'S[--]' -k "(--all --no-plugins --offline)" -- "roswtf"
-

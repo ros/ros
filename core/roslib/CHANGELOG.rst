@@ -2,8 +2,8 @@
 Changelog for package roslib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.15.3 (2020-05-14)
+-------------------
 * fix TypeError str / bytes (`#256 <https://github.com/ros/ros/issues/256>`_)
 
 1.15.2 (2020-04-07)

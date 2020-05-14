@@ -2,8 +2,8 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.15.3 (2020-05-14)
+-------------------
 * update rosmv function to move file and package both (`#254 <https://github.com/ros/ros/issues/254>`_)
 
 1.15.2 (2020-04-07)

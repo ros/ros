@@ -254,15 +254,21 @@ function rosls
 end
 
 function rosmv
-    set -l arg
-    if test (count $argv) != 3 -o "$argv[1]" = "--help"
-        echo -e "usage: rosmv package filename target\n\nMove a file from a package to target location."
+    set -l arg rosvals
+    if test "$argv[1]" = "--help" -o [ test (count $argv) != 3 -a test (count $argv) != 4 ]
+        echo -e "usage: rosmv [OPTION]... source... destination\n   or: rosmv package... filename... destination"
+        echo -e "\nMove a file from a package to target location\n-d    Move package to target directory"
         return 0
     end
-
-    set -l arg (_roscmd $argv[1] $argv[2])
-    if test $status = 0
-        mv $arg $argv[3]
+    if test "$argv[1]" = "-d"
+        set -l rosvals (_ros_decode_path $argv[2] forceeval)
+        pic="${rosvals[2]}${rosvals[3]}${rosvals[4]}"
+        mv -t ${3} ${pic}
+    else
+        set -l arg (_roscmd $argv[1] $argv[2])
+        if test $status = 0
+            mv $arg $argv[3]
+        end
     end
 end
 
@@ -510,6 +516,45 @@ function _roscomplete_find
 
     for i in $opts
         echo -- $i
+    end
+end
+
+function _roscomplete_filemv
+    _roscompletemv_search_dir '-type f ! -regex .*[.][oa]$'
+end
+
+function _roscompletemv_search_dir
+    set -l command (_ros_command_line)
+
+    set -l arg $command[-1]
+    set option "$(echo -e "${COMP_WORDS[1]}" | tr -d '[:space:]')"
+    if [ test (count $command) = 2 -a (option) = "-d" ] -o test (count $command) = 1
+        # complete packages
+        _ros_list_packages $arg
+    else if test (count $command) = 2 -a (option) != "-d"
+        # complete files within package according to $argv[1]
+        _roscomplete_find $argv[1] $command[1] $arg
+    else
+        # complete filenames
+        set -l arg (echo $arg | sed -e "s|~|$HOME|g")
+
+        set -l path
+        if echo -- $arg | grep -qE -- "^/*.+/.*"
+            set path (string split --max 1 --right / $argv[1])[1]
+        else
+            set path .
+        end
+
+        set -l opts
+        if test -e $path
+            set opts (find -L $path -maxdepth 1 -type d ! -regex ".*/[.][^./].*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/\$/\//g" -e "s/^[.]\///g" -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g")
+            set opts $opts (find -L $path -maxdepth 1 -type f ! -regex ".*/[.][^.]*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/^[.]\///g" -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g")
+            for i in $opts
+                echo -- $i
+            end
+        end
+
+        # TODO rosbash does some extra stuff here for some reason
     end
 end
 
@@ -1052,4 +1097,4 @@ complete -x -c rossrv         -a '(_roscomplete_rossrv)'
 complete -x -c roscreate-pkg  -a '(_roscomplete_roscreate_pkg)'
 complete -x -c roswtf         -a '(_roscomplete_roswtf)'
 complete -x -c rosconsole     -a '(_roscomplete_rosconsole)'
-complete -x -c rosmv          -a '(_roscomplete_file)'
+complete -x -c rosmv          -a '(_roscomplete_filemv)'

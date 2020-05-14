@@ -264,13 +264,20 @@ function roscp {
 }
 
 function rosmv {
-    local arg
-    if [[ $1 = "--help" ]] | [[ $# -ne 3 ]]; then
-        echo -e "usage: rosmv package filename target\n\nMove a file from a package to target location."
+    local arg rosvals
+    if [[ $1 = "--help" ]] || [[ $# -ne 3 && $# -ne 4  ]]; then
+        echo -e "usage: rosmv [OPTION]... source... destination\n   or: rosmv package... filename... destination"
+        echo -e "\nMove a file from a package to target location\n-d    Move package to target directory"
         return 0
     fi
-    _roscmd ${1} ${2}
-    mv ${arg} ${3}
+    if [[ $1 = "-d" ]]; then
+        _ros_decode_path ${2} forceeval
+        pic="${rosvals[1]}${rosvals[2]}${rosvals[3]}"
+        mv -t ${3} ${pic}
+    else
+         _roscmd ${1} ${2}
+        mv ${arg} ${3}
+    fi
 }
 
 function roscat {
@@ -779,11 +786,60 @@ function _roscomplete_roscreate_pkg {
     fi
 }
 
+function _roscomplete_filemv {
+    _roscompletemv_search_dir "-type f ! -regex .*[.][oa]$"
+}
+
+function _roscompletemv_search_dir {
+    local arg opts rosvals
+    COMPREPLY=()
+    arg="${COMP_WORDS[COMP_CWORD]}"
+    option="$(echo -e "${COMP_WORDS[1]}" | tr -d '[:space:]')"
+    if [[ $COMP_CWORD == 2 && ( $option == "-d" ) ]] || [[ $COMP_CWORD == 1 ]]; then
+        # complete packages
+        _roscomplete_pkg "${arg}"
+    elif [[ $COMP_CWORD == 2  && ( $option != "-d" ) ]]; then
+        # complete files within package according to $1
+        _roscomplete_find "${1}" "${COMP_WORDS[1]}" "${arg}"
+    else
+       # complete filenames
+       arg=$(echo ${arg} | sed -e "s|~|$HOME|g")
+        if [[ $arg =~ ^/*.+/.* ]]; then
+           path=${arg%/*}
+        else
+           path=.
+        fi
+        if [[ -e ${path} ]]; then
+           opts=$(find -L $path -maxdepth 1 -type d ! -regex ".*/[.][^./].*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/$/\//g" -e "s/^[.]\///g" -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g")$'\n'$(find -L $path -maxdepth 1 -type f ! -regex ".*/[.][^.]*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/^[.]\///g"  -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g")
+        else
+           opts=""
+        fi
+        _rosbash_roscomplete_search_dir_IFS="$IFS"
+        IFS=$'\n'
+        COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+        IFS="$_rosbash_roscomplete_search_dir_IFS"
+        unset _rosbash_roscomplete_search_dir_IFS
+        if [[ ${#COMPREPLY[*]} = 1 ]]; then
+            newpath=${COMPREPLY[0]%/*}
+            if [[ -d ${newpath} ]]; then
+               opts=$(find -L $newpath -maxdepth 1 -type d ! -regex ".*/[.][^./].*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/$/\//g" -e "s/^[.]\///g" -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g")$'\n'$(find -L $newpath -maxdepth 1 -type f ! -regex ".*/[.][^.]*" ! -regex "^[.]/" -print0 | tr '\000' '\n' | sed -e "s/^[.]\///g"  -e "s/'/\\\\\'/g" -e "s/ /\\\\\ /g")
+               _rosbash_roscomplete_search_dir_IFS="$IFS"
+               IFS=$'\n'
+               COMPREPLY=($(compgen -W "$opts" -- ${arg}))
+               IFS="$_rosbash_roscomplete_search_dir_IFS"
+               unset _rosbash_roscomplete_search_dir_IFS
+            fi
+        fi
+    fi
+
+}
+
 compctl -K "_roscomplete_sub_dir" -S / "roscd" "rospd" "rosls"
 compctl -K "_roscomplete_rosmake" "rosmake"
 
 compctl -x 'p[1]' -k "(check purge)" -- "rosclean"
-compctl -f -x 'p[1]' -K "_roscomplete" - 'p[2]' -K _roscomplete_file -- "rosed" "roscp" "roscat" "rosmv"
+compctl -f -x 'p[1]' -K "_roscomplete" - 'p[2]' -K _roscomplete_file -- "rosed" "roscp" "roscat"
+compctl -f -x 'p[1]' -K "_roscomplete_filemv" -- "rosmv"
 compctl -f -x 'S[-]' -k '(--debug --prefix)' - 'c[-1,--prefix][-1,-p]' -h '' - 'p[1],c[-1,-d],c[-1,--debug],c[-2,-p],c[-2,--prefix]' -K "_roscomplete" - 'p[2],c[-2,-d],c[-2,--debug],c[-3,-p],c[-3,--prefix]' -K _roscomplete_exe -- "rosrun"
 compctl -/g '*.(launch|test)' -x 'p[1]' -K "_roscomplete" -tx - 'p[2]' -K _roscomplete_launchfile - 'p[3,20]' -K _roscomplete_launchfile_args -- + -x 'S[--]' -k "(--files --args --nodes --find-node --child --local --screen --server_uri --run_id --wait --port --core --pid --dump-params --disable-title --help --numworkers --ros-args --skip-log-check --timeout)" -- "roslaunch"
 compctl -/g '*.(launch|test)' -x 'p[1]' -K "_roscomplete" -tx - 'p[2]' -K _roscomplete_launchfile -- + -x 'S[--]' -k "(--bare --bare-limit --bare-name --pkgdir --package)" -- "rostest"

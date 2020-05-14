@@ -834,7 +834,6 @@ function _roscompletemv_search_dir {
 
 }
 
-
 compctl -K "_roscomplete_sub_dir" -S / "roscd" "rospd" "rosls"
 compctl -K "_roscomplete_rosmake" "rosmake"
 

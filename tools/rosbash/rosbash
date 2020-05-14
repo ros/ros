@@ -246,7 +246,6 @@ function rosmv {
     fi
 }
 
-
 # sets arg as return value
 function _roscmd {
     local pkgdir exepath opt catkin_package_libexec_dir opts
@@ -1083,5 +1082,4 @@ complete -F "_roscomplete_roscreate_pkg" "roscreate-pkg"
 complete -F "_roscomplete_roswtf" -o filenames "roswtf"
 complete -F "_roscomplete_rosconsole" "rosconsole"
 complete -F "_roscomplete_filemv" "rosmv"
-
 

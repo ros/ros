@@ -35,7 +35,7 @@
 import hashlib
 import os
 import sys
-import urllib
+import urllib.request
 from optparse import OptionParser
 
 NAME = 'download_checkmd5.py'
@@ -61,12 +61,12 @@ def main():
     if not os.path.exists(dest):
         sys.stdout.write('[rosbuild] Downloading %s to %s...' % (uri, dest))
         sys.stdout.flush()
-        urllib.urlretrieve(uri, dest)
+        urllib.request.urlretrieve(uri, dest)
         sys.stdout.write('Done\n')
         fresh = True
 
     if md5sum:
-        m = hashlib.md5(open(dest).read())
+        m = hashlib.md5(open(dest, "rb").read())
         d = m.hexdigest()
 
         print('[rosbuild] Checking md5sum on %s' % (dest))
@@ -77,7 +77,7 @@ def main():
                 os.remove(dest)
 
                 # Try one more time
-                urllib.urlretrieve(uri, dest)
+                urllib.request.urlretrieve(uri, dest)
                 m = hashlib.md5(open(dest).read())
                 d = m.hexdigest()
 

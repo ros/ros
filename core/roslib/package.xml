@@ -4,7 +4,7 @@
   schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>roslib</name>
-  <version>1.15.3</version>
+  <version>1.15.4</version>
   <description>
     Base dependencies and support libraries for ROS.
     roslib contains many of the common data structures and tools that are shared across ROS client library implementations.

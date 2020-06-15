@@ -22,7 +22,7 @@ function _rosfind
         # BSD find needs -E for extended regexp
         find -E $argv
     else
-        find $argv
+        find $arg
     end
 end
 
@@ -262,8 +262,8 @@ function rosmv
     end
     if test "$argv[1]" = "-d"
         set -l rosvals (_ros_decode_path $argv[2] forceeval)
-        pic="${rosvals[2]}${rosvals[3]}${rosvals[4]}"
-        mv -t ${3} ${pic}
+        set pic "$rosvals[2]$rosvals[3]$rosvals[4]"
+        mv -t $3 $pic
     else
         set -l arg (_roscmd $argv[1] $argv[2])
         if test $status = 0
@@ -527,7 +527,7 @@ function _roscompletemv_search_dir
     set -l command (_ros_command_line)
 
     set -l arg $command[-1]
-    set option "$(echo -e "${COMP_WORDS[1]}" | tr -d '[:space:]')"
+    set option (echo -e "$COMP_WORDS[1]" | tr -d '[:space:]')
     if [ test (count $command) = 2 -a (option) = "-d" ] -o test (count $command) = 1
         # complete packages
         _ros_list_packages $arg

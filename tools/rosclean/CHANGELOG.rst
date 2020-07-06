@@ -2,6 +2,11 @@
 Changelog for package rosclean
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix size output of 'rosclean check' (`#266 <https://github.com/ros/ros/issues/266>`_)
+* fix subparsers of rosclean (`#265 <https://github.com/ros/ros/issues/265>`_)
+
 1.15.4 (2020-05-28)
 -------------------
 

@@ -2,6 +2,9 @@
 Changelog for package rosbuild
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.15.4 (2020-05-28)
 -------------------
 * fix download_checkmd5 for Python 3 (`#260 <https://github.com/ros/ros/issues/260>`_)

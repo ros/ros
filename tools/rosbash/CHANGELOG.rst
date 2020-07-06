@@ -2,8 +2,8 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.15.5 (2020-07-06)
+-------------------
 * fix for sourcing rosfish (`#262 <https://github.com/ros/ros/issues/262>`_)
 
 1.15.4 (2020-05-28)

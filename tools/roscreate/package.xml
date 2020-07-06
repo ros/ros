@@ -4,7 +4,7 @@
   schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>roscreate</name>
-  <version>1.15.4</version>
+  <version>1.15.5</version>
   <description>
      roscreate contains a tool that assists in the creation of ROS filesystem resources.
      It provides: <tt>roscreate-pkg</tt>, which creates a new package directory,

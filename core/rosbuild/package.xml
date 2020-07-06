@@ -1,6 +1,6 @@
 <package>
   <name>rosbuild</name>
-  <version>1.15.4</version>
+  <version>1.15.5</version>
   <description>
     rosbuild contains scripts for managing the CMake-based build system for ROS.
   </description>

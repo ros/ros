@@ -139,7 +139,7 @@ def get_human_readable_disk_usage(d):
     # only implemented on Linux and FreeBSD for now. Should work on OS X but need to verify first (du is not identical)
     if platform.system() in ['Linux', 'FreeBSD']:
         try:
-            return subprocess.Popen(['du', '-sh', d], stdout=subprocess.PIPE).communicate()[0].split()[0]
+            return subprocess.Popen(['du', '-sh', d], stdout=subprocess.PIPE).communicate()[0].split()[0].decode()
         except Exception:
             raise CleanupException('rosclean is not supported on this platform')
     elif platform.system() == 'Windows':

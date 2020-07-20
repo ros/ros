@@ -97,7 +97,7 @@ def create_package(package, author, depends, uses_roscpp=False, uses_rospy=False
     for filename, template in templates.items():
         contents = instantiate_template(template, package, package, package, author, depends)
         p = os.path.abspath(os.path.join(package, filename))
-        with open(p, 'w') as f:
+        with open(p, 'wb') as f:
             f.write(contents.encode('utf-8'))
             print('Created package file', p)
     print('\nPlease edit %s/manifest.xml and mainpage.dox to finish creating your package' % package)
@@ -131,6 +131,4 @@ def roscreatepkg_main():
 
     if not on_ros_path(os.getcwd()):
         print('!'*80+'\nWARNING: current working directory is not on ROS_PACKAGE_PATH!\nPlease update your ROS_PACKAGE_PATH environment variable.\n'+'!'*80, file=sys.stderr)
-    if type(package) == str:
-        package = package.decode('utf-8')
     create_package(package, author_name(), depends, uses_roscpp=uses_roscpp, uses_rospy=uses_rospy)

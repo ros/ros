@@ -45,16 +45,16 @@ function _ros_location_find {
         return 0
     fi
 
-    loc=$(export ROS_CACHE_TIMEOUT=-1.0 && rospack find $1 2> /dev/null)
+    loc=$(export ROS_CACHE_TIMEOUT=-1.0 && rospack find "$1" 2> /dev/null)
     if [[ $? != 0 ]]; then
-        loc=$(export ROS_CACHE_TIMEOUT=-1.0 && rosstack find $1 2> /dev/null)
+        loc=$(export ROS_CACHE_TIMEOUT=-1.0 && rosstack find "$1" 2> /dev/null)
         if [[ $? != 0 ]]; then
             return 1
         fi
-        echo $loc
+        echo "$loc"
         return 0
     fi
-    echo $loc
+    echo "$loc"
     return 0
 }
 
@@ -69,7 +69,7 @@ function _ros_list_locations {
 
 function _ros_package_find {
     local loc
-    loc=$(export ROS_CACHE_TIMEOUT=-1.0 && rospack find $1 2> /dev/null)
+    loc=$(export ROS_CACHE_TIMEOUT=-1.0 && rospack find "$1" 2> /dev/null)
     if [[ $? != 0 ]]; then
         return 1
     fi
@@ -97,7 +97,7 @@ function _ros_list_stacks {
 function _ros_decode_path {
     local rosname rosdir reldir last
     rosvals=()
-    if [[ -z $1 ]]; then
+    if [[ -z "$1" ]]; then
         return 0
     fi
 
@@ -107,20 +107,20 @@ function _ros_decode_path {
         last=${reldir##*/}
         reldir=${reldir%/*}/
     else
-        rosname=$1
-        if [[ -z $2 || $2 != "forceeval" ]]; then
-           rosvals=(${rosname})
+        rosname="$1"
+        if [[ -z "$2" || "$2" != "forceeval" ]]; then
+           rosvals=("${rosname}")
            return 1
         fi
     fi
 
-    rosdir=$(_ros_location_find $rosname)
+    rosdir=$(_ros_location_find "$rosname")
     if [[ $? != 0 ]]; then
-        rosvals=(${rosname})
+        rosvals=("${rosname}")
         return 1
     fi
 
-    rosvals=(${rosname} ${rosdir} ${reldir} ${last})
+    rosvals=("${rosname}" "${rosdir}" "${reldir}" "${last}")
 }
 
 function rospython {
@@ -129,9 +129,9 @@ function rospython {
     echo -e "usage: rospython [package] \n\nRun python loading package manifest first."
     return 0
   fi
-  if [[ -z $1 ]]; then
+  if [[ -z "$1" ]]; then
     if [[ -f ./manifest.xml ]]; then
-      pkgname=$(basename $(pwd))
+      pkgname=$(basename "$(pwd)")
       python -i -c "import roslib; roslib.load_manifest('$pkgname')"
     else
       python
@@ -147,7 +147,7 @@ function roscd {
         echo -e "usage: roscd package\n\nJump to target package."
         return 0
     fi
-    if [ -z $1 ]; then
+    if [ -z "$1" ]; then
       if [ ! -z $ROS_WORKSPACE ]; then
         cd ${ROS_WORKSPACE}
         return 0
@@ -155,8 +155,8 @@ function roscd {
       if [ ! -z $CMAKE_PREFIX_PATH ]; then
         IFS=":" read -a workspaces <<< "$CMAKE_PREFIX_PATH"
         for ws in "${workspaces[@]}"; do
-          if [ -f $ws/.catkin ]; then
-            cd ${ws}
+          if [ -f "$ws/.catkin" ]; then
+            cd "${ws}"
             return 0
           fi
         done
@@ -165,7 +165,7 @@ function roscd {
       return 1
     fi
 
-    _ros_decode_path $1 forceeval
+    _ros_decode_path "$1" forceeval
     if [ $? != 0 ]; then
       echo "roscd: No such package/stack '$1'"
       return 1
@@ -177,7 +177,7 @@ function roscd {
       cd ${ROS_WORKSPACE}
       return 0
     else
-      cd ${rosvals[1]}${rosvals[2]}${rosvals[3]}
+      cd "${rosvals[1]}${rosvals[2]}${rosvals[3]}"
       return 0
     fi
 }
@@ -205,16 +205,16 @@ function rospd {
         echo -e "usage: rospd\n\nLike pushd, also accepts indexes from rosd."
         return 0
     fi
-    if _is_integer $1; then
-        pushd +$1 > /dev/null ;
+    if _is_integer "$1"; then
+        pushd "+$1" > /dev/null ;
     else
         local rosvals
-        _ros_decode_path $1 forceeval
+        _ros_decode_path "$1" forceeval
         if [ $? != 0 ] && [[ $# -gt 0 ]]; then
             echo "rospd: No such package/stack '$1'"
             return 1
         fi
-        pushd ${rosvals[1]}${rosvals[2]}${rosvals[3]} > /dev/null ;
+        pushd "${rosvals[1]}${rosvals[2]}${rosvals[3]}" > /dev/null ;
     fi
     rosd
 }
@@ -225,8 +225,8 @@ function rosls {
         echo -e "usage: rosls [package]\n\nLists contents of a package directory."
         return 0
     fi
-    _ros_decode_path $1 forceeval
-    ls ${rosvals[1]}${rosvals[2]}${rosvals[3]} $2
+    _ros_decode_path "$1" forceeval
+    ls "${rosvals[1]}${rosvals[2]}${rosvals[3]}"
 }
 
 function rosmv {
@@ -237,12 +237,12 @@ function rosmv {
         return 0
     fi
     if [[ $1 = "-d" ]]; then
-        _ros_decode_path ${2} forceeval
+        _ros_decode_path "${2}" forceeval
         pic="${rosvals[1]}${rosvals[2]}${rosvals[3]}"
-        mv -t ${3} ${pic}
+        mv -t "${3}" "${pic}"
     else
-         _roscmd ${1} ${2}
-        mv ${arg} ${3}
+         _roscmd "${1}" "${2}"
+        mv "${arg}" "${3}"
     fi
 }
 
@@ -252,7 +252,7 @@ function _roscmd {
     if [[ -n $CMAKE_PREFIX_PATH ]]; then
         catkin_package_libexec_dir=$(catkin_find --first-only --without-underlays --libexec $1 2> /dev/null)
     fi
-    pkgdir=$(_ros_package_find $1)
+    pkgdir=$(_ros_package_find "$1")
     if [[ -z $catkin_package_libexec_dir && -z $pkgdir ]]; then
         echo "Couldn't find package [$1]"
         return 1
@@ -279,12 +279,12 @@ function rosed {
        echo -e "usage: rosed [package] [file]\n\nEdit a file within a package."
        return 0
     fi
-    _roscmd ${1} ${2}
+    _roscmd "${1}" "${2}"
     if [[ -n ${arg} ]]; then
         if [[ -z $EDITOR ]]; then
-            vim ${arg}
+            vim "${arg}"
         else
-            $EDITOR ${arg}
+            $EDITOR "${arg}"
         fi
     fi
 }
@@ -295,8 +295,8 @@ function roscp {
         echo -e "usage: roscp package filename target\n\nCopy a file from a package to target location."
         return 0
     fi
-    _roscmd ${1} ${2}
-    cp ${arg} ${3}
+    _roscmd "${1}" "${2}"
+    cp "${arg}" "${3}"
 }
 
 function roscat {
@@ -305,13 +305,13 @@ function roscat {
        echo -e "usage: roscat [package] [file]\n\nDisplay a file content within a package."
        [[ $1 = "--help" ]] && return 0 || return 1
     fi
-    _roscmd ${1} ${2}
+    _roscmd "${1}" "${2}"
     [ $? -eq 1 ] && return 1
     if [[ -n ${arg} ]]; then
         if [[ -z $CATTER ]]; then
-            cat ${arg}
+            cat "${arg}"
         else
-            $CATTER ${arg}
+            $CATTER "${arg}"
         fi
     fi
 }
@@ -349,7 +349,7 @@ function _roscomplete_sub_dir {
     COMPREPLY=()
     arg="${COMP_WORDS[COMP_CWORD]}"
     _ros_decode_path ${arg}
-    if [[ -z ${rosvals[2]} ]]; then
+    if [[ -z "${rosvals[2]}" ]]; then
         opts=$(_ros_list_locations)
         _rosbash_roscomplete_sub_dir_IFS="$IFS"
         IFS=$'\n'

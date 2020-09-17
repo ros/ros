@@ -23,13 +23,13 @@ def ros_location_find(package_name):
 
     if package_name == 'log':
         p = subprocess.Popen('roslaunch-logs', stdout=subprocess.PIPE)
-        result_location = p.communicate()[0].strip()
+        result_location = p.communicate()[0].decode().strip()
         result_code = p.returncode
         return result_code, result_location if result_code == 0 else ''
 
     if package_name == 'test_results':
         p = subprocess.Popen('rosrun.bat rosunit test_results_dir.py', stdout=subprocess.PIPE)
-        result_location = p.communicate()[0].strip()
+        result_location = p.communicate()[0].decode().strip()
         result_code = p.returncode
         return result_code, result_location if result_code == 0 else ''
 
@@ -37,13 +37,13 @@ def ros_location_find(package_name):
     env = os.environ
     env[ROS_CACHE_TIMEOUT_ENV_NAME] = '-1.0'
     p = subprocess.Popen(['rospack', 'find', package_name], stdout=subprocess.PIPE)
-    result_location = p.communicate()[0].strip()
+    result_location = p.communicate()[0].decode().strip()
     result_code = p.returncode
     if result_code == 0:
         return result_code, result_location
 
     p = subprocess.Popen(['rosstack', 'find', package_name], stdout=subprocess.PIPE)
-    result_location = p.communicate()[0].strip()
+    result_location = p.communicate()[0].decode().strip()
     result_code = p.returncode
     if result_code == 0:
         return result_code, result_location

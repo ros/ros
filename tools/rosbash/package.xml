@@ -1,6 +1,6 @@
 <package>
   <name>rosbash</name>
-  <version>1.15.6</version>
+  <version>1.15.7</version>
   <description>
     Assorted shell commands for using ros with bash.
   </description>

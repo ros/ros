@@ -4,7 +4,7 @@
   schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>rosunit</name>
-  <version>1.15.6</version>
+  <version>1.15.7</version>
   <description>
      Unit-testing package for ROS. This is a lower-level library for rostest and handles unit tests, whereas rostest handles integration tests.
   </description>

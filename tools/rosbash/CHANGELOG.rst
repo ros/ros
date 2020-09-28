@@ -2,6 +2,12 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* add trailing := to roslaunch args:=value completion (`#259 <https://github.com/ros/ros/issues/259>`_)
+* add quoting to prevent unwanted globbing and word splitting in rosbash (`#269 <https://github.com/ros/ros/issues/269>`_)
+* fix ros_location_find with Python 3 (`#270 <https://github.com/ros/ros/issues/270>`_)
+
 1.15.6 (2020-07-20)
 -------------------
 

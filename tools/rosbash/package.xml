@@ -4,12 +4,15 @@
   <description>
     Assorted shell commands for using ros with bash.
   </description>
-  <maintainer email="dthomas@osrfoundation.org">Dirk Thomas</maintainer>
+  <maintainer email="michel@ekumenlabs.com">Michel Hidalgo</maintainer>
+  <maintainer email="jacob@openrobotics.org">Jacob Perron</maintainer>
   <license>BSD</license>
 
   <url>http://www.ros.org/wiki/rosbash</url>
+
   <author>Jeremy Leibs</author>
   <author>Thibault Kruse</author>
+  <author email="dthomas@openrobotics.org">Dirk Thomas</author>
 
   <buildtool_depend version_gte="0.7.15">catkin</buildtool_depend>
 

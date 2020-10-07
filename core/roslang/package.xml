@@ -5,11 +5,14 @@
     roslang is a common package that all <a href="http://www.ros.org/wiki/Client%20Libraries">ROS client libraries</a> depend on.
     This is mainly used to find client libraries (via 'rospack depends-on1 roslang').
   </description>
-  <maintainer email="dthomas@osrfoundation.org">Dirk Thomas</maintainer>
+  <maintainer email="michel@ekumenlabs.com">Michel Hidalgo</maintainer>
+  <maintainer email="jacob@openrobotics.org">Jacob Perron</maintainer>
   <license>BSD</license>
 
   <url>http://ros.org/wiki/roslang</url>
+
   <author email="gerkey@willowgarage.com">Brian Gerkey</author>
+  <author email="dthomas@openrobotics.org">Dirk Thomas</author>
 
   <buildtool_depend>catkin</buildtool_depend>
 

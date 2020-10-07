@@ -10,7 +10,8 @@
      It provides: <tt>roscreate-pkg</tt>, which creates a new package directory,
      including the appropriate build and manifest files.
   </description>
-  <maintainer email="dthomas@osrfoundation.org">Dirk Thomas</maintainer>
+  <maintainer email="michel@ekumenlabs.com">Michel Hidalgo</maintainer>
+  <maintainer email="jacob@openrobotics.org">Jacob Perron</maintainer>
   <license>BSD</license>
 
   <url type="website">http://wiki.ros.org/roscreate</url>
@@ -18,6 +19,7 @@
   <url type="repository">https://github.com/ros/ros</url>
 
   <author email="kwc@willowgarage.com">Ken Conley</author>
+  <author email="dthomas@osrfoundation.org">Dirk Thomas</author>
 
   <buildtool_depend version_gte="0.5.68">catkin</buildtool_depend>
   <buildtool_depend condition="$ROS_PYTHON_VERSION == 2">python-setuptools</buildtool_depend>

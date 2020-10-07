@@ -9,15 +9,18 @@
     Base dependencies and support libraries for ROS.
     roslib contains many of the common data structures and tools that are shared across ROS client library implementations.
   </description>
-  <maintainer email="dthomas@osrfoundation.org">Dirk Thomas</maintainer>
+  <maintainer email="michel@ekumenlabs.com">Michel Hidalgo</maintainer>
+  <maintainer email="jacob@openrobotics.org">Jacob Perron</maintainer>
   <license>BSD</license>
 
   <url type="website">http://wiki.ros.org/roslib</url>
   <url type="bugtracker">https://github.com/ros/ros/issues</url>
   <url type="repository">https://github.com/ros/ros</url>
+
   <author email="kwc@willowgarage.com">Ken Conley</author>
-  <author email="mquigley@cs.stanford.edu">Morgan Quigley</author>
   <author email="jfaust@willowgarage.com">Josh Faust</author>
+  <author email="mquigley@cs.stanford.edu">Morgan Quigley</author>
+  <author email="dthomas@openrobotics.org">Dirk Thomas</author>
 
   <depend>rospack</depend>
 

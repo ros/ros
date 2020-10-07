@@ -8,11 +8,14 @@
   <description>
     Contains scripts used by the rosboost-cfg tool for determining cflags/lflags/etc. of boost on your system
   </description>
-  <maintainer email="dthomas@osrfoundation.org">Dirk Thomas</maintainer>
+  <maintainer email="michel@ekumenlabs.com">Michel Hidalgo</maintainer>
+  <maintainer email="jacob@openrobotics.org">Jacob Perron</maintainer>
   <license>BSD</license>
 
   <url>http://ros.org/wiki/rosboost_cfg</url>
+
   <author>Josh Faust</author>
+  <author email="dthomas@openrobotics.org">Dirk Thomas</author>
 
   <buildtool_depend>catkin</buildtool_depend>
   <buildtool_depend condition="$ROS_PYTHON_VERSION == 2">python-setuptools</buildtool_depend>

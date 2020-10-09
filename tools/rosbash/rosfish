@@ -334,6 +334,18 @@ function roscp
     end
 end
 
+function roscpd
+    set -l 
+    if test $argv[1] = "--help" -o (count $argv) -ne 2
+        echo -e "usage: roscpd [directory/filepath] [targetpath]\n\nCopy a directory/file to a target."
+        test $argv[1] = "--help"; and return 0; or return 1
+    end 
+
+    if test $status = 0
+        cp -r $argv[1] $argv[2]
+    end
+end
+
 function roscat
     if test $argv[1] = "--help" -o (count $argv) -ne 2
         echo -e "usage: roscat [package] [file]\n\nDisplay a file content within a package."
@@ -1074,6 +1086,19 @@ function _roscomplete_rosconsole
     end
 end
 
+function _roscomplete_roscpd
+
+    set -l command (_ros_command_line)
+    set -l arg $command[-1]
+    if test (count $command) = 2 
+            __fish_complete_path "$arg"
+    end
+
+    if test (count $command) = 3 
+            __fish_complete_path "$arg"
+    end
+end
+
 # TODO add options for filenames, default
 complete -x -c roscd          -a '(_roscomplete_sub_dir)'
 complete -x -c rospd          -a '(_roscomplete_sub_dir)'
@@ -1098,3 +1123,4 @@ complete -x -c roscreate-pkg  -a '(_roscomplete_roscreate_pkg)'
 complete -x -c roswtf         -a '(_roscomplete_roswtf)'
 complete -x -c rosconsole     -a '(_roscomplete_rosconsole)'
 complete -x -c rosmv          -a '(_roscomplete_filemv)'
+complete -x -c roscpd         -a '(_roscomplete_roscpd)'

@@ -299,6 +299,14 @@ function roscp {
     cp "${arg}" "${3}"
 }
 
+function roscpd {
+    if [[ $1 = "--help" ]] || [[ $# -ne 2 ]]; then
+        echo -e "usage: roscpd [directory/filepath] [target]\n\nCopy a (directory/file) to target location."
+        return 0
+    fi
+    cp -r ${1} ${2}
+}
+
 function roscat {
     local arg
     if [[ $1 = "--help" ]] || [[ $# -ne 2 ]]; then
@@ -1058,6 +1066,14 @@ function _roscompletemv_search_dir {
 
 }
 
+function _roscomplete_roscpd {
+
+  local arg=${COMP_WORDS[COMP_CWORD]}
+  local IFS=$'\n'
+  COMPREPLY=()
+  COMPREPLY=( $( compgen -f -- ${arg} ) )
+}
+
 complete -F "_roscomplete_sub_dir" -o "nospace" "roscd"
 complete -F "_roscomplete_sub_dir" -o "nospace" "rospd"
 complete -F "_roscomplete_sub_dir" -o "nospace" "rosls"
@@ -1081,3 +1097,4 @@ complete -F "_roscomplete_roscreate_pkg" "roscreate-pkg"
 complete -F "_roscomplete_roswtf" -o filenames "roswtf"
 complete -F "_roscomplete_rosconsole" "rosconsole"
 complete -F "_roscomplete_filemv" "rosmv"
+complete -o filenames -F "_roscomplete_roscpd" "roscpd"

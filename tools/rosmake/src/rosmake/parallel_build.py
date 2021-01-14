@@ -76,7 +76,7 @@ def num_cpus():
 # TODO: may no longer need this now that we've ported to rospkg
 class DependencyTracker:
     """Track dependencies between packages.  This is basically a
-    caching way to call rospkg. It also will allow you to specifiy a
+    caching way to call rospkg. It also will allow you to specify a
     range of packages over which to track dependencies.  This is useful
     if you are only building a subset of the tree. For example with the
     --specified-only option."""

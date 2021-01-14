@@ -8,7 +8,7 @@ include(AddFileDependencies)
 # Used to check if a function exists
 include(CheckFunctionExists)
 
-# look up python interpreter, store in ${PYTHON_EXECUTABLE}, #3763 BSD supprot
+# look up python interpreter, store in ${PYTHON_EXECUTABLE}, #3763 BSD support
 find_package(PythonInterp)
 
 # Find a ros package.
@@ -750,7 +750,7 @@ macro(rosbuild_get_srvs srvvar)
   endforeach(_srv)
 endmacro(rosbuild_get_srvs)
 
-# Compute msg/srv depenendency list, with simple caching
+# Compute msg/srv dependency list, with simple caching
 macro(rosbuild_gendeps _pkg _msgfile)
   # Did we already compute it?
   if(NOT ${_pkg}_${_msgfile}_GENDEPS_COMPUTED)

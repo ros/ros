@@ -151,7 +151,7 @@ class BareTestCase(unittest.TestCase):
             success = process.start()
             self.assert_(success, 'test failed to start')
 
-            # poll until test terminates or alloted time exceed
+            # poll until test terminates or allotted time exceed
             timeout_t = time.time() + self.time_limit
             try:
                 while process.is_alive():

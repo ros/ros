@@ -37,7 +37,7 @@ from __future__ import print_function
 
 """
 Warning: do not use this library.  It is unstable and most of the routines
-here have been superceded by other libraries (e.g. genmsg).  These
+here have been superseded by other libraries (e.g. genmsg).  These
 routines will likely be *deleted* in future releases.
 """
 
@@ -166,7 +166,7 @@ def is_valid_msg_type(x):
     base = base_msg_type(x)
     if not roslib.names.is_legal_resource_name(base):
         return False
-    # parse array indicies
+    # parse array indices
     x = x[len(base):]
     state = 0
     for c in x:
@@ -339,7 +339,7 @@ class MsgSpec(object):
 
     def has_header(self):
         """
-        @return: True if msg decription contains a 'Header header'
+        @return: True if msg description contains a 'Header header'
         declaration at the beginning
         @rtype: bool
         """

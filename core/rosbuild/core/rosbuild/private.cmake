@@ -319,7 +319,7 @@ macro(_rosbuild_add_library lib libname type)
     # libs, even though it's necessary on 64-bit machines for linking this
     # lib against shared libs downstream. The only exception is mingw gcc
     # which doesn't specifically need to worry about building
-    # position independant libs.
+    # position independent libs.
     if(NOT MINGW)
         rosbuild_add_compile_flags(${lib} -fPIC)
     endif()

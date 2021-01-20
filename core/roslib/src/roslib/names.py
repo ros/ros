@@ -34,7 +34,7 @@
 
 """
 Warning: do not use this library.  It is unstable and most of the routines
-here have been superceded by other libraries (e.g. genmsg).  These
+here have been superseded by other libraries (e.g. genmsg).  These
 routines will likely be *deleted* in future releases.
 """
 

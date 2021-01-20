@@ -34,7 +34,7 @@
 
 """
 Warning: do not use this library.  It is unstable and most of the routines
-here have been superceded by other libraries (e.g. rosgraph).  These
+here have been superseded by other libraries (e.g. rosgraph).  These
 routines will likely be *deleted* in future releases.
 """
 
@@ -136,7 +136,7 @@ def is_local_address(hostname):
 
 def get_local_address():
     """
-    @return: default local IP address (e.g. eth0). May be overriden by ROS_IP/ROS_HOSTNAME/__ip/__hostname
+    @return: default local IP address (e.g. eth0). May be overridden by ROS_IP/ROS_HOSTNAME/__ip/__hostname
     @rtype: str
     """
     override = get_address_override()

@@ -35,7 +35,7 @@
 
 """
 Warning: do not use this library.  It is unstable and most of the routines
-here have been superceded by other libraries (e.g. rospkg).  These
+here have been superseded by other libraries (e.g. rospkg).  These
 routines will likely be *deleted* in future releases.
 """
 
@@ -50,7 +50,7 @@ _GLOBAL_CALLER_ID = '/script'
 
 def deprecated(func):
     """This is a decorator which can be used to mark functions
-    as deprecated. It will result in a warning being emmitted
+    as deprecated. It will result in a warning being emitted
     when the function is used."""
     def newFunc(*args, **kwargs):
         warnings.warn('Call to deprecated function %s.' % func.__name__,

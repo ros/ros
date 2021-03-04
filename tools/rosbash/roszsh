@@ -246,10 +246,12 @@ function rosed {
         return 0
     fi
     _roscmd ${1} ${2}
-    if [[ -z $EDITOR ]]; then
-        vim ${arg}
-    else
-        eval $EDITOR ${arg}
+    if [[ -n ${arg} ]]; then
+        if [[ -z $EDITOR ]]; then
+            vim ${arg}
+        else
+            eval $EDITOR ${arg}
+        fi
     fi
 }
 

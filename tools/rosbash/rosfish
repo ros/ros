@@ -22,7 +22,7 @@ function _rosfind
         # BSD find needs -E for extended regexp
         find -E $argv
     else
-        find $arg
+        find $argv
     end
 end
 

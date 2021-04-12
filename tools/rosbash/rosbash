@@ -241,7 +241,8 @@ function rosmv {
         pic="${rosvals[1]}${rosvals[2]}${rosvals[3]}"
         mv -t "${3}" "${pic}"
     else
-         _roscmd "${1}" "${2}"
+        _roscmd "${1}" "${2}"
+        [ $? -eq 1 ] && return 1
         mv "${arg}" "${3}"
     fi
 }
@@ -280,12 +281,11 @@ function rosed {
        return 0
     fi
     _roscmd "${1}" "${2}"
-    if [[ -n ${arg} ]]; then
-        if [[ -z $EDITOR ]]; then
-            vim "${arg}"
-        else
-            $EDITOR "${arg}"
-        fi
+    [ $? -eq 1 ] && return 1
+    if [[ -z $EDITOR ]]; then
+        vim "${arg}"
+    else
+        $EDITOR "${arg}"
     fi
 }
 
@@ -296,6 +296,7 @@ function roscp {
         return 0
     fi
     _roscmd "${1}" "${2}"
+    [ $? -eq 1 ] && return 1
     cp "${arg}" "${3}"
 }
 

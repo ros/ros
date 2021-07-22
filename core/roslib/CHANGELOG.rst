@@ -2,8 +2,8 @@
 Changelog for package roslib
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.15.8 (2021-07-21)
+-------------------
 * Fix spelling (`#277 <https://github.com/ros/ros/issues/277>`_)
 * Update maintainers (`#272 <https://github.com/ros/ros/issues/272>`_)
 * Contributors: Jacob Perron, freddii

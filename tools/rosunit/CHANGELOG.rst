@@ -2,8 +2,8 @@
 Changelog for package rosunit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.15.8 (2021-07-21)
+-------------------
 * Gracefully handle missing time attribute in testcase XML element (`#283 <https://github.com/ros/ros/issues/283>`_)
 * Fix spelling (`#277 <https://github.com/ros/ros/issues/277>`_)
 * Update maintainers (`#272 <https://github.com/ros/ros/issues/272>`_)

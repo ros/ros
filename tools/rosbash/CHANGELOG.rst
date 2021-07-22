@@ -2,8 +2,8 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.15.8 (2021-07-21)
+-------------------
 * Fix variable name (from $arg to $argv) in rosfish (`#279 <https://github.com/ros/ros/issues/279>`_)
 * Update maintainers (`#272 <https://github.com/ros/ros/issues/272>`_)
 * Contributors: Jacob Perron, Yuma Hiramatsu

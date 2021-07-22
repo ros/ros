@@ -1,6 +1,6 @@
 <package>
   <name>ros</name>
-  <version>1.15.7</version>
+  <version>1.15.8</version>
   <description>ROS packaging system</description>
   <maintainer email="michel@ekumenlabs.com">Michel Hidalgo</maintainer>
   <maintainer email="jacob@openrobotics.org">Jacob Perron</maintainer>

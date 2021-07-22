@@ -2,6 +2,11 @@
 Changelog for package roscreate
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Update maintainers (`#272 <https://github.com/ros/ros/issues/272>`_)
+* Contributors: Jacob Perron
+
 1.15.7 (2020-09-28)
 -------------------
 

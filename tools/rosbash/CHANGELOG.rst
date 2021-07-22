@@ -2,6 +2,12 @@
 Changelog for package rosbash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix variable name (from $arg to $argv) in rosfish (`#279 <https://github.com/ros/ros/issues/279>`_)
+* Update maintainers (`#272 <https://github.com/ros/ros/issues/272>`_)
+* Contributors: Jacob Perron, Yuma Hiramatsu
+
 1.15.7 (2020-09-28)
 -------------------
 * add trailing := to roslaunch args:=value completion (`#259 <https://github.com/ros/ros/issues/259>`_)

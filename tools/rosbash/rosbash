@@ -280,12 +280,14 @@ function rosed {
        echo -e "usage: rosed [package] [file]\n\nEdit a file within a package."
        return 0
     fi
-    _roscmd "${1}" "${2}"
-    [ $? -eq 1 ] && return 1
+    if [ $# -ge 1 ]; then
+        _roscmd "${1}" "${2}"
+        [ $? -eq 1 ] && return 1
+    fi
     if [[ -z $EDITOR ]]; then
-        vim "${arg}"
+        vim ${arg}
     else
-        $EDITOR "${arg}"
+        $EDITOR ${arg}
     fi
 }
 

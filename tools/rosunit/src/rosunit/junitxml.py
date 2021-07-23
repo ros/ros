@@ -324,7 +324,10 @@ def _load_suite_results(test_suite_name, test_suite, result):
             elif not classname.startswith(result.name):
                 classname = '%s.%s' % (result.name, classname)
 
-            time = float(node.getAttribute('time')) or 0.0
+            try:
+                time = float(node.getAttribute('time'))
+            except ValueError:
+                time = 0.0
             tc_result = TestCaseResult('%s/%s' % (test_suite_name, name))
             tc_result.classname = classname
             tc_result.time = time

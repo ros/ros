@@ -245,7 +245,10 @@ function rosed {
         echo -e "usage: rosed [package] [file]\n\nEdit a file within a package."
         return 0
     fi
-    _roscmd ${1} ${2}
+    if [ $# -ge 1 ]; then
+        _roscmd ${1} ${2}
+        [ $? -eq 1 ] && return 1
+    fi
     if [[ -z $EDITOR ]]; then
         vim ${arg}
     else
@@ -260,6 +263,7 @@ function roscp {
         return 0
     fi
     _roscmd ${1} ${2}
+    [ $? -eq 1 ] && return 1
     cp ${arg} ${3}
 }
 
@@ -275,7 +279,8 @@ function rosmv {
         pic="${rosvals[1]}${rosvals[2]}${rosvals[3]}"
         mv -t ${3} ${pic}
     else
-         _roscmd ${1} ${2}
+        _roscmd ${1} ${2}
+        [ $? -eq 1 ] && return 1
         mv ${arg} ${3}
     fi
 }

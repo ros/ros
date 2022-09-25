@@ -126,7 +126,7 @@ def manifest_file(package, required=True, env=None):
 def load_manifest(package):
     """
     Load manifest for specified package.
-    @param pacakge: package name
+    @param package: package name
     @type  package: str
     @return: Manifest instance
     @rtype: L{Manifest}

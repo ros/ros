@@ -541,4 +541,8 @@ def find_resource(pkg, resource_name, filter_fn=None, rospack=None):
     for match in matches:
         if match not in unique_matches:
             unique_matches.append(match)
+
+    # Now that we have the deduplicated matches, resolve symlinks as much as possible.
+    unique_matches = [os.path.realpath(v) for v in unique_matches]
+
     return unique_matches

@@ -24,21 +24,6 @@ function parent_find() {
   parent-find "$file" "$(readlink -f "$dir/..")"
 }
 
-function inonedir() {
-  exe=$1
-  shift
-  list_of_dirs=("$@")
-  for location in "${list_of_dirs[@]}";
-  do
-    if [[ "$exe" = "$location"* ]] ; then
-      # exe path starts with $location
-      echo "yes"
-      return
-    fi
-  done
-  echo "no"
-}
-
 while [ $args == 1 ]
 do
   case "$1" in
@@ -74,6 +59,21 @@ esac
 
 pkg_name="$1"
 file_name="$2"
+
+function inonedir() {
+  exe=$1
+  shift
+  list_of_dirs=("$@")
+  for location in "${list_of_dirs[@]}";
+  do
+    if [[ "$exe" = "$location"* ]] ; then
+      # exe path starts with $location
+      echo "yes"
+      return
+    fi
+  done
+  echo "no"
+}
 
 if [[ -n $CMAKE_PREFIX_PATH ]]; then
   _rosrun_IFS="$IFS"

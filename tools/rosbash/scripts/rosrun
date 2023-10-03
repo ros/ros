@@ -21,7 +21,7 @@ function parent_find() {
   test -e "$dir/$file" && readlink -f "$dir" && return 0
   [ '/' = "$dir" ] && return 1
 
-  parent-find "$file" "$(readlink -f "$dir/..")"
+  parent_find "$file" "$(readlink -f "$dir/..")"
 }
 
 while [ $args == 1 ]

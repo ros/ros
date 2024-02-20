@@ -31,6 +31,7 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+#! /usr/bin/env python
 """
 Python path loader for python scripts and applications. Paths are
 derived from dependency structure declared in ROS manifest files.
@@ -38,79 +39,92 @@ derived from dependency structure declared in ROS manifest files.
 
 import os
 import sys
-
 import rospkg
 
-# bootstrapped keeps track of which packages we've loaded so we don't
-# update the path multiple times
+# Global variables to track bootstrapped packages and ROS package data
 _bootstrapped = []
-# _rospack is our cache of ROS package data
 _rospack = rospkg.RosPack()
 
 
 def get_depends(package, rospack):
+    """
+    Retrieves the dependencies of a given package.
+
+    Args:
+        package (str): The name of the package.
+        rospack (rospkg.RosPack): Instance of RosPack for accessing package information.
+
+    Returns:
+        list[str]: A list of dependencies for the given package.
+    """
     vals = rospack.get_depends(package, implicit=True)
     return [v for v in vals if not rospack.get_manifest(v).is_catkin]
 
 
-def load_manifest(package_name, bootstrap_version='0.7'):
+def load_manifest(package_name):
     """
-    Update the Python sys.path with package's dependencies
+    Updates the Python sys.path with the specified package's dependencies.
 
-    :param package_name: name of the package that load_manifest() is being called from, ``str``
+    Args:
+        package_name (str): Name of the package from which load_manifest() is called.
+
+    Returns:
+        None
     """
-    if package_name in _bootstrapped:
-        return
-    sys.path = _generate_python_path(package_name, _rospack) + sys.path
+    if package_name not in _bootstrapped:
+        sys.path[0:0] = _generate_python_path(package_name, _rospack)
 
 
 def _append_package_paths(manifest_, paths, pkg_dir):
     """
-    Added paths for package to paths
-    :param manifest_: package manifest, ``Manifest``
-    :param pkg_dir: package's filesystem directory path, ``str``
-    :param paths: list of paths, ``[str]``
+    Adds paths for a package to the given paths list.
+
+    Args:
+        manifest_ (rospkg.Manifest): Package manifest.
+        paths (list[str]): List of paths to be updated.
+        pkg_dir (str): Filesystem directory path of the package.
+
+    Returns:
+        None
     """
     exports = manifest_.get_export('python', 'path')
-    if exports:
-        for export in exports:
-            if ':' in export:
-                export = export.split(':')
-            else:
-                export = [export]
-            for e in export:
-                paths.append(e.replace('${prefix}', pkg_dir))
-    else:
+    for export in exports:
+        expanded_exports = export.split(':') if ':' in export else [export]
+        paths.extend(e.replace('${prefix}', pkg_dir) for e in expanded_exports)
+
+    if not exports:
         dirs = [os.path.join(pkg_dir, d) for d in ['src', 'lib']]
-        paths.extend([d for d in dirs if os.path.isdir(d)])
+        paths.extend(d for d in dirs if os.path.isdir(d))
 
 
 def _generate_python_path(pkg, rospack):
     """
-    Recursive subroutine for building dependency list and python path
-    :raises: :exc:`rospkg.ResourceNotFound` If an error occurs while attempting to load package or dependencies
+    Recursive subroutine for building dependency list and python path.
+
+    Args:
+        pkg (str): Name of the package.
+        rospack (rospkg.RosPack): Instance of RosPack for accessing package information.
+
+    Returns:
+        list[str]: A list of paths for the specified package and its dependencies.
+
+    Raises:
+        rospkg.ResourceNotFound: If an error occurs while attempting to load package or dependencies.
     """
     if pkg in _bootstrapped:
         return []
 
-    # short-circuit if this is a catkin-ized package
     m = rospack.get_manifest(pkg)
     if m.is_catkin:
         _bootstrapped.append(pkg)
         return []
 
-    packages = get_depends(pkg, rospack)
-    packages.append(pkg)
+    packages = get_depends(pkg, rospack) + [pkg]
 
     paths = []
-    try:
-        for p in packages:
-            m = rospack.get_manifest(p)
-            d = rospack.get_path(p)
-            _append_package_paths(m, paths, d)
-            _bootstrapped.append(p)
-    except Exception:
-        if pkg in _bootstrapped:
-            _bootstrapped.remove(pkg)
-        raise
+    for p in packages:
+        m = rospack.get_manifest(p)
+        d = rospack.get_path(p)
+        _append_package_paths(m, paths, d)
+        _bootstrapped.append(p)
     return paths

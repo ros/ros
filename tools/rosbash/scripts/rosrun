@@ -14,6 +14,16 @@ function debug() {
   return
 }
 
+function parent_find() {
+  local file="$1"
+  local dir="$2"
+
+  test -e "$dir/$file" && readlink -f "$dir" && return 0
+  [ '/' = "$dir" ] && return 1
+
+  parent_find "$file" "$(readlink -f "$dir/..")"
+}
+
 while [ $args == 1 ]
 do
   case "$1" in
@@ -88,13 +98,17 @@ if [[ ! $file_name == */* ]]; then
     _perm="/111"
   fi
   debug "Searching for $file_name with permissions $_perm"
-  exepathlist="$(find -L "${catkin_package_libexec_dirs[@]}" "$pkgdir" -name "$file_name" -type f  -perm "$_perm" ! -regex ".*$pkgdir\/build\/.*" | uniq)"
+  exepathlist="$(find -L "${catkin_package_libexec_dirs[@]}" "$pkgdir" -name "$file_name" -type f  -perm "$_perm" ! -regex ".*$pkgdir\/build\/.*" | sort -u)"
   _rosrun_IFS="$IFS"
   IFS=$'\n'
   exepathlist=($exepathlist)
   IFS="$_rosrun_IFS"
   unset _rosrun_IFS
   unset _perm
+  for index in "${!exepathlist[@]}"; do
+    parent_find CATKIN_IGNORE "$(dirname "${exepathlist[$index]}")" 1>/dev/null 2>/dev/null && debug "Excluding ${exepathlist[$index]} due to CATKIN_IGNORE" && unset -v 'exepathlist[$index]';
+  done
+  exepathlist=("${exepathlist[@]}")
   if [[ ${#exepathlist[@]} == 0 ]]; then
     echo "[rosrun] Couldn't find executable named $file_name below $pkgdir"
     nonexepathlist=($(find -H "$pkgdir" -name "$file_name"))

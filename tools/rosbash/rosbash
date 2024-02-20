@@ -483,11 +483,20 @@ function _roscomplete_find {
         catkin_package_libexec_dir=$(catkin_find --first-only --without-underlays --libexec ${pkg} 2> /dev/null)
     fi
     pkgdir=$(_ros_package_find ${pkg})
+    
+    dot_check=".*/[.][^./].*"
+
     if [[ -n "$catkin_package_libexec_dir" || -n "$pkgdir" ]]; then
-        opts=$(_rosfind -L $catkin_package_libexec_dir "$pkgdir" ${1} ! -regex ".*/[.][^./].*" ! -regex ".*$pkgdir\/build\/.*"  -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g")
+	#checks if there is a hidden file within catkin_package_libexec_dir or pkgdir
+        if [[ ($catkin_package_libexec_dir =~ $dot_check) || ($pkgdir =~ $dot_check) ]]; then
+            opts=$(_rosfind -L $catkin_package_libexec_dir "$pkgdir" ${1} ! -regex "$dot_check$dot_check" ! -regex ".*$pkgdir\/build\/.*"  -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g")
+        else
+            opts=$(_rosfind -L $catkin_package_libexec_dir "$pkgdir" ${1} ! -regex "dot_check" ! -regex ".*$pkgdir\/build\/.*"  -print0 | tr '\000' '\n' | sed -e "s/.*\/\(.*\)/\1/g")
+        fi
     else
         opts=""
     fi
+    
     _rosbash_roscomplete_find_IFS="$IFS"
     IFS=$'\n'
     COMPREPLY=($(compgen -W "${opts}" -- ${arg}))

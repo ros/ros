@@ -144,6 +144,11 @@ else
   fi
   exepath="$absname"
 fi
+# Finally, invoke realpath if possible to resolve any symlinks in the path.
+if command -v realpath &> /dev/null
+then
+  exepath=$(realpath $exepath)
+fi
 shift
 shift
 debug "Running $rosrun_prefix $exepath" "$@"

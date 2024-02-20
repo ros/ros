@@ -319,7 +319,7 @@ class RosMakeAll:
             return
         for d in self.dependency_tracker.get_deps_1(p):
             self.build_or_recurse(d)
-        try:  # append it ot the list only if present
+        try:  # append it to the list only if present
             self.rospack.get_path(p)
             self.build_list.append(p)
         except rospkg.ResourceNotFound as ex:

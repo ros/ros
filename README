@@ -1,14 +1,36 @@
-Robot Operating System (ROS)
-===============================================================================
+http://wiki.ros.org/Installation
 
-ROS is a meta-operating system for your robot.  It provides
-language-independent and network-transparent communication for a
-distributed robot control system.
+In general, ROS requires a Unix-based system, such as Ubuntu, and can be
+installed on either a physical robot or a simulation environment.
 
-Installation Notes
-------------------
+Getting Started with ROS
+Once ROS is installed, there are a number of tutorials and resources to
+help you get started. These include:
 
-For full installation instructions, including system prerequisites and
-platform-specific help, see:
+The ROS Wiki Tutorials: http://wiki.ros.org/ROS/Tutorials
+The ROS Technical Overview: http://wiki.ros.org/Technical%20Overview
+The ROS User Documentation: http://wiki.ros.org/ROS/User%20Documentation
 
-  http://wiki.ros.org/ROS/Installation
+Support
+If you need help with ROS, there are several options:
+
+The ROS Community: Join the ROS community and participate in discussion
+forums, Q&A sites, and development mailing lists.
+The ROS Answers Site: Ask and answer questions on the ROS answers site.
+Professional Services: If you need help with a specific project, consider
+hiring a professional services provider.
+Contributing to ROS
+ROS is an open source project and we welcome contributions. There are many
+ways to contribute, including writing tutorials and documentation, fixing
+bugs, and contributing code to new packages. To get started, see:
+
+http://wiki.ros.org/Contribute
+
+License
+ROS is released under the terms of the BSD license. See the LICENSE file
+for details.
+
+
+
+
+
